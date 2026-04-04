@@ -105,3 +105,14 @@ npm run dev
  打开：
 
 http://localhost:5173
+
+# 关于github的分支命名规则
+
+我们是分工合作的，可以加模块在功能名前面 
+模块	         示例
+frontend	     feature/frontend-homepage
+backend	      feature/backend-uv-api
+ai	           feature/ai-text-simplify
+database	     feature/db-user-schema
+deployment	   chore/deploy-config
+
