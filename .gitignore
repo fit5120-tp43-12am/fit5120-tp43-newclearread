@@ -1,0 +1,23 @@
+# Logs
+logs
+*.log
+
+# Node (前端)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Python (后端)
+backend/venv/
+**/__pycache__/
+*.pyc
+
+# Env
+.env
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
