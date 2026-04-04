@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piper 朗读</title>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #fff;
+      --text: #1a1a1a;
+      --muted: #5c6370;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --danger: #b91c1c;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 0.25rem;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1.25rem 1.35rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      border: 1px solid var(--border);
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 10rem;
+      padding: 0.75rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      resize: vertical;
+      font-family: inherit;
+    }
+    textarea:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.35);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 520px) {
+      .row { grid-template-columns: 1fr; }
+    }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    .actions {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.15rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .status {
+      margin-top: 1rem;
+      font-size: 0.88rem;
+      min-height: 1.25rem;
+    }
+    .status.err { color: var(--danger); }
+    .status.ok { color: #15803d; }
+    audio {
+      width: 100%;
+      margin-top: 1rem;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Piper 文本朗读</h1>
+    <p class="sub">粘贴文字后点击合成；需本机已运行 <code>tts_api.py</code> 与 Piper（5000）。页面会<strong>等整段音频生成完</strong>才播放，耗时几乎都在 Piper，不是网页本身慢。</p>
+    <details class="sub" style="margin-bottom:1rem;cursor:pointer;">
+      <summary style="color:var(--muted);font-size:0.9rem;">如何加快合成？</summary>
+      <ul style="margin:0.5rem 0 0 1.1rem;color:var(--muted);font-size:0.88rem;">
+        <li><strong>GPU</strong>：启动 Piper 时加 <code>--cuda</code>（需 NVIDIA + 可用的 CUDA/cuDNN 与 onnxruntime-gpu）。</li>
+        <li><strong>更小模型</strong>：例如用 <code>low</code> / <code>x_low</code> 音质或更小 onnx，比 <code>medium</code> 快很多。</li>
+        <li><strong>少读一点</strong>：字数越长，推理越久；可先试听短句。</li>
+        <li><strong>CPU 线程</strong>：启动 Piper<strong>前</strong>可设环境变量 <code>OMP_NUM_THREADS</code> / <code>ORT_INTRA_OP_NUM_THREADS</code> 为物理核心数（效果因机而异）。</li>
+        <li>8080 代理层只多一次本机 HTTP，通常只占几十毫秒；要极致可让前端直连 Piper 5000（需处理 CORS）。</li>
+      </ul>
+    </details>
+    <div class="card">
+      <label for="text">要朗读的文字</label>
+      <textarea id="text" placeholder="在此粘贴或输入……"></textarea>
+      <div class="row">
+        <div>
+          <label for="voice">voice（模型名）</label>
+          <input type="text" id="voice" value="en_US-lessac-medium" autocomplete="off" />
+        </div>
+        <div>
+          <label for="endpoint">接口路径</label>
+          <select id="endpoint">
+            <option value="/tts/full-text">/tts/full-text</option>
+            <option value="/tts/summary">/tts/summary</option>
+            <option value="/tts/section">/tts/section</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="length_scale">length_scale（可选，留空则不传）</label>
+          <input type="number" id="length_scale" step="0.05" min="0.1" max="3" placeholder="例如 1.0" />
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" id="go">合成并播放</button>
+      </div>
+      <div class="status" id="status" aria-live="polite"></div>
+      <audio id="player" controls></audio>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+      const textEl = $("text");
+      const voiceEl = $("voice");
+      const endpointEl = $("endpoint");
+      const lengthEl = $("length_scale");
+      const goBtn = $("go");
+      const statusEl = $("status");
+      const player = $("player");
+      let lastUrl = null;
+
+      function setStatus(msg, cls) {
+        statusEl.textContent = msg || "";
+        statusEl.className = "status" + (cls ? " " + cls : "");
+      }
+
+      goBtn.addEventListener("click", async function () {
+        const text = textEl.value.trim();
+        if (!text) {
+          setStatus("请先输入或粘贴要朗读的文字。", "err");
+          return;
+        }
+        const voice = voiceEl.value.trim();
+        const path = endpointEl.value;
+        const payload = { text };
+        if (voice) payload.voice = voice;
+        const ls = lengthEl.value.trim();
+        if (ls !== "") {
+          const n = Number(ls);
+          if (!Number.isNaN(n)) payload.length_scale = n;
+        }
+
+        if (lastUrl) {
+          URL.revokeObjectURL(lastUrl);
+          lastUrl = null;
+        }
+        player.removeAttribute("src");
+        goBtn.disabled = true;
+        setStatus("正在合成…");
+
+        try {
+          const res = await fetch(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json; charset=utf-8" },
+            body: JSON.stringify(payload),
+          });
+          const ct = (res.headers.get("Content-Type") || "").toLowerCase();
+          if (!res.ok) {
+            let msg = "请求失败 " + res.status;
+            if (ct.includes("json")) {
+              try {
+                const j = await res.json();
+                msg += "：" + (j.error || JSON.stringify(j));
+              } catch (_) {}
+            } else {
+              const t = await res.text();
+              if (t) msg += "：" + t.slice(0, 200);
+            }
+            setStatus(msg, "err");
+            return;
+          }
+          if (!ct.includes("wav") && !ct.includes("audio")) {
+            setStatus("返回不是音频（Content-Type: " + (ct || "未知") + "）", "err");
+            return;
+          }
+          const blob = await res.blob();
+          lastUrl = URL.createObjectURL(blob);
+          player.src = lastUrl;
+          await player.play().catch(function () {});
+          setStatus("完成，可在此播放或下载。", "ok");
+        } catch (e) {
+          setStatus("网络错误：" + (e && e.message ? e.message : String(e)), "err");
+        } finally {
+          goBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
