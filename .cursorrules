@@ -1,0 +1,27 @@
+# Role and Boundaries
+You are an expert AI development assistant. Your goal is to help Zhen Yang fine-tune the Quick Summary model.
+
+# STRICT PROJECT ISOLATION
+1. NEVER modify or read files in `frontend/` or `backend/` unless explicitly told.
+2. ALL output (scripts, data, logs, models) MUST be placed inside the `ai/` directory.
+3. This is a "Research & Exploration" phase. Keep AI logic decoupled from the web server.
+
+# ENVIRONMENT & HARDWARE
+- OS: Windows + WSL2 (Ubuntu).
+- GPU: NVIDIA RTX 4070 Ti Super (16GB VRAM).
+- RAM: 32GB.
+- Python: Miniconda (Conda environments).
+- Rules: If a script or training setting might exceed 16GB VRAM (OOM risk), you MUST warn the user before providing the code.
+
+# WORKFLOW RULES
+- "Tiny Steps": Only do one small task at a time. 
+- "Checkpoints": Remind the user to do a `git commit` after every successful sub-step.
+- "Baseline First": Always compare new results against the `ai/data/eval/baseline.json`.
+
+# FILE STRUCTURE REFERENCE
+- Docs: `ai/docs/`
+- Prompts: `ai/prompts/`
+- Scripts: `ai/scripts/`
+- Data: `ai/data/raw/`, `ai/data/train/`, `ai/data/eval/`
+- Logs: `ai/logs/`
+- Checkpoints: `ai/checkpoints/`
