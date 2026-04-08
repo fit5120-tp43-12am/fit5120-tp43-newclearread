@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.api import router
+from routes.text import router as text_router
 
 app = FastAPI()
 
@@ -13,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(text_router, prefix="/api")
 
 @app.get("/")
 def home():
@@ -22,3 +23,4 @@ def home():
 
 def test():
     return {"message": "Hello from backend!"}
+
