@@ -37,9 +37,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             not a <span class="text-gradient">deficit.</span>
           </h1>
           <p class="hero-sub">
-            Around 1 in 5 Australians may have dyslexia. It shapes how the brain processes
-            written language — not how intelligent someone is. Here is what the research
-            actually says, and how reading support can help.
+            1 in 5 Australians may have dyslexia. It affects how the brain reads —
+            not how smart someone is.
           </p>
           <div class="hero-actions">
             <a href="#what-is" class="btn-primary">Learn More</a>
@@ -83,22 +82,17 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               <p class="eyebrow">What is it?</p>
               <h2>How dyslexia affects reading</h2>
               <p>
-                Dyslexia is a specific learning difference that primarily affects a person's
-                ability to read, write, and spell. It stems from differences in how the brain
-                processes phonological information — the sounds that make up words — rather
-                than from any problem with vision or intelligence.
+                Dyslexia affects how the brain processes the sounds that make up words —
+                not vision or intelligence.
               </p>
               <p>
-                People with dyslexia often have strong verbal skills, creativity, and
-                problem-solving abilities. In Australia, dyslexia is recognised under the
-                <em>Disability Discrimination Act 1992</em>, entitling individuals to
-                reasonable adjustments in education and employment.
+                It is not about seeing letters backwards. It makes decoding written text
+                effortful, while verbal skills and creativity are often unaffected.
               </p>
               <p>
-                A common misconception is that dyslexia is about seeing letters backwards.
-                In reality it is a phonological processing difficulty — the brain finds it
-                harder to map written symbols to their corresponding sounds, making decoding
-                text effortful.
+                In Australia, dyslexia is protected under the
+                <em>Disability Discrimination Act 1992</em> — people are entitled to
+                reasonable adjustments at school and work.
               </p>
             </div>
             <div class="content-aside">
@@ -123,33 +117,32 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <p class="eyebrow">Signs &amp; Symptoms</p>
           <h2>What to look out for</h2>
           <p class="section-sub">
-            Dyslexia presents differently in each person, but these patterns are commonly
-            observed across age groups and educational settings.
+            Signs vary between people, but these patterns are commonly observed.
           </p>
           <div class="signs-grid">
             <div class="sign-card">
               <h3>Slow or effortful reading</h3>
-              <p>Reading takes significantly longer than peers and requires concentrated effort, leading to fatigue when processing long or dense text.</p>
+              <p>Reading takes much longer than expected and causes fatigue.</p>
             </div>
             <div class="sign-card">
               <h3>Inconsistent spelling</h3>
-              <p>Difficulty retaining correct spellings, even for frequently encountered words. The same word may be spelled differently within a single piece of writing.</p>
+              <p>The same word may be spelled differently within a single piece of writing.</p>
             </div>
             <div class="sign-card">
-              <h3>Phonological processing difficulty</h3>
-              <p>Trouble breaking words into their component sounds and blending them back together — the core cognitive challenge underlying dyslexia.</p>
+              <h3>Sound processing difficulty</h3>
+              <p>Trouble breaking words into sounds and blending them back together.</p>
             </div>
             <div class="sign-card">
-              <h3>Working memory for text</h3>
-              <p>Forgetting words that were just read, losing track of sentences, or struggling to hold a sequence of verbal instructions in mind.</p>
+              <h3>Weak working memory</h3>
+              <p>Forgetting words just read, or losing track of a sentence mid-way through.</p>
             </div>
             <div class="sign-card">
-              <h3>Reading fluency and flow</h3>
-              <p>Losing place on a page, skipping lines, re-reading the same sentence, or reading word-by-word rather than in phrases.</p>
+              <h3>Poor reading fluency</h3>
+              <p>Losing place on a page, skipping lines, or reading word-by-word.</p>
             </div>
             <div class="sign-card">
-              <h3>Avoidance of reading tasks</h3>
-              <p>Reluctance to read aloud or engage with written material, often masking the underlying difficulty rather than signalling disinterest.</p>
+              <h3>Avoidance of reading</h3>
+              <p>Reluctance to read aloud — masking the difficulty, not disinterest.</p>
             </div>
           </div>
         </div>
@@ -163,21 +156,17 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               <p class="eyebrow">Beyond the Page</p>
               <h2>The broader impact on wellbeing</h2>
               <p>
-                Dyslexia does not only affect reading. Adults with dyslexia are
-                <strong>twice as likely</strong> to experience anxiety or depression compared
-                to the general population, and <strong>46% more likely</strong> to have
-                attempted suicide at some point in their lives.
+                Adults with dyslexia are <strong>twice as likely</strong> to experience
+                anxiety or depression, and <strong>46% more likely</strong> to have
+                attempted suicide.
               </p>
               <p>
-                Many people are not diagnosed until adolescence or even well into adulthood —
-                some not until their fifties. Years of unexplained academic struggle,
-                frustration, and low self-esteem accumulate before a name is put to the
-                experience.
+                Many are not diagnosed until adulthood — some not until their fifties.
+                Years of unrecognised struggle take a real toll.
               </p>
               <p>
-                Early screening makes a measurable difference. After South Australia
-                introduced a phonics check, the proportion of Year 1 students meeting
-                literacy benchmarks rose from <strong>43% in 2018 to 68% in 2022</strong>.
+                Early support changes outcomes. SA's phonics check lifted Year 1 literacy
+                from <strong>43% (2018) to 68% (2022)</strong>.
               </p>
             </div>
             <div class="impact-quote">
@@ -197,50 +186,49 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <p class="eyebrow">Reading Strategies</p>
           <h2>What actually helps</h2>
           <p class="section-sub">
-            These evidence-based approaches are used by educators, speech pathologists,
-            and learning support specialists to make reading more manageable.
+            Simple, evidence-based techniques that make a real difference.
           </p>
           <div class="strategy-list">
             <div class="strategy-item">
               <span class="strategy-num">01</span>
               <div>
-                <h3>Use dyslexia-friendly typography</h3>
-                <p>Fonts such as OpenDyslexic, Arial, or Verdana with increased letter spacing reduce the visual crowding effect that makes individual characters hard to distinguish. Larger font sizes and generous line-height lower cognitive load significantly.</p>
+                <h3>Use dyslexia-friendly fonts</h3>
+                <p>OpenDyslexic, Arial, or Verdana with wider letter spacing reduce visual crowding and make characters easier to tell apart.</p>
               </div>
             </div>
             <div class="strategy-item">
               <span class="strategy-num">02</span>
               <div>
-                <h3>Text-to-speech and audio support</h3>
-                <p>Listening while reading simultaneously reinforces phonological mapping — the very skill affected by dyslexia. Audio support lets readers focus on meaning rather than decoding, building comprehension faster.</p>
+                <h3>Listen while you read</h3>
+                <p>Text-to-speech lets you focus on meaning instead of decoding. It directly targets the phonological skill that dyslexia affects.</p>
               </div>
             </div>
             <div class="strategy-item">
               <span class="strategy-num">03</span>
               <div>
-                <h3>Break text into smaller chunks</h3>
-                <p>Long paragraphs are cognitively overwhelming. Dividing reading into short sections with natural pauses between them reduces working memory pressure and allows information to consolidate before moving on.</p>
+                <h3>Read in short chunks</h3>
+                <p>Break long text into small sections with pauses. It lowers memory pressure and helps information sink in.</p>
               </div>
             </div>
             <div class="strategy-item">
               <span class="strategy-num">04</span>
               <div>
-                <h3>Coloured backgrounds and overlays</h3>
-                <p>Many people with dyslexia report that certain background tints — pale yellow, cream, or light blue — reduce visual stress and the appearance of text "moving" on the page. Experiment to find what works for you.</p>
+                <h3>Try a coloured background</h3>
+                <p>Pale yellow, cream, or light blue can reduce visual stress and stop text appearing to move on the page.</p>
               </div>
             </div>
             <div class="strategy-item">
               <span class="strategy-num">05</span>
               <div>
-                <h3>Summaries and structured previews</h3>
-                <p>Reading a concise summary before the full text creates a mental scaffold, making the detailed version far easier to follow. Knowing what to expect reduces the effort of decoding unfamiliar vocabulary in context.</p>
+                <h3>Read the summary first</h3>
+                <p>A short overview before the full text gives your brain a frame to hang details on — making the whole piece easier to follow.</p>
               </div>
             </div>
             <div class="strategy-item">
               <span class="strategy-num">06</span>
               <div>
-                <h3>Active highlighting and annotation</h3>
-                <p>Marking key sentences and writing brief margin notes reinforces comprehension and gives you reference points to return to. The act of selecting important ideas is itself a powerful reading strategy.</p>
+                <h3>Highlight as you go</h3>
+                <p>Marking key sentences keeps you active and gives you quick reference points to return to.</p>
               </div>
             </div>
           </div>
