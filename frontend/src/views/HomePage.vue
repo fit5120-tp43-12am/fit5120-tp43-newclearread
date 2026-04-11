@@ -22,7 +22,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         <ul class="nav-links">
           <li><a href="/" class="nav-link nav-link--active">Home</a></li>
           <li><a href="#" class="nav-link">Reading</a></li>
-          <li><a href="#" class="nav-link">Dyslexia</a></li>
+          <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
           <li><a href="#" class="nav-link">About</a></li>
         </ul>
 
@@ -78,7 +78,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
-          <a href="#" class="btn-learn">
+          <a href="/dyslexia" class="btn-learn">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
               <path d="M5 7h6M5 9.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
