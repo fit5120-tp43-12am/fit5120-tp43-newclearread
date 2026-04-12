@@ -1,0 +1,800 @@
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+
+// ── Navbar scroll ──
+const scrolled = ref(false)
+function onScroll() { scrolled.value = window.scrollY > 10 }
+
+// ── Input ──
+const rawText    = ref('')
+const charLimit  = 5000
+const charCount  = computed(() => rawText.value.length)
+const overLimit  = computed(() => charCount.value > charLimit)
+
+// ── App state ──
+const mode      = ref('idle')     // 'idle' | 'loading' | 'result'
+const viewMode  = ref('simplified') // 'simplified' | 'original'
+
+// ── Result data (populated by backend stub) ──
+const result = ref(null)
+// Shape: { summary: string[], simplified: string, keyPoints: string[] }
+
+// ── Display settings ──
+const fontSize    = ref(18)
+const lineSpacing = ref('normal')
+const bgTheme     = ref('white')
+
+const spacingMap = { compact: 1.55, normal: 1.8, relaxed: 2.15 }
+
+const bgThemes = [
+  { value: 'white', bg: '#ffffff', text: '#0d1117' },
+  { value: 'cream', bg: '#fdf8ed', text: '#1c1309' },
+  { value: 'sky',   bg: '#eef4ff', text: '#0d1940' },
+]
+const theme = computed(() => bgThemes.find(t => t.value === bgTheme.value) || bgThemes[0])
+
+const readingStyle = computed(() => ({
+  fontSize:   `${fontSize.value}px`,
+  lineHeight: spacingMap[lineSpacing.value],
+  background: theme.value.bg,
+  color:      theme.value.text,
+}))
+
+// panel bg only (covers full panel area incl. padding)
+const panelBgStyle = computed(() => ({
+  background: theme.value.bg,
+  color:      theme.value.text,
+}))
+
+// text style only (font/spacing, no bg)
+const textStyle = computed(() => ({
+  fontSize:   `${fontSize.value}px`,
+  lineHeight: spacingMap[lineSpacing.value],
+}))
+
+// input panel flex width — percentage-based so it scales with viewport
+const inputFlexStyle = computed(() => ({
+  flex: mode.value === 'idle' ? '0 0 46%' : '0 0 30%',
+}))
+
+// ── What text to read aloud ──
+const activeText = computed(() => {
+  if (mode.value === 'result' && result.value) {
+    return viewMode.value === 'simplified'
+      ? result.value.simplified
+      : rawText.value
+  }
+  return rawText.value
+})
+
+// ── Simplify (backend stub) ──────────────────────────────────────────────────
+function handleSimplify() {
+  if (!rawText.value.trim() || overLimit.value) return
+  mode.value    = 'loading'
+  viewMode.value = 'simplified'
+
+  // ╔══════════════════════════════════════════════════════════╗
+  // ║  BACKEND STUB — teammate connects here                   ║
+  // ║                                                          ║
+  // ║  POST /api/text/simplify                                 ║
+  // ║  Body:   { text: rawText.value }                         ║
+  // ║  Expect: {                                               ║
+  // ║    summary:     string[],   // 2–4 bullet sentences      ║
+  // ║    simplified:  string,     // plain-English version     ║
+  // ║    keyPoints:   string[]    // 3–6 short key points      ║
+  // ║  }                                                       ║
+  // ║                                                          ║
+  // ║  On success:  result.value = data; mode.value = 'result' ║
+  // ║  On error:    mode.value = 'idle'; show error toast      ║
+  // ╚══════════════════════════════════════════════════════════╝
+
+  // Placeholder — remove when API is connected:
+  setTimeout(() => {
+    result.value = {
+      summary: [
+        'Core concept: The text introduces a central idea about the subject matter.',
+        'Key mechanism: It explains how the key processes or arguments are structured.',
+        'Conclusion: The main takeaway connects theory to real-world application.',
+      ],
+      simplified:
+        'This is a placeholder for the simplified version of your text. Once connected to the backend, this section will show a plain-English rewrite that is shorter, clearer, and easier to read for people with dyslexia.',
+      keyPoints: [
+        'Main idea from the text',
+        'Important supporting concept',
+        'Key term or definition',
+        'Practical implication',
+      ],
+    }
+    mode.value = 'result'
+  }, 900)
+}
+
+// ── Speech ───────────────────
+const isPlaying  = ref(false)
+const isPaused   = ref(false)
+const speechRate = ref(1.0)
+let   utterance  = null
+
+function playSpeech() {
+  if (!('speechSynthesis' in window) || !activeText.value.trim()) return
+  if (isPaused.value) {
+    window.speechSynthesis.resume()
+    isPlaying.value = true
+    isPaused.value  = false
+    return
+  }
+  stopSpeech()
+  utterance      = new SpeechSynthesisUtterance(activeText.value)
+  utterance.rate = speechRate.value
+  utterance.lang = 'en-AU'
+  utterance.onend   = () => { isPlaying.value = false; isPaused.value = false }
+  utterance.onerror = () => { isPlaying.value = false; isPaused.value = false }
+  window.speechSynthesis.speak(utterance)
+  isPlaying.value = true
+}
+
+function pauseSpeech() {
+  window.speechSynthesis.pause()
+  isPlaying.value = false
+  isPaused.value  = true
+}
+
+function stopSpeech() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  isPlaying.value = false
+  isPaused.value  = false
+}
+
+function toggleSpeech() {
+  if (isPlaying.value) pauseSpeech()
+  else playSpeech()
+}
+
+function setRate(r) {
+  speechRate.value = r
+  if (isPlaying.value) { stopSpeech(); playSpeech() }
+}
+
+const rateOptions = [0.75, 1.0, 1.25, 1.5]
+
+// ── Read time estimate ──
+function readTime(text) {
+  const words = text.trim().split(/\s+/).filter(Boolean).length
+  const mins  = Math.ceil(words / 200)
+  const secs  = Math.round((words / 200) * 60)
+  return secs < 60 ? `~${secs} sec read` : `~${mins} min read`
+}
+
+function wordCount(text) {
+  return text.trim().split(/\s+/).filter(Boolean).length
+}
+
+onMounted(()  => window.addEventListener('scroll', onScroll))
+onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech() })
+</script>
+
+<template>
+  <div class="page">
+
+    <!-- ── Navbar ── -->
+    <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo">ClearRead</a>
+        <ul class="nav-links">
+          <li><a href="/"         class="nav-link">Home</a></li>
+          <li><a href="/reading"  class="nav-link nav-link--active">Reading</a></li>
+          <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
+          <li><a href="#"         class="nav-link">About</a></li>
+        </ul>
+        <a href="#" class="btn-nav">Get Started</a>
+      </div>
+    </nav>
+
+    <!-- ── Toolbar ── -->
+    <div class="toolbar">
+      <div class="toolbar-inner">
+
+        <!-- Left controls -->
+        <div class="toolbar-left">
+          <!-- Play / Pause -->
+          <button
+            class="btn-read"
+            :class="{ 'btn-read--active': isPlaying }"
+            :disabled="!rawText.trim() && mode !== 'result'"
+            @click="toggleSpeech"
+          >
+            <svg v-if="isPlaying" width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <rect x="1.5" y="1" width="4" height="11" rx="1.5" fill="currentColor"/>
+              <rect x="7.5" y="1" width="4" height="11" rx="1.5" fill="currentColor"/>
+            </svg>
+            <svg v-else width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M2 1.5L11.5 6.5L2 11.5V1.5Z" fill="currentColor"/>
+            </svg>
+            {{ isPlaying ? 'Pause' : isPaused ? 'Resume' : 'Start Reading' }}
+          </button>
+
+          <!-- Speed -->
+          <div class="speed-group">
+            <button
+              v-for="r in rateOptions"
+              :key="r"
+              :class="['speed-pill', { 'speed-pill--active': speechRate === r }]"
+              @click="setRate(r)"
+            >{{ r }}×</button>
+          </div>
+
+          <div class="toolbar-sep"></div>
+
+          <!-- View toggle -->
+          <div v-if="mode === 'result'" class="view-toggle">
+            <button
+              :class="['view-btn', { 'view-btn--active': viewMode === 'simplified' }]"
+              @click="viewMode = 'simplified'"
+            >Simplified</button>
+            <button
+              :class="['view-btn', { 'view-btn--active': viewMode === 'original' }]"
+              @click="viewMode = 'original'"
+            >Original</button>
+          </div>
+        </div>
+
+        <!-- Right controls -->
+        <div class="toolbar-right">
+          <!-- Font size -->
+          <div class="font-group">
+            <button class="font-btn" @click="fontSize = Math.max(14, fontSize - 2)">A−</button>
+            <span class="font-val">{{ fontSize }}</span>
+            <button class="font-btn" @click="fontSize = Math.min(28, fontSize + 2)">A+</button>
+          </div>
+
+          <div class="toolbar-sep"></div>
+
+          <!-- Spacing -->
+          <div class="seg-group">
+            <button
+              v-for="s in ['compact','normal','relaxed']"
+              :key="s"
+              :class="['seg-btn', { 'seg-btn--active': lineSpacing === s }]"
+              @click="lineSpacing = s"
+            >{{ s.charAt(0).toUpperCase() + s.slice(1) }}</button>
+          </div>
+
+          <div class="toolbar-sep"></div>
+
+          <!-- BG -->
+          <div class="bg-group">
+            <span class="bg-label">BG</span>
+            <button
+              v-for="t in bgThemes"
+              :key="t.value"
+              :class="['bg-swatch', { 'bg-swatch--active': bgTheme === t.value }]"
+              :style="{ background: t.bg }"
+              @click="bgTheme = t.value"
+            ></button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Main content ── -->
+    <div class="content">
+
+      <!-- Left: input panel -->
+      <div class="input-panel" :style="inputFlexStyle">
+        <p class="input-panel-label">PASTE OR UPLOAD YOUR TEXT</p>
+
+        <textarea
+          v-model="rawText"
+          class="input-textarea"
+          :class="{ 'input-textarea--over': overLimit }"
+          placeholder="Paste your academic text here...&#10;&#10;ClearRead will transform it into a clear summary, plain English version, and structured key points."
+          spellcheck="false"
+          :maxlength="charLimit"
+        ></textarea>
+
+        <div class="input-footer">
+          <span class="char-count" :class="{ 'char-count--over': overLimit }">
+            {{ charCount.toLocaleString() }} / {{ charLimit.toLocaleString() }}
+          </span>
+          <button
+            class="btn-simplify"
+            :disabled="!rawText.trim() || overLimit || mode === 'loading'"
+            @click="handleSimplify"
+          >
+            <span v-if="mode === 'loading'" class="spinner"></span>
+            <span v-else>Simplify</span>
+            <svg v-if="mode !== 'loading'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 7H12M12 7L8 3M12 7L8 11" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: results panel -->
+      <div class="results-panel" :style="panelBgStyle">
+
+        <!-- Empty state -->
+        <div v-if="mode === 'idle'" class="empty-state">
+          <div class="empty-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect x="8" y="6" width="24" height="28" rx="4" stroke="#c7d2fe" stroke-width="2"/>
+              <path d="M14 14h12M14 20h12M14 26h7" stroke="#c7d2fe" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <p class="empty-title">Your results will appear here</p>
+          <p class="empty-sub">Paste text on the left and click <strong>Simplify</strong> to get started.</p>
+        </div>
+
+        <!-- Loading skeleton -->
+        <div v-else-if="mode === 'loading'" class="loading-state">
+          <div class="skeleton skeleton--card"></div>
+          <div class="skeleton skeleton--line" style="width: 100%; margin-top: 32px;"></div>
+          <div class="skeleton skeleton--line" style="width: 88%;"></div>
+          <div class="skeleton skeleton--line" style="width: 72%;"></div>
+          <div class="skeleton skeleton--sm" style="width: 50%; margin-top: 32px;"></div>
+          <div class="skeleton skeleton--line" style="width: 90%; margin-top: 12px;"></div>
+          <div class="skeleton skeleton--line" style="width: 80%;"></div>
+          <div class="skeleton skeleton--line" style="width: 60%;"></div>
+        </div>
+
+        <!-- Results -->
+        <div v-else-if="mode === 'result' && result" class="results-content" :style="textStyle">
+
+          <!-- View: Simplified -->
+          <template v-if="viewMode === 'simplified'">
+
+            <!-- AI Summary -->
+            <div class="summary-card">
+              <div class="summary-card-header">
+                <span class="summary-title">AI Summary</span>
+                <span class="summary-badge">{{ readTime(result.simplified) }}</span>
+              </div>
+              <ul class="summary-list">
+                <li v-for="(line, i) in result.summary" :key="i">{{ line }}</li>
+              </ul>
+            </div>
+
+            <!-- Simplified version -->
+            <div class="result-section">
+              <p class="section-label">Simplified Version</p>
+              <p class="section-text">{{ result.simplified }}</p>
+              <p class="section-meta">{{ wordCount(result.simplified) }} words · {{ readTime(result.simplified) }}</p>
+            </div>
+
+            <!-- Key points -->
+            <div class="result-section result-section--last">
+              <p class="section-label">Key Points</p>
+              <ul class="key-points">
+                <li v-for="(pt, i) in result.keyPoints" :key="i">{{ pt }}</li>
+              </ul>
+              <p class="section-meta section-meta--blue">Simplified to {{ wordCount(result.simplified) }} words</p>
+            </div>
+
+          </template>
+
+          <!-- View: Original -->
+          <template v-else>
+            <div class="result-section result-section--last">
+              <p class="section-label">Original Text</p>
+              <p class="section-text" style="white-space: pre-wrap;">{{ rawText }}</p>
+              <p class="section-meta">{{ wordCount(rawText) }} words · {{ readTime(rawText) }}</p>
+            </div>
+          </template>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* ── Reset / shell ── */
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f3f4f6;
+  font-family: 'Arial', 'Helvetica Neue', sans-serif;
+}
+
+/* ── Navbar ── */
+.navbar {
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 50;
+}
+.navbar--scrolled {
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+.nav-inner {
+  max-width: 100%;
+  padding: 0 36px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+}
+.nav-logo {
+  font-size: 17px; font-weight: 700;
+  color: #0d1117; letter-spacing: -0.4px;
+  text-decoration: none; flex-shrink: 0;
+}
+.nav-links {
+  display: flex; list-style: none;
+  margin: 0 auto; padding: 0; gap: 2px;
+}
+.nav-link {
+  display: block; padding: 6px 14px;
+  font-size: 14px; font-weight: 500;
+  color: #4b5563; text-decoration: none;
+  border-radius: 999px;
+  transition: color 0.2s, background 0.2s;
+  position: relative;
+}
+.nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
+.nav-link--active { color: #0d1117; }
+.nav-link--active::after {
+  content: ''; position: absolute;
+  bottom: -2px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%; background: #2563eb;
+}
+.btn-nav {
+  display: inline-flex; align-items: center;
+  padding: 8px 18px; background: #2563eb; color: #fff;
+  font-size: 13.5px; font-weight: 600;
+  border-radius: 999px; text-decoration: none; flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.28);
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-nav:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+/* ── Toolbar ── */
+.toolbar {
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 40;
+}
+.toolbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  gap: 12px;
+}
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toolbar-sep {
+  width: 1px; height: 20px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+/* Play button */
+.btn-read {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 16px;
+  background: #2563eb; color: #fff;
+  font-size: 13px; font-weight: 600;
+  border: none; border-radius: 999px; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(37,99,235,0.3);
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.btn-read:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-read:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-read--active { background: #1d4ed8; }
+
+/* Speed pills */
+.speed-group { display: flex; gap: 3px; }
+.speed-pill {
+  padding: 4px 9px;
+  font-size: 12px; font-weight: 600;
+  border: 1.5px solid #e5e7eb; border-radius: 6px;
+  background: transparent; color: #6b7280; cursor: pointer;
+  transition: all 0.15s;
+}
+.speed-pill:hover { background: #f3f4f6; color: #0d1117; }
+.speed-pill--active { background: #eef2ff; color: #2563eb; border-color: #c7d2fe; }
+
+/* View toggle */
+.view-toggle { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; gap: 2px; }
+.view-btn {
+  padding: 5px 12px;
+  font-size: 12.5px; font-weight: 600;
+  border: none; border-radius: 6px;
+  background: transparent; color: #6b7280; cursor: pointer;
+  transition: all 0.15s;
+}
+.view-btn--active { background: #fff; color: #0d1117; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+/* Font controls */
+.font-group {
+  display: flex; align-items: center; gap: 6px;
+}
+.font-btn {
+  padding: 5px 9px;
+  font-size: 13px; font-weight: 700;
+  border: 1.5px solid #e5e7eb; border-radius: 6px;
+  background: #fff; color: #374151; cursor: pointer;
+  transition: background 0.15s;
+}
+.font-btn:hover { background: #f3f4f6; }
+.font-val {
+  font-size: 13px; font-weight: 600;
+  color: #0d1117; min-width: 26px; text-align: center;
+}
+
+/* Segmented spacing */
+.seg-group { display: flex; gap: 2px; }
+.seg-btn {
+  padding: 5px 10px;
+  font-size: 12.5px; font-weight: 600;
+  border: 1.5px solid #e5e7eb; border-radius: 6px;
+  background: #fff; color: #6b7280; cursor: pointer;
+  transition: all 0.15s;
+}
+.seg-btn:hover { background: #f3f4f6; }
+.seg-btn--active { background: #eef2ff; color: #2563eb; border-color: #c7d2fe; }
+
+/* BG swatches */
+.bg-group { display: flex; align-items: center; gap: 6px; }
+.bg-label { font-size: 11px; font-weight: 600; color: #9ca3af; }
+.bg-swatch {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.bg-swatch:hover { transform: scale(1.15); }
+.bg-swatch--active { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
+
+/* ── Main content ── */
+.content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-shadow: 0 0 0 1px #e5e7eb;
+}
+
+/* ── Left input panel ── */
+.input-panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #faf9f7;
+  border-right: 1px solid #e5e7eb;
+  padding: 24px 20px 16px 28px;
+  gap: 12px;
+  overflow: hidden;
+  transition: flex 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.input-panel-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: #9ca3af;
+  margin: 0;
+  text-transform: uppercase;
+}
+.input-textarea {
+  flex: 1;
+  resize: none;
+  border: 1.5px solid #e8e4dc;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  font-family: inherit;
+  color: #374151;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-textarea::placeholder { color: #c4c4c4; line-height: 1.8; }
+.input-textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.input-textarea--over { border-color: #ef4444; }
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.char-count {
+  font-size: 12px; font-weight: 500; color: #9ca3af;
+}
+.char-count--over { color: #ef4444; }
+.btn-simplify {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px;
+  background: #2563eb; color: #fff;
+  font-size: 13.5px; font-weight: 700;
+  border: none; border-radius: 999px; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-simplify:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-simplify:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  padding: 40px;
+  text-align: center;
+}
+.empty-icon { opacity: 0.5; }
+.empty-title {
+  font-size: 17px; font-weight: 700;
+  color: #374151; margin: 0;
+}
+.empty-sub {
+  font-size: 14px; color: #9ca3af;
+  margin: 0; line-height: 1.6;
+}
+
+/* Loading skeleton */
+.loading-state {
+  padding: 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 8px;
+}
+.skeleton--card { height: 120px; border-radius: 14px; }
+.skeleton--line { height: 16px; }
+.skeleton--sm   { height: 13px; }
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Results panel ── */
+.results-panel {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Results content — single column, padded */
+.results-content {
+  padding: 36px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: font-size 0.2s, line-height 0.2s;
+}
+
+/* AI Summary card */
+.summary-card {
+  background: #eef4ff;
+  border: 1px solid #c7d9f5;
+  border-left: 4px solid #2563eb;
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 28px;
+}
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.summary-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #1e3a8a;
+}
+.summary-badge {
+  font-size: 11px; font-weight: 600;
+  color: #3b82f6;
+  background: rgba(37,99,235,0.1);
+  padding: 2px 9px; border-radius: 999px;
+}
+.summary-list {
+  margin: 0; padding: 0;
+  list-style: none;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.summary-list li {
+  font-size: inherit;
+  color: #1e3a8a;
+  line-height: inherit;
+  padding-left: 14px;
+  position: relative;
+}
+.summary-list li::before {
+  content: '·';
+  position: absolute; left: 0;
+  color: #2563eb; font-weight: 700;
+}
+
+/* Content sections */
+.result-section {
+  padding: 24px 0;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.result-section--last { border-bottom: 1px solid rgba(0,0,0,0.07); }
+
+.section-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #9ca3af; margin: 0;
+}
+.section-text {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  margin: 0;
+}
+.section-meta {
+  font-size: 12px; color: #9ca3af; margin: 0;
+}
+.section-meta--blue { color: #3b82f6; }
+
+.key-points {
+  margin: 0; padding: 0;
+  list-style: none;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.key-points li {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  padding-left: 16px;
+  position: relative;
+}
+.key-points li::before {
+  content: '•';
+  position: absolute; left: 0;
+  color: #2563eb; font-weight: 700;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .content { flex-direction: column; max-width: 100%; }
+  .input-panel { flex: 0 0 auto !important; height: 36vh; border-right: none; border-bottom: 1px solid #e5e7eb; }
+  .results-content { padding: 24px 20px; }
+  .toolbar-right { display: none; }
+}
+</style>
