@@ -243,7 +243,17 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
     <!-- ── Navbar ── -->
     <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
       <div class="nav-inner">
-        <a href="/" class="nav-logo">ClearRead</a>
+        <a href="/" class="nav-logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="28" rx="8" fill="#2563eb"/>
+            <path d="M7 8.5C7 7.67 7.67 7 8.5 7H13.5V21H8.5C7.67 21 7 20.33 7 19.5V8.5Z" fill="white" opacity="0.9"/>
+            <path d="M21 8.5C21 7.67 20.33 7 19.5 7H14.5V21H19.5C20.33 21 21 20.33 21 19.5V8.5Z" fill="white" opacity="0.55"/>
+            <rect x="9" y="10" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+            <rect x="9" y="13" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+            <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+          </svg>
+          ClearRead
+        </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link">Home</a></li>
           <li><a href="/reading"  class="nav-link nav-link--active">Reading</a></li>
@@ -489,7 +499,6 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   flex-direction: column;
   overflow: hidden;
   background: #fff;
-  font-family: 'Arial', 'Helvetica Neue', sans-serif;
 }
 
 /* ── Navbar ── */
@@ -511,6 +520,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   align-items: center;
 }
 .nav-logo {
+  display: flex; align-items: center; gap: 9px;
   font-size: 17px; font-weight: 700;
   color: #0d1117; letter-spacing: -0.4px;
   text-decoration: none; flex-shrink: 0;
