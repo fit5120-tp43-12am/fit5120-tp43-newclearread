@@ -1,6 +1,11 @@
+import re
+
+
 def process_text(text: str):
     # split sentences
-    sentences = text.split(".")
+
+    sentences = re.split(r"[.!?]", text)
+    sentences = [s.strip() for s in sentences if s.strip()]
 
     # fake summary（先用简单逻辑）
     summary = sentences[0] if sentences else ""
@@ -12,5 +17,5 @@ def process_text(text: str):
     return {
         "sentences": [s.strip() for s in sentences if s.strip()],
         "summary": summary.strip(),
-        "keywords": keywords
+        "keywords": keywords,
     }
