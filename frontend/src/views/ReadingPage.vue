@@ -27,9 +27,9 @@ const bgTheme     = ref('white')
 const spacingMap = { compact: 1.55, normal: 1.8, relaxed: 2.15 }
 
 const bgThemes = [
-  { value: 'white', bg: '#ffffff', text: '#0d1117' },
-  { value: 'cream', bg: '#fdf8ed', text: '#1c1309' },
-  { value: 'sky',   bg: '#eef4ff', text: '#0d1940' },
+  { value: 'white', bg: '#ffffff', swatch: '#ffffff', text: '#0d1117' },
+  { value: 'cream', bg: '#fdf8ed', swatch: '#fdf8ed', text: '#1c1309' },
+  { value: 'sky',   bg: '#eef4ff', swatch: '#eef4ff', text: '#0d1940' },
 ]
 const theme = computed(() => bgThemes.find(t => t.value === bgTheme.value) || bgThemes[0])
 
@@ -194,6 +194,70 @@ function wordCount(text) {
   return text.trim().split(/\s+/).filter(Boolean).length
 }
 
+// ── File Upload ──────────────────────────────────────────────────────────────
+const fileInputRef = ref(null)
+const fileError    = ref('')
+
+// Directly readable as plain text
+const TEXT_EXT    = ['.txt', '.md', '.markdown', '.csv', '.rtf', '.log', '.text']
+// Accepted but need backend to extract (placeholder inserted)
+const BINARY_EXT  = ['.pdf', '.doc', '.docx', '.odt', '.pages', '.epub', '.ppt', '.pptx']
+// Rejected — not text
+const IMAGE_EXT   = ['.jpg','.jpeg','.png','.gif','.webp','.svg','.bmp','.tiff','.ico','.heic']
+const MEDIA_EXT   = ['.mp4','.mov','.avi','.mkv','.webm','.mp3','.wav','.aac','.flac','.ogg']
+
+function triggerFileInput() {
+  fileError.value = ''
+  fileInputRef.value?.click()
+}
+
+function handleFileUpload(event) {
+  const file = event.target.files[0]
+  event.target.value = ''
+  if (!file) return
+
+  const ext = '.' + file.name.split('.').pop().toLowerCase()
+
+  // Hard reject — images & media
+  if (IMAGE_EXT.includes(ext)) {
+    fileError.value = 'Image files cannot be uploaded. Please paste your text directly.'
+    return
+  }
+  if (MEDIA_EXT.includes(ext)) {
+    fileError.value = 'Audio and video files are not supported. Please paste your text directly.'
+    return
+  }
+
+  // Reject unrecognised formats
+  if (!TEXT_EXT.includes(ext) && !BINARY_EXT.includes(ext)) {
+    fileError.value = `"${file.name}" is not a supported format. Accepted: PDF, Word, TXT, MD, RTF, EPUB, CSV.`
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    fileError.value = 'File is too large (max 5 MB). Please use a shorter document.'
+    return
+  }
+
+  fileError.value = ''
+
+  // Binary formats — placeholder text; teammate connects backend extraction
+  if (BINARY_EXT.includes(ext)) {
+    rawText.value =
+      `[File uploaded: ${file.name}]\n\n` +
+      `Text extraction for ${ext.toUpperCase().slice(1)} files requires the backend processing service.\n` +
+      `Your teammate can connect POST /api/text/extract to enable this. ` +
+      `In the meantime, please paste the text content directly.`
+    return
+  }
+
+  // Plain-text formats — read directly
+  const reader = new FileReader()
+  reader.onload  = (e) => { rawText.value = e.target.result }
+  reader.onerror = ()  => { fileError.value = 'Could not read the file. Please try again.' }
+  reader.readAsText(file, 'UTF-8')
+}
+
 onMounted(()  => window.addEventListener('scroll', onScroll))
 onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech() })
 </script>
@@ -204,14 +268,24 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
     <!-- ── Navbar ── -->
     <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
       <div class="nav-inner">
-        <a href="/" class="nav-logo">ClearRead</a>
+        <a href="/" class="nav-logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="28" rx="8" fill="#2563eb"/>
+            <path d="M7 8.5C7 7.67 7.67 7 8.5 7H13.5V21H8.5C7.67 21 7 20.33 7 19.5V8.5Z" fill="white" opacity="0.9"/>
+            <path d="M21 8.5C21 7.67 20.33 7 19.5 7H14.5V21H19.5C20.33 21 21 20.33 21 19.5V8.5Z" fill="white" opacity="0.55"/>
+            <rect x="9" y="10" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+            <rect x="9" y="13" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+            <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+          </svg>
+          ClearRead
+        </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link">Home</a></li>
           <li><a href="/reading"  class="nav-link nav-link--active">Reading</a></li>
           <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
-        <a href="#" class="btn-nav">Get Started</a>
+        <button class="btn-nav btn-nav--disabled" disabled>Get Started</button>
       </div>
     </nav>
 
@@ -293,7 +367,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
               v-for="t in bgThemes"
               :key="t.value"
               :class="['bg-swatch', { 'bg-swatch--active': bgTheme === t.value }]"
-              :style="{ background: t.bg }"
+              :style="{ background: t.swatch }"
               @click="bgTheme = t.value"
             ></button>
           </div>
@@ -307,21 +381,49 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 
       <!-- Left: input panel -->
       <div class="input-panel" :style="inputFlexStyle">
-        <p class="input-panel-label">PASTE OR UPLOAD YOUR TEXT</p>
+        <p class="input-panel-label">Paste or upload your text</p>
+
+        <!-- Hidden file input -->
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".txt,.md,.markdown,.csv,.rtf,.log,.pdf,.doc,.docx,.odt,.pages,.epub,.ppt,.pptx"
+          style="display:none"
+          @change="handleFileUpload"
+        />
 
         <textarea
           v-model="rawText"
           class="input-textarea"
           :class="{ 'input-textarea--over': overLimit }"
-          placeholder="Paste your academic text here...&#10;&#10;ClearRead will transform it into a clear summary, plain English version, and structured key points."
+          placeholder="Paste your text here — an article, essay, or any passage you'd like to simplify and read more easily."
           spellcheck="false"
           :maxlength="charLimit"
         ></textarea>
 
+        <!-- File error message -->
+        <div v-if="fileError" class="file-error">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+            <circle cx="7" cy="7" r="6" stroke="#ef4444" stroke-width="1.5"/>
+            <path d="M7 4v3.5M7 9.5v.5" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          {{ fileError }}
+        </div>
+
         <div class="input-footer">
+          <!-- Upload button -->
+          <button class="btn-upload" @click="triggerFileInput" title="Upload a .txt or .md file">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 9.5V2M7 2L4 5M7 2L10 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 10.5v1a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Upload file
+          </button>
+
           <span class="char-count" :class="{ 'char-count--over': overLimit }">
             {{ charCount.toLocaleString() }} / {{ charLimit.toLocaleString() }}
           </span>
+
           <button
             class="btn-simplify"
             :disabled="!rawText.trim() || overLimit || mode === 'loading'"
@@ -421,8 +523,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #f3f4f6;
-  font-family: 'Arial', 'Helvetica Neue', sans-serif;
+  background: #fff;
 }
 
 /* ── Navbar ── */
@@ -436,13 +537,15 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   box-shadow: 0 1px 8px rgba(0,0,0,0.06);
 }
 .nav-inner {
-  max-width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
   padding: 0 36px;
-  height: 60px;
+  height: 64px;
   display: flex;
   align-items: center;
 }
 .nav-logo {
+  display: flex; align-items: center; gap: 9px;
   font-size: 17px; font-weight: 700;
   color: #0d1117; letter-spacing: -0.4px;
   text-decoration: none; flex-shrink: 0;
@@ -475,43 +578,50 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   box-shadow: 0 4px 14px rgba(37,99,235,0.28);
   transition: background 0.2s, transform 0.15s;
 }
-.btn-nav:hover { background: #1d4ed8; transform: translateY(-1px); }
+.btn-nav:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-nav--disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
 /* ── Toolbar ── */
 .toolbar {
   flex-shrink: 0;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(105deg, rgba(232,239,255,0.9) 0%, rgba(240,236,255,0.9) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(199,210,254,0.55);
   z-index: 40;
+  position: relative;
 }
 .toolbar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  height: 52px;
-  gap: 12px;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 36px;
+  height: 64px;
+  gap: 16px;
+  width: 100%;
 }
 .toolbar-left,
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .toolbar-sep {
-  width: 1px; height: 20px;
-  background: #e5e7eb;
+  width: 1px; height: 24px;
+  background: rgba(199,210,254,0.7);
   flex-shrink: 0;
 }
 
 /* Play button */
 .btn-read {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 16px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 20px;
   background: #2563eb; color: #fff;
-  font-size: 13px; font-weight: 600;
+  font-size: 13.5px; font-weight: 600;
   border: none; border-radius: 999px; cursor: pointer;
-  box-shadow: 0 2px 10px rgba(37,99,235,0.3);
+  box-shadow: 0 4px 14px rgba(37,99,235,0.28);
   transition: background 0.2s, transform 0.15s;
   white-space: nowrap;
 }
@@ -520,43 +630,43 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 .btn-read--active { background: #1d4ed8; }
 
 /* Speed pills */
-.speed-group { display: flex; gap: 3px; }
+.speed-group { display: flex; gap: 4px; }
 .speed-pill {
-  padding: 4px 9px;
-  font-size: 12px; font-weight: 600;
-  border: 1.5px solid #e5e7eb; border-radius: 6px;
-  background: transparent; color: #6b7280; cursor: pointer;
+  padding: 6px 11px;
+  font-size: 12.5px; font-weight: 600;
+  border: 1.5px solid rgba(199,210,254,0.6); border-radius: 6px;
+  background: rgba(255,255,255,0.45); color: #4b5a8a; cursor: pointer;
   transition: all 0.15s;
 }
-.speed-pill:hover { background: #f3f4f6; color: #0d1117; }
-.speed-pill--active { background: #eef2ff; color: #2563eb; border-color: #c7d2fe; }
+.speed-pill:hover { background: rgba(255,255,255,0.75); color: #0d1117; }
+.speed-pill--active { background: rgba(255,255,255,0.9); color: #2563eb; border-color: #a5b4fc; }
 
 /* View toggle */
-.view-toggle { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; gap: 2px; }
+.view-toggle { display: flex; background: rgba(199,210,254,0.3); border-radius: 8px; padding: 3px; gap: 2px; }
 .view-btn {
-  padding: 5px 12px;
-  font-size: 12.5px; font-weight: 600;
+  padding: 6px 14px;
+  font-size: 13px; font-weight: 600;
   border: none; border-radius: 6px;
-  background: transparent; color: #6b7280; cursor: pointer;
+  background: transparent; color: #4b5a8a; cursor: pointer;
   transition: all 0.15s;
 }
-.view-btn--active { background: #fff; color: #0d1117; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.view-btn--active { background: rgba(255,255,255,0.9); color: #0d1117; box-shadow: 0 1px 4px rgba(99,120,255,0.12); }
 
 /* Font controls */
 .font-group {
   display: flex; align-items: center; gap: 6px;
 }
 .font-btn {
-  padding: 5px 9px;
-  font-size: 13px; font-weight: 700;
-  border: 1.5px solid #e5e7eb; border-radius: 6px;
-  background: #fff; color: #374151; cursor: pointer;
+  padding: 7px 11px;
+  font-size: 13.5px; font-weight: 700;
+  border: 1.5px solid rgba(199,210,254,0.6); border-radius: 6px;
+  background: rgba(255,255,255,0.55); color: #374151; cursor: pointer;
   transition: background 0.15s;
 }
-.font-btn:hover { background: #f3f4f6; }
+.font-btn:hover { background: rgba(255,255,255,0.85); }
 .font-val {
   font-size: 13px; font-weight: 600;
-  color: #0d1117; min-width: 26px; text-align: center;
+  color: #1e3a8a; min-width: 26px; text-align: center;
 }
 
 /* Segmented spacing */
@@ -564,23 +674,23 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 .seg-btn {
   padding: 5px 10px;
   font-size: 12.5px; font-weight: 600;
-  border: 1.5px solid #e5e7eb; border-radius: 6px;
-  background: #fff; color: #6b7280; cursor: pointer;
+  border: 1.5px solid rgba(199,210,254,0.6); border-radius: 6px;
+  background: rgba(255,255,255,0.45); color: #4b5a8a; cursor: pointer;
   transition: all 0.15s;
 }
-.seg-btn:hover { background: #f3f4f6; }
-.seg-btn--active { background: #eef2ff; color: #2563eb; border-color: #c7d2fe; }
+.seg-btn:hover { background: rgba(255,255,255,0.75); }
+.seg-btn--active { background: rgba(255,255,255,0.9); color: #2563eb; border-color: #a5b4fc; }
 
 /* BG swatches */
 .bg-group { display: flex; align-items: center; gap: 6px; }
-.bg-label { font-size: 11px; font-weight: 600; color: #9ca3af; }
+.bg-label { font-size: 11px; font-weight: 600; color: #7a8fc4; }
 .bg-swatch {
   width: 22px; height: 22px;
   border-radius: 6px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid rgba(199,210,254,0.7);
   cursor: pointer;
   transition: transform 0.15s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(99,120,255,0.12);
 }
 .bg-swatch:hover { transform: scale(1.15); }
 .bg-swatch--active { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
@@ -591,10 +701,9 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   display: flex;
   overflow: hidden;
   min-height: 0;
-  max-width: 1200px;
+  max-width: 1160px;
   margin: 0 auto;
   width: 100%;
-  box-shadow: 0 0 0 1px #e5e7eb;
 }
 
 /* ── Left input panel ── */
@@ -602,7 +711,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: #faf9f7;
+  background: #fafbff;
   border-right: 1px solid #e5e7eb;
   padding: 24px 20px 16px 28px;
   gap: 12px;
@@ -610,10 +719,10 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   transition: flex 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .input-panel-label {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; color: #9ca3af;
+  font-size: 13px; font-weight: 700;
+  color: #0d1117;
   margin: 0;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 .input-textarea {
   flex: 1;
@@ -645,6 +754,35 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   font-size: 12px; font-weight: 500; color: #9ca3af;
 }
 .char-count--over { color: #ef4444; }
+
+/* File upload button */
+.btn-upload {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  background: #fff; color: #4b5563;
+  font-size: 12.5px; font-weight: 600;
+  border: 1.5px solid #e5e7eb; border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-upload:hover {
+  background: #f3f4f6; color: #0d1117;
+  border-color: #d1d5db;
+}
+
+/* File error */
+.file-error {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: #ef4444; font-weight: 500;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+  line-height: 1.4;
+}
+
 .btn-simplify {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 20px;

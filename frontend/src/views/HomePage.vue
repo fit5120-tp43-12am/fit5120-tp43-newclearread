@@ -2,11 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const scrolled = ref(false)
-
-function onScroll() {
-  scrolled.value = window.scrollY > 10
-}
-
+function onScroll() { scrolled.value = window.scrollY > 10 }
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
@@ -14,63 +10,48 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 <template>
   <div class="page">
 
-    <!-- Navbar -->
+    <!-- ── Navbar ── -->
     <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
       <div class="nav-inner">
-        <a href="/" class="nav-logo">ClearRead</a>
-
+        <a href="/" class="nav-logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="28" rx="8" fill="#2563eb"/>
+            <path d="M7 8.5C7 7.67 7.67 7 8.5 7H13.5V21H8.5C7.67 21 7 20.33 7 19.5V8.5Z" fill="white" opacity="0.9"/>
+            <path d="M21 8.5C21 7.67 20.33 7 19.5 7H14.5V21H19.5C20.33 21 21 20.33 21 19.5V8.5Z" fill="white" opacity="0.55"/>
+            <rect x="9" y="10" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+            <rect x="9" y="13" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+            <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
+          </svg>
+          ClearRead
+        </a>
         <ul class="nav-links">
-          <li><a href="/" class="nav-link nav-link--active">Home</a></li>
-          <li><a href="/reading" class="nav-link">Reading</a></li>
+          <li><a href="/"         class="nav-link nav-link--active">Home</a></li>
+          <li><a href="/reading"  class="nav-link">Reading</a></li>
           <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
-          <li><a href="#" class="nav-link">About</a></li>
+          <li><a href="#"         class="nav-link">About</a></li>
         </ul>
-
-        <a href="#" class="btn-nav">Get Started</a>
+        <button class="btn-nav btn-nav--disabled" disabled>Get Started</button>
       </div>
     </nav>
 
-    <!-- Hero -->
+    <!-- ── Hero ── -->
     <section class="hero">
-      <!-- Gradient background blobs -->
       <div class="blob blob--blue"></div>
       <div class="blob blob--peach"></div>
 
-      <!-- Side decorative circles -->
-      <button class="side-btn side-btn--left" aria-label="Previous">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <path d="M11 13L7 9L11 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <button class="side-btn side-btn--right" aria-label="Next">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <path d="M7 5L11 9L7 13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-
       <div class="hero-content">
-        <!-- Badge -->
         <div class="badge">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <path d="M6.5 1L8 5H12L8.8 7.5L10 11.5L6.5 9L3 11.5L4.2 7.5L1 5H5L6.5 1Z" fill="#4f6ef7"/>
-          </svg>
           Reading support for minds that think differently.
         </div>
-
-        <!-- Heading -->
         <h1 class="hero-title">
           Read with Clarity.<br/>
           Learn with <span class="highlight">Confidence.</span>
         </h1>
-
-        <!-- Subtitle -->
         <p class="hero-sub">
-          ClearRead turns complex text into clear summaries,<br/>
-          custom reading settings, and natural audio&thinsp;&mdash;&thinsp;so you can<br/>
+          ClearRead turns complex text into clear summaries,
+          custom reading settings, and natural audio — so you can
           focus on understanding.
         </p>
-
-        <!-- Buttons -->
         <div class="hero-actions">
           <a href="/reading" class="btn-start">
             Start Reading
@@ -78,16 +59,111 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
-          <a href="/dyslexia" class="btn-learn">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M5 7h6M5 9.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+          <a href="/dyslexia" class="btn-ghost">
             Learn About Dyslexia
           </a>
         </div>
       </div>
     </section>
+
+    <!-- ── Features ── -->
+    <section class="section-features">
+      <div class="container">
+        <p class="eyebrow">What ClearRead does</p>
+        <h2 class="section-title">Everything you need to read with ease</h2>
+        <p class="section-sub">Built around the three things that make the biggest difference for readers with dyslexia.</p>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-num">01</div>
+            <h3>Simplify Text</h3>
+            <p>Paste any article, essay, or passage. ClearRead rewrites it in plain English, extracts the key points, and gives you a quick summary — so you spend less time decoding and more time understanding.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-num">02</div>
+            <h3>Read Aloud</h3>
+            <p>Natural text-to-speech reads your content back to you at whatever speed feels comfortable. Listening while reading reinforces the phonological connections that dyslexia makes difficult.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-num">03</div>
+            <h3>Customise Display</h3>
+            <p>Adjust font size, line spacing, and background colour to match how your brain reads best. Small changes — like a cream background or wider spacing — make a measurable difference.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── How it works ── -->
+    <section class="section-steps">
+      <div class="container">
+        <p class="eyebrow">How it works</p>
+        <h2 class="section-title">Three steps to clearer reading</h2>
+
+        <div class="steps-row">
+          <div class="step">
+            <span class="step-num">1</span>
+            <div class="step-body">
+              <h3>Paste your text</h3>
+              <p>Copy any text — an article, lecture notes, an assignment — and paste it into ClearRead.</p>
+            </div>
+          </div>
+          <div class="step-arrow">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="#d1d5db" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="step">
+            <span class="step-num">2</span>
+            <div class="step-body">
+              <h3>Simplify</h3>
+              <p>Click Simplify. ClearRead returns a plain-English version, an AI summary, and key points.</p>
+            </div>
+          </div>
+          <div class="step-arrow">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="#d1d5db" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="step">
+            <span class="step-num">3</span>
+            <div class="step-body">
+              <h3>Read comfortably</h3>
+              <p>Adjust the display to your preference, then read or listen at your own pace.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="section-cta">
+      <div class="container">
+        <h2>Ready to read more comfortably?</h2>
+        <p>Try ClearRead now — it takes less than a minute to get started.</p>
+        <a href="/reading" class="btn-cta">
+          Start Reading
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- ── Footer ── -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="footer-left">
+          <span class="footer-logo">ClearRead</span>
+          <p class="footer-tagline">Built for minds that think differently.</p>
+        </div>
+        <nav class="footer-links">
+          <a href="/reading"  class="footer-link">Reading</a>
+          <a href="/dyslexia" class="footer-link">Dyslexia</a>
+          <a href="#"         class="footer-link">About</a>
+        </nav>
+        <p class="footer-copy">© 2026 ClearRead. All rights reserved.</p>
+      </div>
+    </footer>
 
   </div>
 </template>
@@ -96,26 +172,23 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 /* ── Page ── */
 .page {
   min-height: 100vh;
-  overflow: hidden;
+  background: #fff;
+  color: #0d1117;
 }
 
 /* ── Navbar ── */
 .navbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   z-index: 100;
   transition: background 0.3s, box-shadow 0.3s;
 }
-
 .navbar--scrolled {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255,255,255,0.88);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
 }
-
 .nav-inner {
   max-width: 1160px;
   margin: 0 auto;
@@ -123,79 +196,48 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   height: 64px;
   display: flex;
   align-items: center;
-  gap: 0;
 }
-
 .nav-logo {
-  font-size: 17px;
-  font-weight: 700;
-  color: #0d1117;
-  letter-spacing: -0.4px;
-  text-decoration: none;
-  flex-shrink: 0;
+  display: flex; align-items: center; gap: 9px;
+  font-size: 17px; font-weight: 700;
+  color: #0d1117; letter-spacing: -0.4px;
+  text-decoration: none; flex-shrink: 0;
 }
-
 .nav-links {
-  display: flex;
-  list-style: none;
-  margin: 0 auto;
-  padding: 0;
-  gap: 2px;
+  display: flex; list-style: none;
+  margin: 0 auto; padding: 0; gap: 2px;
 }
-
 .nav-link {
-  display: block;
-  padding: 6px 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #4b5563;
-  text-decoration: none;
+  display: block; padding: 6px 14px;
+  font-size: 14px; font-weight: 500;
+  color: #4b5563; text-decoration: none;
   border-radius: 999px;
   transition: color 0.2s, background 0.2s;
   position: relative;
 }
-
-.nav-link:hover {
-  color: #0d1117;
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.nav-link--active {
-  color: #0d1117;
-}
-
-/* Active underline dot */
+.nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
+.nav-link--active { color: #0d1117; }
 .nav-link--active::after {
   content: '';
   position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #2563eb;
+  bottom: -2px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%; background: #2563eb;
 }
-
 .btn-nav {
-  display: inline-flex;
-  align-items: center;
+  display: inline-flex; align-items: center;
   padding: 8px 18px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 13.5px;
-  font-weight: 600;
-  border-radius: 999px;
-  text-decoration: none;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
-  flex-shrink: 0;
+  background: #2563eb; color: #fff;
+  font-size: 13.5px; font-weight: 600;
+  border-radius: 999px; text-decoration: none; flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+  transition: background 0.2s, transform 0.15s;
 }
-
-.btn-nav:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+.btn-nav:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-nav--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* ── Hero ── */
@@ -205,15 +247,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Gradient matching the design: blue-purple left → warm peach right */
   background:
-    radial-gradient(ellipse 55% 80% at 15% 55%, rgba(147, 167, 255, 0.45) 0%, transparent 65%),
-    radial-gradient(ellipse 45% 65% at 85% 40%, rgba(255, 200, 150, 0.4) 0%, transparent 60%),
-    radial-gradient(ellipse 30% 40% at 50% 80%, rgba(255, 220, 180, 0.25) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 80% at 15% 55%, rgba(147,167,255,0.45) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 65% at 85% 40%, rgba(255,200,150,0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 40% at 50% 80%, rgba(255,220,180,0.25) 0%, transparent 55%),
     #f8f9ff;
+  overflow: hidden;
 }
-
-/* Soft colour blobs for extra depth */
 .blob {
   position: absolute;
   border-radius: 50%;
@@ -221,53 +261,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   pointer-events: none;
   z-index: 0;
 }
+.blob--blue  { width: 520px; height: 520px; background: rgba(99,120,255,0.18); top: -60px; left: -80px; }
+.blob--peach { width: 420px; height: 420px; background: rgba(255,165,100,0.15); bottom: -60px; right: -60px; }
 
-.blob--blue {
-  width: 520px;
-  height: 520px;
-  background: rgba(99, 120, 255, 0.18);
-  top: -60px;
-  left: -80px;
-}
-
-.blob--peach {
-  width: 420px;
-  height: 420px;
-  background: rgba(255, 165, 100, 0.15);
-  bottom: -60px;
-  right: -60px;
-}
-
-/* Side arrow buttons */
-.side-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(8px);
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 2;
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-
-.side-btn:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.side-btn--left  { left: 28px; }
-.side-btn--right { right: 28px; }
-
-/* Hero content */
 .hero-content {
   position: relative;
   z-index: 1;
@@ -275,98 +271,231 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   padding: 0 24px;
   max-width: 700px;
 }
-
-/* Badge pill */
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+  display: inline-flex; align-items: center; gap: 7px;
   padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(79, 110, 247, 0.2);
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(79,110,247,0.2);
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
+  font-size: 13px; font-weight: 500; color: #374151;
   margin-bottom: 28px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-
-/* Heading */
 .hero-title {
   font-size: clamp(44px, 7.5vw, 72px);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.08;
-  color: #0d1117;
+  font-weight: 800; letter-spacing: -0.045em;
+  line-height: 1.08; color: #0d1117;
   margin-bottom: 22px;
 }
-
 .highlight {
   background: linear-gradient(120deg, #2563eb 20%, #5b8af5 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-
-/* Subtitle */
 .hero-sub {
-  font-size: 16px;
-  line-height: 1.72;
-  color: #4b5563;
-  margin-bottom: 38px;
+  font-size: 16px; line-height: 1.72;
+  color: #4b5563; margin-bottom: 38px;
+}
+.hero-actions {
+  display: flex; align-items: center;
+  justify-content: center; gap: 14px; flex-wrap: wrap;
+}
+.btn-start {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 26px;
+  background: #2563eb; color: #fff;
+  font-size: 15px; font-weight: 600;
+  border-radius: 999px; text-decoration: none;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.btn-start:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,99,235,0.35); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 24px;
+  background: rgba(255,255,255,0.75); color: #374151;
+  font-size: 15px; font-weight: 600;
+  border-radius: 999px; border: 1px solid rgba(0,0,0,0.1);
+  text-decoration: none; backdrop-filter: blur(10px);
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.95); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+/* ── Shared layout ── */
+.container {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 36px;
+}
+.eyebrow {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #2563eb; margin: 0 0 14px;
+}
+.section-title {
+  font-size: clamp(26px, 3.5vw, 40px);
+  font-weight: 800; letter-spacing: -0.03em;
+  margin: 0 0 14px; line-height: 1.2;
+}
+.section-sub {
+  font-size: 16px; color: #6b7280;
+  line-height: 1.65; margin: 0 0 52px;
+  max-width: 520px;
 }
 
-/* Action buttons */
-.hero-actions {
+/* ── Features ── */
+.section-features {
+  padding: 96px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.feature-card {
+  padding: 32px 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.07);
+}
+.feature-num {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; color: #2563eb;
+  margin-bottom: 16px;
+}
+.feature-card h3 {
+  font-size: 18px; font-weight: 700;
+  letter-spacing: -0.02em; margin: 0 0 12px;
+}
+.feature-card p {
+  font-size: 14.5px; color: #6b7280;
+  line-height: 1.7; margin: 0;
+}
+
+/* ── Steps ── */
+.section-steps {
+  padding: 96px 0;
+  background: #fafbff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.steps-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
+  gap: 0;
+  margin-top: 52px;
+}
+.step {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.step-num {
+  width: 40px; height: 40px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #eef2ff;
+  color: #2563eb;
+  font-size: 15px; font-weight: 800;
+  border-radius: 12px;
+}
+.step-body h3 {
+  font-size: 16px; font-weight: 700;
+  margin: 0 0 8px; letter-spacing: -0.02em;
+}
+.step-body p {
+  font-size: 14px; color: #6b7280;
+  line-height: 1.65; margin: 0;
+}
+.step-arrow {
+  flex-shrink: 0;
+  padding: 0 28px;
+  margin-top: 10px;
+}
+
+/* ── CTA ── */
+.section-cta {
+  padding: 96px 0;
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  text-align: center;
+}
+.section-cta h2 {
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 800; color: #fff;
+  letter-spacing: -0.04em; margin: 0 0 14px;
+}
+.section-cta p {
+  font-size: 16px; color: rgba(255,255,255,0.65);
+  margin: 0 0 36px;
+}
+.btn-cta {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 32px;
+  background: #fff; color: #2563eb;
+  font-size: 15px; font-weight: 700;
+  border-radius: 999px; text-decoration: none;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-cta:hover { background: #eef2ff; transform: translateY(-2px); }
+
+/* ── Footer ── */
+.footer {
+  background: #0d1117;
+  padding: 48px 0;
+}
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
+  gap: 24px;
 }
-
-.btn-start {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 13px 26px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 999px;
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.footer-logo {
+  font-size: 16px; font-weight: 700;
+  color: #fff; letter-spacing: -0.3px;
+}
+.footer-tagline {
+  font-size: 13px; color: rgba(255,255,255,0.35);
+  margin: 0;
+}
+.footer-links {
+  display: flex; gap: 28px;
+}
+.footer-link {
+  font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.5);
   text-decoration: none;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+  transition: color 0.2s;
+}
+.footer-link:hover { color: #fff; }
+.footer-copy {
+  font-size: 13px; color: rgba(255,255,255,0.3);
+  margin: 0;
 }
 
-.btn-start:hover {
-  background: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
 }
-
-.btn-learn {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 13px 24px;
-  background: rgba(255, 255, 255, 0.75);
-  color: #374151;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  text-decoration: none;
-  backdrop-filter: blur(10px);
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-}
-
-.btn-learn:hover {
-  background: rgba(255, 255, 255, 0.95);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+@media (max-width: 768px) {
+  .features-grid { grid-template-columns: 1fr; }
+  .steps-row  { flex-direction: column; gap: 24px; }
+  .step-arrow { display: none; }
+  .footer-inner { flex-direction: column; align-items: flex-start; }
+  .nav-links, .btn-nav { display: none; }
 }
 </style>
