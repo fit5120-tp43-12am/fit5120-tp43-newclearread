@@ -15,7 +15,7 @@ def process_text(text: str):
     keywords = words[:3]
 
     return {
-        "sentences": [s.strip() for s in sentences if s.strip()],
-        "summary": summary.strip(),
-        "keywords": keywords,
+        "summary": [summary] if summary else [],
+        "simplified": " ".join(sentences),
+        "keyPoints": keywords,
     }

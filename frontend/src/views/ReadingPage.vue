@@ -68,10 +68,35 @@ const activeText = computed(() => {
 })
 
 // ── Simplify (backend stub) ──────────────────────────────────────────────────
-function handleSimplify() {
+async function handleSimplify() {
   if (!rawText.value.trim() || overLimit.value) return
   mode.value    = 'loading'
   viewMode.value = 'simplified'
+
+  try {
+    const response = await fetch("http://localhost:8000/api/process-text", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: rawText.value,
+      }),
+    })
+
+    const data = await response.json()
+
+    console.log("Returned by the backend:", data)
+
+    result.value = data
+
+    mode.value = 'result'
+
+  } catch (error) {
+    console.error(error)
+    mode.value = 'idle'
+  }
+}
 
   // ╔══════════════════════════════════════════════════════════╗
   // ║  BACKEND STUB — teammate connects here                   ║
@@ -89,25 +114,25 @@ function handleSimplify() {
   // ╚══════════════════════════════════════════════════════════╝
 
   // Placeholder — remove when API is connected:
-  setTimeout(() => {
-    result.value = {
-      summary: [
-        'Core concept: The text introduces a central idea about the subject matter.',
-        'Key mechanism: It explains how the key processes or arguments are structured.',
-        'Conclusion: The main takeaway connects theory to real-world application.',
-      ],
-      simplified:
-        'This is a placeholder for the simplified version of your text. Once connected to the backend, this section will show a plain-English rewrite that is shorter, clearer, and easier to read for people with dyslexia.',
-      keyPoints: [
-        'Main idea from the text',
-        'Important supporting concept',
-        'Key term or definition',
-        'Practical implication',
-      ],
-    }
-    mode.value = 'result'
-  }, 900)
-}
+//   setTimeout(() => {
+//     result.value = {
+//       summary: [
+//         'Core concept: The text introduces a central idea about the subject matter.',
+//         'Key mechanism: It explains how the key processes or arguments are structured.',
+//         'Conclusion: The main takeaway connects theory to real-world application.',
+//       ],
+//       simplified:
+//         'This is a placeholder for the simplified version of your text. Once connected to the backend, this section will show a plain-English rewrite that is shorter, clearer, and easier to read for people with dyslexia.',
+//       keyPoints: [
+//         'Main idea from the text',
+//         'Important supporting concept',
+//         'Key term or definition',
+//         'Practical implication',
+//       ],
+//     }
+//     mode.value = 'result'
+//   }, 900)
+// }
 
 // ── Speech ───────────────────
 const isPlaying  = ref(false)
