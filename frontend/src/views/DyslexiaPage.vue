@@ -16,7 +16,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         <a href="/" class="nav-logo">ClearRead</a>
         <ul class="nav-links">
           <li><a href="/" class="nav-link">Home</a></li>
-          <li><a href="#" class="nav-link">Reading</a></li>
+          <li><a href="/reading" class="nav-link">Reading</a></li>
           <li><a href="/dyslexia" class="nav-link nav-link--active">Dyslexia</a></li>
           <li><a href="#" class="nav-link">About</a></li>
         </ul>
