@@ -30,7 +30,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <li><a href="/dyslexia" class="nav-link nav-link--active">Dyslexia</a></li>
           <li><a href="#" class="nav-link">About</a></li>
         </ul>
-        <a href="#" class="btn-nav">Get Started</a>
+        <button class="btn-nav btn-nav--disabled" disabled>Get Started</button>
       </div>
     </nav>
 
@@ -250,7 +250,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         <div class="container">
           <h2>Ready to read more comfortably?</h2>
           <p>Try ClearRead's reading tool — built for minds that think differently.</p>
-          <a href="#" class="btn-cta">Start Reading</a>
+          <a href="/reading" class="btn-cta">Start Reading</a>
         </div>
       </section>
 
@@ -338,7 +338,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
   transition: background 0.2s, transform 0.15s;
 }
-.btn-nav:hover { background: #1d4ed8; transform: translateY(-1px); }
+.btn-nav:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-nav--disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
 /* ── Shared layout ── */
 .container {
