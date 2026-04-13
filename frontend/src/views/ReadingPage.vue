@@ -333,7 +333,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
         </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link">Home</a></li>
-          <li><a href="/reading"  class="nav-link nav-link--active">Reading</a></li>
+          <li><a href="/reading"  class="nav-link nav-link--active">Read Easier</a></li>
           <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
