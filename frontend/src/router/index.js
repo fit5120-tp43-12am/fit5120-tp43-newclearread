@@ -6,7 +6,7 @@ import ReadingPage from '../views/ReadingPage.vue'
 const routes = [
   { path: '/',        name: 'Home',    component: HomePage },
   { path: '/dyslexia', name: 'Dyslexia', component: DyslexiaPage },
-  { path: '/reading',  name: 'Reading',  component: ReadingPage },
+  { path: '/reading',  name: 'Read Easier',  component: ReadingPage },
 ]
 
 const router = createRouter({
