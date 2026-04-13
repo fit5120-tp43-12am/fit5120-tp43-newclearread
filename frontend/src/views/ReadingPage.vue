@@ -17,7 +17,7 @@ const viewMode  = ref('simplified') // 'simplified' | 'original'
 
 // ── Result data (populated by backend stub) ──
 const result = ref(null)
-// Shape: { summary: string[], simplified: string, keyPoints: string[] }
+// Shape: { summary, simplified, keyPoints, usedFallback, fallbackReason, notice }
 
 // ── Display settings ──
 const fontSize    = ref(18)
@@ -67,11 +67,53 @@ const activeText = computed(() => {
   return rawText.value
 })
 
+function fallbackNotice(resultData) {
+  if (!resultData?.usedFallback) return ''
+
+  if (resultData.notice) return resultData.notice
+
+  const notices = {
+    temporary_ai_unavailable: 'AI service is busy right now. Showing a basic result.',
+    config_error: 'AI is not configured right now. Showing a basic result.',
+    invalid_ai_response: 'AI response could not be processed. Showing a basic result.',
+    unknown_error: 'AI is unavailable right now. Showing a basic result.',
+  }
+
+  return notices[resultData.fallbackReason] || notices.unknown_error
+}
+
 // ── Simplify (backend stub) ──────────────────────────────────────────────────
-function handleSimplify() {
+async function handleSimplify() {
   if (!rawText.value.trim() || overLimit.value) return
   mode.value    = 'loading'
   viewMode.value = 'simplified'
+
+  try {
+    // The backend may return either an AI result or a fallback result.
+    const response = await fetch("http://localhost:8000/api/process-text", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: rawText.value,
+      }),
+    })
+
+    const data = await response.json()
+
+    console.log("Returned by the backend:", data)
+
+    // Store the full payload so the template can show status details.
+    result.value = data
+
+    mode.value = 'result'
+
+  } catch (error) {
+    console.error(error)
+    mode.value = 'idle'
+  }
+}
 
   // ╔══════════════════════════════════════════════════════════╗
   // ║  BACKEND STUB — teammate connects here                   ║
@@ -89,25 +131,25 @@ function handleSimplify() {
   // ╚══════════════════════════════════════════════════════════╝
 
   // Placeholder — remove when API is connected:
-  setTimeout(() => {
-    result.value = {
-      summary: [
-        'Core concept: The text introduces a central idea about the subject matter.',
-        'Key mechanism: It explains how the key processes or arguments are structured.',
-        'Conclusion: The main takeaway connects theory to real-world application.',
-      ],
-      simplified:
-        'This is a placeholder for the simplified version of your text. Once connected to the backend, this section will show a plain-English rewrite that is shorter, clearer, and easier to read for people with dyslexia.',
-      keyPoints: [
-        'Main idea from the text',
-        'Important supporting concept',
-        'Key term or definition',
-        'Practical implication',
-      ],
-    }
-    mode.value = 'result'
-  }, 900)
-}
+//   setTimeout(() => {
+//     result.value = {
+//       summary: [
+//         'Core concept: The text introduces a central idea about the subject matter.',
+//         'Key mechanism: It explains how the key processes or arguments are structured.',
+//         'Conclusion: The main takeaway connects theory to real-world application.',
+//       ],
+//       simplified:
+//         'This is a placeholder for the simplified version of your text. Once connected to the backend, this section will show a plain-English rewrite that is shorter, clearer, and easier to read for people with dyslexia.',
+//       keyPoints: [
+//         'Main idea from the text',
+//         'Important supporting concept',
+//         'Key term or definition',
+//         'Practical implication',
+//       ],
+//     }
+//     mode.value = 'result'
+//   }, 900)
+// }
 
 // ── Speech ───────────────────
 const isPlaying  = ref(false)
@@ -174,9 +216,8 @@ const fileInputRef = ref(null)
 const fileError    = ref('')
 
 // Directly readable as plain text
-const TEXT_EXT    = ['.txt', '.md', '.markdown', '.csv', '.rtf', '.log', '.text']
+const UPLOAD_EXT  = ['.txt', '.md', '.markdown', '.csv', '.rtf', '.log', '.text', '.pdf', '.docx']
 // Accepted but need backend to extract (placeholder inserted)
-const BINARY_EXT  = ['.pdf', '.doc', '.docx', '.odt', '.pages', '.epub', '.ppt', '.pptx']
 // Rejected — not text
 const IMAGE_EXT   = ['.jpg','.jpeg','.png','.gif','.webp','.svg','.bmp','.tiff','.ico','.heic']
 const MEDIA_EXT   = ['.mp4','.mov','.avi','.mkv','.webm','.mp3','.wav','.aac','.flac','.ogg']
@@ -186,7 +227,41 @@ function triggerFileInput() {
   fileInputRef.value?.click()
 }
 
-function handleFileUpload(event) {
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      const base64 = result.includes(',') ? result.split(',')[1] : result
+      resolve(base64)
+    }
+    reader.onerror = () => reject(new Error('Could not read the file. Please try again.'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function uploadFileForExtraction(file) {
+  const contentBase64 = await readFileAsBase64(file)
+  const response = await fetch("http://localhost:8000/api/extract-text", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      filename: file.name,
+      contentBase64,
+    }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.detail || 'Could not extract text from this file.')
+  }
+
+  return data
+}
+
+async function handleFileUpload(event) {
   const file = event.target.files[0]
   event.target.value = ''
   if (!file) return
@@ -204,8 +279,8 @@ function handleFileUpload(event) {
   }
 
   // Reject unrecognised formats
-  if (!TEXT_EXT.includes(ext) && !BINARY_EXT.includes(ext)) {
-    fileError.value = `"${file.name}" is not a supported format. Accepted: PDF, Word, TXT, MD, RTF, EPUB, CSV.`
+  if (!UPLOAD_EXT.includes(ext)) {
+    fileError.value = `"${file.name}" is not a supported format. Accepted: TXT, MD, CSV, RTF, LOG, PDF, DOCX.`
     return
   }
 
@@ -217,20 +292,22 @@ function handleFileUpload(event) {
   fileError.value = ''
 
   // Binary formats — placeholder text; teammate connects backend extraction
-  if (BINARY_EXT.includes(ext)) {
-    rawText.value =
-      `[File uploaded: ${file.name}]\n\n` +
-      `Text extraction for ${ext.toUpperCase().slice(1)} files requires the backend processing service.\n` +
-      `Your teammate can connect POST /api/text/extract to enable this. ` +
-      `In the meantime, please paste the text content directly.`
-    return
+  try {
+    const extracted = await uploadFileForExtraction(file)
+    if (!extracted.text?.trim()) {
+      fileError.value = extracted.notice || 'No readable text was found in this file.'
+      return
+    }
+
+    rawText.value = extracted.text
+    if (extracted.notice) {
+      fileError.value = extracted.notice
+    }
+  } catch (error) {
+    fileError.value = error instanceof Error ? error.message : 'Could not extract text from this file.'
   }
 
   // Plain-text formats — read directly
-  const reader = new FileReader()
-  reader.onload  = (e) => { rawText.value = e.target.result }
-  reader.onerror = ()  => { fileError.value = 'Could not read the file. Please try again.' }
-  reader.readAsText(file, 'UTF-8')
 }
 
 onMounted(()  => window.addEventListener('scroll', onScroll))
@@ -256,7 +333,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
         </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link">Home</a></li>
-          <li><a href="/reading"  class="nav-link nav-link--active">Reading</a></li>
+          <li><a href="/reading"  class="nav-link nav-link--active">Read Easier</a></li>
           <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
@@ -362,7 +439,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
         <input
           ref="fileInputRef"
           type="file"
-          accept=".txt,.md,.markdown,.csv,.rtf,.log,.pdf,.doc,.docx,.odt,.pages,.epub,.ppt,.pptx"
+          accept=".txt,.md,.markdown,.csv,.rtf,.log,.text,.pdf,.docx"
           style="display:none"
           @change="handleFileUpload"
         />
@@ -387,7 +464,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 
         <div class="input-footer">
           <!-- Upload button -->
-          <button class="btn-upload" @click="triggerFileInput" title="Upload a .txt or .md file">
+          <button class="btn-upload" @click="triggerFileInput" title="Upload a TXT, PDF, or DOCX file">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M7 9.5V2M7 2L4 5M7 2L10 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M2 10.5v1a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -446,15 +523,19 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
           <!-- View: Simplified -->
           <template v-if="viewMode === 'simplified'">
 
+            <div v-if="result.usedFallback" class="fallback-notice">
+              {{ fallbackNotice(result) }}
+            </div>
+
             <!-- AI Summary -->
             <div class="summary-card">
               <div class="summary-card-header">
                 <span class="summary-title">AI Summary</span>
                 <span class="summary-badge">{{ readTime(result.simplified) }}</span>
               </div>
-              <ul class="summary-list">
-                <li v-for="(line, i) in result.summary" :key="i">{{ line }}</li>
-              </ul>
+              <div class="summary-list">
+                <p>{{ result.summary }}</p>
+              </div>
             </div>
 
             <!-- Simplified version -->
@@ -848,6 +929,16 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   border-radius: 14px;
   padding: 18px 22px;
   margin-bottom: 28px;
+}
+.fallback-notice {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #f5d38a;
+  background: #fff7e6;
+  color: #8a5a00;
+  font-size: 14px;
+  font-weight: 600;
 }
 .summary-card-header {
   display: flex;

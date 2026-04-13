@@ -1,5 +1,24 @@
 # 团队开发说明
 
+# ！！！！！Python 相关的人必须做(前端不用)
+
+cd backend
+# 激活环境（每次开发前都要激活后再开发）
+venv\Scripts\activate
+# 安装依赖（安装一次就够了）
+pip install -r requirements.txt
+
+# 每次开发前都要做的是激活环境
+cd backend
+venv\Scripts\activate
+看到终端前面有 (venv) 才是正确的
+
+# 注意
+不要自己随便 pip install 新包 
+如果必须安装新包，群里通知一下，大家同步
+安装后要更新requirements.txt
+使用 pip freeze > requirements.txt 可以把当前环境中所有已安装的包及版本写入 requirements.txt
+
 # 项目结构说明
 
 project-root/
@@ -100,6 +119,7 @@ http://127.0.0.1:8000/docs
 cd frontend
 
 npm install
+# 启动
 npm run dev
 
  打开：
