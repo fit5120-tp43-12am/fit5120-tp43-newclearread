@@ -26,7 +26,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </a>
         <ul class="nav-links">
           <li><a href="/" class="nav-link">Home</a></li>
-          <li><a href="/reading" class="nav-link">Reading</a></li>
+          <li><a href="/reading" class="nav-link">Read Easier</a></li>
           <li><a href="/dyslexia" class="nav-link nav-link--active">Dyslexia</a></li>
           <li><a href="#" class="nav-link">About</a></li>
         </ul>
@@ -249,8 +249,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       <section class="section-cta">
         <div class="container">
           <h2>Ready to read more comfortably?</h2>
-          <p>Try ClearRead's reading tool — built for minds that think differently.</p>
-          <a href="/reading" class="btn-cta">Start Reading</a>
+          <p>Try ClearRead's Read Easier tool — built for minds that think differently.</p>
+          <a href="/reading" class="btn-cta">Read Easier</a>
         </div>
       </section>
 
