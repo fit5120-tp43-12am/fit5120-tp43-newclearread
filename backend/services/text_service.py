@@ -8,11 +8,16 @@ from contextlib import contextmanager
 from dotenv import load_dotenv
 from google import genai
 
+######1
+from openai import OpenAI
+
 # -------- config --------
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+#####2
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 USE_AI = True
 
 PROXY_ENV_VARS = (
@@ -34,7 +39,8 @@ DEAD_LOCAL_PROXY_VALUES = {
 RETRYABLE_ERROR_MARKERS = (
     "503",
     "unavailable",
-    "429",
+    ######5
+    # "429",
     "resource_exhausted",
     "timeout",
     "timed out",
@@ -395,7 +401,10 @@ The output language must match the input text language.
 - rewrite the text in simpler language, using the same language as the input
 - keep ALL key ideas from the original
 - do NOT remove important details
-- use shorter sentences and simpler words
+- use shorter sentences and simpler, more common words
+- prefer clear and easy-to-read wording
+- avoid complex or uncommon vocabulary
+- make the text easier to read for users who may struggle with complex sentences
 - do NOT add new meaning
 
 3. keyPoints:
@@ -475,6 +484,37 @@ def use_gemini(text: str):
             )
 
 
+######3
+def use_openai(text: str):
+    print("calling openai...")
+
+    prompt = _build_prompt(text)
+
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+
+        content = response.choices[0].message.content
+        print("RAW OPENAI RESPONSE:")
+        print(content)
+
+        return _parse_gemini_response(content)
+
+    except Exception as e:
+        print("OpenAI error:", e)
+
+        return basic_algorithm(
+            text,
+            notice=_fallback_notice("temporary_ai_unavailable"),
+            fallback_reason="temporary_ai_unavailable",
+        )
+
+
 def process_text(text: str):
     print("process_text called")
 
@@ -494,12 +534,27 @@ def process_text(text: str):
             fallback_reason="config_error",
         )
 
+    # try:
+    #     return use_gemini(text)
+    # except Exception as e:
+    #     print("Gemini error -> fallback:", e)
+    #     return basic_algorithm(
+    #         text,
+    #         notice=_fallback_notice("unknown_error"),
+    #         fallback_reason="unknown_error",
+    #     )
+    #####4
     try:
-        return use_gemini(text)
+        return use_openai(text)
     except Exception as e:
-        print("Gemini error -> fallback:", e)
-        return basic_algorithm(
-            text,
-            notice=_fallback_notice("unknown_error"),
-            fallback_reason="unknown_error",
-        )
+        print("OpenAI failed, fallback to Gemini:", e)
+
+        try:
+            return use_gemini(text)
+        except Exception as e2:
+            print("Gemini error -> fallback:", e2)
+            return basic_algorithm(
+                text,
+                notice=_fallback_notice("unknown_error"),
+                fallback_reason="unknown_error",
+            )
