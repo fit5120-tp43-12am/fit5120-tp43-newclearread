@@ -26,7 +26,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link nav-link--active">Home</a></li>
-          <li><a href="/reading"  class="nav-link">Read Easier</a></li>
+          <li><a href="/reading"  class="nav-link">Reading Support</a></li>
           <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
@@ -53,7 +53,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </p>
         <div class="hero-actions">
           <a href="/reading" class="btn-start">
-            Read Easier
+            Start Here
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -139,7 +139,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         <h2>Give it a try.</h2>
         <p>It only takes a minute to get started.</p>
         <a href="/reading" class="btn-cta">
-          Read Easier
+          Start Here
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -155,7 +155,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <a href="/reading"  class="footer-link">Read Easier</a>
+          <a href="/reading"  class="footer-link">Reading Support</a>
           <a href="/dyslexia" class="footer-link">Dyslexia</a>
           <a href="#"         class="footer-link">About</a>
         </nav>
