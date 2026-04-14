@@ -47,11 +47,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             not a <span class="text-gradient">deficit.</span>
           </h1>
           <p class="hero-sub">
-            1 in 5 Australians may have dyslexia. It affects how the brain reads —
-            not how smart someone is.
+            Many university students experience dyslexia. It affects how the brain
+            processes text — not how capable or intelligent you are.<br/><br/>
+            <span class="hero-sub-question">Would you like some support?</span>
           </p>
           <div class="hero-actions">
-            <a href="#what-is" class="btn-primary">Learn More</a>
+            <a href="/reading" class="btn-primary">Read Easier</a>
             <a href="#strategies" class="btn-ghost">Reading Strategies</a>
           </div>
         </div>
@@ -131,28 +132,28 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           </p>
           <div class="signs-grid">
             <div class="sign-card">
-              <h3>Slow or effortful reading</h3>
-              <p>Reading takes much longer than expected and causes fatigue.</p>
+              <h3>Reading takes more effort</h3>
+              <p>Reading may take longer than expected, and can feel tiring after a while.</p>
             </div>
             <div class="sign-card">
-              <h3>Inconsistent spelling</h3>
-              <p>The same word may be spelled differently within a single piece of writing.</p>
+              <h3>Spelling feels inconsistent</h3>
+              <p>The same word might be spelled differently across a piece of writing.</p>
             </div>
             <div class="sign-card">
-              <h3>Sound processing difficulty</h3>
-              <p>Trouble breaking words into sounds and blending them back together.</p>
+              <h3>Breaking words into sounds</h3>
+              <p>It can be hard to split words into sounds or blend them back together.</p>
             </div>
             <div class="sign-card">
-              <h3>Weak working memory</h3>
-              <p>Forgetting words just read, or losing track of a sentence mid-way through.</p>
+              <h3>Difficulty holding information</h3>
+              <p>It is easy to lose track of a sentence or forget a word mid-way through.</p>
             </div>
             <div class="sign-card">
-              <h3>Poor reading fluency</h3>
-              <p>Losing place on a page, skipping lines, or reading word-by-word.</p>
+              <h3>Losing your place while reading</h3>
+              <p>Skipping lines or re-reading the same line is a common experience.</p>
             </div>
             <div class="sign-card">
-              <h3>Avoidance of reading</h3>
-              <p>Reluctance to read aloud — masking the difficulty, not disinterest.</p>
+              <h3>Feeling hesitant to read aloud</h3>
+              <p>This is a natural response — not a sign of disinterest or ability.</p>
             </div>
           </div>
         </div>
@@ -164,24 +165,23 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <div class="impact-block">
             <div class="impact-text">
               <p class="eyebrow">Beyond the Page</p>
-              <h2>The broader impact on wellbeing</h2>
+              <h2>It can affect how you feel, too</h2>
               <p>
-                Adults with dyslexia are <strong>twice as likely</strong> to experience
-                anxiety or depression, and <strong>46% more likely</strong> to have
-                attempted suicide.
+                University students with dyslexia sometimes find academic workloads more
+                draining. Feeling behind or overwhelmed is common — and understandable.
               </p>
               <p>
-                Many are not diagnosed until adulthood — some not until their fifties.
-                Years of unrecognised struggle take a real toll.
+                Many students do not realise they have dyslexia until they are at
+                university. Getting support earlier makes a real difference.
               </p>
               <p>
-                Early support changes outcomes. SA's phonics check lifted Year 1 literacy
-                from <strong>43% (2018) to 68% (2022)</strong>.
+                With the right tools and adjustments, students with dyslexia can — and
+                do — thrive at university.
               </p>
             </div>
             <div class="impact-quote">
               <blockquote>
-                "Many children with dyslexia are bright, creative, and highly capable.
+                "Students with dyslexia are bright, creative, and highly capable.
                 They just need the right support to show it."
               </blockquote>
               <p class="quote-attr">— Dyslexia Australia (ADA)</p>
@@ -248,9 +248,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       <!-- ⑦ CTA -->
       <section class="section-cta">
         <div class="container">
-          <h2>Ready to read more comfortably?</h2>
-          <p>Try ClearRead's Read Easier tool — built for minds that think differently.</p>
-          <a href="/reading" class="btn-cta">Read Easier</a>
+          <h2>Would you like some help?</h2>
+          <p>ClearRead can simplify your study materials and make them easier to work through.</p>
+          <a href="/reading" class="btn-cta">
+            Read Easier
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
         </div>
       </section>
 
@@ -418,6 +423,15 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   color: #4b5563;
   max-width: 580px;
   margin: 0 0 36px;
+}
+.hero-sub-question {
+  display: inline-block;
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(120deg, #2563eb 20%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .hero-actions {
   display: flex;
