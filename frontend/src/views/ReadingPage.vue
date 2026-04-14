@@ -312,7 +312,68 @@ async function handleFileUpload(event) {
   // Plain-text formats — read directly
 }
 
-onMounted(()  => window.addEventListener('scroll', onScroll))
+// ── Tutorial ──────────────────────────────────────────────────────────────────
+const showTutorial = ref(false)
+const tutorialStep = ref(0)
+
+const TUTORIAL_STEPS = [
+  {
+    title: 'Welcome to ClearRead',
+    desc:  'This quick guide walks you through the tool in 3 simple steps. You can skip any time.',
+    highlight: null,
+    cardPos: 'center',
+  },
+  {
+    title: 'Step 1 — Add your text',
+    desc:  'Paste any lecture notes, academic article, or PDF content into the box on the left. You can also click "Upload file" to import a document directly.',
+    highlight: 'input',
+    cardPos: 'right-top',
+  },
+  {
+    title: 'Step 2 — Simplify',
+    desc:  'Click the Simplify button. ClearRead will rewrite the text in plain English, pull out the key points, and generate a short summary.',
+    highlight: 'simplify',
+    cardPos: 'right-bottom',
+  },
+  {
+    title: 'Step 3 — Adjust your settings',
+    desc:  'Use the toolbar to change font size, line spacing, and background colour. Small changes can make a big difference to how comfortable it feels to read.',
+    highlight: 'toolbar',
+    cardPos: 'toolbar',
+  },
+]
+
+const tutorialCardStyle = computed(() => {
+  const pos = TUTORIAL_STEPS[tutorialStep.value]?.cardPos
+  if (pos === 'center')       return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+  if (pos === 'right-top')    return { top: '160px', right: '24px' }
+  if (pos === 'right-bottom') return { bottom: '100px', right: '24px' }
+  if (pos === 'toolbar')      return { top: '76px', right: '24px' }
+  return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+})
+
+function startTutorial() {
+  tutorialStep.value = 0
+  showTutorial.value = true
+}
+function nextStep() {
+  if (tutorialStep.value < TUTORIAL_STEPS.length - 1) tutorialStep.value++
+  else closeTutorial()
+}
+function prevStep() {
+  if (tutorialStep.value > 0) tutorialStep.value--
+}
+function closeTutorial() {
+  showTutorial.value = false
+  localStorage.setItem('cr_tutorial_done', '1')
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', onScroll)
+  if (!localStorage.getItem('cr_tutorial_done')) {
+    showTutorial.value = true
+  }
+})
 onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech() })
 </script>
 
@@ -335,7 +396,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
         </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link">Home</a></li>
-          <li><a href="/reading"  class="nav-link nav-link--active">Read Easier</a></li>
+          <li><a href="/reading"  class="nav-link nav-link--active">Reading Support</a></li>
           <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
@@ -344,7 +405,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
     </nav>
 
     <!-- ── Toolbar ── -->
-    <div class="toolbar">
+    <div :class="['toolbar', { 'tutorial-highlight--toolbar': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'toolbar' }]">
       <div class="toolbar-inner">
 
         <!-- Left controls -->
@@ -393,6 +454,16 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 
         <!-- Right controls -->
         <div class="toolbar-right">
+          <!-- Help / Tutorial button -->
+          <button class="btn-help" @click="startTutorial" title="Show guide">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M5.5 5.5a1.5 1.5 0 012.8.75c0 1-1.3 1.25-1.3 2.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="7" cy="10.5" r=".6" fill="currentColor"/>
+            </svg>
+            Guide
+          </button>
+          <div class="toolbar-sep"></div>
           <!-- Font size -->
           <div class="font-group">
             <button class="font-btn" @click="fontSize = Math.max(14, fontSize - 2)">A−</button>
@@ -434,7 +505,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
     <div class="content">
 
       <!-- Left: input panel -->
-      <div class="input-panel" :style="inputFlexStyle">
+      <div :class="['input-panel', { 'tutorial-highlight--input': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'input' }]" :style="inputFlexStyle">
         <p class="input-panel-label">Paste or upload your text</p>
 
         <!-- Hidden file input -->
@@ -484,7 +555,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
           </div>
 
           <button
-            class="btn-simplify"
+            :class="['btn-simplify', { 'tutorial-highlight--simplify': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'simplify' }]"
             :disabled="!rawText.trim() || overLimit || mode === 'loading'"
             @click="handleSimplify"
           >
@@ -576,6 +647,43 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
       </div>
 
     </div>
+
+    <!-- ── Tutorial overlay ── -->
+    <Transition name="tutorial-fade">
+      <div v-if="showTutorial" class="tutorial-overlay" @click.self="closeTutorial">
+
+        <!-- Card -->
+        <div class="tutorial-card" :style="tutorialCardStyle">
+
+          <!-- Step dots -->
+          <div class="tutorial-dots">
+            <span
+              v-for="(_, i) in TUTORIAL_STEPS"
+              :key="i"
+              :class="['tutorial-dot', { 'tutorial-dot--active': i === tutorialStep }]"
+            ></span>
+          </div>
+
+          <!-- Content -->
+          <h3 class="tutorial-title">{{ TUTORIAL_STEPS[tutorialStep].title }}</h3>
+          <p class="tutorial-desc">{{ TUTORIAL_STEPS[tutorialStep].desc }}</p>
+
+          <!-- Actions -->
+          <div class="tutorial-actions">
+            <button v-if="tutorialStep > 0" class="tutorial-btn-prev" @click="prevStep">Back</button>
+            <button class="tutorial-btn-skip" @click="closeTutorial">Skip</button>
+            <button class="tutorial-btn-next" @click="nextStep">
+              {{ tutorialStep < TUTORIAL_STEPS.length - 1 ? 'Next' : 'Get started' }}
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 6.5H11M11 6.5L7 2.5M11 6.5L7 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </Transition>
+
   </div>
 </template>
 
@@ -1065,4 +1173,117 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   .results-content { padding: 24px 20px; }
   .toolbar-right { display: none; }
 }
+
+/* ── Help / Guide button ── */
+.btn-help {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px;
+  background: #eef2ff; color: #2563eb;
+  font-size: 12.5px; font-weight: 600;
+  border: 1.5px solid #c7d2fe; border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-help:hover { background: #e0e7ff; border-color: #a5b4fc; }
+
+/* ── Tutorial highlight states ── */
+.tutorial-highlight--toolbar {
+  box-shadow: 0 0 0 3px #2563eb, 0 0 0 7px rgba(37,99,235,0.18);
+  z-index: 210;
+  position: relative;
+  border-radius: 0;
+}
+.tutorial-highlight--input {
+  box-shadow: 0 0 0 3px #2563eb, 0 0 0 7px rgba(37,99,235,0.18);
+  z-index: 210;
+  position: relative;
+}
+.tutorial-highlight--simplify {
+  box-shadow: 0 0 0 3px #2563eb, 0 0 20px rgba(37,99,235,0.45) !important;
+  transform: scale(1.05);
+  z-index: 210;
+  position: relative;
+}
+
+/* ── Tutorial overlay ── */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* ── Tutorial card ── */
+.tutorial-card {
+  position: fixed;
+  width: 300px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 26px 24px 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.1);
+  z-index: 211;
+}
+
+.tutorial-dots {
+  display: flex; gap: 6px; margin-bottom: 18px;
+}
+.tutorial-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  transition: background 0.2s, width 0.2s;
+}
+.tutorial-dot--active {
+  width: 20px;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.tutorial-title {
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0d1117; margin: 0 0 10px;
+}
+.tutorial-desc {
+  font-size: 13.5px; line-height: 1.68;
+  color: #4b5563; margin: 0 0 22px;
+}
+
+.tutorial-actions {
+  display: flex; align-items: center; gap: 8px;
+}
+.tutorial-btn-prev {
+  font-size: 13px; font-weight: 600;
+  color: #6b7280; background: none;
+  border: none; cursor: pointer; padding: 6px 2px;
+  transition: color 0.15s;
+}
+.tutorial-btn-prev:hover { color: #0d1117; }
+.tutorial-btn-skip {
+  font-size: 13px; font-weight: 500;
+  color: #9ca3af; background: none;
+  border: none; cursor: pointer; padding: 6px 4px;
+  margin-right: auto;
+  transition: color 0.15s;
+}
+.tutorial-btn-skip:hover { color: #6b7280; }
+.tutorial-btn-next {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  background: #2563eb; color: #fff;
+  font-size: 13px; font-weight: 700;
+  border: none; border-radius: 999px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+  transition: background 0.2s, transform 0.15s;
+}
+.tutorial-btn-next:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+/* ── Transition ── */
+.tutorial-fade-enter-active,
+.tutorial-fade-leave-active { transition: opacity 0.22s ease; }
+.tutorial-fade-enter-from,
+.tutorial-fade-leave-to    { opacity: 0; }
 </style>
