@@ -41,16 +41,16 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
       <div class="hero-content">
         <div class="badge">
-          Reading support for minds that think differently.
+          For university students with dyslexia · Australia
         </div>
         <h1 class="hero-title">
-          Read with Clarity.<br/>
-          Learn with <span class="highlight">Confidence.</span>
+          Study Smarter.<br/>
+          Read with <span class="highlight">Confidence.</span>
         </h1>
         <p class="hero-sub">
-          ClearRead turns complex text into clear summaries,
-          custom reading settings, and natural audio — so you can
-          focus on understanding.
+          Struggling with dense lecture notes, LMS readings, or academic PDFs?
+          ClearRead breaks them down into clear summaries, key points, and audio —
+          so you can keep up with your studies without the extra stress.
         </p>
         <div class="hero-actions">
           <a href="/reading" class="btn-start">
