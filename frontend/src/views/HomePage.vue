@@ -26,7 +26,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link nav-link--active">Home</a></li>
-          <li><a href="/reading"  class="nav-link">Read Easier</a></li>
+          <li><a href="/reading"  class="nav-link">Reading Support</a></li>
           <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
@@ -41,20 +41,19 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
       <div class="hero-content">
         <div class="badge">
-          Reading support for minds that think differently.
+          For university students with dyslexia · Australia
         </div>
         <h1 class="hero-title">
-          Read with Clarity.<br/>
-          Learn with <span class="highlight">Confidence.</span>
+          Study Smarter.<br/>
+          Read with <span class="highlight">Confidence.</span>
         </h1>
         <p class="hero-sub">
-          ClearRead turns complex text into clear summaries,
-          custom reading settings, and natural audio — so you can
-          focus on understanding.
+          Hard to get through your study materials?<br/>
+          ClearRead makes them shorter, simpler, and easier to follow.
         </p>
         <div class="hero-actions">
           <a href="/reading" class="btn-start">
-            Read Easier
+            Start Here
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -70,24 +69,23 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <section class="section-features">
       <div class="container">
         <p class="eyebrow">What ClearRead does</p>
-        <h2 class="section-title">Everything you need to read with ease</h2>
-        <p class="section-sub">Built around the three things that make the biggest difference for readers with dyslexia.</p>
+        <h2 class="section-title">Three ways ClearRead helps</h2>
 
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-num">01</div>
             <h3>Simplify Text</h3>
-            <p>Paste any article, essay, or passage. ClearRead rewrites it in plain English, extracts the key points, and gives you a quick summary — so you spend less time decoding and more time understanding.</p>
+            <p>Paste your text. Get a simpler version, key points, and a short summary.</p>
           </div>
           <div class="feature-card">
             <div class="feature-num">02</div>
-            <h3>Read Aloud</h3>
-            <p>Natural text-to-speech reads your content back to you at whatever speed feels comfortable. Listening while reading reinforces the phonological connections that dyslexia makes difficult.</p>
+            <h3>Listen Along</h3>
+            <p>Listen to your text read aloud. Choose a speed that feels right for you.</p>
           </div>
           <div class="feature-card">
             <div class="feature-num">03</div>
-            <h3>Customise Display</h3>
-            <p>Adjust font size, line spacing, and background colour to match how your brain reads best. Small changes — like a cream background or wider spacing — make a measurable difference.</p>
+            <h3>Adjust the Display</h3>
+            <p>Change font size, spacing, and background colour. Find what works for you.</p>
           </div>
         </div>
       </div>
@@ -97,14 +95,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <section class="section-steps">
       <div class="container">
         <p class="eyebrow">How it works</p>
-        <h2 class="section-title">Three steps to clearer reading</h2>
+        <h2 class="section-title">Three steps</h2>
 
         <div class="steps-row">
           <div class="step">
             <span class="step-num">1</span>
             <div class="step-body">
               <h3>Paste your text</h3>
-              <p>Copy any text — an article, lecture notes, an assignment — and paste it into ClearRead.</p>
+              <p>Paste any text or upload a file.</p>
             </div>
           </div>
           <div class="step-arrow">
@@ -116,7 +114,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             <span class="step-num">2</span>
             <div class="step-body">
               <h3>Simplify</h3>
-              <p>Click Simplify. ClearRead returns a plain-English version, an AI summary, and key points.</p>
+              <p>Click Simplify. Get a plain English version and key points.</p>
             </div>
           </div>
           <div class="step-arrow">
@@ -127,8 +125,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <div class="step">
             <span class="step-num">3</span>
             <div class="step-body">
-              <h3>Read comfortably</h3>
-              <p>Adjust the display to your preference, then read or listen at your own pace.</p>
+              <h3>Read or listen</h3>
+              <p>Read or listen at your own pace.</p>
             </div>
           </div>
         </div>
@@ -138,10 +136,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- ── CTA ── -->
     <section class="section-cta">
       <div class="container">
-        <h2>Ready to read more comfortably?</h2>
-        <p>Try ClearRead now — it takes less than a minute to get started.</p>
+        <h2>Give it a try.</h2>
+        <p>It only takes a minute to get started.</p>
         <a href="/reading" class="btn-cta">
-          Read Easier
+          Start Here
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -157,7 +155,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <a href="/reading"  class="footer-link">Read Easier</a>
+          <a href="/reading"  class="footer-link">Reading Support</a>
           <a href="/dyslexia" class="footer-link">Dyslexia</a>
           <a href="#"         class="footer-link">About</a>
         </nav>
