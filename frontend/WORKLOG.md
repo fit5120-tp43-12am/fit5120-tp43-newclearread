@@ -4,6 +4,7 @@
 
 ---
 
+
 ## 2026-04-04
 
 ### Project Initialisation
@@ -126,6 +127,53 @@
 
 ---
 
+## 2026-04-13
+
+### Reading Page — File Upload & Toolbar Expansion
+- Expanded accepted file types for upload:
+  - **Text (read directly):** `.txt`, `.md`, `.markdown`, `.csv`, `.rtf`, `.log`, `.text`
+  - **Binary (backend stub placeholder):** `.pdf`, `.doc`, `.docx`, `.odt`, `.pages`, `.epub`, `.ppt`, `.pptx`
+  - **Rejected with specific error:** images (`.jpg`, `.png`, `.gif`, `.webp`, etc.) and media (`.mp4`, `.mp3`, etc.)
+- Updated `accept` attribute on hidden file `<input>` to include all binary formats
+- Binary uploads insert a clear placeholder message pointing to `POST /api/text/extract` stub
+
+### Reading Page — Toolbar Height & Button Size
+- Toolbar height: `52px → 64px`, inner gap: `12px → 16px`
+- `btn-read` padding: `7px 16px → 9px 20px`; font-size: `13px → 13.5px`; shadow upgraded
+- Speed pills: padding `4px 9px → 6px 11px`; font-size `12px → 12.5px`
+- View toggle buttons: padding `5px 12px → 6px 14px`; font-size `12.5px → 13px`
+- Font A−/A+ buttons: padding `5px 9px → 7px 11px`; font-size `13px → 13.5px`
+- Toolbar separator height: `20px → 24px`
+
+### Reading Page — Toolbar Colour
+- Changed toolbar background from plain white to a blue-purple horizontal gradient:
+  `linear-gradient(105deg, rgba(232,239,255,0.9), rgba(240,236,255,0.9))`
+- All toolbar button borders updated to blue-toned `rgba(199,210,254,0.6)`
+- Speed pills, spacing buttons, font buttons: semi-transparent white backgrounds (`rgba(255,255,255,0.45–0.9)`)
+- Separator line changed to `rgba(199,210,254,0.7)`; BG label and font value text updated to blue-toned colours
+- Active states remain `#2563eb`; hover states brighten to `rgba(255,255,255,0.75–0.85)`
+
+### Reading Page — Background Alignment
+- Input panel background changed from warm `#faf9f7` → `#fafbff` to match cool blue-white tone of other pages
+- Removed left/right border from `.content` container (was creating a "boxed" look)
+
+### Global Navbar — ClearRead Logo
+- Added blue SVG logo icon to `nav-logo` across all three pages (HomePage, DyslexiaPage, ReadingPage)
+- Logo: 28×28 rounded square (`rx="8"`) in `#2563eb` with white open-book shape and text-line details
+- `.nav-logo` updated to `display: flex; align-items: center; gap: 9px` on all three pages
+
+### Global — Font Consistency Fix
+- Reading page had `font-family: 'Arial', 'Helvetica Neue', sans-serif` on `.page`, overriding the global Inter font
+- Removed the override — all three pages now uniformly use **Inter** from `style.css`
+
+### Navigation — Start Reading Button Audit
+- **DyslexiaPage CTA section:** `href="#"` → `href="/reading"` (was broken, not navigating)
+- **DyslexiaPage navbar:** `Get Started` converted from `<a href="#">` to `<button disabled>` with `.btn-nav--disabled` styling, consistent with HomePage
+- Added `.btn-nav--disabled` and `:not(:disabled)` hover guard to DyslexiaPage CSS
+- HomePage and ReadingPage buttons verified correct — no changes needed
+
+---
+
 ## File Summary
 
 | File | Status | Description |
@@ -141,5 +189,6 @@
 
 | Hook | File | Line | Description |
 |------|------|------|-------------|
-| `handleSimplify()` | `ReadingPage.vue` | ~54 | `POST /api/text/simplify` → `{ summary, simplified, keyPoints }` |
-| Read Aloud | `ReadingPage.vue` | ~112 | Fully implemented via Web Speech API — no backend needed |
+| `handleSimplify()` | `ReadingPage.vue` | ~71 | `POST /api/text/simplify` → `{ summary, simplified, keyPoints }` |
+| `handleFileUpload()` binary branch | `ReadingPage.vue` | ~220 | `POST /api/text/extract` for PDF/DOCX/EPUB etc. — placeholder text shown until connected |
+| Read Aloud | `ReadingPage.vue` | ~118 | Fully implemented via Web Speech API (`en-AU`, 0.75×–1.5×) — no backend needed |
