@@ -1,11 +1,121 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-const scrolled  = ref(false)
-const menuOpen  = ref(false)
+/* ── Nav ─────────────────────────────────────────────────────────────── */
+const scrolled = ref(false)
+const menuOpen = ref(false)
 function onScroll() { scrolled.value = window.scrollY > 10 }
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
+
+/* ── Chart Pagination ─────────────────────────────────────────────────── */
+const chartIdx = ref(0)
+const CHARTS = 2
+function goTo(i) { chartIdx.value = i }
+function prevChart() { if (chartIdx.value > 0) chartIdx.value-- }
+function nextChart() { if (chartIdx.value < CHARTS - 1) chartIdx.value++ }
+
+/* ── Chart 1: Horizontal Bar Chart ───────────────────────────────────── */
+const barGroups = [
+  { lines: ['Learning and', 'understanding'], m: 8.3, f: 4.9 },
+  { lines: ['Psychosocial'],                  m: 6.4, f: 5.1 },
+  { lines: ['Sensory and speech'],            m: 4.4, f: 3.0 },
+  { lines: ['Physical'],                      m: 4.3, f: 3.9 },
+  { lines: ['Other'],                         m: 3.0, f: 3.4 },
+  { lines: ['Head injury / ABI'],             m: 1.3, f: 0.3 },
+]
+
+const sexFlt = ref('both')  // 'both' | 'm' | 'f'
+const bTip   = ref(null)    // { x, y, text }
+
+/* SVG bar-chart layout constants */
+const BAR_W     = 600
+const BAR_H_SVG = 295
+const ML  = 185, MR = 15, MT = 44, MB = 38
+const CW  = BAR_W - ML - MR          // 400
+const CH  = BAR_H_SVG - MT - MB      // 213
+const MAX_V = 9.5
+const SX  = CW / MAX_V               // ≈ 42.1 px per %
+const GH  = CH / barGroups.length    // ≈ 35.5 px per group
+const BH  = 13, BG = 4               // bar height, between-bar gap
+const AXISY = BAR_H_SVG - MB         // 257
+const DYLX  = ML + 4.9 * SX         // ≈ 391 (dyslexia reference x)
+
+function mY(i) { return MT + i * GH }
+function fY(i) { return MT + i * GH + BH + BG }
+function cY(i) { return MT + i * GH + (BH * 2 + BG) / 2 }
+
+function barAlpha(sex) {
+  return sexFlt.value === 'both' || sexFlt.value === sex ? 1 : 0.15
+}
+function showTip(i, sex, val) {
+  const bx = ML + val * SX
+  let tx = bx + 10
+  if (tx + 122 > BAR_W) tx = bx - 130
+  bTip.value = {
+    x: tx,
+    y: (sex === 'm' ? mY(i) : fY(i)) + BH / 2,
+    text: `${sex === 'm' ? 'Males' : 'Females'}: ${val}%`,
+  }
+}
+
+/* ── Chart 2: Donut Chart ────────────────────────────────────────────── */
+const donutRaw = [
+  { label: 'ASD',      v: 18.5, color: '#2563eb', note: 'Autism Spectrum Disorder' },
+  { label: 'Dyslexia', v:  4.9, color: '#ef4444', note: 'Reading & learning difficulty' },
+  { label: 'Others',   v:  0.5, color: '#9ca3af', note: 'Other conditions (derived)' },
+]
+const PSYCH  = 23.9
+const hovSeg = ref(-1)
+
+/* SVG donut constants — viewBox 560×380, centre 280,190 */
+const DCX = 280, DCY = 190, DRO = 155, DRI = 92
+
+function pol(cx, cy, r, deg) {
+  const rad = (deg - 90) * Math.PI / 180
+  return [+(cx + r * Math.cos(rad)).toFixed(2), +(cy + r * Math.sin(rad)).toFixed(2)]
+}
+
+function makeSectorPath(cx, cy, ro, ri, a0, a1, expand) {
+  const off = expand ? 8 : 0
+  const mid = (a0 + a1) / 2
+  const ox = off * Math.cos((mid - 90) * Math.PI / 180)
+  const oy = off * Math.sin((mid - 90) * Math.PI / 180)
+  const ccx = cx + ox, ccy = cy + oy
+  const [x1, y1] = pol(ccx, ccy, ro, a0)
+  const [x2, y2] = pol(ccx, ccy, ro, a1)
+  const [x3, y3] = pol(ccx, ccy, ri, a1)
+  const [x4, y4] = pol(ccx, ccy, ri, a0)
+  const lg = (a1 - a0 > 180) ? 1 : 0
+  return `M${x1} ${y1} A${ro} ${ro} 0 ${lg} 1 ${x2} ${y2} L${x3} ${y3} A${ri} ${ri} 0 ${lg} 0 ${x4} ${y4}Z`
+}
+
+const segs = computed(() => {
+  const tot = donutRaw.reduce((s, d) => s + d.v, 0)
+  let a = 0
+  return donutRaw.map((d, i) => {
+    const sweep = (d.v / tot) * 360
+    const a1   = a + sweep
+    const hov  = hovSeg.value === i
+    const path = makeSectorPath(DCX, DCY, DRO, DRI, a, a1, hov)
+    const mid  = a + sweep / 2
+    const [lx1, ly1] = pol(DCX, DCY, DRO + 6,  mid)
+    const [lx,  ly ] = pol(DCX, DCY, DRO + 26, mid)
+    const anc  = lx > DCX ? 'start' : 'end'
+    const pct  = (d.v / PSYCH * 100).toFixed(1)
+    const seg  = { ...d, path, a0: a, a1, mid, lx1, ly1, lx, ly, anc, pct, sweep }
+    a = a1
+    return seg
+  })
+})
+
+const ctxt = computed(() => {
+  if (hovSeg.value >= 0) {
+    const s = donutRaw[hovSeg.value]
+    return { top: s.label, mid: `${s.v}%`, bot: `${(s.v / PSYCH * 100).toFixed(1)}% within` }
+  }
+  return { top: 'Psychological', mid: 'development', bot: `${PSYCH}% of all` }
+})
 </script>
 
 <template>
@@ -104,7 +214,257 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </div>
       </section>
 
-      <!-- ③ What is Dyslexia + Video -->
+      <!-- ③ Data Insights — interactive charts -->
+      <section id="data-insights" class="section-viz">
+        <div class="container">
+          <p class="eyebrow">Data &amp; Research</p>
+          <h2 class="viz-h2">Dyslexia by the Numbers</h2>
+          <p class="section-sub">Australian data, ages 0–24. Hover to explore.</p>
+
+          <!-- Tab buttons -->
+          <div class="viz-tabs" role="tablist">
+            <button
+              role="tab"
+              :aria-selected="chartIdx === 0"
+              :class="['viz-tab', { active: chartIdx === 0 }]"
+              @click="goTo(0)"
+            >
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" class="tab-icon">
+                <rect x="1" y="4" width="13" height="3" rx="1" fill="currentColor" opacity="0.7"/>
+                <rect x="1" y="9" width="9" height="3" rx="1" fill="currentColor"/>
+              </svg>
+              Disability Groups by Sex
+            </button>
+            <button
+              role="tab"
+              :aria-selected="chartIdx === 1"
+              :class="['viz-tab', { active: chartIdx === 1 }]"
+              @click="goTo(1)"
+            >
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" class="tab-icon">
+                <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
+                <circle cx="7.5" cy="7.5" r="3" fill="currentColor" opacity="0.3"/>
+              </svg>
+              Psychological Development
+            </button>
+          </div>
+
+          <!-- Chart panel -->
+          <div class="viz-panel">
+            <Transition name="chart-fade" mode="out-in">
+
+              <!-- ─ Chart 0: Horizontal Bar Chart ─ -->
+              <div v-if="chartIdx === 0" key="bar" class="chart-view">
+
+                <!-- Sex filter toggle -->
+                <div class="bar-controls">
+                  <span class="ctrl-label">Show:</span>
+                  <div class="toggle-group" role="group">
+                    <button :class="['tog-btn', { active: sexFlt === 'both' }]" @click="sexFlt = 'both'">Both</button>
+                    <button :class="['tog-btn', { active: sexFlt === 'm' }]"    @click="sexFlt = 'm'">Males</button>
+                    <button :class="['tog-btn', { active: sexFlt === 'f' }]"    @click="sexFlt = 'f'">Females</button>
+                  </div>
+                </div>
+
+                <!-- SVG -->
+                <div class="svg-wrap">
+                  <svg
+                    :viewBox="`0 0 ${BAR_W} ${BAR_H_SVG}`"
+                    class="chart-svg"
+                    role="img"
+                    aria-label="Horizontal bar chart: disability group proportions by sex, ages 0–24"
+                    @mouseleave="bTip = null"
+                  >
+                    <!-- Grid & x-axis ticks -->
+                    <g v-for="v in [0, 2, 4, 6, 8]" :key="v">
+                      <line
+                        :x1="ML + v * SX" :y1="MT - 6"
+                        :x2="ML + v * SX" :y2="AXISY"
+                        stroke="#e5e7eb" stroke-width="1"
+                      />
+                      <text
+                        :x="ML + v * SX" :y="AXISY + 14"
+                        font-size="10" fill="#9ca3af" text-anchor="middle" font-family="Inter, sans-serif"
+                      >{{ v }}%</text>
+                    </g>
+
+                    <!-- Axis line -->
+                    <line :x1="ML" :y1="AXISY" :x2="BAR_W - MR" :y2="AXISY" stroke="#d1d5db" stroke-width="1"/>
+
+                    <!-- Dyslexia reference line -->
+                    <line
+                      :x1="DYLX" :y1="MT - 6"
+                      :x2="DYLX" :y2="AXISY"
+                      stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.75"
+                    />
+                    <text
+                      :x="DYLX" :y="MT - 10"
+                      font-size="9" fill="#ef4444" text-anchor="middle" font-family="Inter, sans-serif"
+                    >Dyslexia 4.9%</text>
+
+                    <!-- Legend -->
+                    <rect :x="ML" y="6" width="11" height="11" rx="2" fill="#2563eb"/>
+                    <text :x="ML + 14" y="16" font-size="11" fill="#374151" font-family="Inter, sans-serif">Males</text>
+                    <rect :x="ML + 64" y="6" width="11" height="11" rx="2" fill="#f59e0b"/>
+                    <text :x="ML + 78" y="16" font-size="11" fill="#374151" font-family="Inter, sans-serif">Females</text>
+
+                    <!-- Bars & labels -->
+                    <g v-for="(d, i) in barGroups" :key="i">
+                      <!-- Male bar -->
+                      <rect
+                        :x="ML" :y="mY(i)"
+                        :width="d.m * SX" :height="BH"
+                        rx="2" fill="#2563eb"
+                        :opacity="barAlpha('m')"
+                        class="bar-rect"
+                        @mouseenter="showTip(i, 'm', d.m)"
+                        @mouseleave="bTip = null"
+                      />
+                      <!-- Female bar -->
+                      <rect
+                        :x="ML" :y="fY(i)"
+                        :width="d.f * SX" :height="BH"
+                        rx="2" fill="#f59e0b"
+                        :opacity="barAlpha('f')"
+                        class="bar-rect"
+                        @mouseenter="showTip(i, 'f', d.f)"
+                        @mouseleave="bTip = null"
+                      />
+                      <!-- Label (1 or 2 lines) -->
+                      <text
+                        v-if="d.lines.length === 1"
+                        :x="ML - 8" :y="cY(i) + 4.5"
+                        font-size="11" fill="#374151" text-anchor="end" font-family="Inter, sans-serif"
+                      >{{ d.lines[0] }}</text>
+                      <text v-else font-size="11" fill="#374151" text-anchor="end" font-family="Inter, sans-serif">
+                        <tspan :x="ML - 8" :y="cY(i) - 5">{{ d.lines[0] }}</tspan>
+                        <tspan :x="ML - 8" :y="cY(i) + 9">{{ d.lines[1] }}</tspan>
+                      </text>
+                    </g>
+
+                    <!-- Tooltip -->
+                    <g v-if="bTip">
+                      <rect
+                        :x="bTip.x" :y="bTip.y - 11"
+                        width="122" height="20" rx="5"
+                        fill="#1e293b" opacity="0.93"
+                      />
+                      <text :x="bTip.x + 9" :y="bTip.y + 3" font-size="11" fill="white" font-family="Inter, sans-serif">
+                        {{ bTip.text }}
+                      </text>
+                    </g>
+                  </svg>
+                </div>
+
+                <!-- Chart summary -->
+                <div class="chart-summary">
+                  <p>Boys are more likely than girls to have learning difficulties. The <strong>red line shows where dyslexia sits</strong> — at 4.9%.</p>
+                  <p class="chart-source">Source: ABS SDAC 2022 · Ages 0–24</p>
+                </div>
+              </div>
+
+              <!-- ─ Chart 1: Donut Chart ─ -->
+              <div v-else-if="chartIdx === 1" key="donut" class="chart-view">
+
+                <!-- SVG — full width, centred -->
+                <div class="donut-svg-wrap">
+                  <svg
+                    viewBox="0 0 560 380"
+                    class="chart-svg donut-svg"
+                    role="img"
+                    aria-label="Donut chart: breakdown of psychological development conditions"
+                  >
+                    <!-- Segments -->
+                    <path
+                      v-for="(s, i) in segs" :key="i"
+                      :d="s.path"
+                      :fill="s.color"
+                      class="donut-seg"
+                      @mouseenter="hovSeg = i"
+                      @mouseleave="hovSeg = -1"
+                    />
+
+                    <!-- Center text (updates on hover) -->
+                    <text :x="DCX" :y="DCY - 18" font-size="15" font-weight="700" fill="#0d1117" text-anchor="middle" font-family="Inter, sans-serif">{{ ctxt.top }}</text>
+                    <text :x="DCX" :y="DCY + 4"  font-size="15" font-weight="700" fill="#0d1117" text-anchor="middle" font-family="Inter, sans-serif">{{ ctxt.mid }}</text>
+                    <text :x="DCX" :y="DCY + 24" font-size="11" fill="#6b7280"   text-anchor="middle" font-family="Inter, sans-serif">{{ ctxt.bot }}</text>
+
+                    <!-- Segment labels (skip tiny segments < 10°) -->
+                    <g v-for="(s, i) in segs" :key="'lbl' + i">
+                      <template v-if="s.sweep > 10">
+                        <line :x1="s.lx1" :y1="s.ly1" :x2="s.lx" :y2="s.ly" stroke="#d1d5db" stroke-width="1.2"/>
+                        <text
+                          :x="s.lx + (s.anc === 'start' ? 6 : -6)" :y="s.ly + 1"
+                          font-size="14" font-weight="700" :fill="s.color" :text-anchor="s.anc"
+                          font-family="Inter, sans-serif"
+                        >{{ s.label }}</text>
+                        <text
+                          :x="s.lx + (s.anc === 'start' ? 6 : -6)" :y="s.ly + 18"
+                          font-size="12" fill="#6b7280" :text-anchor="s.anc"
+                          font-family="Inter, sans-serif"
+                        >{{ s.pct }}%</text>
+                      </template>
+                    </g>
+                  </svg>
+                </div>
+
+                <!-- Legend — horizontal row below chart -->
+                <div class="donut-legend">
+                  <div
+                    v-for="(s, i) in segs" :key="i"
+                    :class="['leg-item', { hovered: hovSeg === i }]"
+                    @mouseenter="hovSeg = i"
+                    @mouseleave="hovSeg = -1"
+                  >
+                    <span class="leg-dot" :style="{ background: s.color }"/>
+                    <div class="leg-info">
+                      <div class="leg-row">
+                        <span class="leg-name">{{ s.label }}</span>
+                        <span class="leg-val" :style="{ color: s.color }">{{ s.v }}%</span>
+                      </div>
+                      <div class="leg-note">{{ s.note }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chart summary -->
+                <div class="chart-summary">
+                  <p><strong>Dyslexia is the 2nd most common</strong> condition in this group. ASD is the most common. Hover each section to see more.</p>
+                  <p class="chart-source">Source: ABS SDAC 2022 · Ages 0–24</p>
+                </div>
+              </div>
+
+            </Transition>
+          </div>
+
+          <!-- Pagination navigation -->
+          <div class="viz-nav">
+            <button class="page-btn" @click="prevChart" :disabled="chartIdx === 0">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 4L6 8L10 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Previous
+            </button>
+            <div class="page-dots">
+              <button
+                v-for="i in CHARTS" :key="i"
+                :class="['page-dot', { active: chartIdx === i - 1 }]"
+                @click="goTo(i - 1)"
+                :aria-label="`Chart ${i}`"
+              />
+            </div>
+            <button class="page-btn" @click="nextChart" :disabled="chartIdx === CHARTS - 1">
+              Next
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ④ What is Dyslexia + Video -->
       <section id="what-is" class="section-content">
         <div class="container">
           <div class="content-block">
@@ -744,6 +1104,125 @@ blockquote {
 }
 .btn-cta:hover { background: #eef2ff; transform: translateY(-2px); }
 
+/* ── ③ Data Viz ───────────────────────────────────────────────────────── */
+.section-viz {
+  padding: 88px 0;
+  background: #fafbff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.viz-h2 { font-size: clamp(26px, 3vw, 38px); font-weight: 800; letter-spacing: -0.03em; margin: 0 0 12px; line-height: 1.2; }
+
+/* Tabs */
+.viz-tabs {
+  display: flex; gap: 6px; margin-bottom: 0;
+  border-bottom: 2px solid #e5e7eb;
+}
+.viz-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 20px; font-size: 14px; font-weight: 600;
+  color: #6b7280; background: none; border: none; border-radius: 8px 8px 0 0;
+  cursor: pointer; transition: color 0.2s, background 0.2s;
+  position: relative; bottom: -2px;
+  border-bottom: 2px solid transparent;
+}
+.viz-tab:hover { color: #374151; background: rgba(0,0,0,0.03); }
+.viz-tab.active {
+  color: #2563eb; background: #fff;
+  border-bottom-color: #2563eb;
+  box-shadow: 0 -2px 8px rgba(37,99,235,0.08);
+}
+.tab-icon { flex-shrink: 0; }
+
+/* Panel */
+.viz-panel {
+  background: #fff;
+  border-radius: 0 16px 16px 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+  padding: 32px 32px 28px;
+  min-height: 380px;
+}
+
+/* Transition */
+.chart-fade-enter-active,
+.chart-fade-leave-active { transition: opacity 0.22s ease, transform 0.22s ease; }
+.chart-fade-enter-from { opacity: 0; transform: translateY(10px); }
+.chart-fade-leave-to  { opacity: 0; transform: translateY(-6px); }
+
+/* Bar controls */
+.bar-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.ctrl-label { font-size: 13px; color: #6b7280; font-weight: 500; }
+.toggle-group { display: flex; background: #f3f4f6; border-radius: 999px; padding: 3px; gap: 2px; }
+.tog-btn {
+  padding: 4px 14px; font-size: 13px; font-weight: 500;
+  border: none; border-radius: 999px; cursor: pointer;
+  color: #6b7280; background: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.tog-btn.active { background: #fff; color: #2563eb; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+/* SVG */
+.svg-wrap { width: 100%; overflow: hidden; }
+.chart-svg { width: 100%; height: auto; display: block; }
+.bar-rect { transition: opacity 0.2s; cursor: pointer; }
+.bar-rect:hover { filter: brightness(1.1); }
+
+/* Donut — full-width centred SVG, legend row below */
+.donut-svg-wrap { max-width: 520px; margin: 0 auto; }
+.donut-svg { width: 100%; height: auto; }
+.donut-seg { cursor: pointer; transition: filter 0.15s; }
+.donut-seg:hover { filter: brightness(1.08); }
+
+/* Legend — horizontal row */
+.donut-legend { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.leg-item {
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px 16px; border-radius: 10px;
+  border: 1px solid transparent; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.leg-item:hover,
+.leg-item.hovered { background: #f8faff; border-color: #dbeafe; }
+.leg-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.leg-info { }
+.leg-row { display: flex; align-items: baseline; gap: 6px; }
+.leg-name { font-size: 14px; font-weight: 700; color: #0d1117; }
+.leg-val  { font-size: 13px; font-weight: 700; }
+.leg-note { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+/* Chart summary */
+.chart-summary {
+  margin-top: 24px; padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+.chart-summary p { font-size: 14.5px; line-height: 1.7; color: #4b5563; margin: 0 0 8px; }
+.chart-summary p:last-child { margin-bottom: 0; }
+.chart-summary strong { color: #0d1117; font-weight: 700; }
+.chart-source { font-size: 12px; color: #9ca3af; }
+
+/* Pagination */
+.viz-nav { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 28px; }
+.page-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; font-size: 14px; font-weight: 600;
+  color: #374151; background: #fff; border: 1px solid #e5e7eb;
+  border-radius: 999px; cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.page-btn:hover:not(:disabled) {
+  background: #f8faff; color: #2563eb; border-color: #bfdbfe;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.1);
+}
+.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.page-dots { display: flex; gap: 8px; align-items: center; }
+.page-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #d1d5db; border: none; cursor: pointer;
+  transition: background 0.2s, transform 0.2s; padding: 0;
+}
+.page-dot.active { background: #2563eb; transform: scale(1.25); }
+.page-dot:hover:not(.active) { background: #93c5fd; }
+
 /* ── Hamburger ── */
 .nav-hamburger {
   display: none;
@@ -761,6 +1240,7 @@ blockquote {
   .content-block,
   .impact-block { grid-template-columns: 1fr; gap: 40px; }
   .content-aside { position: static; }
+  .donut-svg-wrap { max-width: 380px; }
 }
 @media (max-width: 768px) {
   .nav-links, .btn-nav { display: none; }
@@ -794,6 +1274,12 @@ blockquote {
   .container { padding: 0 20px; }
   .section-content, .section-signs, .section-impact,
   .section-strategies, .section-cta { padding: 64px 0; }
-  .section-stats { padding: 48px 0; }
+  .section-stats, .section-viz { padding: 48px 0; }
+  .viz-panel { padding: 20px 16px; }
+  .viz-tabs { gap: 4px; }
+  .viz-tab { padding: 8px 12px; font-size: 13px; }
+  .page-btn { padding: 7px 14px; font-size: 13px; }
+  .bar-controls { flex-wrap: wrap; }
+  .viz-nav { gap: 16px; }
 }
 </style>
