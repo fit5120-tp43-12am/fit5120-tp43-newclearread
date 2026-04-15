@@ -17,7 +17,7 @@ app.add_middleware(
 app.include_router(text_router, prefix="/api")
 
 @app.get("/")
-def home():
+def home(): 
     return {"message": "Backend is running!"}
 
 
