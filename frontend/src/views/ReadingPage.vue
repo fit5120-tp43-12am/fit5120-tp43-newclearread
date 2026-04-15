@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
+
 // ── Navbar scroll ──
 const scrolled = ref(false)
 function onScroll() { scrolled.value = window.scrollY > 10 }
@@ -92,7 +94,7 @@ async function handleSimplify() {
 
   try {
     // The backend may return either an AI result or a fallback result.
-    const response = await fetch("http://localhost:8000/api/process-text", {
+    const response = await fetch(`${API_BASE_URL}/api/process-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -244,7 +246,7 @@ function readFileAsBase64(file) {
 
 async function uploadFileForExtraction(file) {
   const contentBase64 = await readFileAsBase64(file)
-  const response = await fetch("http://localhost:8000/api/extract-text", {
+  const response = await fetch(`${API_BASE_URL}/api/extract-text`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
