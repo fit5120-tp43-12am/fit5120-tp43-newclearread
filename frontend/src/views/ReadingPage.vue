@@ -4,7 +4,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
 // ── Navbar scroll ──
-const scrolled = ref(false)
+const scrolled  = ref(false)
+const menuOpen  = ref(false)
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
 // ── Input ──
@@ -347,10 +348,14 @@ const TUTORIAL_STEPS = [
 
 const tutorialCardStyle = computed(() => {
   const pos = TUTORIAL_STEPS[tutorialStep.value]?.cardPos
+  // On narrow screens always centre the card
+  if (typeof window !== 'undefined' && window.innerWidth <= 600) {
+    return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100vw - 48px)' }
+  }
   if (pos === 'center')       return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
   if (pos === 'right-top')    return { top: '160px', right: '24px' }
   if (pos === 'right-bottom') return { bottom: '100px', right: '24px' }
-  if (pos === 'toolbar')      return { top: '76px', right: '24px' }
+  if (pos === 'toolbar')      return { top: '145px', right: '24px' }
   return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
 })
 
@@ -403,8 +408,26 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
         <button class="btn-nav btn-nav--disabled" disabled>Get Started</button>
+        <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
+          <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg v-else width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
     </nav>
+
+    <!-- Mobile nav -->
+    <div v-if="menuOpen" class="mobile-nav">
+      <ul class="mobile-nav-links">
+        <li><a href="/"         class="mobile-nav-link" @click="menuOpen = false">Home</a></li>
+        <li><a href="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</a></li>
+        <li><a href="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</a></li>
+        <li><a href="#"         class="mobile-nav-link" @click="menuOpen = false">About</a></li>
+      </ul>
+    </div>
 
     <!-- ── Toolbar ── -->
     <div :class="['toolbar', { 'tutorial-highlight--toolbar': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'toolbar' }]">
@@ -456,16 +479,6 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 
         <!-- Right controls -->
         <div class="toolbar-right">
-          <!-- Help / Tutorial button -->
-          <button class="btn-help" @click="startTutorial" title="Show guide">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M5.5 5.5a1.5 1.5 0 012.8.75c0 1-1.3 1.25-1.3 2.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <circle cx="7" cy="10.5" r=".6" fill="currentColor"/>
-            </svg>
-            Guide
-          </button>
-          <div class="toolbar-sep"></div>
           <!-- Font size -->
           <div class="font-group">
             <button class="font-btn" @click="fontSize = Math.max(14, fontSize - 2)">A−</button>
@@ -650,6 +663,16 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 
     </div>
 
+    <!-- ── Floating Guide button ── -->
+    <button class="btn-guide-fab" @click="startTutorial" title="Show guide">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5.8 5.8a1.7 1.7 0 013.2.85c0 1.1-1.5 1.4-1.5 2.55" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="7.5" cy="11.5" r=".7" fill="currentColor"/>
+      </svg>
+      Guide
+    </button>
+
     <!-- ── Tutorial overlay ── -->
     <Transition name="tutorial-fade">
       <div v-if="showTutorial" class="tutorial-overlay" @click.self="closeTutorial">
@@ -692,11 +715,15 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 <style scoped>
 /* ── Reset / shell ── */
 .page {
-  height: 100vh;
+  height: 100dvh;   /* dynamic viewport — accounts for mobile browser chrome */
+  height: 100vh;    /* fallback for browsers without dvh support */
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #fff;
+}
+@supports (height: 100dvh) {
+  .page { height: 100dvh; }
 }
 
 /* ── Navbar ── */
@@ -1168,26 +1195,84 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   color: #2563eb; font-weight: 700;
 }
 
-/* ── Responsive ── */
-@media (max-width: 860px) {
-  .content { flex-direction: column; max-width: 100%; }
-  .input-panel { flex: 0 0 auto !important; height: 36vh; border-right: none; border-bottom: 1px solid #e5e7eb; }
-  .results-content { padding: 24px 20px; }
-  .toolbar-right { display: none; }
+/* ── Hamburger ── */
+.nav-hamburger {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  color: #0d1117; padding: 4px; margin-left: 12px;
+  align-items: center; justify-content: center;
 }
 
-/* ── Help / Guide button ── */
-.btn-help {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 11px;
-  background: #eef2ff; color: #2563eb;
-  font-size: 12.5px; font-weight: 600;
-  border: 1.5px solid #c7d2fe; border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  white-space: nowrap;
+/* ── Mobile nav drawer ── */
+.mobile-nav { display: none; }
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .nav-links, .btn-nav { display: none; }
+  .nav-hamburger { display: flex; }
+
+  .mobile-nav {
+    display: block;
+    position: fixed;
+    top: 64px; left: 0; right: 0;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 99;
+  }
+  .mobile-nav-links { list-style: none; margin: 0; padding: 0; }
+  .mobile-nav-link {
+    display: block; padding: 16px 24px;
+    font-size: 16px; font-weight: 500; color: #374151;
+    text-decoration: none;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s;
+  }
+  .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
+
+  /* Layout */
+  .content { flex-direction: column; max-width: 100%; }
+  .input-panel { flex: 0 0 auto !important; height: 36vh; border-right: none; border-bottom: 1px solid #e5e7eb; }
+  .results-content { padding: 20px 16px; }
+  .loading-state { padding: 24px 16px; }
+  .nav-inner { padding: 0 16px; }
+
+  /* Toolbar — scroll horizontally so all controls remain accessible */
+  .toolbar-inner {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    padding: 0 16px;
+    gap: 12px;
+    scrollbar-width: none;
+  }
+  .toolbar-inner::-webkit-scrollbar { display: none; }
+  .toolbar-left, .toolbar-right { flex-shrink: 0; }
 }
-.btn-help:hover { background: #e0e7ff; border-color: #a5b4fc; }
+
+/* ── Floating Guide button ── */
+.btn-guide-fab {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  z-index: 150;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 18px;
+  background: #fff; color: #2563eb;
+  font-size: 13px; font-weight: 700;
+  border: 1.5px solid #c7d2fe; border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(37,99,235,0.18), 0 1px 4px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.btn-guide-fab:hover {
+  background: #eef2ff;
+  box-shadow: 0 6px 24px rgba(37,99,235,0.26);
+  transform: translateY(-2px);
+}
+@media (max-width: 860px) {
+  .btn-guide-fab { bottom: 16px; right: 16px; padding: 9px 14px; font-size: 12.5px; }
+}
 
 /* ── Tutorial highlight states ── */
 .tutorial-highlight--toolbar {
@@ -1282,6 +1367,18 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   transition: background 0.2s, transform 0.15s;
 }
 .tutorial-btn-next:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+/* ── Tutorial card — mobile override ── */
+@media (max-width: 600px) {
+  .tutorial-card {
+    position: fixed !important;
+    top: 50% !important; left: 50% !important;
+    right: auto !important; bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: calc(100vw - 48px);
+    max-width: 340px;
+  }
+}
 
 /* ── Transition ── */
 .tutorial-fade-enter-active,
