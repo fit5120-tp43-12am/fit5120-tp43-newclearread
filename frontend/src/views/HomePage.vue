@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
-const scrolled = ref(false)
+const scrolled  = ref(false)
+const menuOpen  = ref(false)
 function onScroll() { scrolled.value = window.scrollY > 10 }
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
@@ -31,8 +32,26 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <li><a href="#"         class="nav-link">About</a></li>
         </ul>
         <button class="btn-nav btn-nav--disabled" disabled>Get Started</button>
+        <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
+          <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg v-else width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
     </nav>
+
+    <!-- Mobile nav -->
+    <div v-if="menuOpen" class="mobile-nav">
+      <ul class="mobile-nav-links">
+        <li><a href="/"         class="mobile-nav-link" @click="menuOpen = false">Home</a></li>
+        <li><a href="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</a></li>
+        <li><a href="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</a></li>
+        <li><a href="#"         class="mobile-nav-link" @click="menuOpen = false">About</a></li>
+      </ul>
+    </div>
 
     <!-- ── Hero ── -->
     <section class="hero">
@@ -485,15 +504,52 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   margin: 0;
 }
 
+/* ── Hamburger ── */
+.nav-hamburger {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  color: #0d1117; padding: 4px; margin-left: 12px;
+  align-items: center; justify-content: center;
+}
+
+/* ── Mobile nav drawer ── */
+.mobile-nav {
+  display: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
+  .nav-links, .btn-nav { display: none; }
+  .nav-hamburger { display: flex; }
+
+  .mobile-nav {
+    display: block;
+    position: fixed;
+    top: 64px; left: 0; right: 0;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 99;
+  }
+  .mobile-nav-links { list-style: none; margin: 0; padding: 0; }
+  .mobile-nav-link {
+    display: block; padding: 16px 28px;
+    font-size: 16px; font-weight: 500; color: #374151;
+    text-decoration: none;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s;
+  }
+  .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
+
   .features-grid { grid-template-columns: 1fr; }
   .steps-row  { flex-direction: column; gap: 24px; }
   .step-arrow { display: none; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
-  .nav-links, .btn-nav { display: none; }
+  .container { padding: 0 20px; }
+  .section-features, .section-steps, .section-cta { padding: 64px 0; }
 }
 </style>
