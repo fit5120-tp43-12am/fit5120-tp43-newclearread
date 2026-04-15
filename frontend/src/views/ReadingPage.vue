@@ -21,6 +21,9 @@ const viewMode  = ref('simplified') // 'simplified' | 'original'
 const result = ref(null)
 // Shape: { summary, simplified, keyPoints, usedFallback, fallbackReason, notice }
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '')
+const apiUrl = (path) => `${apiBaseUrl}${path}`
+
 // ── Display settings ──
 const fontSize    = ref(18)
 const lineSpacing = ref('normal')
@@ -92,7 +95,7 @@ async function handleSimplify() {
 
   try {
     // The backend may return either an AI result or a fallback result.
-    const response = await fetch("http://localhost:8000/api/process-text", {
+    const response = await fetch(apiUrl('/api/process-text'), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -244,7 +247,7 @@ function readFileAsBase64(file) {
 
 async function uploadFileForExtraction(file) {
   const contentBase64 = await readFileAsBase64(file)
-  const response = await fetch("http://localhost:8000/api/extract-text", {
+  const response = await fetch(apiUrl('/api/extract-text'), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
