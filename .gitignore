@@ -24,3 +24,6 @@ backend/venv/
 
 # Claude Code (local only)
 .claude/
+
+# Local work logs (do not publish)
+frontend/WORKLOG.md
