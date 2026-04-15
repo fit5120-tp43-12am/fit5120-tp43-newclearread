@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException
-from models.schemas import (
+from backend.models.schemas import (
     ExtractFileRequest,
     ExtractFileResponse,
     TextRequest,
     TextResponse,
 )
-from services.file_service import extract_text_from_upload
-from services.text_service import process_text
+from backend.services.file_service import extract_text_from_upload
+from backend.services.text_service import process_text
 
 router = APIRouter()
 
