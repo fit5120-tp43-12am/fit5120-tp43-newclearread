@@ -355,7 +355,7 @@ const tutorialCardStyle = computed(() => {
   if (pos === 'center')       return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
   if (pos === 'right-top')    return { top: '160px', right: '24px' }
   if (pos === 'right-bottom') return { bottom: '100px', right: '24px' }
-  if (pos === 'toolbar')      return { top: '76px', right: '24px' }
+  if (pos === 'toolbar')      return { top: '145px', right: '24px' }
   return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
 })
 
@@ -479,16 +479,6 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
 
         <!-- Right controls -->
         <div class="toolbar-right">
-          <!-- Help / Tutorial button -->
-          <button class="btn-help" @click="startTutorial" title="Show guide">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M5.5 5.5a1.5 1.5 0 012.8.75c0 1-1.3 1.25-1.3 2.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <circle cx="7" cy="10.5" r=".6" fill="currentColor"/>
-            </svg>
-            Guide
-          </button>
-          <div class="toolbar-sep"></div>
           <!-- Font size -->
           <div class="font-group">
             <button class="font-btn" @click="fontSize = Math.max(14, fontSize - 2)">A−</button>
@@ -672,6 +662,16 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
       </div>
 
     </div>
+
+    <!-- ── Floating Guide button ── -->
+    <button class="btn-guide-fab" @click="startTutorial" title="Show guide">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5.8 5.8a1.7 1.7 0 013.2.85c0 1.1-1.5 1.4-1.5 2.55" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="7.5" cy="11.5" r=".7" fill="currentColor"/>
+      </svg>
+      Guide
+    </button>
 
     <!-- ── Tutorial overlay ── -->
     <Transition name="tutorial-fade">
@@ -1251,18 +1251,28 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   .toolbar-left, .toolbar-right { flex-shrink: 0; }
 }
 
-/* ── Help / Guide button ── */
-.btn-help {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 11px;
-  background: #eef2ff; color: #2563eb;
-  font-size: 12.5px; font-weight: 600;
+/* ── Floating Guide button ── */
+.btn-guide-fab {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  z-index: 150;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 18px;
+  background: #fff; color: #2563eb;
+  font-size: 13px; font-weight: 700;
   border: 1.5px solid #c7d2fe; border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(37,99,235,0.18), 0 1px 4px rgba(0,0,0,0.08);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
 }
-.btn-help:hover { background: #e0e7ff; border-color: #a5b4fc; }
+.btn-guide-fab:hover {
+  background: #eef2ff;
+  box-shadow: 0 6px 24px rgba(37,99,235,0.26);
+  transform: translateY(-2px);
+}
+@media (max-width: 860px) {
+  .btn-guide-fab { bottom: 16px; right: 16px; padding: 9px 14px; font-size: 12.5px; }
+}
 
 /* ── Tutorial highlight states ── */
 .tutorial-highlight--toolbar {
