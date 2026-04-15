@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
+
 // ── Navbar scroll ──
 const scrolled = ref(false)
 function onScroll() { scrolled.value = window.scrollY > 10 }
@@ -10,6 +12,8 @@ const rawText    = ref('')
 const charLimit  = 5000
 const charCount  = computed(() => rawText.value.length)
 const overLimit  = computed(() => charCount.value > charLimit)
+const atLimit    = computed(() => charCount.value >= charLimit)
+const inputWordCount = computed(() => wordCount(rawText.value))
 
 // ── App state ──
 const mode      = ref('idle')     // 'idle' | 'loading' | 'result'
@@ -90,7 +94,7 @@ async function handleSimplify() {
 
   try {
     // The backend may return either an AI result or a fallback result.
-    const response = await fetch("http://localhost:8000/api/process-text", {
+    const response = await fetch(`${API_BASE_URL}/api/process-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -242,7 +246,7 @@ function readFileAsBase64(file) {
 
 async function uploadFileForExtraction(file) {
   const contentBase64 = await readFileAsBase64(file)
-  const response = await fetch("http://localhost:8000/api/extract-text", {
+  const response = await fetch(`${API_BASE_URL}/api/extract-text`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -543,9 +547,14 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
             Upload file
           </button>
 
-          <span class="char-count" :class="{ 'char-count--over': overLimit }">
-            {{ charCount.toLocaleString() }} / {{ charLimit.toLocaleString() }}
-          </span>
+          <div class="input-limit">
+            <span class="word-count" :class="{ 'word-count--over': atLimit }">
+              {{ inputWordCount.toLocaleString() }} words
+            </span>
+            <span v-if="atLimit" class="limit-hint limit-hint--over">
+              Maximum input length applies
+            </span>
+          </div>
 
           <button
             :class="['btn-simplify', { 'tutorial-highlight--simplify': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'simplify' }]"
@@ -914,10 +923,42 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   justify-content: space-between;
   flex-shrink: 0;
 }
-.char-count {
-  font-size: 12px; font-weight: 500; color: #9ca3af;
+.input-limit {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.char-count--over { color: #ef4444; }
+.word-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #f3f5fb;
+  color: #34415f;
+  font-size: 13px;
+  font-weight: 700;
+}
+.word-count--over {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.limit-hint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #f6f7fb;
+  color: #7b86a2;
+  font-size: 12px;
+  font-weight: 600;
+}
+.limit-hint--over {
+  background: #fef2f2;
+  color: #dc2626;
+}
 
 /* File upload button */
 .btn-upload {

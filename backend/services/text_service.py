@@ -399,8 +399,10 @@ The output language must match the input text language.
 
 2. simplified:
 - rewrite the text in simpler language, using the same language as the input
-- keep ALL key ideas from the original
-- do NOT remove important details
+- keep ALL key ideas from the original, but express them more concisely
+- slightly reduce length while keeping meaning intact
+- combine similar ideas instead of repeating them
+- remove minor or repetitive details if needed
 - use shorter sentences and simpler, more common words
 - prefer clear and easy-to-read wording
 - avoid complex or uncommon vocabulary
