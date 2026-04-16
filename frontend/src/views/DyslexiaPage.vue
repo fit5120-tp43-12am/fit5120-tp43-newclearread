@@ -139,9 +139,7 @@ const ctxt = computed(() => {
           <li><a href="/" class="nav-link">Home</a></li>
           <li><a href="/reading" class="nav-link">Reading Support</a></li>
           <li><a href="/dyslexia" class="nav-link nav-link--active">Dyslexia</a></li>
-          <li><a href="#" class="nav-link">About</a></li>
         </ul>
-        <button class="btn-nav btn-nav--disabled" disabled>Get Started</button>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
             <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -159,7 +157,6 @@ const ctxt = computed(() => {
         <li><a href="/"         class="mobile-nav-link" @click="menuOpen = false">Home</a></li>
         <li><a href="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</a></li>
         <li><a href="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</a></li>
-        <li><a href="#"         class="mobile-nav-link" @click="menuOpen = false">About</a></li>
       </ul>
     </div>
 
@@ -708,22 +705,6 @@ const ctxt = computed(() => {
   border-radius: 50%;
   background: #2563eb;
 }
-.btn-nav {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 18px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 13.5px;
-  font-weight: 600;
-  border-radius: 999px;
-  text-decoration: none;
-  flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
-  transition: background 0.2s, transform 0.15s;
-}
-.btn-nav:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
-.btn-nav--disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
 /* ── Shared layout ── */
 .container {
@@ -1243,7 +1224,7 @@ blockquote {
   .donut-svg-wrap { max-width: 380px; }
 }
 @media (max-width: 768px) {
-  .nav-links, .btn-nav { display: none; }
+  .nav-links { display: none; }
   .nav-hamburger { display: flex; }
 
   .mobile-nav {
