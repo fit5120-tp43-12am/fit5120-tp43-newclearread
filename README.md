@@ -102,7 +102,7 @@ cd backend
 python -m venv venv
 
 # 激活（Windows）
-venv\Scripts\activate
+pip install -r requirements.txt
 
 # 安装依赖
 pip install fastapi uvicorn
