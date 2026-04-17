@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import re
 import time
@@ -8,15 +8,15 @@ from contextlib import contextmanager
 from dotenv import load_dotenv
 from google import genai
 
-######1
+# OpenAI is used as the primary text-processing provider.
 from openai import OpenAI
 
-# -------- config --------
+# Load API keys and model settings from the backend environment file.
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-#####2
+# Gemini remains available as a secondary provider and fallback path.
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 USE_AI = True
 
@@ -39,7 +39,6 @@ DEAD_LOCAL_PROXY_VALUES = {
 RETRYABLE_ERROR_MARKERS = (
     "503",
     "unavailable",
-    ######5
     # "429",
     "resource_exhausted",
     "timeout",
@@ -139,6 +138,7 @@ def basic_algorithm(
     notice: str = "",
     fallback_reason: str = "fallback_used",
 ):
+    # Build the standard response shape used when AI output is unavailable.
     summary, simplified, key_points = _build_rule_based_fallback(text)
     return {
         "summary": summary,
@@ -150,14 +150,14 @@ def basic_algorithm(
     }
 
 
-# Determine whether the local proxy is invalid 判断是不是无效本地代理
+# Detect proxy values that point to a known dead local address.
 def _is_dead_local_proxy(value: str | None) -> bool:
     if not value:
         return False
     return value.strip().lower() in DEAD_LOCAL_PROXY_VALUES
 
 
-# Temporarily disable the proxy 临时移除代理
+# Temporarily remove broken local proxy settings while calling external AI services.
 @contextmanager
 def _without_dead_local_proxies():
     removed_proxies = {}
@@ -175,11 +175,13 @@ def _without_dead_local_proxies():
 
 
 def _is_retryable_error(error: Exception) -> bool:
+    # Match broad transient-failure markers from provider or network errors.
     message = str(error).lower()
     return any(marker in message for marker in RETRYABLE_ERROR_MARKERS)
 
 
 def _fallback_notice(reason: str) -> str:
+    # Convert internal fallback reasons into short messages for the frontend.
     notices = {
         "temporary_ai_unavailable": "AI service is busy right now. Showing a basic result.",
         "config_error": "AI is not configured right now. Showing a basic result.",
@@ -190,6 +192,7 @@ def _fallback_notice(reason: str) -> str:
 
 
 def _normalize_text(text: str) -> str:
+    # Normalise whitespace before sentence splitting and keyword scoring.
     text = re.sub(r"\r\n?", "\n", text)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
@@ -197,10 +200,11 @@ def _normalize_text(text: str) -> str:
 
 
 def _split_sentences(text: str) -> list[str]:
+    # Split text into sentence-like chunks for the rule-based fallback algorithm.
     normalized = _normalize_text(text)
     if not normalized:
         return []
-    parts = re.split(r"(?<=[.!?。！？])\s+|\n+", normalized)
+    parts = re.split(r"(?<=[.!?銆傦紒锛焆)\s+|\n+", normalized)
     return [part.strip(" -\t") for part in parts if part and part.strip(" -\t")]
 
 
@@ -209,6 +213,7 @@ def _tokenize_words(text: str) -> list[str]:
 
 
 def _keyword_weights(sentences: list[str]) -> Counter:
+    # Count repeated meaningful words so important sentences score higher.
     counter = Counter()
     for sentence in sentences:
         for token in _tokenize_words(sentence):
@@ -220,6 +225,7 @@ def _keyword_weights(sentences: list[str]) -> Counter:
 def _sentence_score(
     sentence: str, keyword_weights: Counter, sentence_index: int
 ) -> float:
+    # Score sentences by keyword density, reasonable length, and early-position bias.
     tokens = _tokenize_words(sentence)
     if not tokens:
         return 0
@@ -231,6 +237,7 @@ def _sentence_score(
 
 
 def _pick_summary_sentence(sentences: list[str]) -> str:
+    # Use the highest-scoring sentence as the fallback summary.
     if not sentences:
         return ""
 
@@ -245,6 +252,7 @@ def _pick_summary_sentence(sentences: list[str]) -> str:
 
 
 def _split_long_sentence(sentence: str, max_words: int = 22) -> list[str]:
+    # Break long sentences into smaller chunks to improve readability.
     words = sentence.split()
     if len(words) <= max_words:
         return [sentence.strip()]
@@ -278,6 +286,7 @@ def _split_long_sentence(sentence: str, max_words: int = 22) -> list[str]:
 
 
 def _simplify_text(sentences: list[str]) -> str:
+    # Reformat the original content into shorter, easier-to-read sentence groups.
     simplified_parts = []
     for sentence in sentences:
         cleaned = re.sub(r"\s+", " ", sentence).strip()
@@ -304,6 +313,7 @@ def _simplify_text(sentences: list[str]) -> str:
 
 
 def _pick_key_points(sentences: list[str]) -> list[str]:
+    # Select up to three distinct sentences for the key points section.
     if not sentences:
         return []
 
@@ -341,6 +351,7 @@ def _pick_key_points(sentences: list[str]) -> list[str]:
 
 
 def _build_rule_based_fallback(text: str) -> tuple[str, str, list[str]]:
+    # Produce a usable summary package even when no AI provider succeeds.
     normalized = _normalize_text(text)
     if not normalized:
         return "", "", []
@@ -367,6 +378,7 @@ def _build_rule_based_fallback(text: str) -> tuple[str, str, list[str]]:
 
 
 def _build_prompt(text: str) -> str:
+    # Force the model to return a strict JSON payload expected by the frontend.
     return f"""
 You must return ONLY valid JSON.
 
@@ -377,9 +389,9 @@ Do not include:
 
 Strict format:
 {{
-    "summary": "...",
-    "simplified": "...",
-    "keyPoints": ["...", "...", "..."]
+    \"summary\": \"...\",
+    \"simplified\": \"...\",
+    \"keyPoints\": [\"...\", \"...\", \"...\"]
 }}
 
 Core principle:
@@ -422,6 +434,7 @@ Text:
 
 
 def _parse_gemini_response(response_text: str):
+    # Extract the first JSON object from the model output and attach app metadata fields.
     if not response_text:
         raise ValueError("Empty response")
 
@@ -440,6 +453,7 @@ def _parse_gemini_response(response_text: str):
 
 
 def use_gemini(text: str):
+    # Gemini is kept as a retryable secondary provider.
     print(f"calling gemini with model={GEMINI_MODEL}...")
     prompt = _build_prompt(text)
     total_attempts = len(RETRY_DELAYS_SECONDS) + 1
@@ -466,6 +480,7 @@ def use_gemini(text: str):
             print(f"Gemini error on attempt {attempt + 1}/{total_attempts}: {e}")
 
             if is_retryable and has_retry_left:
+                # Wait a little before retrying temporary provider failures.
                 delay = RETRY_DELAYS_SECONDS[attempt]
                 print(f"Retrying Gemini in {delay} seconds...")
                 time.sleep(delay)
@@ -486,7 +501,7 @@ def use_gemini(text: str):
             )
 
 
-######3
+# OpenAI is the default provider for normal text-processing requests.
 def use_openai(text: str):
     print("calling openai...")
 
@@ -510,6 +525,7 @@ def use_openai(text: str):
     except Exception as e:
         print("OpenAI error:", e)
 
+        # If OpenAI fails here, fall back to the local rule-based algorithm.
         return basic_algorithm(
             text,
             notice=_fallback_notice("temporary_ai_unavailable"),
@@ -518,6 +534,7 @@ def use_openai(text: str):
 
 
 def process_text(text: str):
+    # Main entry point: prefer AI output, then fall back to other providers or local logic.
     print("process_text called")
 
     if not USE_AI:
@@ -536,22 +553,14 @@ def process_text(text: str):
             fallback_reason="config_error",
         )
 
-    # try:
-    #     return use_gemini(text)
-    # except Exception as e:
-    #     print("Gemini error -> fallback:", e)
-    #     return basic_algorithm(
-    #         text,
-    #         notice=_fallback_notice("unknown_error"),
-    #         fallback_reason="unknown_error",
-    #     )
-    #####4
+    # Try the primary provider first, then fall back to Gemini if needed.
     try:
         return use_openai(text)
     except Exception as e:
         print("OpenAI failed, fallback to Gemini:", e)
 
         try:
+            # Gemini is the secondary provider before the local deterministic fallback.
             return use_gemini(text)
         except Exception as e2:
             print("Gemini error -> fallback:", e2)
@@ -560,3 +569,5 @@ def process_text(text: str):
                 notice=_fallback_notice("unknown_error"),
                 fallback_reason="unknown_error",
             )
+
+
