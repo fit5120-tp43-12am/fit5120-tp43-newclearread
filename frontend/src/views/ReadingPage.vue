@@ -1,43 +1,50 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+// read the backend URL from the .env file, fall back to localhost for local development
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
 // ── Navbar scroll ──
 const scrolled  = ref(false)
 const menuOpen  = ref(false)
+// add a shadow to the navbar when the user scrolls past 10px
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
 // ── Input ──
-const rawText    = ref('')
-const charLimit  = 5000
+const rawText    = ref('')         // the text the user types or pastes in
+const charLimit  = 5000            // max characters we allow
 const charCount  = computed(() => rawText.value.length)
-const overLimit  = computed(() => charCount.value > charLimit)
-const atLimit    = computed(() => charCount.value >= charLimit)
-const inputWordCount = computed(() => wordCount(rawText.value))
+const overLimit  = computed(() => charCount.value > charLimit)   // true if user typed too much
+const atLimit    = computed(() => charCount.value >= charLimit)  // true if at the limit
+const inputWordCount = computed(() => wordCount(rawText.value))  // live word count for the input box
 
 // ── App state ──
+// the page has 3 states: nothing loaded yet, waiting for API response, or showing results
 const mode      = ref('idle')     // 'idle' | 'loading' | 'result'
-const viewMode  = ref('simplified') // 'simplified' | 'original'
+const viewMode  = ref('simplified') // which version to show: simplified or original
 
 // ── Result data (populated by backend stub) ──
 const result = ref(null)
 // Shape: { summary, simplified, keyPoints, usedFallback, fallbackReason, notice }
 
 // ── Display settings ──
-const fontSize    = ref(18)
-const lineSpacing = ref('normal')
-const bgTheme     = ref('white')
+const fontSize    = ref(18)          // current font size in px
+const lineSpacing = ref('normal')    // 'compact' | 'normal' | 'relaxed'
+const bgTheme     = ref('white')     // which background colour the user picked
 
+// map the spacing label to actual CSS line-height values
 const spacingMap = { compact: 1.55, normal: 1.8, relaxed: 2.15 }
 
+// the three background colour options the user can choose from
 const bgThemes = [
   { value: 'white', bg: '#ffffff', swatch: '#ffffff', text: '#0d1117' },
   { value: 'cream', bg: '#fdf8ed', swatch: '#fdf8ed', text: '#1c1309' },
   { value: 'sky',   bg: '#eef4ff', swatch: '#eef4ff', text: '#0d1940' },
 ]
+// get the currently selected theme object
 const theme = computed(() => bgThemes.find(t => t.value === bgTheme.value) || bgThemes[0])
 
+// combine font + spacing + background into one style object for the results area
 const readingStyle = computed(() => ({
   fontSize:   `${fontSize.value}px`,
   lineHeight: spacingMap[lineSpacing.value],
@@ -45,24 +52,25 @@ const readingStyle = computed(() => ({
   color:      theme.value.text,
 }))
 
-// panel bg only (covers full panel area incl. padding)
+// background only — used to colour the whole panel including padding
 const panelBgStyle = computed(() => ({
   background: theme.value.bg,
   color:      theme.value.text,
 }))
 
-// text style only (font/spacing, no bg)
+// font + spacing only — used for inner text nodes where we don't want to set background
 const textStyle = computed(() => ({
   fontSize:   `${fontSize.value}px`,
   lineHeight: spacingMap[lineSpacing.value],
 }))
 
-// input panel flex width — percentage-based so it scales with viewport
+// the input panel takes up more space when idle, then shrinks once results are showing
 const inputFlexStyle = computed(() => ({
   flex: mode.value === 'idle' ? '0 0 46%' : '0 0 30%',
 }))
 
 // ── What text to read aloud ──
+// if results are showing, read whichever version (simplified or original) the user selected
 const activeText = computed(() => {
   if (mode.value === 'result' && result.value) {
     return viewMode.value === 'simplified'
@@ -72,11 +80,14 @@ const activeText = computed(() => {
   return rawText.value
 })
 
+// return a friendly message if the backend had to use a fallback instead of real AI
 function fallbackNotice(resultData) {
   if (!resultData?.usedFallback) return ''
 
+  // use the message from the backend if it provided one
   if (resultData.notice) return resultData.notice
 
+  // otherwise pick a message based on the reason code
   const notices = {
     temporary_ai_unavailable: 'AI service is busy right now. Showing a basic result.',
     config_error: 'AI is not configured right now. Showing a basic result.',
@@ -87,14 +98,18 @@ function fallbackNotice(resultData) {
   return notices[resultData.fallbackReason] || notices.unknown_error
 }
 
-// ── Simplify (backend stub) ──────────────────────────────────────────────────
+// ── Simplify ──────────────────────────────────────────────────────────────────
+// called when the user clicks the Simplify button
 async function handleSimplify() {
+  // don't do anything if the text box is empty or too long
   if (!rawText.value.trim() || overLimit.value) return
+
+  // switch to loading state so the spinner shows up
   mode.value    = 'loading'
   viewMode.value = 'simplified'
 
   try {
-    // The backend may return either an AI result or a fallback result.
+    // send the text to the backend API and wait for the response
     const response = await fetch(`${API_BASE_URL}/api/process-text`, {
       method: "POST",
       headers: {
@@ -109,12 +124,14 @@ async function handleSimplify() {
 
     console.log("Returned by the backend:", data)
 
-    // Store the full payload so the template can show status details.
+    // save the result so the template can display it
     result.value = data
 
+    // switch to result state to show the simplified text
     mode.value = 'result'
 
   } catch (error) {
+    // if the API call fails, go back to idle so the user can try again
     console.error(error)
     mode.value = 'idle'
   }
@@ -156,12 +173,13 @@ async function handleSimplify() {
 //   }, 900)
 // }
 
-// ── Speech ───────────────────
-const isPlaying  = ref(false)
-const isPaused   = ref(false)
-const speechRate = ref(1.0)
-let   utterance  = null
+// ── Speech (text-to-speech using the browser's built-in Web Speech API) ──────
+const isPlaying  = ref(false)   // true while audio is playing
+const isPaused   = ref(false)   // true if the user paused mid-way
+const speechRate = ref(1.0)     // playback speed (0.75 = slow, 1.5 = fast)
+let   utterance  = null         // the current SpeechSynthesisUtterance object
 
+// start playing — if paused, just resume instead of starting over
 function playSpeech() {
   if (!('speechSynthesis' in window) || !activeText.value.trim()) return
   if (isPaused.value) {
@@ -170,41 +188,49 @@ function playSpeech() {
     isPaused.value  = false
     return
   }
+  // stop any existing speech before starting new one
   stopSpeech()
   utterance      = new SpeechSynthesisUtterance(activeText.value)
   utterance.rate = speechRate.value
   utterance.lang = 'en-AU'
+  // reset state flags when speech naturally finishes or errors out
   utterance.onend   = () => { isPlaying.value = false; isPaused.value = false }
   utterance.onerror = () => { isPlaying.value = false; isPaused.value = false }
   window.speechSynthesis.speak(utterance)
   isPlaying.value = true
 }
 
+// pause the speech
 function pauseSpeech() {
   window.speechSynthesis.pause()
   isPlaying.value = false
   isPaused.value  = true
 }
 
+// stop speech completely and reset state
 function stopSpeech() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
   isPlaying.value = false
   isPaused.value  = false
 }
 
+// toggle between play and pause (used by the single play/pause button)
 function toggleSpeech() {
   if (isPlaying.value) pauseSpeech()
   else playSpeech()
 }
 
+// change the playback speed — restart audio if it was already playing
 function setRate(r) {
   speechRate.value = r
   if (isPlaying.value) { stopSpeech(); playSpeech() }
 }
 
+// the speed options shown in the toolbar
 const rateOptions = [0.75, 1.0, 1.25, 1.5]
 
 // ── Read time estimate ──
+// calculate roughly how long it takes to read a piece of text (assuming 200 wpm)
 function readTime(text) {
   const words = text.trim().split(/\s+/).filter(Boolean).length
   const mins  = Math.ceil(words / 200)
@@ -212,31 +238,34 @@ function readTime(text) {
   return secs < 60 ? `~${secs} sec read` : `~${mins} min read`
 }
 
+// count the number of words in a string
 function wordCount(text) {
   return text.trim().split(/\s+/).filter(Boolean).length
 }
 
 // ── File Upload ──────────────────────────────────────────────────────────────
-const fileInputRef = ref(null)
-const fileError    = ref('')
+const fileInputRef = ref(null)   // ref to the hidden <input type="file"> element
+const fileError    = ref('')     // error message shown below the textarea
 
-// Directly readable as plain text
+// file extensions we support
 const UPLOAD_EXT  = ['.txt', '.md', '.markdown', '.csv', '.rtf', '.log', '.text', '.pdf', '.docx']
-// Accepted but need backend to extract (placeholder inserted)
-// Rejected — not text
+// file types we do NOT support — we show a helpful error message for these
 const IMAGE_EXT   = ['.jpg','.jpeg','.png','.gif','.webp','.svg','.bmp','.tiff','.ico','.heic']
 const MEDIA_EXT   = ['.mp4','.mov','.avi','.mkv','.webm','.mp3','.wav','.aac','.flac','.ogg']
 
+// clear any previous error and open the file picker dialog
 function triggerFileInput() {
   fileError.value = ''
   fileInputRef.value?.click()
 }
 
+// read a file and return its contents as a base64 string (needed for sending to the API)
 function readFileAsBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : ''
+      // strip the "data:...;base64," prefix, keep only the actual base64 data
       const base64 = result.includes(',') ? result.split(',')[1] : result
       resolve(base64)
     }
@@ -245,6 +274,7 @@ function readFileAsBase64(file) {
   })
 }
 
+// send the file to the backend to extract text (handles PDF and DOCX)
 async function uploadFileForExtraction(file) {
   const contentBase64 = await readFileAsBase64(file)
   const response = await fetch(`${API_BASE_URL}/api/extract-text`, {
@@ -266,29 +296,33 @@ async function uploadFileForExtraction(file) {
   return data
 }
 
+// called when the user selects a file from the file picker
 async function handleFileUpload(event) {
   const file = event.target.files[0]
-  event.target.value = ''
+  event.target.value = ''  // reset so the same file can be uploaded again if needed
   if (!file) return
 
+  // get the file extension (e.g. ".pdf")
   const ext = '.' + file.name.split('.').pop().toLowerCase()
 
-  // Hard reject — images & media
+  // reject image files with a helpful message
   if (IMAGE_EXT.includes(ext)) {
     fileError.value = 'Image files cannot be uploaded. Please paste your text directly.'
     return
   }
+  // reject audio/video files
   if (MEDIA_EXT.includes(ext)) {
     fileError.value = 'Audio and video files are not supported. Please paste your text directly.'
     return
   }
 
-  // Reject unrecognised formats
+  // reject any other unsupported file types
   if (!UPLOAD_EXT.includes(ext)) {
     fileError.value = `"${file.name}" is not a supported format. Accepted: TXT, MD, CSV, RTF, LOG, PDF, DOCX.`
     return
   }
 
+  // reject files over 5 MB
   if (file.size > 5 * 1024 * 1024) {
     fileError.value = 'File is too large (max 5 MB). Please use a shorter document.'
     return
@@ -296,7 +330,7 @@ async function handleFileUpload(event) {
 
   fileError.value = ''
 
-  // Binary formats — placeholder text; teammate connects backend extraction
+  // send to the backend to extract text, then put it in the textarea
   try {
     const extracted = await uploadFileForExtraction(file)
     if (!extracted.text?.trim()) {
@@ -305,19 +339,19 @@ async function handleFileUpload(event) {
     }
 
     rawText.value = extracted.text
+    // show any info notice from the backend (e.g. "only first 5 pages extracted")
     if (extracted.notice) {
       fileError.value = extracted.notice
     }
   } catch (error) {
     fileError.value = error instanceof Error ? error.message : 'Could not extract text from this file.'
   }
-
-  // Plain-text formats — read directly
 }
 
 // ── Tutorial ──────────────────────────────────────────────────────────────────
-const showTutorial = ref(false)
-const tutorialStep = ref(0)
+// a short 4-step guide that pops up the first time the user visits the page
+const showTutorial = ref(false)    // whether the tutorial overlay is visible
+const tutorialStep = ref(0)        // which step the user is currently on (0-indexed)
 
 const TUTORIAL_STEPS = [
   {
@@ -346,9 +380,10 @@ const TUTORIAL_STEPS = [
   },
 ]
 
+// position the tutorial card based on which step we're on
 const tutorialCardStyle = computed(() => {
   const pos = TUTORIAL_STEPS[tutorialStep.value]?.cardPos
-  // On narrow screens always centre the card
+  // on small screens always center the card regardless of the step
   if (typeof window !== 'undefined' && window.innerWidth <= 600) {
     return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100vw - 48px)' }
   }
@@ -359,17 +394,21 @@ const tutorialCardStyle = computed(() => {
   return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
 })
 
+// start the tutorial from the beginning
 function startTutorial() {
   tutorialStep.value = 0
   showTutorial.value = true
 }
+// go to the next step, or close the tutorial if we're on the last step
 function nextStep() {
   if (tutorialStep.value < TUTORIAL_STEPS.length - 1) tutorialStep.value++
   else closeTutorial()
 }
+// go back to the previous step
 function prevStep() {
   if (tutorialStep.value > 0) tutorialStep.value--
 }
+// close the tutorial and save to localStorage so it doesn't show again next visit
 function closeTutorial() {
   showTutorial.value = false
   localStorage.setItem('cr_tutorial_done', '1')
@@ -377,10 +416,12 @@ function closeTutorial() {
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll)
+  // only show the tutorial automatically if the user hasn't seen it before
   if (!localStorage.getItem('cr_tutorial_done')) {
     showTutorial.value = true
   }
 })
+// clean up: remove scroll listener and stop any playing speech when the page unmounts
 onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech() })
 </script>
 
