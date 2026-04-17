@@ -1,9 +1,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
+// track whether the user has scrolled down — used to add a shadow to the navbar
 const scrolled  = ref(false)
+// track whether the mobile hamburger menu is open or closed
 const menuOpen  = ref(false)
+
+// called on every scroll event — sets scrolled to true once the user goes past 10px
 function onScroll() { scrolled.value = window.scrollY > 10 }
+
+// add the scroll listener when the page loads, remove it when the page is destroyed
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
