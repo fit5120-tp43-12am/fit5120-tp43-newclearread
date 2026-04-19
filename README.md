@@ -1,107 +1,226 @@
-# 团队开发说明
+## Project Overview
 
-# 项目结构说明
+This project is a web-based reading support system designed for users with reading difficulties, such as students with dyslexia.
+
+The main goals of the system are:
+Help users understand complex text more easily
+Reduce reading stress
+Provide a clearer and more controllable reading experience
+
+The system supports:
+Text input and display
+Content summary
+Reading assistance (chunking, structure)
+Custom reading settings (font, colour)
+Text-to-speech (TTS)
+
+## Project Structure
+
+This project uses a front-end and back-end separated architecture.
 
 project-root/
 │
-├── frontend/ # 前端（Vue 3 + Vite）
-├── backend/ # 后端（FastAPI）
-├── database/ # （暂未使用）数据库脚本
-├── docs/ # （可选）文档
-├── docker/ # （后期）部署
+├── frontend/     # Frontend (Vue 3 + Vite)
+├── backend/      # Backend (FastAPI)
+├── database/     # Database (not used yet)
+├── docs/         # Documentation (optional)
+├── docker/       # Deployment (future use)
 
+Note: Both frontend and backend must run at the same time.
 
-#  后端结构（FastAPI）
+## Tech Stack
+Frontend
+Vue 3
+Vite
+JavaScript
+Backend
+Python 3.11
+FastAPI
+Uvicorn
+Others
+REST API
+Environment variables (.env)
+
+## Backend Structure
 backend/
 │
-├── main.py # 项目入口（启动 FastAPI）
-├── config.py # 配置文件
+├── main.py           # Entry point
+├── config.py         # Configuration
 │
-├── core/ # 核心配置（数据库等）
-│ └── database.py
+├── core/             # Core settings
+│   └── database.py
 │
-├── routes/ # 写 API 接口
-│ └── api.py
+├── routes/           # API layer
+│   └── api.py
 │
-├── services/ # 写业务逻辑（最重要）
+├── services/         # Business logic (core)
+├── models/           # Data models
+├── repositories/     # Database access
+├── utils/            # Utilities
 │
-├── models/ # 数据模型（数据库结构）
-│
-├── repositories/ # 数据库操作
-│
-├── utils/ # 工具函数
-│
-└── venv/ # 虚拟环境（不要提交到git）已经在 .gitignore里设置好了
+└── venv/             # Virtual environment (do not commit,this is already added to .gitignore.)
 
+## Simple explanation:
+routes: API endpoints
+services: main logic
+models: data structure
+repositories: database operations
 
-简单理解：
-
-- routes = 对外接口
-- services = 真正干活的地方（核心）
-- models = 数据长什么样
-- repositories = 数据库读写
-
-
-#  前端结构（Vue）
+## Frontend Structure
 frontend/
 │
 ├── src/
-│ ├── pages/ # 页面
-│ ├── components/ # 组件
-│ ├── services/ # 调后端 API
-│ ├── router/ # 路由
-│ ├── assets/ # 图片等
-│ ├── App.vue # 根组件
-│ └── main.js # 入口
+│   ├── pages/        
+│   ├── components/   
+│   ├── services/     
+│   ├── router/       
+│   ├── assets/       
+│   ├── App.vue       
+│   └── main.js       
 │
 ├── public/
-├── node_modules/ #不要提交到git（已经在 .gitignore里设置好了）
+├── node_modules/     # do not commit
 └── vite.config.js
 
+## Frontend & Backend
+Frontend: http://localhost:5173
+Backend: http://127.0.0.1:8000
 
----
+# Example API:
+http://127.0.0.1:8000/api/xxx
 
-#  前后端关系
+### First Setup
 
-- 前端运行：`http://localhost:5173`
-- 后端运行：`http://127.0.0.1:8000`
+If this is your first time running the project, follow these steps.
 
-前端调用后端 API，例如：
-http://127.0.0.1:8000/api/test
+1. Install Requirements
 
+Make sure you have:
 
+Python 3.11
+Node.js 18 or above
+Git
 
-# 如何运行项目
+Check installation
 
+Windows:
+python --version
+node -v
+npm -v
 
-## 后端启动
+macOS:
+python3 --version
+node -v
+npm -v
 
-```bash
+2. Get Latest Code
+
+Make sure you are on your branch:
+
+git pull origin dev
+
+Or use Git GUI to pull from dev.
+
+3. Run Backend
+a. Go to backend:
 cd backend
 
-# 第一次需要创建
+b. Create virtual environment (only once)
+Windows:
 python -m venv venv
 
-# 激活（Windows）
+macOS:
+python3 -m venv venv
+
+###### c. Activate environment (every time) !!!!!!!
+Windows:
 venv\Scripts\activate
 
-# 安装依赖
-pip install fastapi uvicorn
+macOS:
+source venv/bin/activate
 
-# 启动
+d. You should see (venv) in terminal
+
+e. Install dependencies:
+pip install -r requirements.txt
+
+f. Set environment variable
+Create .env in backend folder:
+
+GEMINI_API_KEY=your_api_key
+
+g. Start backend
 uvicorn main:app --reload
 
-# 打开测试：
-
+Open:
 http://127.0.0.1:8000/docs
 
+4. Run Frontend
 
-前端启动
-cd frontend
+⚠️Use a new terminal
 
+a. cd frontend
+
+b. Install:
 npm install
+
+c.Run:
 npm run dev
 
- 打开：
-
+Open:
 http://localhost:5173
+
+5. How It Works
+
+You must run both:
+Backend (FastAPI)
+Frontend (Vue)
+
+Flow:
+Frontend → API request → Backend → Response → Display
+
+## Common Issues
+
+1. Backend not working
+
+Check venv is activated
+Check dependencies installed
+
+2. Frontend cannot get data
+
+Check backend is running
+Check API URL
+
+3. API key error
+Check .env file
+Development Rules
+Python Environment
+
+###### Always activate venv before coding !!!
+# Do not install new packages without notice
+# Update requirements.txt if new packages are added
+
+# Git Branch Naming
+Module	          Example
+frontend	    feature/frontend-homepage
+backend	        feature/backend-api
+ai	            feature/ai-text
+database	    feature/db-schema
+deploy	        chore/deploy
+
+# Sync with dev
+
+Run in your branch:
+git add .
+git commit -m "save progress"
+git pull origin dev
+
+This will merge changes, not overwrite your code.
+
+## Summary
+
+To run the project:
+
+Start backend
+Start frontend
+Open browser
