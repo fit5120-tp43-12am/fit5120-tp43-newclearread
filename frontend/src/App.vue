@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
+const AUTH_STORAGE_KEY = 'clearead-session-authenticated'
 const VALID_USERNAME = 'tp43_goodjob'
 const VALID_PASSWORD = 'tp43_clearead'
 
@@ -19,12 +20,17 @@ function handleLogin() {
   ) {
     isAuthenticated.value = true
     errorMessage.value = ''
+    sessionStorage.setItem(AUTH_STORAGE_KEY, 'true')
     return
   }
 
   errorMessage.value = 'Incorrect username or password.'
   password.value = ''
 }
+
+onMounted(() => {
+  isAuthenticated.value = sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true'
+})
 </script>
 
 <template>
