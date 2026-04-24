@@ -29,7 +29,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             <rect x="9" y="13" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
             <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
           </svg>
-          ClearRead
+          Clearead
         </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link nav-link--active">Home</a></li>
@@ -71,7 +71,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </h1>
         <p class="hero-sub">
           Hard to get through your study materials?<br/>
-          ClearRead makes them shorter, simpler, and easier to follow.
+          Clearead makes them shorter, simpler, and easier to follow.
         </p>
         <div class="hero-actions">
           <a href="/reading" class="btn-start">
@@ -90,8 +90,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- ── Features ── -->
     <section class="section-features">
       <div class="container">
-        <p class="eyebrow">What ClearRead does</p>
-        <h2 class="section-title">Three ways ClearRead helps</h2>
+        <p class="eyebrow">What Clearead does</p>
+        <h2 class="section-title">Three ways Clearead helps</h2>
 
         <div class="features-grid">
           <div class="feature-card">
@@ -173,14 +173,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <footer class="footer">
       <div class="container footer-inner">
         <div class="footer-left">
-          <span class="footer-logo">ClearRead</span>
+          <span class="footer-logo">Clearead</span>
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
           <a href="/reading"  class="footer-link">Reading Support</a>
           <a href="/dyslexia" class="footer-link">Dyslexia</a>
         </nav>
-        <p class="footer-copy">© 2026 ClearRead. All rights reserved.</p>
+        <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
     </footer>
 

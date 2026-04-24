@@ -355,7 +355,7 @@ const tutorialStep = ref(0)        // which step the user is currently on (0-ind
 
 const TUTORIAL_STEPS = [
   {
-    title: 'Welcome to ClearRead',
+    title: 'Welcome to Clearead',
     desc:  'This quick guide walks you through the tool in 3 simple steps. You can skip any time.',
     highlight: null,
     cardPos: 'center',
@@ -368,7 +368,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: 'Step 2 — Simplify',
-    desc:  'Click the Simplify button. ClearRead will rewrite the text in plain English, pull out the key points, and generate a short summary.',
+    desc:  'Click the Simplify button. Clearead will rewrite the text in plain English, pull out the key points, and generate a short summary.',
     highlight: 'simplify',
     cardPos: 'right-bottom',
   },
@@ -440,7 +440,7 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
             <rect x="9" y="13" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
             <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
           </svg>
-          ClearRead
+          Clearead
         </a>
         <ul class="nav-links">
           <li><a href="/"         class="nav-link">Home</a></li>
