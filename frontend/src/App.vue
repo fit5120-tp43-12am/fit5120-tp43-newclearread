@@ -239,6 +239,11 @@ onMounted(() => {
   color: #9ca3af;
 }
 
+.auth-field__input::-ms-reveal,
+.auth-field__input::-ms-clear {
+  display: none;
+}
+
 .auth-password {
   position: relative;
 }
