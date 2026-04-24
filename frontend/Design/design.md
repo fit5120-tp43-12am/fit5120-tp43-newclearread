@@ -1,4 +1,4 @@
-I am building a website called ClearRead.
+I am building a website called Clearead.
 The website is a reading support platform for users aged 18–22 with dyslexia.
 The goal is to help users read long or dense text more easily by improving content access, quick understanding, reading comfort, and audio support.
 
@@ -10,7 +10,7 @@ This page should introduce the website clearly.
 
 Include:
 
-Website name: ClearRead
+Website name: Clearead
 A short tagline, such as:
 Make reading clearer, easier, and more supportive.
 A brief introduction explaining that the website helps users with dyslexia read text more comfortably
