@@ -29,6 +29,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_BASE_PATH: /version1/
+          VITE_API_BASE_URL: https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/
         run: |
           npm ci
           npm run build
