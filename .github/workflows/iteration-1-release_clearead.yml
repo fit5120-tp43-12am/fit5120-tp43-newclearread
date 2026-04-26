@@ -27,6 +27,8 @@ jobs:
 
       - name: Install and build frontend
         working-directory: frontend
+        env:
+          VITE_BASE_PATH: /version1/
         run: |
           npm ci
           npm run build
@@ -35,6 +37,20 @@ jobs:
         run: |
           mkdir -p deploy-package/version1
           cp -R frontend/dist/. deploy-package/version1/
+          cp server.js deploy-package/server.js
+          cat > deploy-package/package.json <<'EOF'
+          {
+            "name": "clearead-versioned-static-server",
+            "version": "1.0.0",
+            "private": true,
+            "scripts": {
+              "start": "node server.js"
+            },
+            "engines": {
+              "node": "20.x"
+            }
+          }
+          EOF
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
