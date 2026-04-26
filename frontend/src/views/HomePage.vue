@@ -20,7 +20,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- ── Navbar ── -->
     <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
       <div class="nav-inner">
-        <a href="/" class="nav-logo">
+        <RouterLink to="/" class="nav-logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="28" height="28" rx="8" fill="#2563eb"/>
             <path d="M7 8.5C7 7.67 7.67 7 8.5 7H13.5V21H8.5C7.67 21 7 20.33 7 19.5V8.5Z" fill="white" opacity="0.9"/>
@@ -30,11 +30,11 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
           </svg>
           Clearead
-        </a>
+        </RouterLink>
         <ul class="nav-links">
-          <li><a href="/"         class="nav-link nav-link--active">Home</a></li>
-          <li><a href="/reading"  class="nav-link">Reading Support</a></li>
-          <li><a href="/dyslexia" class="nav-link">Dyslexia</a></li>
+          <li><RouterLink to="/"         class="nav-link nav-link--active">Home</RouterLink></li>
+          <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
+          <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -50,9 +50,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- Mobile nav -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><a href="/"         class="mobile-nav-link" @click="menuOpen = false">Home</a></li>
-        <li><a href="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</a></li>
-        <li><a href="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</a></li>
+        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
       </ul>
     </div>
 
@@ -74,15 +74,15 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           Clearead makes them shorter, simpler, and easier to follow.
         </p>
         <div class="hero-actions">
-          <a href="/reading" class="btn-start">
+          <RouterLink to="/reading" class="btn-start">
             Start Here
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-          </a>
-          <a href="/dyslexia" class="btn-ghost">
+          </RouterLink>
+          <RouterLink to="/dyslexia" class="btn-ghost">
             Learn About Dyslexia
-          </a>
+          </RouterLink>
         </div>
       </div>
     </section>
@@ -160,12 +160,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       <div class="container">
         <h2>Give it a try.</h2>
         <p>It only takes a minute to get started.</p>
-        <a href="/reading" class="btn-cta">
+        <RouterLink to="/reading" class="btn-cta">
           Start Here
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-        </a>
+        </RouterLink>
       </div>
     </section>
 
@@ -177,8 +177,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <a href="/reading"  class="footer-link">Reading Support</a>
-          <a href="/dyslexia" class="footer-link">Dyslexia</a>
+          <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
+          <RouterLink to="/dyslexia" class="footer-link">Dyslexia</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
