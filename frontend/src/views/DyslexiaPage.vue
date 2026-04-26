@@ -145,7 +145,7 @@ const ctxt = computed(() => {
     <!-- Navbar -->
     <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
       <div class="nav-inner">
-        <a href="/" class="nav-logo">
+        <RouterLink to="/" class="nav-logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="28" height="28" rx="8" fill="#2563eb"/>
             <path d="M7 8.5C7 7.67 7.67 7 8.5 7H13.5V21H8.5C7.67 21 7 20.33 7 19.5V8.5Z" fill="white" opacity="0.9"/>
@@ -155,11 +155,11 @@ const ctxt = computed(() => {
             <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
           </svg>
           ClearRead
-        </a>
+        </RouterLink>
         <ul class="nav-links">
-          <li><a href="/" class="nav-link">Home</a></li>
-          <li><a href="/reading" class="nav-link">Reading Support</a></li>
-          <li><a href="/dyslexia" class="nav-link nav-link--active">Dyslexia</a></li>
+          <li><RouterLink to="/" class="nav-link">Home</RouterLink></li>
+          <li><RouterLink to="/reading" class="nav-link">Reading Support</RouterLink></li>
+          <li><RouterLink to="/dyslexia" class="nav-link nav-link--active">Dyslexia</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -175,9 +175,9 @@ const ctxt = computed(() => {
     <!-- Mobile nav -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><a href="/"         class="mobile-nav-link" @click="menuOpen = false">Home</a></li>
-        <li><a href="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</a></li>
-        <li><a href="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</a></li>
+        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
       </ul>
     </div>
 
@@ -199,7 +199,7 @@ const ctxt = computed(() => {
             <span class="hero-sub-question">Would you like some support?</span>
           </p>
           <div class="hero-actions">
-            <a href="/reading" class="btn-primary">Start Here</a>
+            <RouterLink to="/reading" class="btn-primary">Start Here</RouterLink>
             <a href="#strategies" class="btn-ghost">Reading Strategies</a>
           </div>
         </div>
@@ -647,12 +647,12 @@ const ctxt = computed(() => {
         <div class="container">
           <h2>Would you like some help?</h2>
           <p>ClearRead can simplify your study materials and make them easier to work through.</p>
-          <a href="/reading" class="btn-cta">
+          <RouterLink to="/reading" class="btn-cta">
             Start Here
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-          </a>
+          </RouterLink>
         </div>
       </section>
 
