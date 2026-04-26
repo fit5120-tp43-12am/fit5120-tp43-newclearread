@@ -6,6 +6,7 @@ name: Build and deploy Node.js app to Azure Web App - clearead
 on:
   push:
     branches:
+      - main
       - dev
       - Iteration-1-release
   workflow_dispatch:
@@ -17,6 +18,12 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-src
+
       - name: Checkout dev branch
         uses: actions/checkout@v4
         with:
@@ -33,6 +40,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
+
+      - name: Install and build main frontend
+        working-directory: main-src/frontend
+        env:
+          VITE_BASE_PATH: /
+          VITE_API_BASE_URL: https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/
+        run: |
+          npm ci
+          npm run build
 
       - name: Install and build dev frontend
         working-directory: dev-src/frontend
@@ -54,9 +70,11 @@ jobs:
 
       - name: Prepare deployment package
         run: |
+          mkdir -p deploy-package
           mkdir -p deploy-package/underdevelopment
           mkdir -p deploy-package/version1
 
+          cp -R main-src/frontend/dist/. deploy-package/
           cp -R dev-src/frontend/dist/. deploy-package/underdevelopment/
           cp -R release-src/frontend/dist/. deploy-package/version1/
 

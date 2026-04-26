@@ -5,6 +5,7 @@ const path = require('path')
 const port = process.env.PORT || 8080
 const rootDir = __dirname
 const appPathPattern = /^(underdevelopment|version[\w.-]*)$/
+const rootBlockedFiles = new Set(['package.json', 'package-lock.json', 'server.js'])
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -29,24 +30,6 @@ function send(res, statusCode, body, contentType = 'text/plain; charset=utf-8') 
 function redirect(res, location) {
   res.writeHead(302, { Location: location })
   res.end()
-}
-
-function getAvailableAppPaths() {
-  return fs
-    .readdirSync(rootDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && appPathPattern.test(entry.name))
-    .map((entry) => entry.name)
-    .sort()
-}
-
-function getDefaultAppPath() {
-  const configuredPath = process.env.DEFAULT_APP_PATH
-  if (configuredPath && appPathPattern.test(configuredPath)) {
-    return configuredPath
-  }
-
-  const appPaths = getAvailableAppPaths()
-  return appPaths.includes('underdevelopment') ? 'underdevelopment' : appPaths[0] || 'underdevelopment'
 }
 
 function sendFile(res, filePath) {
@@ -95,13 +78,35 @@ function handleAppPathRequest(res, pathname, appPath) {
   sendFile(res, path.join(appRoot, 'index.html'))
 }
 
-const server = http.createServer((req, res) => {
-  const { pathname } = new URL(req.url, `http://${req.headers.host}`)
+function handleRootRequest(res, pathname) {
+  const relativePath = decodeURIComponent(pathname.slice(1)) || 'index.html'
+  const requestedPath = path.normalize(path.join(rootDir, relativePath))
 
-  if (pathname === '/') {
-    redirect(res, `/${getDefaultAppPath()}/`)
+  if (requestedPath !== rootDir && !requestedPath.startsWith(`${rootDir}${path.sep}`)) {
+    send(res, 403, 'Forbidden')
     return
   }
+
+  if (rootBlockedFiles.has(relativePath)) {
+    send(res, 404, 'Not found')
+    return
+  }
+
+  if (fs.existsSync(requestedPath) && fs.statSync(requestedPath).isFile()) {
+    sendFile(res, requestedPath)
+    return
+  }
+
+  if (path.extname(relativePath)) {
+    send(res, 404, 'Not found')
+    return
+  }
+
+  sendFile(res, path.join(rootDir, 'index.html'))
+}
+
+const server = http.createServer((req, res) => {
+  const { pathname } = new URL(req.url, `http://${req.headers.host}`)
 
   const appPath = pathname.split('/').filter(Boolean)[0]
   if (appPath && appPathPattern.test(appPath)) {
@@ -109,7 +114,7 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  send(res, 404, 'Not found')
+  handleRootRequest(res, pathname)
 })
 
 server.listen(port, () => {
