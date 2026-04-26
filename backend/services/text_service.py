@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from dotenv import load_dotenv
 from google import genai
 
+#
 # OpenAI is used as the primary text-processing provider.
 from openai import OpenAI
 
@@ -569,5 +570,3 @@ def process_text(text: str):
                 notice=_fallback_notice("unknown_error"),
                 fallback_reason="unknown_error",
             )
-
-
