@@ -154,7 +154,7 @@ const ctxt = computed(() => {
             <rect x="9" y="13" width="3" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
             <rect x="9" y="16" width="2" height="1.5" rx="0.75" fill="#2563eb" opacity="0.7"/>
           </svg>
-          ClearRead
+          Clearead
         </RouterLink>
         <ul class="nav-links">
           <li><RouterLink to="/" class="nav-link">Home</RouterLink></li>
@@ -646,7 +646,7 @@ const ctxt = computed(() => {
       <section class="section-cta">
         <div class="container">
           <h2>Would you like some help?</h2>
-          <p>ClearRead can simplify your study materials and make them easier to work through.</p>
+          <p>Clearead can simplify your study materials and make them easier to work through.</p>
           <RouterLink to="/reading" class="btn-cta">
             Start Here
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
