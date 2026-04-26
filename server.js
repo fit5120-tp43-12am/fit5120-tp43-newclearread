@@ -61,6 +61,29 @@ function handleAppPathRequest(res, pathname, appPath) {
   const requestedPath = path.normalize(path.join(appRoot, relativePath))
 
   if (requestedPath !== appRoot && !requestedPath.startsWith(`${appRoot}${path.sep}`)) {
+  send(res, 403, 'Forbidden')
+  return
+  }
+
+  sendFile(res, path.join(appRoot, 'index.html'))
+}
+function handleVersionRequest(req, res, pathname, version) {
+  const versionRoot = path.join(rootDir, version)
+
+  if (!fs.existsSync(versionRoot) || !fs.statSync(versionRoot).isDirectory()) {
+    send(res, 404, 'Version not found')
+    return
+  }
+
+  if (pathname === `/${version}`) {
+    redirect(res, `/${version}/`)
+    return
+  }
+
+  const relativePath = decodeURIComponent(pathname.slice(version.length + 2)) || 'index.html'
+  const requestedPath = path.normalize(path.join(versionRoot, relativePath))
+
+  if (requestedPath !== versionRoot && !requestedPath.startsWith(`${versionRoot}${path.sep}`)) {
     send(res, 403, 'Forbidden')
     return
   }
@@ -115,6 +138,24 @@ const server = http.createServer((req, res) => {
   }
 
   handleRootRequest(res, pathname)
+  sendFile(res, path.join(versionRoot, 'index.html'))
+}
+
+const server = http.createServer((req, res) => {
+  const { pathname } = new URL(req.url, `http://${req.headers.host}`)
+
+  if (pathname === '/') {
+    redirect(res, `/${getDefaultVersion()}/`)
+    return
+  }
+
+  const version = pathname.split('/').filter(Boolean)[0]
+  if (version && versionPattern.test(version)) {
+    handleVersionRequest(req, res, pathname, version)
+    return
+  }
+
+  send(res, 404, 'Not found')
 })
 
 server.listen(port, () => {
