@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - dev
+      - Iteration-1-release
   workflow_dispatch:
 
 jobs:
@@ -16,19 +17,36 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout dev branch
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: dev-src
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: Iteration-1-release
+          path: release-src
 
       - name: Set up Node.js version
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install and build frontend
-        working-directory: ./frontend
+      - name: Install and build dev frontend
+        working-directory: dev-src/frontend
         env:
           VITE_BASE_PATH: /underdevelopment/
+          VITE_API_BASE_URL: https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install and build release frontend
+        working-directory: release-src/frontend
+        env:
+          VITE_BASE_PATH: /version1/
           VITE_API_BASE_URL: https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/
         run: |
           npm ci
@@ -37,8 +55,12 @@ jobs:
       - name: Prepare deployment package
         run: |
           mkdir -p deploy-package/underdevelopment
-          cp -R frontend/dist/. deploy-package/underdevelopment/
-          cp server.js deploy-package/server.js
+          mkdir -p deploy-package/version1
+
+          cp -R dev-src/frontend/dist/. deploy-package/underdevelopment/
+          cp -R release-src/frontend/dist/. deploy-package/version1/
+
+          cp dev-src/server.js deploy-package/server.js
           cat > deploy-package/package.json <<'EOF'
           {
             "name": "clearead-versioned-static-server",
