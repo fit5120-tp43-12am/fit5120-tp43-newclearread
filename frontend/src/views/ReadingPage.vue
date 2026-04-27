@@ -70,6 +70,179 @@ function checkClamp(el, id) {
 }
 
 
+// ── TTS / Audio state ─────────────────────────────────────────────────────────
+
+// ID of the block currently being read aloud (null = nothing active)
+const activeBlockId   = ref(null)
+
+// Which side is playing: 'original' (left card) | 'summary' (right card)
+const activeBlockType = ref('original')
+
+// Playback state machine
+const playbackState   = ref('idle')   // 'idle' | 'playing' | 'paused'
+
+// User-adjustable audio settings
+const playbackSpeed  = ref(1.0)      // multiplier: 0.75 / 1.0 / 1.25 / 1.5 / 2.0
+const selectedVoice  = ref('default-female')
+const volume         = ref(70)       // 0–100
+
+// Speed options shown in the toolbar dropdown
+const SPEED_OPTIONS  = [0.75, 1.0, 1.25, 1.5, 2.0]
+
+// Voice options — labels are UI-facing; the backend maps these keys to actual TTS voice IDs
+// (e.g. gemini-2.5-flash-tts voice names: Aoede, Kore, Puck, Fenrir, Charon …)
+const VOICE_OPTIONS  = [
+  { value: 'default-female', label: 'Default Female' },
+  { value: 'default-male',   label: 'Default Male'   },
+  { value: 'calm-female',    label: 'Calm Female'    },
+  { value: 'clear-male',     label: 'Clear Male'     },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BACKEND INTERFACE — TTS API
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Endpoint : POST /api/tts
+// Request  : { text: string, voice: string, speed: number, volume: number }
+//             voice  → one of the VOICE_OPTIONS values above
+//             speed  → playback rate multiplier (0.75–2.0)
+//             volume → 0.0–1.0 float (volume.value / 100)
+//
+// Response : audio/mpeg binary stream
+//            (or JSON { audioUrl: string } if the backend returns a hosted URL)
+//
+// The frontend will:
+//   1. Create a Blob URL from the stream:   URL.createObjectURL(blob)
+//   2. Pass it to:                          new Audio(url)
+//   3. Set:                                 audio.playbackRate = speed
+//                                           audio.volume       = volume / 100
+//   4. Call:                                audio.play()
+//
+// Currently using Web Speech API as a placeholder until this endpoint is live.
+// Replace the body of requestTTS() below when the backend is ready.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Internal reference to the current Audio object (used with real backend audio)
+let currentAudio = null
+
+/**
+ * requestTTS — sends text to the TTS backend and returns a playable audio URL.
+ *
+ * PLACEHOLDER: Uses the browser's built-in Web Speech API.
+ * Replace the entire function body with the fetch block below once the backend is ready.
+ */
+async function requestTTS(text) {
+  // ── TODO (Backend): Replace everything inside this function with: ──────────
+  //
+  //   const res = await fetch(`${API_BASE_URL}/api/tts`, {
+  //     method:  'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({
+  //       text,
+  //       voice:  selectedVoice.value,          // e.g. 'default-female'
+  //       speed:  playbackSpeed.value,           // e.g. 1.25
+  //       volume: volume.value / 100,            // e.g. 0.70
+  //     }),
+  //   })
+  //   if (!res.ok) throw new Error('TTS request failed')
+  //   const blob = await res.blob()
+  //   return URL.createObjectURL(blob)           // pass this URL to new Audio(url).play()
+  //
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Web Speech API fallback — works in Chrome/Edge/Safari without a backend
+  return new Promise((resolve, reject) => {
+    if (!('speechSynthesis' in window)) {
+      reject(new Error('Text-to-speech is not supported in this browser.'))
+      return
+    }
+    window.speechSynthesis.cancel()   // clear any previous utterance
+    const utterance     = new SpeechSynthesisUtterance(text)
+    utterance.rate      = playbackSpeed.value
+    utterance.volume    = volume.value / 100
+    utterance.onend     = () => resolve('done')
+    utterance.onerror   = (e) => reject(e)
+    window.speechSynthesis.speak(utterance)
+    resolve('speaking')   // resolve immediately so UI updates right away
+  })
+}
+
+/**
+ * Start playing a block's text aloud.
+ * @param {number} blockId   - The block to play
+ * @param {string} textType  - 'original' (left card) or 'summary' (right card)
+ */
+async function playBlock(blockId, textType = 'original') {
+  const block = result.value?.blocks?.find(b => b.id === blockId)
+  if (!block) return
+
+  const isSameCard = activeBlockId.value === blockId && activeBlockType.value === textType
+
+  // Clicking the currently playing card → pause
+  if (isSameCard && playbackState.value === 'playing') {
+    pauseAudio(); return
+  }
+  // Clicking the currently paused card → resume
+  if (isSameCard && playbackState.value === 'paused') {
+    resumeAudio(); return
+  }
+
+  // Switch to a new block or side — stop current first
+  stopAudio()
+  activeBlockId.value   = blockId
+  activeBlockType.value = textType
+  playbackState.value   = 'playing'
+
+  // Build the text to speak depending on which side was clicked
+  let textToSpeak = ''
+  if (textType === 'original') {
+    textToSpeak = block.originalText
+  } else {
+    // Right card: read summary then key points as a flowing sentence
+    const kp = block.keyPoints?.length
+      ? 'Key points: ' + block.keyPoints.join('. ')
+      : ''
+    textToSpeak = [block.summary, kp].filter(Boolean).join('. ')
+  }
+
+  try {
+    await requestTTS(textToSpeak)
+    if (activeBlockId.value === blockId) stopAudio()
+  } catch (err) {
+    console.error('[TTS] Playback error:', err)
+    stopAudio()
+  }
+}
+
+/** Pause the current playback. */
+function pauseAudio() {
+  if ('speechSynthesis' in window) window.speechSynthesis.pause()
+  // TODO (Backend): currentAudio?.pause()
+  playbackState.value = 'paused'
+}
+
+/** Resume a paused playback. */
+function resumeAudio() {
+  if ('speechSynthesis' in window) window.speechSynthesis.resume()
+  // TODO (Backend): currentAudio?.play()
+  playbackState.value = 'playing'
+}
+
+/** Replay the currently active block (same side) from the beginning. */
+function replayBlock() {
+  if (activeBlockId.value !== null) playBlock(activeBlockId.value, activeBlockType.value)
+}
+
+/** Stop all playback and reset to idle. */
+function stopAudio() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  // TODO (Backend): currentAudio?.pause(); currentAudio = null
+  activeBlockId.value   = null
+  activeBlockType.value = 'original'
+  playbackState.value   = 'idle'
+}
+
+
 // ── Mock data (demo only) ─────────────────────────────────────────────────────
 
 // Sample blocks that simulate what the backend would return.
@@ -118,10 +291,14 @@ const MOCK_RESULT = {
 
 // Load mock data directly — skips the API call and jumps straight to result mode
 function loadDemo() {
-  expandedBlocks.value = new Set()
-  clampedBlocks.value  = {}
-  result.value = MOCK_RESULT
-  mode.value   = 'result'
+  expandedBlocks.value  = new Set()
+  clampedBlocks.value   = {}
+  result.value          = MOCK_RESULT
+  mode.value            = 'result'
+  // Pre-set audio toolbar to a visible paused state so the UI can be previewed
+  activeBlockId.value   = 1
+  activeBlockType.value = 'original'
+  playbackState.value   = 'paused'
 }
 
 
@@ -163,7 +340,8 @@ async function handleSubmit() {
   if (!inputText.value.trim() || overLimit.value || mode.value === 'loading') return
 
   showFeedback('loading', 'Processing your text…', 0)
-  mode.value    = 'loading'
+  stopAudio()                        // stop any playing audio before new submission
+  mode.value           = 'loading'
   expandedBlocks.value = new Set()
   clampedBlocks.value  = {}
 
@@ -195,6 +373,7 @@ async function handleSubmit() {
 
 // Go back to the input screen without clearing the text
 function handleBackToInput() {
+  stopAudio()                        // stop TTS before leaving result view
   mode.value           = 'idle'
   result.value         = null
   feedback.value       = null
@@ -493,6 +672,104 @@ onUnmounted(() => {
           </div>
 
           <!--
+            ── Audio Control Toolbar ──────────────────────────────────────────
+            Appears when any block is playing or paused.
+            Controls: pause/resume, replay, playback speed, voice, volume, stop.
+
+            BACKEND NOTE:
+              Voice selector values map to TTS voice IDs on the backend.
+              Speed and volume are forwarded as-is in the /api/tts request body.
+              See requestTTS() in the script section for the full API contract.
+          -->
+          <Transition name="audio-bar">
+            <div v-if="playbackState !== 'idle'" class="audio-toolbar">
+
+              <!-- Left: icon + title + now-playing label -->
+              <div class="at-info">
+                <div class="at-icon">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 5.5h2.5l3-3v11l-3-3H2V5.5z" fill="#2563eb"/>
+                    <path d="M11 4.5a5 5 0 0 1 0 7M13 2.5a8 8 0 0 1 0 11" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="at-title">Audio Control Panel</div>
+                  <div class="at-status">
+                    Now Playing: Block {{ activeBlockId }}
+                    ({{ activeBlockType === 'summary' ? 'Summary &amp; Key Points' : 'Original Text' }})
+                    <span v-if="playbackState === 'paused'" class="at-paused-tag">· Paused</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Centre: playback action buttons -->
+              <div class="at-actions">
+                <!-- Pause / Resume -->
+                <button
+                  class="at-btn"
+                  :class="{ 'at-btn--primary': playbackState === 'playing' }"
+                  @click="playbackState === 'playing' ? pauseAudio() : resumeAudio()"
+                >
+                  <svg v-if="playbackState === 'playing'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/>
+                    <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/>
+                  </svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="currentColor"/>
+                  </svg>
+                  {{ playbackState === 'playing' ? 'Pause' : 'Resume' }}
+                </button>
+
+                <!-- Replay -->
+                <button class="at-btn" @click="replayBlock">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M11 7A4 4 0 1 1 7 3M11 3v4H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Replay
+                </button>
+              </div>
+
+              <!-- Speed selector -->
+              <div class="at-control">
+                <label class="at-label">Speed</label>
+                <select v-model="playbackSpeed" class="at-select">
+                  <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                </select>
+              </div>
+
+              <!-- Voice selector -->
+              <div class="at-control">
+                <label class="at-label">Voice</label>
+                <select v-model="selectedVoice" class="at-select">
+                  <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                </select>
+              </div>
+
+              <!-- Volume slider -->
+              <div class="at-control at-volume">
+                <label class="at-label">Volume</label>
+                <input
+                  type="range"
+                  v-model="volume"
+                  min="0" max="100" step="1"
+                  class="at-slider"
+                  :aria-label="`Volume: ${volume}%`"
+                />
+                <span class="at-vol-num">{{ volume }}%</span>
+              </div>
+
+              <!-- Stop button -->
+              <button class="at-btn-stop" @click="stopAudio" title="Stop playback">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+                </svg>
+                Stop
+              </button>
+
+            </div>
+          </Transition>
+
+          <!--
             Two-column layout.
             Structure: one sticky header row + one grid row per block.
             Left and right cards share the same row, so they always align in height.
@@ -530,13 +807,43 @@ onUnmounted(() => {
 
               <!-- ── Left card: original text ── -->
               <!--
-                Default: text is clamped to a fixed number of lines via CSS.
-                If the text is actually being clipped, a "Read more" button appears.
-                Clicking it removes the clamp so the full text is shown.
+                Active block gets a blue border + animated waveform indicator.
+                Play button in the header toggles play / pause for this block.
               -->
-              <div class="block-card block-card--left">
-                <div class="block-label">Block {{ block.id }}</div>
+              <div :class="['block-card', 'block-card--left', { 'block-card--active': activeBlockId === block.id }]">
 
+                <!-- Card header: block label on the left, play button on the right -->
+                <div class="block-card-header">
+                  <div class="block-label">Block {{ block.id }}</div>
+
+                  <!-- Play / Pause button for this specific block -->
+                  <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
+                    <!-- Animated waveform bars when this block is playing -->
+                    <span v-if="activeBlockId === block.id && playbackState === 'playing'" class="play-badge play-badge--playing">
+                      <span class="wave-bar"></span>
+                      <span class="wave-bar"></span>
+                      <span class="wave-bar"></span>
+                      Now Playing…
+                    </span>
+                    <!-- Paused state indicator -->
+                    <span v-else-if="activeBlockId === block.id && playbackState === 'paused'" class="play-badge play-badge--paused">
+                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                        <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                      </svg>
+                      Paused
+                    </span>
+                    <!-- Default: play icon + label -->
+                    <span v-else class="play-badge play-badge--idle">
+                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
+                      </svg>
+                      Play
+                    </span>
+                  </button>
+                </div>
+
+                <!-- Original text — clamped by default, expandable via Read more -->
                 <p
                   :ref="el => checkClamp(el, block.id)"
                   :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
@@ -544,7 +851,7 @@ onUnmounted(() => {
                   {{ block.originalText }}
                 </p>
 
-                <!-- Only show the toggle when the text is actually being clipped -->
+                <!-- Read more / Show less toggle — only when text actually overflows -->
                 <button
                   v-if="clampedBlocks[block.id] || isExpanded(block.id)"
                   class="btn-toggle"
@@ -555,8 +862,34 @@ onUnmounted(() => {
               </div>
 
               <!-- ── Right card: summary + key points ── -->
-              <div class="block-card block-card--right">
-                <div class="block-label">Block {{ block.id }}</div>
+              <div :class="['block-card', 'block-card--right', { 'block-card--active': activeBlockId === block.id && activeBlockType === 'summary' }]">
+
+                <!-- Card header: block label + play button (plays summary + key points) -->
+                <div class="block-card-header">
+                  <div class="block-label">Block {{ block.id }}</div>
+
+                  <button class="btn-play" @click="playBlock(block.id, 'summary')" :aria-label="`Play summary of Block ${block.id}`">
+                    <span v-if="activeBlockId === block.id && activeBlockType === 'summary' && playbackState === 'playing'" class="play-badge play-badge--playing">
+                      <span class="wave-bar"></span>
+                      <span class="wave-bar"></span>
+                      <span class="wave-bar"></span>
+                      Now Playing…
+                    </span>
+                    <span v-else-if="activeBlockId === block.id && activeBlockType === 'summary' && playbackState === 'paused'" class="play-badge play-badge--paused">
+                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                        <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                      </svg>
+                      Paused
+                    </span>
+                    <span v-else class="play-badge play-badge--idle">
+                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
+                      </svg>
+                      Play
+                    </span>
+                  </button>
+                </div>
 
                 <div class="summary-section">
                   <div class="section-title">
@@ -977,6 +1310,136 @@ kbd {
   transition: background 0.15s, color 0.15s;
 }
 .btn-back:hover { background: #f3f4f6; color: #0d1117; }
+
+/* ─────────────────────────────────────────
+   Audio Control Toolbar
+   Shown when any block is playing/paused.
+   Slides in from the top with a transition.
+───────────────────────────────────────── */
+.audio-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08);
+}
+
+/* Slide-down enter/leave transition */
+.audio-bar-enter-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.audio-bar-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.audio-bar-enter-from   { opacity: 0; transform: translateY(-8px); }
+.audio-bar-leave-to     { opacity: 0; transform: translateY(-4px); }
+
+/* Info section: speaker icon + title + now-playing label */
+.at-info {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1; min-width: 160px;
+}
+.at-icon {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: #eff6ff; border-radius: 8px; flex-shrink: 0;
+}
+.at-title  { font-size: 12px; font-weight: 700; color: #1d4ed8; }
+.at-status { font-size: 11.5px; color: #6b7280; margin-top: 1px; }
+.at-paused-tag { color: #f59e0b; font-weight: 600; }
+
+/* Action buttons (Pause/Resume, Replay) */
+.at-actions { display: flex; gap: 6px; }
+.at-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600; color: #4b5563;
+  background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.at-btn:hover { background: #e8eaf0; color: #0d1117; }
+.at-btn--primary { background: #eff6ff; border-color: #93c5fd; color: #2563eb; }
+.at-btn--primary:hover { background: #dbeafe; }
+
+/* Speed / Voice selector controls */
+.at-control { display: flex; flex-direction: column; gap: 3px; }
+.at-label { font-size: 10.5px; font-weight: 700; color: #9ca3af; letter-spacing: 0.06em; text-transform: uppercase; }
+.at-select {
+  padding: 5px 8px; font-size: 12px; font-weight: 600; color: #374151;
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 7px;
+  cursor: pointer; outline: none; transition: border-color 0.15s;
+}
+.at-select:focus { border-color: #93c5fd; }
+
+/* Volume slider */
+.at-volume { flex-direction: row; align-items: center; gap: 6px; flex-wrap: wrap; }
+.at-slider { width: 80px; height: 4px; accent-color: #2563eb; cursor: pointer; }
+.at-vol-num { font-size: 11.5px; font-weight: 600; color: #374151; min-width: 32px; }
+
+/* Stop button — dark fill to clearly signal "stop" */
+.at-btn-stop {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 14px; font-size: 12.5px; font-weight: 700;
+  color: #fff; background: #1f2937; border: none; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s; white-space: nowrap; margin-left: auto;
+}
+.at-btn-stop:hover { background: #111827; }
+
+
+/* ─────────────────────────────────────────
+   Block card header (label + play button)
+───────────────────────────────────────── */
+.block-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Active block — blue border highlight when playing/paused */
+.block-card--active {
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08), 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Play button with three states: idle / playing / paused */
+.btn-play {
+  background: none; border: none; cursor: pointer; padding: 0; line-height: 1;
+}
+
+/* Badge shared styles */
+.play-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.play-badge--idle {
+  color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe;
+}
+.play-badge--idle:hover { background: #dbeafe; }
+
+.play-badge--playing {
+  color: #2563eb; background: #dbeafe; border: 1px solid #93c5fd;
+}
+.play-badge--paused {
+  color: #d97706; background: #fffbeb; border: 1px solid #fde68a;
+}
+
+/* Animated waveform bars (shown when playing) */
+.wave-bar {
+  display: inline-block;
+  width: 3px; height: 10px;
+  background: #2563eb; border-radius: 2px;
+  animation: wave 0.9s ease-in-out infinite;
+}
+.wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar:nth-child(3) { animation-delay: 0.30s; }
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%       { transform: scaleY(1.0); }
+}
+
 
 /* ── Result grid ── */
 /*
