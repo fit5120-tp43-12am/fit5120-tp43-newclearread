@@ -1,6 +1,15 @@
+/* Google Fonts: Inter (UI) + OpenDyslexic (dyslexia-friendly option) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.cdnfonts.com/css/opendyslexic');
 
 :root {
+  /* ── Accessibility overlay ──────────────────────────────────────────────────
+     Default is transparent (no tint). The useAccessibility composable updates
+     this variable whenever the user picks a colour theme. The overlay div in
+     AccessibilityToolbar reads this value via mix-blend-mode:multiply, which
+     tints white backgrounds while keeping dark text fully readable.
+  ─────────────────────────────────────────────────────────────────────────── */
+  --a11y-overlay: transparent;
   /* Premium color palette */
   --color-bg: #fafbff;
   --color-surface: #ffffff;

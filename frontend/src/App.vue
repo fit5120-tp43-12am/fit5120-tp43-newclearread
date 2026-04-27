@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import AccessibilityToolbar from './components/AccessibilityToolbar.vue'
 
 const AUTH_STORAGE_KEY = 'clearead-session-authenticated'
 const VALID_USERNAME = 'tp43_goodjob'
@@ -34,7 +35,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <RouterView v-if="isAuthenticated" />
+  <!-- Toolbar is shown on all pages site-wide -->
+  <template v-if="isAuthenticated">
+    <AccessibilityToolbar />
+    <RouterView />
+  </template>
 
   <div v-else class="auth-gate">
     <div class="auth-gate__blob auth-gate__blob--blue"></div>
