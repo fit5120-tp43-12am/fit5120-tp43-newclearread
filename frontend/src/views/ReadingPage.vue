@@ -1,55 +1,137 @@
 <script setup>
-// Vue core utilities we need for this page
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
-// Read the backend URL from the .env file; fall back to localhost if not set
-// The .replace removes any trailing slash to keep URLs clean
+// Backend base URL from .env; falls back to localhost for local development
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
 
 // ── Navbar state ──────────────────────────────────────────────────────────────
 
-// Track whether the user has scrolled down (used to add a shadow to the navbar)
-const scrolled = ref(false)
-// Track whether the mobile hamburger menu is open
-const menuOpen = ref(false)
-// Add a shadow when the user scrolls more than 10px from the top
+const scrolled = ref(false)   // true when user scrolls past 10px — adds navbar shadow
+const menuOpen = ref(false)   // controls mobile hamburger menu
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
 
 // ── Input state ───────────────────────────────────────────────────────────────
 
-// The text the user has typed or pasted into the input box
-const inputText = ref('')
-// Maximum number of characters we allow
-const charLimit = 5000
-// Live character count based on current input
-const charCount = computed(() => inputText.value.length)
-// True if the user has exceeded the character limit
-const overLimit = computed(() => charCount.value > charLimit)
-// Reference to the <textarea> DOM element so we can resize it programmatically
-const textareaRef = ref(null)
+const inputText   = ref('')       // text the user has typed or pasted
+const charLimit   = 50000         // max characters allowed
+const charCount   = computed(() => inputText.value.length)
+const overLimit   = computed(() => charCount.value > charLimit)
+const textareaRef = ref(null)     // ref to the textarea DOM element for auto-resize
 
 
 // ── Page mode ─────────────────────────────────────────────────────────────────
 
-// The page has three states: idle (waiting), loading (processing), result (done)
-const mode = ref('idle')
-// The text that was last submitted and is now shown in the reading area
-const loadedText = ref('')
+// The page can be in one of three states at any time
+const mode = ref('idle')   // 'idle' | 'loading' | 'result'
+
+// Holds the processed result returned by the backend
+// Expected shape:
+// {
+//   blocks: [
+//     { id: 1, originalText: '...', summary: '...', keyPoints: ['...', '...'] },
+//     ...
+//   ],
+//   notice: '...' (optional)
+// }
+const result = ref(null)
+
 
 // Helper: count words in a string
-const wordCount = (t) => t.trim().split(/\s+/).filter(Boolean).length
+function wordCount(t) { return t.trim().split(/\s+/).filter(Boolean).length }
+
+
+// ── Block expand / collapse (left column) ────────────────────────────────────
+
+// Tracks which blocks have been manually expanded by the user
+const expandedBlocks = ref(new Set())
+
+function isExpanded(id) { return expandedBlocks.value.has(id) }
+
+function toggleBlock(id) {
+  const next = new Set(expandedBlocks.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  expandedBlocks.value = next
+}
+
+// Detect whether a text element is being visually clamped (overflowing its container).
+// We store a reactive map of blockId → isClamped so the template can show/hide the button.
+const clampedBlocks = ref({})
+
+// Called after each block card renders — checks if the paragraph is overflowing
+function checkClamp(el, id) {
+  if (!el) return
+  // scrollHeight > clientHeight means the text is taller than the visible area
+  clampedBlocks.value = {
+    ...clampedBlocks.value,
+    [id]: el.scrollHeight > el.clientHeight + 2,   // +2px to avoid sub-pixel false positives
+  }
+}
+
+
+// ── Mock data (demo only) ─────────────────────────────────────────────────────
+
+// Sample blocks that simulate what the backend would return.
+// Used by the "Try Demo" button so the UI can be previewed without a real API call.
+const MOCK_RESULT = {
+  notice: 'Demo mode — this is sample data, not a real backend response.',
+  blocks: [
+    {
+      id: 1,
+      originalText:
+        'Dyslexia is a learning difference that primarily affects reading and writing skills. It is neurological in origin, meaning it is related to how the brain processes written language. People with dyslexia may have difficulty recognising letters, decoding words, and spelling accurately. Despite these challenges, dyslexia does not affect general intelligence — many people with dyslexia are highly creative and excel in problem-solving, art, and entrepreneurship.',
+      summary:
+        'Dyslexia is a brain-based learning difference that makes reading and writing harder, but it does not affect overall intelligence or creativity.',
+      keyPoints: [
+        'Dyslexia is neurological — it stems from how the brain processes language.',
+        'Common difficulties include letter recognition, word decoding, and spelling.',
+        'It does not reduce general intelligence or creative ability.',
+      ],
+    },
+    {
+      id: 2,
+      originalText:
+        'Early identification of dyslexia is crucial for providing the right support. Signs often appear in early childhood and can include delayed speech development, difficulty rhyming, trouble learning the alphabet, and slow reading progress compared to peers. Teachers and parents play a vital role in noticing these signs and seeking professional assessment. With early intervention and appropriate teaching strategies, children with dyslexia can make significant progress and build confidence in their literacy skills.',
+      summary:
+        'Spotting dyslexia early — through signs like delayed speech or slow reading — allows timely support that can greatly improve a child\'s literacy and self-confidence.',
+      keyPoints: [
+        'Early signs include delayed speech, difficulty rhyming, and slow reading progress.',
+        'Teachers and parents are key to recognising early warning signs.',
+        'Early intervention leads to better literacy outcomes and greater confidence.',
+      ],
+    },
+    {
+      id: 3,
+      originalText:
+        'There are many effective strategies and tools that support people with dyslexia in everyday reading and writing tasks. These include the use of dyslexia-friendly fonts such as OpenDyslexic, adjusting text size and line spacing, using coloured overlays to reduce visual stress, and text-to-speech software that reads content aloud. Technology has made a significant difference — screen readers, speech-to-text apps, and reading support platforms like Clearead help users engage with written content more comfortably and independently.',
+      summary:
+        'A range of tools — from dyslexia-friendly fonts and colour overlays to text-to-speech software — help people with dyslexia read and write more comfortably.',
+      keyPoints: [
+        'Dyslexia-friendly fonts (e.g. OpenDyslexic) and adjusted spacing reduce reading friction.',
+        'Coloured overlays can ease visual stress associated with reading.',
+        'Text-to-speech and reading support apps like Clearead promote independent reading.',
+      ],
+    },
+  ],
+}
+
+// Load mock data directly — skips the API call and jumps straight to result mode
+function loadDemo() {
+  expandedBlocks.value = new Set()
+  clampedBlocks.value  = {}
+  result.value = MOCK_RESULT
+  mode.value   = 'result'
+}
 
 
 // ── Feedback strip ────────────────────────────────────────────────────────────
 
-// Stores the current feedback message shown above the input bar
-// Shape: { type: 'loading' | 'uploading' | 'success' | 'error', message: string }
+// { type: 'loading' | 'uploading' | 'success' | 'error', message: string }
 const feedback = ref(null)
 let feedbackTimer = null
 
-// Show a feedback message; auto-dismiss after `autoDismiss` ms (0 = keep until manually cleared)
+// Show a status message; set autoDismiss = 0 to keep it until manually dismissed
 function showFeedback(type, message, autoDismiss = 3000) {
   clearTimeout(feedbackTimer)
   feedback.value = { type, message }
@@ -57,63 +139,82 @@ function showFeedback(type, message, autoDismiss = 3000) {
 }
 
 
-// ── File upload state ─────────────────────────────────────────────────────────
+// ── File upload ───────────────────────────────────────────────────────────────
 
-// Reference to the hidden <input type="file"> element
-const fileInputRef = ref(null)
-// True while the user is dragging a file over the page
-const isDragging = ref(false)
-// File extensions we accept from users
+const fileInputRef  = ref(null)
+const isDragging    = ref(false)
 const SUPPORTED_EXT = ['.txt', '.md', '.markdown', '.csv', '.rtf', '.log', '.pdf', '.docx']
 
 
 // ── Auto-resize textarea ──────────────────────────────────────────────────────
 
-// Resize the textarea to fit its content (up to a max height of 180px)
 function autoResize() {
   const el = textareaRef.value
   if (!el) return
-  el.style.height = 'auto'                                  // reset first so shrinking works
-  el.style.height = Math.min(el.scrollHeight, 180) + 'px'  // then set to content height
+  el.style.height = 'auto'                                   // reset first so it can shrink
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px'   // cap at 180px
 }
-// Re-run autoResize whenever the input text changes
 watch(inputText, () => nextTick(autoResize))
 
 
-// ── Submit handler ────────────────────────────────────────────────────────────
+// ── Submit / process text ─────────────────────────────────────────────────────
 
-// Called when the user clicks "Load Text" or presses Ctrl+Enter
 async function handleSubmit() {
-  // Do nothing if the input is empty, over the limit, or already loading
   if (!inputText.value.trim() || overLimit.value || mode.value === 'loading') return
 
-  showFeedback('loading', 'Loading your text…', 0)
-  mode.value = 'loading'
+  showFeedback('loading', 'Processing your text…', 0)
+  mode.value    = 'loading'
+  expandedBlocks.value = new Set()
+  clampedBlocks.value  = {}
 
-  // Small delay so the loading state is visible to the user
-  await new Promise(r => setTimeout(r, 380))
+  try {
+    // Send text to the backend and wait for the paragraph-breakdown response
+    const res = await fetch(`${API_BASE_URL}/api/process-text`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ text: inputText.value }),
+    })
+    const data = await res.json()
 
-  // Move the input text to the reading area and switch to result mode
-  loadedText.value = inputText.value
-  mode.value = 'result'
-  showFeedback('success', 'Text loaded — scroll up to read')
+    if (!res.ok) throw new Error(data.detail || 'Processing failed.')
+
+    // Store the result — the template will render blocks dynamically from data.blocks
+    result.value = data
+    mode.value   = 'result'
+    showFeedback('success', 'Text processed successfully.')
+
+    if (data.notice) {
+      // If the backend sent an informational notice (e.g. fallback used), show it too
+      showFeedback('success', data.notice, 6000)
+    }
+  } catch (err) {
+    mode.value = 'idle'
+    showFeedback('error', err.message || 'Something went wrong. Please try again.', 6000)
+  }
+}
+
+// Go back to the input screen without clearing the text
+function handleBackToInput() {
+  mode.value           = 'idle'
+  result.value         = null
+  feedback.value       = null
+  expandedBlocks.value = new Set()
+  clampedBlocks.value  = {}
 }
 
 
-// ── Clear handler ─────────────────────────────────────────────────────────────
+// ── Clear input ───────────────────────────────────────────────────────────────
 
-// Reset the input box and remove any active feedback
 function handleClear() {
   inputText.value = ''
-  feedback.value = null
+  feedback.value  = null
   clearTimeout(feedbackTimer)
-  nextTick(autoResize) // shrink textarea back to its minimum height
+  nextTick(autoResize)
 }
 
 
 // ── File read helpers ─────────────────────────────────────────────────────────
 
-// Read a file and return its content as a plain text string
 function readAsText(file) {
   return new Promise((res, rej) => {
     const r = new FileReader()
@@ -123,33 +224,26 @@ function readAsText(file) {
   })
 }
 
-// Read a file and return its content as a base64-encoded string
-// This is needed when sending binary files (PDF, DOCX) to the backend as JSON
+// Reads a binary file (PDF, DOCX) as a base64 string for sending to the backend
 function readAsBase64(file) {
   return new Promise((res, rej) => {
     const r = new FileReader()
     r.onload = e => {
       const s = typeof e.target.result === 'string' ? e.target.result : ''
-      // Strip the "data:...;base64," prefix — we only need the raw base64 part
-      res(s.includes(',') ? s.split(',')[1] : s)
+      res(s.includes(',') ? s.split(',')[1] : s)   // strip the data-URL prefix
     }
     r.onerror = () => rej(new Error('Could not read file.'))
     r.readAsDataURL(file)
   })
 }
 
-// Main function to handle any uploaded or dropped file
 async function processFile(file) {
-  // Get the file extension (e.g. ".pdf")
   const ext = '.' + file.name.split('.').pop().toLowerCase()
 
-  // Reject unsupported file types
   if (!SUPPORTED_EXT.includes(ext)) {
     showFeedback('error', `"${file.name}" is not supported. Use TXT, PDF, or DOCX.`, 5000)
     return
   }
-
-  // Reject files larger than 5 MB
   if (file.size > 5 * 1024 * 1024) {
     showFeedback('error', 'File is too large (max 5 MB).', 5000)
     return
@@ -158,98 +252,84 @@ async function processFile(file) {
   showFeedback('uploading', `Uploading "${file.name}"…`, 0)
 
   try {
-    // Plain-text files can be read directly in the browser — no backend call needed
+    // Plain-text files can be read directly in the browser
     if (['.txt', '.md', '.markdown', '.csv', '.rtf', '.log'].includes(ext)) {
       const text = await readAsText(file)
-      if (!text.trim()) throw new Error('No readable text found in this file.')
+      if (!text.trim()) throw new Error('No readable text found.')
       inputText.value = text
-      showFeedback('success', `"${file.name}" ready — click Load Text to continue`)
+      showFeedback('success', `"${file.name}" ready — click Process Text to continue`)
       return
     }
 
-    // For PDF and DOCX, send the file to the backend for text extraction
+    // PDF / DOCX need backend extraction
     const base64 = await readAsBase64(file)
     const res = await fetch(`${API_BASE_URL}/api/extract-text`, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: file.name, contentBase64: base64 }),
+      body:    JSON.stringify({ filename: file.name, contentBase64: base64 }),
     })
     const data = await res.json()
     if (!res.ok)            throw new Error(data.detail || 'Could not extract text.')
-    if (!data.text?.trim()) throw new Error('No readable text found in this file.')
+    if (!data.text?.trim()) throw new Error('No readable text found.')
     inputText.value = data.text
-    showFeedback('success', `"${file.name}" ready — click Load Text to continue`)
+    showFeedback('success', `"${file.name}" ready — click Process Text to continue`)
   } catch (err) {
     showFeedback('error', err.message || 'Upload failed. Please try again.', 6000)
   }
 }
 
-// Open the hidden file picker when the "Upload file" button is clicked
 function triggerFileInput() { fileInputRef.value?.click() }
 
-// Handle the file chosen from the file picker dialog
 async function handleFileChange(e) {
   const file = e.target.files[0]
-  e.target.value = '' // reset so the same file can be re-selected if needed
+  e.target.value = ''   // reset so the same file can be re-selected
   if (file) await processFile(file)
 }
 
 
 // ── Drag and drop ─────────────────────────────────────────────────────────────
 
-// We use a counter to handle nested drag events correctly
-// (dragging over a child element fires dragenter/dragleave on the parent)
+// Use a counter instead of a boolean to handle nested drag events correctly
 let dragCounter = 0
 
-function onDragEnter(e) {
-  e.preventDefault()
-  dragCounter++
-  isDragging.value = true
-}
-
-function onDragOver(e) { e.preventDefault() } // must prevent default to allow drop
-
-function onDragLeave() {
+function onDragEnter(e) { e.preventDefault(); dragCounter++; isDragging.value = true }
+function onDragOver(e)  { e.preventDefault() }
+function onDragLeave()  {
   dragCounter--
-  // Only hide the overlay once we have fully left the page
   if (dragCounter <= 0) { dragCounter = 0; isDragging.value = false }
 }
-
 async function onDrop(e) {
   e.preventDefault()
   dragCounter = 0
   isDragging.value = false
-  const file = e.dataTransfer?.files[0] // grab the first dropped file
+  const file = e.dataTransfer?.files[0]
   if (file) await processFile(file)
 }
 
 
 // ── Keyboard shortcut ─────────────────────────────────────────────────────────
 
-// Allow Ctrl+Enter (or Cmd+Enter on Mac) to submit without clicking the button
+// Ctrl+Enter (or Cmd+Enter on Mac) submits without clicking the button
 function onKeydown(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') handleSubmit()
 }
 
 
-// ── Lifecycle hooks ───────────────────────────────────────────────────────────
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll)
-  nextTick(autoResize) // set initial textarea height
+  nextTick(autoResize)
 })
-
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
-  clearTimeout(feedbackTimer) // clean up any pending timers
+  clearTimeout(feedbackTimer)
 })
 </script>
 
+
 <template>
-  <!--
-    The whole page listens for drag events so users can drop a file
-    anywhere on the screen, not just on a specific drop zone.
-  -->
+  <!-- The whole page listens for drag events so users can drop files anywhere -->
   <div
     class="page"
     @dragenter="onDragEnter"
@@ -259,13 +339,12 @@ onUnmounted(() => {
   >
 
     <!-- ── Navbar ── -->
-    <!-- The navbar sticks to the top and gets a shadow when the user scrolls -->
     <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
       <div class="nav-inner">
 
-        <!-- Logo / brand link — always navigates back to home -->
+        <!-- Brand logo — links back to home -->
         <RouterLink to="/" class="nav-logo">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
             <rect width="28" height="28" rx="8" fill="#2563eb"/>
             <path d="M7 8.5C7 7.67 7.67 7 8.5 7H13.5V21H8.5C7.67 21 7 20.33 7 19.5V8.5Z" fill="white" opacity="0.9"/>
             <path d="M21 8.5C21 7.67 20.33 7 19.5 7H14.5V21H19.5C20.33 21 21 20.33 21 19.5V8.5Z" fill="white" opacity="0.55"/>
@@ -276,16 +355,15 @@ onUnmounted(() => {
           Clearead
         </RouterLink>
 
-        <!-- Desktop navigation links -->
+        <!-- Desktop nav links -->
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link nav-link--active">Reading Support</RouterLink></li>
           <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
         </ul>
 
-        <!-- Hamburger button — only visible on small screens -->
+        <!-- Hamburger icon — only visible on small screens -->
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
-          <!-- Show X icon when menu is open, bars icon when closed -->
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
             <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -293,11 +371,10 @@ onUnmounted(() => {
             <path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-
       </div>
     </nav>
 
-    <!-- Mobile nav drawer — slides down when the hamburger is clicked -->
+    <!-- Mobile navigation drawer -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
@@ -308,14 +385,10 @@ onUnmounted(() => {
 
 
     <!-- ── Main reading area ── -->
-    <!--
-      This scrollable area sits between the navbar and the fixed bottom bar.
-      It shows one of three states depending on `mode`: idle, loading, or result.
-    -->
     <main class="reading-area">
-      <div class="reading-inner">
+      <div :class="['reading-inner', { 'reading-inner--wide': mode === 'result' }]">
 
-        <!-- State 1: Idle — nothing loaded yet, show a welcome prompt -->
+        <!-- ── STATE: idle — welcome screen ── -->
         <div v-if="mode === 'idle'" class="empty-state">
           <div class="empty-icon">
             <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
@@ -328,9 +401,9 @@ onUnmounted(() => {
           <h2 class="empty-title">Ready to support your reading</h2>
           <p class="empty-sub">
             Paste your text or drop a file into the bar below.<br>
-            Clearead will help you read it more comfortably.
+            Clearead will break it into blocks and summarise each one for you.
           </p>
-          <!-- Feature pills: quick summary of what the user can do -->
+          <!-- Quick-feature pills -->
           <div class="empty-features">
             <div class="feature-pill">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -353,56 +426,177 @@ onUnmounted(() => {
               Drag &amp; drop anywhere
             </div>
           </div>
-          <!-- Keyboard shortcut hint -->
           <p class="empty-shortcut">
             <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
             <span>to submit quickly</span>
           </p>
+
+          <!-- Demo button: loads sample data so the result UI can be previewed instantly -->
+          <button class="btn-demo" @click="loadDemo">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M5 4.5l4 2-4 2V4.5z" fill="currentColor"/>
+            </svg>
+            Try Demo
+          </button>
         </div>
 
-        <!-- State 2: Loading — show animated skeleton while waiting -->
+
+        <!-- ── STATE: loading — animated skeleton ── -->
         <div v-else-if="mode === 'loading'" class="loading-state">
-          <!-- Each skeleton block represents a line of text that is being loaded -->
-          <div class="skeleton skeleton--heading"></div>
-          <div class="skeleton skeleton--line" style="width:96%"></div>
-          <div class="skeleton skeleton--line" style="width:89%"></div>
-          <div class="skeleton skeleton--line" style="width:93%"></div>
-          <div class="skeleton skeleton--line" style="width:78%"></div>
-          <div class="skeleton skeleton--spacer"></div>
-          <div class="skeleton skeleton--line" style="width:91%"></div>
-          <div class="skeleton skeleton--line" style="width:84%"></div>
-          <div class="skeleton skeleton--line" style="width:67%"></div>
-          <div class="skeleton skeleton--spacer"></div>
-          <div class="skeleton skeleton--line" style="width:88%"></div>
-          <div class="skeleton skeleton--line" style="width:72%"></div>
+          <!-- Skeleton mimics the two-column result layout -->
+          <div class="skeleton-header">
+            <div class="skeleton skeleton--col-title"></div>
+            <div class="skeleton skeleton--col-title"></div>
+          </div>
+          <div v-for="i in 3" :key="i" class="skeleton-row">
+            <!-- Left: original text placeholder -->
+            <div class="skeleton-block">
+              <div class="skeleton skeleton--badge"></div>
+              <div class="skeleton skeleton--line" style="width:100%"></div>
+              <div class="skeleton skeleton--line" style="width:88%"></div>
+              <div class="skeleton skeleton--line" style="width:75%"></div>
+            </div>
+            <!-- Right: summary placeholder -->
+            <div class="skeleton-block skeleton-block--right">
+              <div class="skeleton skeleton--badge"></div>
+              <div class="skeleton skeleton--sm" style="width:60%"></div>
+              <div class="skeleton skeleton--line" style="width:95%"></div>
+              <div class="skeleton skeleton--line" style="width:80%"></div>
+              <div class="skeleton skeleton--sm" style="width:50%; margin-top:8px"></div>
+              <div class="skeleton skeleton--line" style="width:85%"></div>
+              <div class="skeleton skeleton--line" style="width:70%"></div>
+            </div>
+          </div>
         </div>
 
-        <!-- State 3: Result — display the loaded text and word count -->
-        <div v-else-if="mode === 'result'" class="result-state">
-          <div class="result-header">
-            <!-- Green badge to confirm the text was loaded successfully -->
-            <div class="result-badge">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <circle cx="6.5" cy="6.5" r="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
-                <path d="M4 6.5l1.8 1.8 3.2-3.6" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- ── STATE: result — two-column block display ── -->
+        <div v-else-if="mode === 'result' && result" class="result-state">
+
+          <!-- Top status bar: success notice + back button -->
+          <div class="result-topbar">
+            <div class="result-notice">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                <path d="M4 7l2.2 2.2 3.8-4.4" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Text loaded
+              <!-- Show a custom backend notice if provided, otherwise a default message -->
+              {{ result.notice || 'Text processed successfully.' }}
             </div>
-            <span class="result-meta">{{ wordCount(loadedText).toLocaleString() }} words</span>
+            <button class="btn-back" @click="handleBackToInput">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M11 6.5H2M2 6.5L6 2.5M2 6.5L6 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Back to Input
+            </button>
           </div>
-          <!-- Display the loaded text, preserving line breaks from the original -->
-          <div class="result-text">{{ loadedText }}</div>
+
+          <!--
+            Two-column layout.
+            Structure: one sticky header row + one grid row per block.
+            Left and right cards share the same row, so they always align in height.
+          -->
+          <div class="result-grid">
+
+            <!-- ── Sticky column headers ── -->
+            <div class="result-grid-header">
+              <div class="col-header">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                  <rect x="2" y="1" width="11" height="13" rx="2" stroke="#6b7280" stroke-width="1.3"/>
+                  <path d="M5 5h5M5 8h5M5 11h3" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+                Original Text
+                <span class="col-header-sub">(Paragraph Breakdown)</span>
+              </div>
+              <div class="col-header">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                  <rect x="1.5" y="1.5" width="12" height="12" rx="3" stroke="#6b7280" stroke-width="1.3"/>
+                  <path d="M4.5 5h6M4.5 8h6M4.5 11h4" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+                Summary &amp; Key Points
+              </div>
+            </div>
+
+            <!--
+              One row per block — left card (2fr) + right card (3fr) sit in the same grid row,
+              so align-items: stretch makes both cards equal height automatically.
+            -->
+            <div
+              v-for="block in result.blocks"
+              :key="block.id"
+              class="block-row"
+            >
+
+              <!-- ── Left card: original text ── -->
+              <!--
+                Default: text is clamped to a fixed number of lines via CSS.
+                If the text is actually being clipped, a "Read more" button appears.
+                Clicking it removes the clamp so the full text is shown.
+              -->
+              <div class="block-card block-card--left">
+                <div class="block-label">Block {{ block.id }}</div>
+
+                <p
+                  :ref="el => checkClamp(el, block.id)"
+                  :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
+                >
+                  {{ block.originalText }}
+                </p>
+
+                <!-- Only show the toggle when the text is actually being clipped -->
+                <button
+                  v-if="clampedBlocks[block.id] || isExpanded(block.id)"
+                  class="btn-toggle"
+                  @click="toggleBlock(block.id)"
+                >
+                  {{ isExpanded(block.id) ? 'Show less ↑' : 'Read more ↓' }}
+                </button>
+              </div>
+
+              <!-- ── Right card: summary + key points ── -->
+              <div class="block-card block-card--right">
+                <div class="block-label">Block {{ block.id }}</div>
+
+                <div class="summary-section">
+                  <div class="section-title">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <rect x="1.5" y="1.5" width="10" height="10" rx="2" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+                      <path d="M4 6.5h5M4 4.5h3" stroke="#2563eb" stroke-width="1" stroke-linecap="round"/>
+                    </svg>
+                    Summary
+                  </div>
+                  <p class="summary-text">
+                    {{ block.summary || 'Summary is not available.' }}
+                  </p>
+                </div>
+
+                <div class="keypoints-section">
+                  <div class="section-title">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 4l1.5 1.5L6 2M2 8l1.5 1.5L6 6M8 4h3M8 8h3" stroke="#f59e0b" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Key Points
+                  </div>
+                  <p v-if="!block.keyPoints || block.keyPoints.length === 0" class="fallback-text">
+                    No key points available.
+                  </p>
+                  <ul v-else class="keypoints-list">
+                    <li v-for="(pt, i) in block.keyPoints" :key="i">{{ pt }}</li>
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
 
       </div>
     </main>
 
 
-    <!-- ── Drag-and-drop overlay ── -->
-    <!--
-      This full-screen overlay appears when the user drags a file over the page.
-      It guides them to drop the file to upload it.
-    -->
+    <!-- ── Full-page drag-and-drop overlay ── -->
+    <!-- Shown when the user drags a file anywhere over the window -->
     <Transition name="drag-fade">
       <div v-if="isDragging" class="drag-overlay">
         <div class="drag-card">
@@ -420,36 +614,31 @@ onUnmounted(() => {
 
 
     <!-- ── Fixed bottom input bar ── -->
-    <!--
-      This bar is always visible at the bottom of the screen.
-      It contains the textarea for input, file upload, and the submit button.
-    -->
+    <!-- Always visible at the bottom; contains the textarea and action buttons -->
     <div class="bottom-bar">
       <div class="bottom-bar-inner">
 
-        <!-- Feedback strip: shows status messages (loading, success, error) above the input -->
+        <!-- Feedback strip: shows loading / success / error messages -->
         <Transition name="feedback">
           <div v-if="feedback" :class="['feedback-strip', `feedback--${feedback.type}`]">
             <div class="feedback-icon">
-              <!-- Animated spinner for loading and uploading states -->
+              <!-- Spinner for loading / uploading -->
               <svg v-if="feedback.type === 'loading' || feedback.type === 'uploading'"
                 class="spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.8"
-                  stroke-dasharray="22 10" stroke-linecap="round"/>
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="22 10" stroke-linecap="round"/>
               </svg>
-              <!-- Green check for success -->
+              <!-- Check for success -->
               <svg v-else-if="feedback.type === 'success'" width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <circle cx="7" cy="7" r="6" fill="#dcfce7"/>
                 <path d="M4 7l2.2 2.2 3.8-4.4" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <!-- Red X for errors -->
+              <!-- X for error -->
               <svg v-else-if="feedback.type === 'error'" width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <circle cx="7" cy="7" r="6" fill="#fee2e2"/>
                 <path d="M4.5 4.5l5 5M9.5 4.5l-5 5" stroke="#ef4444" stroke-width="1.4" stroke-linecap="round"/>
               </svg>
             </div>
             <span class="feedback-msg">{{ feedback.message }}</span>
-            <!-- Allow the user to manually dismiss the feedback -->
             <button class="feedback-close" @click="feedback = null" aria-label="Dismiss">
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
                 <path d="M2 2l7 7M9 2l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -458,10 +647,10 @@ onUnmounted(() => {
           </div>
         </Transition>
 
-        <!-- Input card: the main text entry area -->
+        <!-- Input card: textarea + action buttons -->
         <div class="input-card">
 
-          <!-- Multi-line textarea that auto-resizes as the user types -->
+          <!-- Auto-resizing textarea for text input -->
           <textarea
             ref="textareaRef"
             v-model="inputText"
@@ -473,15 +662,14 @@ onUnmounted(() => {
             @keydown="onKeydown"
           ></textarea>
 
-          <!-- Visual divider between textarea and action buttons -->
           <div class="input-divider"></div>
 
           <!-- Action buttons row -->
           <div class="input-actions">
 
-            <!-- Left side: file upload and character count -->
+            <!-- Left: upload button + character counter -->
             <div class="actions-left">
-              <!-- Hidden native file input — triggered by the "Upload file" button below -->
+              <!-- Hidden native file picker triggered by the button below -->
               <input
                 ref="fileInputRef"
                 type="file"
@@ -489,7 +677,6 @@ onUnmounted(() => {
                 style="display:none"
                 @change="handleFileChange"
               />
-              <!-- Visible upload button that opens the file picker -->
               <button class="btn-upload" @click="triggerFileInput" title="Upload TXT, PDF or DOCX">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M7 9.5V2M7 2L4 5M7 2l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -506,7 +693,7 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Right side: clear and submit buttons -->
+            <!-- Right: clear + submit -->
             <div class="actions-right">
               <!-- Clear button only appears when there is text to clear -->
               <Transition name="fade-btn">
@@ -518,19 +705,17 @@ onUnmounted(() => {
                 </button>
               </Transition>
 
-              <!-- Submit button — disabled when input is empty, over limit, or already loading -->
+              <!-- Primary submit button — disabled when input is empty or over limit -->
               <button
                 class="btn-submit"
                 :disabled="!inputText.trim() || overLimit || mode === 'loading'"
                 @click="handleSubmit"
               >
-                <!-- Show spinner while loading, otherwise show the button label -->
                 <span v-if="mode === 'loading'" class="btn-spinner"></span>
                 <template v-else>
-                  Load Text
+                  Process Text
                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <path d="M2 6.5H11M11 6.5L7 2.5M11 6.5L7 10.5"
-                      stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 6.5H11M11 6.5L7 2.5M11 6.5L7 10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </template>
               </button>
@@ -539,7 +724,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Small hint text at the bottom of the bar -->
+        <!-- Keyboard shortcut and drag hint -->
         <p class="bar-hint">
           <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit
           <span class="hint-dot">·</span>
@@ -552,12 +737,13 @@ onUnmounted(() => {
   </div>
 </template>
 
+
 <style scoped>
 
 /* ─────────────────────────────────────────
    Page shell
-   The page uses flexbox column layout so the
-   reading area fills the space between navbar and bottom bar.
+   Flexbox column so reading area stretches
+   between the navbar and the fixed bottom bar.
 ───────────────────────────────────────── */
 .page {
   min-height: 100dvh;
@@ -574,7 +760,6 @@ onUnmounted(() => {
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  /* Slightly transparent with blur so content scrolls behind it nicely */
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -582,11 +767,10 @@ onUnmounted(() => {
   z-index: 50;
   transition: box-shadow 0.2s;
 }
-/* Add a deeper shadow when the user has scrolled down */
 .navbar--scrolled { box-shadow: 0 1px 12px rgba(0, 0, 0, 0.07); }
 
 .nav-inner {
-  max-width: 1160px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 36px;
   height: 64px;
@@ -613,48 +797,54 @@ onUnmounted(() => {
 }
 .nav-link:hover { color: #0d1117; background: rgba(0, 0, 0, 0.04); }
 .nav-link--active { color: #0d1117; }
-/* Blue dot indicator under the active page link */
+/* Blue dot under the active page link */
 .nav-link--active::after {
   content: ''; position: absolute;
   bottom: -2px; left: 50%; transform: translateX(-50%);
   width: 4px; height: 4px;
   border-radius: 50%; background: #2563eb;
 }
-/* Hamburger is hidden on desktop, shown only on mobile */
 .nav-hamburger {
   display: none;
   background: none; border: none; cursor: pointer;
   color: #0d1117; padding: 4px; margin-left: 12px;
   align-items: center; justify-content: center;
 }
-/* Mobile nav is hidden by default */
 .mobile-nav { display: none; }
 
 
 /* ─────────────────────────────────────────
    Reading area
-   Fills the vertical space between navbar and bottom bar.
-   Bottom padding prevents the fixed bar from covering content.
+   Fills all space between navbar and bottom bar.
+   padding-bottom clears the fixed input bar.
 ───────────────────────────────────────── */
 .reading-area {
   flex: 1;
-  padding: 40px 0 220px; /* 220px bottom padding to clear the fixed input bar */
+  padding: 32px 0 210px;
   overflow-y: auto;
 }
+
+/* Narrow width for idle/loading; full-width for results */
 .reading-inner {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 24px;
+  transition: max-width 0.3s ease;
+}
+.reading-inner--wide {
+  max-width: 1200px;  /* expand to full width when showing two-column result */
 }
 
 
-/* ─── Empty state ─── */
+/* ─────────────────────────────────────────
+   Idle / empty state
+───────────────────────────────────────── */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 48px 0 0;
+  padding: 56px 0 0;
 }
 .empty-icon { margin-bottom: 24px; }
 .empty-title {
@@ -666,7 +856,6 @@ onUnmounted(() => {
   font-size: 15px; line-height: 1.65;
   color: #6b7280; margin: 0 0 28px;
 }
-/* Small pill badges listing supported input methods */
 .empty-features {
   display: flex; flex-wrap: wrap;
   justify-content: center; gap: 8px;
@@ -685,7 +874,23 @@ onUnmounted(() => {
   display: flex; align-items: center; gap: 6px;
   font-size: 13px; color: #9ca3af; margin: 0;
 }
-/* Keyboard key styling used in hints throughout the page */
+
+/* Demo button — subtle outlined style, sits below the shortcut hint */
+.btn-demo {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-top: 20px;
+  padding: 9px 22px;
+  font-size: 13px; font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 999px; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.btn-demo:hover {
+  background: #dbeafe; border-color: #93c5fd;
+  transform: translateY(-1px);
+}
 kbd {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 2px 7px;
@@ -693,68 +898,232 @@ kbd {
   color: #374151;
   background: #f3f4f6;
   border: 1px solid #d1d5db;
-  border-bottom-width: 2px; /* slightly thicker bottom border looks like a real key */
+  border-bottom-width: 2px;
   border-radius: 5px;
 }
 
 
-/* ─── Skeleton loading ─── */
-/* Animated placeholder bars shown while the page is processing the input */
+/* ─────────────────────────────────────────
+   Loading skeleton
+   Two-column skeleton that mirrors the result layout
+───────────────────────────────────────── */
 .loading-state {
-  display: flex; flex-direction: column; gap: 10px;
-  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
+.skeleton-header {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+}
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+}
+.skeleton-block {
+  display: flex; flex-direction: column; gap: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+.skeleton-block--right { background: #fafbff; }
+
 .skeleton {
-  border-radius: 8px;
-  /* Gradient animates left-to-right to create a shimmer effect */
+  border-radius: 6px;
   background: linear-gradient(90deg, #eff1f5 25%, #e8eaf0 50%, #eff1f5 75%);
   background-size: 300% 100%;
   animation: shimmer 1.4s infinite;
 }
-.skeleton--heading { height: 22px; width: 52%; margin-bottom: 8px; }
-.skeleton--line    { height: 15px; }
-.skeleton--spacer  { height: 22px; background: transparent; } /* invisible gap between paragraphs */
+.skeleton--col-title { height: 20px; width: 60%; }
+.skeleton--badge     { height: 20px; width: 25%; border-radius: 999px; }
+.skeleton--line      { height: 14px; }
+.skeleton--sm        { height: 11px; }
 @keyframes shimmer {
   0%   { background-position: 100% 0; }
   100% { background-position: -100% 0; }
 }
 
 
-/* ─── Result state ─── */
-.result-state { padding-top: 8px; }
-.result-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px;
-}
-/* Green pill badge shown after text is successfully loaded */
-.result-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 12px;
-  font-size: 12px; font-weight: 700;
-  color: #16a34a;
+/* ─────────────────────────────────────────
+   Result state
+───────────────────────────────────────── */
+.result-state { display: flex; flex-direction: column; gap: 16px; }
+
+/* Top bar: success badge + back-to-input button */
+.result-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+.result-notice {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 600; color: #15803d;
+}
+.btn-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px; font-weight: 600;
+  color: #4b5563;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-back:hover { background: #f3f4f6; color: #0d1117; }
+
+/* ── Result grid ── */
+/*
+  The outer grid defines the two-column proportion (2fr left, 3fr right).
+  Both the header row and every block row share this same grid template,
+  so the column widths stay perfectly consistent throughout.
+*/
+.result-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Header row — two column titles side by side */
+.result-grid-header {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+}
+
+/*
+  Each block row is also a 2fr / 3fr grid.
+  align-items: stretch makes both cards grow to match the taller one,
+  keeping left and right blocks visually aligned.
+*/
+.block-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* Column header label */
+.col-header {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 700;
+  color: #374151;
+  padding: 0 4px 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+.col-header-sub {
+  font-size: 12px; font-weight: 500; color: #9ca3af;
+}
+
+/* ── Block cards ── */
+.block-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.2s;
+}
+.block-card:hover { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); }
+.block-card--right {
+  background: #fafbff;
+  border-color: #e0e8ff;
+}
+
+/* "Block X" label badge */
+.block-label {
+  display: inline-flex;
+  padding: 3px 10px;
+  font-size: 11.5px; font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 999px;
+  align-self: flex-start;
 }
-.result-meta {
-  font-size: 12.5px; font-weight: 600; color: #9ca3af;
+
+/* Original text — smaller font to de-emphasise vs the summary */
+.block-text { font-size: 13.5px; line-height: 1.7; color: #374151; margin: 0; }
+.block-text--small { font-size: 13px; color: #4b5563; }
+
+/*
+  Clamp the left-side text to 7 lines by default.
+  If the text fits within 7 lines, it shows fully — no button appears.
+  If it overflows, the JS checkClamp() detects it and shows the Read more button.
+*/
+.block-text--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 7;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-/* The actual loaded text — pre-wrap preserves line breaks from the original */
-.result-text {
-  font-size: 16px; line-height: 1.85;
-  color: #1f2937;
-  white-space: pre-wrap;
-  font-family: inherit;
+
+/* Read more / Show less toggle */
+.btn-toggle {
+  align-self: flex-start;
+  font-size: 12.5px; font-weight: 600;
+  color: #2563eb;
+  background: none; border: none; cursor: pointer; padding: 0;
+  transition: color 0.15s;
+}
+.btn-toggle:hover { color: #1d4ed8; }
+
+/* Summary and key points sections inside the right card */
+.summary-section,
+.keypoints-section { display: flex; flex-direction: column; gap: 6px; }
+
+.keypoints-section { margin-top: 4px; }
+
+/* Section label (e.g. "Summary", "Key Points") */
+.section-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: #6b7280;
+}
+
+.summary-text {
+  font-size: 13.5px; line-height: 1.65;
+  color: #1f2937; margin: 0;
+}
+
+/* Key points bullet list */
+.keypoints-list {
+  margin: 0; padding: 0;
+  list-style: none;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.keypoints-list li {
+  font-size: 13px; line-height: 1.6; color: #374151;
+  padding-left: 14px; position: relative;
+}
+.keypoints-list li::before {
+  content: '•';
+  position: absolute; left: 0;
+  color: #2563eb; font-weight: 700;
+}
+
+/* Fallback text for missing summary or key points */
+.fallback-text {
+  font-size: 13px; color: #9ca3af;
+  font-style: italic; margin: 0;
 }
 
 
 /* ─────────────────────────────────────────
    Drag-and-drop overlay
-   Covers the whole page when the user drags a file in
 ───────────────────────────────────────── */
 .drag-overlay {
   position: fixed; inset: 0;
-  background: rgba(37, 99, 235, 0.08); /* light blue tint */
+  background: rgba(37, 99, 235, 0.08);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
   z-index: 200;
@@ -764,34 +1133,25 @@ kbd {
   display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding: 48px 64px;
   background: #fff;
-  border: 2px dashed #93c5fd; /* dashed blue border to indicate drop zone */
+  border: 2px dashed #93c5fd;
   border-radius: 20px;
   box-shadow: 0 24px 64px rgba(37, 99, 235, 0.14);
 }
 .drag-icon {
   width: 72px; height: 72px;
   display: flex; align-items: center; justify-content: center;
-  background: #eff6ff;
-  border-radius: 50%;
+  background: #eff6ff; border-radius: 50%;
 }
-.drag-title {
-  font-size: 20px; font-weight: 700;
-  color: #0d1117; margin: 0; letter-spacing: -0.02em;
-}
-.drag-sub {
-  font-size: 13.5px; color: #6b7280; margin: 0; font-weight: 500;
-  letter-spacing: 0.05em;
-}
+.drag-title { font-size: 20px; font-weight: 700; color: #0d1117; margin: 0; }
+.drag-sub   { font-size: 13.5px; color: #6b7280; margin: 0; font-weight: 500; letter-spacing: 0.05em; }
 
 
 /* ─────────────────────────────────────────
    Fixed bottom input bar
-   Always visible at the bottom of the viewport
 ───────────────────────────────────────── */
 .bottom-bar {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  /* Frosted-glass effect using semi-transparent background + blur */
   background: rgba(248, 249, 252, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -801,9 +1161,9 @@ kbd {
   padding: 12px 0 14px;
 }
 .bottom-bar-inner {
-  max-width: 720px; /* match the reading area width */
+  max-width: 760px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -811,7 +1171,6 @@ kbd {
 
 
 /* ─── Feedback strip ─── */
-/* A small notification bar that appears above the input card */
 .feedback-strip {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
@@ -819,40 +1178,22 @@ kbd {
   font-size: 13px; font-weight: 500;
   line-height: 1.4;
 }
-/* Blue style for loading and uploading states */
 .feedback--loading,
-.feedback--uploading {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1d4ed8;
-}
-/* Green style for success */
-.feedback--success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
-}
-/* Red style for errors */
-.feedback--error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-}
+.feedback--uploading { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.feedback--success   { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.feedback--error     { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
 .feedback-icon { flex-shrink: 0; display: flex; }
 .feedback-msg  { flex: 1; }
 .feedback-close {
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   width: 22px; height: 22px;
   background: none; border: none; cursor: pointer;
-  color: inherit; opacity: 0.55; border-radius: 4px;
-  transition: opacity 0.15s;
+  color: inherit; opacity: 0.55; border-radius: 4px; transition: opacity 0.15s;
 }
 .feedback-close:hover { opacity: 1; }
 
 
 /* ─── Input card ─── */
-/* The white rounded card that contains the textarea and action buttons */
 .input-card {
   background: #fff;
   border: 1.5px solid #e5e7eb;
@@ -861,94 +1202,68 @@ kbd {
   transition: border-color 0.2s, box-shadow 0.2s;
   overflow: hidden;
 }
-/* Highlight with a blue ring when any element inside is focused */
+/* Blue focus ring when anything inside the card is focused */
 .input-card:focus-within {
   border-color: #93c5fd;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-/* Textarea styling — no visible border since the card provides the border */
 .input-textarea {
-  display: block;
-  width: 100%;
-  min-height: 46px;
-  max-height: 180px;  /* prevent it from growing too tall */
+  display: block; width: 100%;
+  min-height: 46px; max-height: 180px;
   padding: 14px 16px 8px;
   font-size: 14.5px; line-height: 1.65;
   font-family: inherit; color: #1f2937;
   background: transparent;
   border: none; outline: none; resize: none;
-  box-sizing: border-box;
-  overflow-y: auto;
+  box-sizing: border-box; overflow-y: auto;
 }
 .input-textarea::placeholder { color: #b8bfd0; }
-/* Turn text red if the user has typed more than the allowed limit */
-.input-textarea--over { color: #ef4444; }
+.input-textarea--over        { color: #ef4444; } /* red text when over character limit */
 
-/* Thin horizontal line between textarea and action buttons */
-.input-divider {
-  height: 1px;
-  background: #f3f4f6;
-  margin: 0 12px;
-}
+.input-divider { height: 1px; background: #f3f4f6; margin: 0 12px; }
 
-/* Row containing left (upload/count) and right (clear/submit) button groups */
 .input-actions {
   display: flex; align-items: center;
   justify-content: space-between;
-  padding: 8px 10px 10px;
-  gap: 8px;
+  padding: 8px 10px 10px; gap: 8px;
 }
 .actions-left,
 .actions-right { display: flex; align-items: center; gap: 8px; }
 
-
-/* Upload file button */
+/* Upload button */
 .btn-upload {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px;
-  font-size: 12.5px; font-weight: 600;
-  color: #4b5563;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  font-size: 12.5px; font-weight: 600; color: #4b5563;
+  background: #f3f4f6; border: 1px solid #e5e7eb;
   border-radius: 8px; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  white-space: nowrap;
+  transition: background 0.15s, color 0.15s; white-space: nowrap;
 }
 .btn-upload:hover { background: #e9eaf0; color: #111827; border-color: #d1d5db; }
 
-
-/* Character counter (shows current / max) */
+/* Character counter */
 .char-count { display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 600; }
 .char-current { color: #9ca3af; }
-.char-sep     { color: #d1d5db; }
-.char-limit   { color: #d1d5db; }
-/* Turn the current count red when over the limit */
+.char-sep, .char-limit { color: #d1d5db; }
 .char-count--over .char-current { color: #ef4444; }
 
-
-/* Clear button — only rendered when there is text in the input */
+/* Clear button */
 .btn-clear {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 12px;
-  font-size: 12.5px; font-weight: 600;
-  color: #6b7280;
-  background: transparent;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px; cursor: pointer;
-  transition: all 0.15s;
+  font-size: 12.5px; font-weight: 600; color: #6b7280;
+  background: transparent; border: 1px solid #e5e7eb;
+  border-radius: 8px; cursor: pointer; transition: all 0.15s;
 }
 .btn-clear:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
 
-
-/* Submit / Load Text button — the primary action */
+/* Primary submit button */
 .btn-submit {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 8px 22px;
-  font-size: 13.5px; font-weight: 700;
-  color: #fff;
-  background: #2563eb;
-  border: none; border-radius: 999px; cursor: pointer;
+  font-size: 13.5px; font-weight: 700; color: #fff;
+  background: #2563eb; border: none; border-radius: 999px; cursor: pointer;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
   transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
   white-space: nowrap;
@@ -959,49 +1274,41 @@ kbd {
 }
 .btn-submit:disabled { opacity: 0.42; cursor: not-allowed; transform: none; box-shadow: none; }
 
-
-/* Spinning loading indicator inside the submit button */
+/* Spinner inside the submit button while loading */
 .btn-spinner {
   display: inline-block;
   width: 14px; height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
+  border-top-color: #fff; border-radius: 50%;
   animation: spin 0.65s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Spinning animation used on the feedback strip icons */
+/* Spinning animation used on feedback icons */
 .spin { animation: spin 0.9s linear infinite; transform-origin: center; }
 
-
-/* Small hint text at the very bottom of the bar */
+/* Hint row below the input card */
 .bar-hint {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  font-size: 11.5px; color: #b0b8cc;
-  margin: 0; flex-wrap: wrap;
+  font-size: 11.5px; color: #b0b8cc; margin: 0; flex-wrap: wrap;
 }
 .bar-hint kbd { font-size: 10.5px; padding: 1px 5px; color: #9ca3af; background: #f3f4f6; border-color: #e5e7eb; }
 .hint-dot { color: #d1d5db; }
 
 
 /* ─────────────────────────────────────────
-   Vue <Transition> animations
+   Transitions
 ───────────────────────────────────────── */
-
-/* Drag overlay fades in/out */
 .drag-fade-enter-active,
 .drag-fade-leave-active { transition: opacity 0.2s ease; }
 .drag-fade-enter-from,
 .drag-fade-leave-to    { opacity: 0; }
 
-/* Feedback strip slides up when appearing, fades when leaving */
 .feedback-enter-active { transition: all 0.22s ease; }
 .feedback-leave-active { transition: all 0.18s ease; }
 .feedback-enter-from   { opacity: 0; transform: translateY(6px); }
 .feedback-leave-to     { opacity: 0; transform: translateY(4px); }
 
-/* Clear button pops in/out with a quick scale animation */
 .fade-btn-enter-active { transition: all 0.18s ease; }
 .fade-btn-leave-active { transition: all 0.14s ease; }
 .fade-btn-enter-from   { opacity: 0; transform: scale(0.9); }
@@ -1012,49 +1319,47 @@ kbd {
    Responsive styles
 ───────────────────────────────────────── */
 
-/* Tablet and below: switch to hamburger menu */
+/* Tablet: switch to hamburger menu */
 @media (max-width: 860px) {
   .nav-links     { display: none; }
   .nav-hamburger { display: flex; }
   .nav-inner     { padding: 0 16px; }
 
-  /* Mobile nav drawer drops down from the navbar */
   .mobile-nav {
     display: block;
     position: fixed; top: 64px; left: 0; right: 0;
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(18px);
-    border-bottom: 1px solid #e5e7eb;
-    z-index: 99;
+    border-bottom: 1px solid #e5e7eb; z-index: 99;
   }
   .mobile-nav-links { list-style: none; margin: 0; padding: 0; }
   .mobile-nav-link {
     display: block; padding: 16px 24px;
     font-size: 16px; font-weight: 500; color: #374151;
-    text-decoration: none;
-    border-bottom: 1px solid #f3f4f6;
-    transition: background 0.15s;
+    text-decoration: none; border-bottom: 1px solid #f3f4f6; transition: background 0.15s;
   }
   .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
+
+  /* Stack the two result columns on tablet */
+  .result-grid-header,
+  .block-row       { grid-template-columns: 1fr; }
+  .skeleton-header,
+  .skeleton-row    { grid-template-columns: 1fr; }
 }
 
-/* Mobile: stack the action buttons vertically so they're not crowded */
+/* Mobile: further layout adjustments */
 @media (max-width: 600px) {
-  .reading-area { padding-bottom: 260px; } /* extra bottom padding for taller stacked bar */
+  .reading-area { padding-bottom: 260px; }
   .empty-title  { font-size: 18px; }
   .empty-features { gap: 6px; }
 
-  .input-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
+  /* Stack input action buttons vertically */
+  .input-actions { flex-direction: column; align-items: stretch; gap: 10px; }
   .actions-left  { justify-content: space-between; }
   .actions-right { justify-content: flex-end; }
   .btn-submit    { flex: 1; justify-content: center; }
 
-  /* Hide hint row on small screens to save space */
-  .bar-hint  { display: none; }
+  .bar-hint  { display: none; }  /* hide hint row to save space */
   .drag-card { padding: 36px 28px; }
 }
 </style>
