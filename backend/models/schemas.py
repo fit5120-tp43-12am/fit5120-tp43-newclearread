@@ -2,6 +2,9 @@
 from typing import List
 
 
+MAX_TEXT_CHARS = 50000
+
+
 # Request body for plain text submitted by the frontend.
 class TextRequest(BaseModel):
     text: str
@@ -21,12 +24,25 @@ class ExtractFileResponse(BaseModel):
     notice: str
 
 
-# Response returned after summarising and simplifying text.
-class TextResponse(BaseModel):
+# A single reading block shown by the frontend result page.
+class TextBlock(BaseModel):
+    id: int
+    # Cleaned source text for this semantic block.
+    originalText: str
+    # One-sentence summary generated for this block.
     summary: str
-    simplified: str
+    # Short concrete points shown under the block summary.
     keyPoints: List[str]
-    usedFallback: bool
-    fallbackReason: str
+
+
+# Response returned after splitting and summarising reading text.
+class TextResponse(BaseModel):
+    # Message displayed in the green result banner.
     notice: str
+    # True when preprocessing or summary generation used a fallback path.
+    usedFallback: bool
+    # Machine-readable reason for fallback, empty when the normal path succeeds.
+    fallbackReason: str
+    # Block list consumed directly by ReadingPage.vue.
+    blocks: List[TextBlock]
 
