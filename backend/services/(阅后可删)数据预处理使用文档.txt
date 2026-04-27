@@ -1,0 +1,53 @@
+# text_preprocessor 使用说明
+
+本文档说明 `backend/services/text_preprocessor.py` 中主函数 `preprocess_text` 的用途、调用方式与输入输出结构。
+
+---
+
+## 1. 功能概述
+
+`preprocess_text` 用于将原始长文本（如 PDF 提取文本）处理为**按语义分段后的清洗文本**。  
+整体流程如下：
+
+1. 粗清洗原文（调用 `text_cleaner.rough_clean_text`）
+2. 切分为编号句子
+3. 构造 prompt 请求大模型做“句子区间分段”
+4. 在本地根据句子区间重新拼装段落文本
+5. 返回最终 `segmented_cleaned_text` 与处理元数据
+
+---
+
+## 2. 主函数签名
+
+```python
+def preprocess_text(raw_text: str, debug: bool = False) -> dict:
+
+成功返回（status = "success"）
+{
+  "status": "success",
+  "segmented_cleaned_text": "分段后的清洗文本（段与段之间通常以空行分隔）",
+  "metadata": {
+    "segment_count": 3,
+    "total_token_count": 1820,
+    "model_used": "gpt-4o-mini",
+    "processing_notes": "模型返回的处理备注（已归一化为字符串）",
+    "segmentation_mode": "sentence_range",
+    "validation_warnings": [
+      "可能为空，或包含覆盖不完整/区间异常等告警"
+    ]
+  }
+}
+
+
+
+失败返回（status = "error"）
+{
+  "status": "error",
+  "segmented_cleaned_text": "",
+  "metadata": {
+    "segment_count": 0,
+    "total_token_count": 0,
+    "model_used": "gpt-4o-mini",
+    "processing_notes": "错误原因"
+  }
+}
