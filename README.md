@@ -147,7 +147,7 @@ pip install -r requirements.txt
 f. Set environment variable
 Create .env in backend folder:
 
-GEMINI_API_KEY=your_api_key
+OPENAI_API_KEY=your_api_key
 
 g. Start backend
 uvicorn main:app --reload
