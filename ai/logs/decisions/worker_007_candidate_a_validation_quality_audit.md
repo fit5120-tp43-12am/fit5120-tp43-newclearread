@@ -118,4 +118,10 @@ Post-push verification after the primary commit:
 - `git ls-files 'ai/**/*.jsonl'` returned empty.
 - `git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin'` returned empty.
 
-A follow-up docs/log commit will mirror this Git-result update so the pushed worker log records the primary commit and safety checks.
+Follow-up docs/log commit pushed:
+
+```text
+40ebc747a4d83afd910633b6e3028f616b4f6d67 docs(ai): record worker 007 validation audit result
+```
+
+This follow-up commit records the primary commit and safety checks in the pushed worker log.
