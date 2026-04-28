@@ -65,7 +65,10 @@ python scripts/run_inference_check.py --config configs/smoke_llama31_8b_qlora.ya
 
 ## Git Result
 
-Pending at initial log creation. This section should be updated after the Git-safe mirror, commit, and push complete.
+- Git-safe files were mirrored to the team repo under `ai/configs`, `ai/scripts`, `ai/reports`, and `ai/logs/decisions`.
+- Primary commit pushed: `a118a70cf58b97ad48373740b965ba6f87931bb0` (`feat(ai): add smoke training preparation`).
+- Branch pushed: `origin/feature/ai-llama-lora-training`.
+- Follow-up docs/log commit is expected so this pushed result is recorded in Git.
 
 ## Recommended Next Worker
 
