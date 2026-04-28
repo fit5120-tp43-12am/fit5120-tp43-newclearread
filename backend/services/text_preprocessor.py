@@ -1,6 +1,8 @@
 import json
 import os
 import re
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -19,14 +21,35 @@ except ImportError:
 DEFAULT_CHAT_API_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_CHAT_API_MODEL = "gpt-4o-mini"
 CHAT_API_TIMEOUT_SECONDS = 30
+LOCAL_SEGMENT_TARGET_CHARS = 1800
+LOCAL_SEGMENT_MAX_CHARS = 4500
 
 # Load the same backend .env file used by the API service.
-load_dotenv()
+BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(BACKEND_ENV_PATH)
 
 # The preprocessor uses an OpenAI-compatible chat endpoint to choose sentence ranges.
 CHAT_API_KEY = os.getenv("OPENAI_API_KEY")
-CHAT_API_BASE_URL = os.getenv("CHAT_API_BASE_URL", DEFAULT_CHAT_API_BASE_URL).rstrip("/")
+CHAT_API_BASE_URL = os.getenv("CHAT_API_BASE_URL", DEFAULT_CHAT_API_BASE_URL).rstrip(
+    "/"
+)
 CHAT_API_MODEL = os.getenv("CHAT_API_MODEL", DEFAULT_CHAT_API_MODEL)
+
+PROXY_ENV_VARS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+)
+
+DEAD_LOCAL_PROXY_VALUES = {
+    "http://127.0.0.1:9",
+    "http://localhost:9",
+    "127.0.0.1:9",
+    "localhost:9",
+}
 
 SEGMENT_TYPES = {
     "introduction",
@@ -46,6 +69,28 @@ def estimate_token_count(text: str) -> int:
 
     word_count = len(re.findall(r"\S+", text))
     return max(1, int(round(word_count * 1.3)))
+
+
+def _is_dead_local_proxy(value: str | None) -> bool:
+    if not value:
+        return False
+    return value.strip().lower() in DEAD_LOCAL_PROXY_VALUES
+
+
+@contextmanager
+def _without_dead_local_proxies():
+    removed_proxies = {}
+
+    for var_name in PROXY_ENV_VARS:
+        proxy_value = os.environ.get(var_name)
+        if _is_dead_local_proxy(proxy_value):
+            removed_proxies[var_name] = proxy_value
+            os.environ.pop(var_name, None)
+
+    try:
+        yield
+    finally:
+        os.environ.update(removed_proxies)
 
 
 def rough_clean_text(raw_text: str) -> str:
@@ -71,7 +116,8 @@ def split_text_into_sentences(cleaned_text: str) -> list[dict]:
     for original, replacement in replacements.items():
         protected_text = protected_text.replace(original, replacement)
 
-    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])", protected_text)
+    protected_text = re.sub(r"([。！？])", r"\1\n", protected_text)
+    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])|\n+", protected_text)
     sentences = []
     for part in parts:
         sentence = part.strip()
@@ -161,12 +207,13 @@ def call_chat_api(prompt: str) -> dict:
     }
 
     try:
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=CHAT_API_TIMEOUT_SECONDS,
-        )
+        with _without_dead_local_proxies():
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=CHAT_API_TIMEOUT_SECONDS,
+            )
     except requests.RequestException as error:
         raise RuntimeError(f"Chat API request failed: {error}") from error
 
@@ -206,11 +253,15 @@ def assemble_segments_from_sentence_ranges(
             start_id = int(segment.get("start_sentence_id"))
             end_id = int(segment.get("end_sentence_id"))
         except (TypeError, ValueError):
-            warnings.append(f"Segment {index} was skipped because its sentence IDs are invalid.")
+            warnings.append(
+                f"Segment {index} was skipped because its sentence IDs are invalid."
+            )
             continue
 
         if start_id < 1 or end_id > sentence_count or start_id > end_id:
-            warnings.append(f"Segment {index} was skipped because its sentence range is invalid.")
+            warnings.append(
+                f"Segment {index} was skipped because its sentence range is invalid."
+            )
             continue
 
         if start_id < expected_start:
@@ -228,7 +279,9 @@ def assemble_segments_from_sentence_ranges(
             if sentence_id in sentence_lookup
         ).strip()
         if not segment_text:
-            warnings.append(f"Segment {index} was skipped because it assembled to empty text.")
+            warnings.append(
+                f"Segment {index} was skipped because it assembled to empty text."
+            )
             continue
 
         raw_heading = segment.get("heading")
@@ -264,6 +317,143 @@ def assemble_segments_from_sentence_ranges(
         ]
 
     return assembled_segments, warnings
+
+
+def build_local_segments(raw_text: str, cleaned_text: str = "") -> list[dict]:
+    source_text = str(raw_text or "").strip()
+    cleaned_source = str(cleaned_text or source_text).strip()
+    if not source_text and not cleaned_source:
+        return []
+
+    parts = _split_raw_text_parts(source_text)
+    if not parts:
+        sentence_parts = [
+            sentence["text"]
+            for sentence in split_text_into_sentences(cleaned_source)
+            if sentence.get("text")
+        ]
+        parts = _group_text_parts(sentence_parts)
+    if not parts:
+        parts = _split_text_by_length(cleaned_source)
+
+    segments = []
+    for part in parts:
+        for chunk in _split_text_by_length(rough_clean_text(part)):
+            _append_local_segment(segments, chunk)
+    return segments
+
+
+def _split_raw_text_parts(raw_text: str) -> list[str]:
+    text = str(raw_text or "").strip()
+    if not text:
+        return []
+
+    parts = [
+        part.strip() for part in re.split(r"(?:\r?\n\s*){2,}", text) if part.strip()
+    ]
+    if len(parts) >= 2:
+        return parts
+
+    parts = [part.strip() for part in re.split(r"\r?\n+", text) if part.strip()]
+    if len(parts) >= 2:
+        return parts
+
+    return []
+
+
+def _group_text_parts(parts: list[str]) -> list[str]:
+    grouped_parts = []
+    current_parts = []
+    current_length = 0
+
+    for part in parts:
+        cleaned_part = str(part or "").strip()
+        if not cleaned_part:
+            continue
+
+        should_flush = (
+            current_parts
+            and current_length + len(cleaned_part) > LOCAL_SEGMENT_TARGET_CHARS
+        )
+        if should_flush:
+            grouped_parts.append(" ".join(current_parts).strip())
+            current_parts = []
+            current_length = 0
+
+        current_parts.append(cleaned_part)
+        current_length += len(cleaned_part)
+
+    if current_parts:
+        grouped_parts.append(" ".join(current_parts).strip())
+
+    return grouped_parts
+
+
+def _split_text_by_length(text: str) -> list[str]:
+    cleaned = str(text or "").strip()
+    if not cleaned:
+        return []
+
+    chunks = []
+    while len(cleaned) > LOCAL_SEGMENT_MAX_CHARS:
+        split_at = max(
+            cleaned.rfind("\n", 0, LOCAL_SEGMENT_TARGET_CHARS),
+            cleaned.rfind(" ", 0, LOCAL_SEGMENT_TARGET_CHARS),
+            cleaned.rfind(".", 0, LOCAL_SEGMENT_TARGET_CHARS),
+            cleaned.rfind("。", 0, LOCAL_SEGMENT_TARGET_CHARS),
+        )
+        if split_at < LOCAL_SEGMENT_TARGET_CHARS // 2:
+            split_at = LOCAL_SEGMENT_TARGET_CHARS
+
+        chunk = cleaned[: split_at + 1].strip()
+        if chunk:
+            chunks.append(chunk)
+        cleaned = cleaned[split_at + 1 :].strip()
+
+    if cleaned:
+        chunks.append(cleaned)
+    return chunks
+
+
+def _append_local_segment(segments: list[dict], text: str) -> None:
+    segment_text = str(text or "").strip()
+    if not segment_text:
+        return
+
+    segments.append(
+        {
+            "segment_id": len(segments) + 1,
+            "heading": None,
+            "segment_type": "general",
+            "cleaned_text": segment_text,
+            "token_count": estimate_token_count(segment_text),
+        }
+    )
+
+
+def _local_success_response(
+    segments: list[dict],
+    reason: str,
+    note: str,
+    error: Exception | None = None,
+) -> dict:
+    metadata = {
+        "segment_count": len(segments),
+        "total_token_count": sum(segment["token_count"] for segment in segments),
+        "model": "local",
+        "processing_notes": note,
+        "segmentation_mode": "local_fallback",
+        "fallback_reason": reason,
+        "validation_warnings": [],
+    }
+    if error is not None:
+        metadata["error"] = str(error)
+
+    return {
+        "status": "success",
+        "segments": segments,
+        "metadata": metadata,
+    }
 
 
 def normalize_llm_result(
@@ -354,7 +544,9 @@ def preprocess_text(raw_text: str, debug: bool = False) -> dict:
         numbered_sentences = split_text_into_sentences(rough_cleaned_text)
         if not numbered_sentences:
             return _with_debug(
-                _error_response("No usable sentences could be created after rough cleaning."),
+                _error_response(
+                    "No usable sentences could be created after rough cleaning."
+                ),
                 debug,
                 rough_cleaned_text,
                 numbered_sentences,
@@ -370,9 +562,38 @@ def preprocess_text(raw_text: str, debug: bool = False) -> dict:
             cleaned_text=rough_cleaned_text,
             sentences=numbered_sentences,
         )
+        local_segments = build_local_segments(raw_text, rough_cleaned_text)
+        if len(result.get("segments") or []) <= 1 and len(local_segments) > 1:
+            return _with_debug(
+                _local_success_response(
+                    local_segments,
+                    "ai_returned_single_segment",
+                    "Segmented locally because AI segmentation returned one block.",
+                ),
+                debug,
+                rough_cleaned_text,
+                numbered_sentences,
+                llm_raw_result,
+            )
         return result
-        
+
     except Exception as error:
+        if rough_cleaned_text:
+            local_segments = build_local_segments(raw_text, rough_cleaned_text)
+            if local_segments:
+                return _with_debug(
+                    _local_success_response(
+                        local_segments,
+                        "ai_segmentation_failed",
+                        "Segmented locally because AI sentence-range segmentation failed.",
+                        error=error,
+                    ),
+                    debug,
+                    rough_cleaned_text,
+                    numbered_sentences,
+                    llm_raw_result,
+                )
+
         return _with_debug(
             _error_response(str(error)),
             debug,
@@ -396,7 +617,9 @@ def _extract_json_object(content: str) -> dict:
     except json.JSONDecodeError as original_error:
         match = re.search(r"\{[\s\S]*\}", cleaned)
         if not match:
-            raise ValueError("Model response did not contain a JSON object.") from original_error
+            raise ValueError(
+                "Model response did not contain a JSON object."
+            ) from original_error
         try:
             return json.loads(match.group())
         except json.JSONDecodeError as error:
