@@ -81,7 +81,15 @@ Status: `passed`
 
 ## Git Result
 
-Pending at this log revision. Git-safe files still need to be mirrored, committed, pushed, and safety-checked.
+- Branch: `feature/ai-llama-lora-training`
+- Commit before Worker 006 run: `4c49a33aeb5c5d7816560d95e293db40c4e5f4e6`
+- Primary commit pushed: `cdba362f2754b827a0d9204e966d0b27f7a1d85b`
+- Primary commit message: `feat(ai): train candidate a qlora workflow`
+- Push target: `origin/feature/ai-llama-lora-training`
+- After primary push, local HEAD equaled upstream at `cdba362f2754b827a0d9204e966d0b27f7a1d85b`.
+- `git ls-files 'ai/**/*.jsonl'` returned empty.
+- `git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin'` returned empty.
+- This updated worker log should be mirrored and pushed in a small follow-up docs/log commit.
 
 ## Blockers Or Deviations
 
