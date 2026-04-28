@@ -360,7 +360,7 @@ Central-brain review summary:
 
 ### Worker 007: Candidate A Validation Quality Audit
 
-Status: task file created on 2026-04-28 and ready for a worker chat.
+Status: completed and passed central-brain review on 2026-04-28.
 
 Task file:
 
@@ -391,14 +391,26 @@ Git gate after Worker 007:
 - Commit validation-audit script, markdown report, and decision log only.
 - Do not commit prediction JSONL, raw data, adapters, checkpoints, or model files.
 
-### Worker 008: Optional Candidate B
+Central-brain review summary:
+
+- Validation audit evaluated `145/145` validation records.
+- JSON parse/schema/key-order compliance was `145/145`.
+- Main-idea two-sentence heuristic was `144/145`.
+- Key-point one-sentence heuristic was `143/145`.
+- Manual review found `pass` 14, `minor_issue` 2, `major_issue` 0, `uncertain` 0.
+- Candidate B is not recommended from validation evidence.
+- Candidate A is selected for final held-out test evaluation, but not yet declared final artifact.
+
+### Optional Candidate B
+
+Status: skipped for now.
 
 Run only if Candidate A underfits or format/quality checks are weak.
 
 Task file:
 
 ```text
-training/work_orders/008_train_candidate_b_optional.md
+not created
 ```
 
 Possible changes:
@@ -413,17 +425,19 @@ Acceptance gate:
 - Decision explains whether Candidate B replaces Candidate A.
 - Test set is still unused.
 
-Git gate after Worker 008:
+Git gate if Candidate B is later reopened:
 
 - Commit Candidate B config and experiment log if Candidate B is run.
 - Do not commit adapters/checkpoints/model files.
 
-### Worker 009: Final Evaluation
+### Worker 008: Final Test Evaluation For Candidate A
+
+Status: task file created on 2026-04-28 and ready for a worker chat.
 
 Task file:
 
 ```text
-training/work_orders/009_final_evaluation.md
+training/work_orders/008_final_evaluation_candidate_a.md
 ```
 
 Scope:
@@ -438,19 +452,19 @@ Acceptance gate:
 - Evaluation clearly separates deterministic checks from human/LLM semantic judgments.
 - Special attention is given to `medlineplus`, `public_service`, long inputs, and assignment/rubric instruction-like inputs.
 
-Git gate after Worker 009:
+Git gate after Worker 008:
 
 - Commit final evaluation scripts, reports, and markdown summary.
 - Do not commit test JSONL data or model artifacts.
 
-### Worker 010: Artifact Packaging And Local Deployment Notes
+### Worker 009: Artifact Packaging And Local Deployment Notes
 
 Run after final evaluation.
 
 Task file:
 
 ```text
-training/work_orders/010_package_artifact_and_deployment_notes.md
+training/work_orders/009_package_artifact_and_deployment_notes.md
 ```
 
 Scope:
@@ -466,7 +480,7 @@ Acceptance gate:
 - Run instructions are reproducible.
 - Git-safe files are separated from large artifacts.
 
-Git gate after Worker 010:
+Git gate after Worker 009:
 
 - Commit deployment notes and artifact metadata only.
 - Keep actual model artifacts outside normal Git.
@@ -534,10 +548,10 @@ Do not commit:
 
 ## 7. Immediate Next Step
 
-Worker 006 has passed. The immediate next step is to run Worker 007 from:
+Worker 007 has passed. The immediate next step is to run Worker 008 from:
 
 ```text
-training/work_orders/007_candidate_a_validation_quality_audit.md
+training/work_orders/008_final_evaluation_candidate_a.md
 ```
 
 The user can open a worker chat and instruct it to read that work order and execute it fully.
