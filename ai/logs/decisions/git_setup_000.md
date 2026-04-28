@@ -46,9 +46,9 @@ Expected Git-safe files:
 - `.gitignore`
 - `ai/logs/decisions/git_setup_000.md`
 
-Commit hash: pending at log creation. This decision log is part of the commit, so the final worker report records the actual commit hash after commit creation.
+Commit hash: `cea843f` for `chore(ai): set up training branch safety`. This records the primary setup commit. If a follow-up docs-only log finalization commit is created, its hash is recorded in the final worker report.
 
-Push result: pending at log creation. The final worker report records the actual push result.
+Push result: pushed `feature/ai-llama-lora-training` to `origin` and set upstream tracking to `origin/feature/ai-llama-lora-training`.
 
 ## Safety Checks
 
