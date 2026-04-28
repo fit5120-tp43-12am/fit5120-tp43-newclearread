@@ -22,9 +22,11 @@ from peft import PeftModel
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run ClearRead smoke adapter inference checks.")
+    parser = argparse.ArgumentParser(description="Run ClearRead adapter inference checks.")
     parser.add_argument("--config", default="configs/smoke_llama31_8b_qlora.yaml")
     parser.add_argument("--adapter-path", default=None)
+    parser.add_argument("--data-path", default=None, help="Override the configured inference data path.")
+    parser.add_argument("--log-path", default=None, help="Override the markdown log path to append results to.")
     parser.add_argument("--num-examples", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
@@ -51,8 +53,27 @@ def exact_schema_status(text: str) -> tuple[bool, str]:
     return True, "ok"
 
 
-def dry_run(root: Path, config_path: Path, config: dict[str, Any], adapter_path: Path) -> int:
-    data_path = resolve_project_path(root, config["data"]["smoke_path"])
+def configured_data_path(root: Path, config: dict[str, Any], override: str | None) -> Path:
+    if override:
+        return resolve_project_path(root, override)
+    data = config["data"]
+    for key in ("inference_path", "val_path", "smoke_path"):
+        if key in data:
+            return resolve_project_path(root, data[key])
+    raise KeyError("Config data section must define inference_path, val_path, or smoke_path")
+
+
+def configured_log_path(root: Path, config: dict[str, Any], override: str | None) -> Path:
+    if override:
+        return resolve_project_path(root, override)
+    outputs = config["outputs"]
+    for key in ("training_log_path", "smoke_log_path"):
+        if key in outputs:
+            return resolve_project_path(root, outputs[key])
+    raise KeyError("Config outputs section must define training_log_path or smoke_log_path")
+
+
+def dry_run(root: Path, config_path: Path, config: dict[str, Any], adapter_path: Path, data_path: Path) -> int:
     records = read_jsonl(data_path)
     requested = int(config.get("inference", {}).get("default_num_examples", 3))
     gold_rows = []
@@ -65,6 +86,7 @@ def dry_run(root: Path, config_path: Path, config: dict[str, Any], adapter_path:
             "status": "dry_run_ok",
             "config": str(config_path),
             "adapter_path": str(adapter_path),
+            "data_path": str(data_path),
             "records_available": len(records),
             "gold_schema_checks": gold_rows,
             "note": "No model or adapter was loaded in dry-run mode.",
@@ -89,11 +111,16 @@ def load_model_with_adapter(config: dict[str, Any], adapter_path: Path):
     return model, tokenizer
 
 
-def run_inference(root: Path, config: dict[str, Any], adapter_path: Path, num_examples: int) -> int:
+def run_inference(
+    root: Path,
+    config: dict[str, Any],
+    adapter_path: Path,
+    data_path: Path,
+    log_path: Path,
+    num_examples: int,
+) -> int:
     import torch
 
-    data_path = resolve_project_path(root, config["data"]["smoke_path"])
-    log_path = resolve_project_path(root, config["outputs"]["smoke_log_path"])
     records = read_jsonl(data_path)
     model, tokenizer = load_model_with_adapter(config, adapter_path)
     inference = config.get("inference", {})
@@ -130,6 +157,7 @@ def run_inference(root: Path, config: dict[str, Any], adapter_path: Path, num_ex
             "",
             f"Date/time: {local_timestamp()}",
             f"Adapter path: `{adapter_path.as_posix()}`",
+            f"Data path: `{data_path.as_posix()}`",
             f"Examples checked: `{len(rows)}`",
             f"Schema pass count: `{pass_count}`",
             "",
@@ -151,13 +179,15 @@ def main() -> int:
         root,
         args.adapter_path or config["outputs"]["adapter_dir"],
     )
+    data_path = configured_data_path(root, config, args.data_path)
+    log_path = configured_log_path(root, config, args.log_path)
     num_examples = args.num_examples or int(config.get("inference", {}).get("default_num_examples", 3))
 
     if args.dry_run:
-        return dry_run(root, config_path, config, adapter_path)
+        return dry_run(root, config_path, config, adapter_path, data_path)
     if not adapter_path.exists():
         raise FileNotFoundError(f"Adapter path does not exist: {adapter_path}")
-    return run_inference(root, config, adapter_path, num_examples)
+    return run_inference(root, config, adapter_path, data_path, log_path, num_examples)
 
 
 if __name__ == "__main__":

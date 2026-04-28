@@ -1,0 +1,95 @@
+project:
+  name: clearread-llama31-8b-candidate-a-3epoch
+  description: Full Candidate A run for ClearRead Llama 3.1 8B Instruct SFT + QLoRA.
+
+model:
+  base_model_id: unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit
+  fallback_model_ids:
+    - unsloth/Llama-3.1-8B-Instruct-bnb-4bit
+    - meta-llama/Meta-Llama-3.1-8B-Instruct
+  trust_remote_code: true
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_compute_dtype: bf16_if_supported
+  dtype: auto
+
+data:
+  train_path: data/splits/train.jsonl
+  val_path: data/splits/val.jsonl
+  split_manifest_path: data/splits/split_manifest.json
+  max_seq_length: 3072
+  expected_train_records: 1162
+  expected_val_records: 145
+  train_on_roles:
+    - assistant
+  mask_prompt_labels_with: -100
+
+preflight:
+  truncation_stop_threshold_percent: 2.0
+  decoded_json_sample_size: 5
+
+outputs:
+  output_dir: outputs/full/candidate_a_3epoch
+  adapter_dir: models/adapters/full_candidate_a_3epoch
+  training_log_path: logs/full_train_candidate_a_3epoch.md
+  report_path: reports/FULL_TRAIN_CANDIDATE_A_REPORT.md
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  bias: none
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  use_gradient_checkpointing: unsloth
+  random_state: 5120
+  use_rslora: false
+  loftq_config: null
+
+training:
+  method: SFT
+  tuning: QLoRA
+  seed: 5120
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  effective_batch_size: 8
+  num_train_epochs: 3
+  learning_rate: 0.0002
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  lr_scheduler_type: linear
+  optim: adamw_8bit
+  logging_steps: 1
+  save_strategy: "no"
+  eval_strategy: "no"
+  eval_after_training: true
+  report_to: []
+  bf16: auto
+  fp16: auto
+
+progress:
+  enabled: true
+  log_elapsed_time: true
+  log_average_seconds_per_step: true
+  log_estimated_remaining_time: true
+  log_estimated_completion_time: true
+  print_every_steps: 5
+
+inference:
+  default_num_examples: 10
+  max_new_tokens: 320
+  temperature: 0.0
+  do_sample: false
+
+git:
+  team_repo_path: /mnt/c/Users/Aufb/Desktop/fit5120/iteration1/code/fit5120-tp43-newclearread
+
+docs_checked:
+  - https://unsloth.ai/docs/get-started/fine-tuning-llms-guide
+  - https://huggingface.co/docs/trl/sft_trainer
