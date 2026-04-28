@@ -72,8 +72,9 @@ Small metadata SHA256 hashes are recorded in `logs/smoke_test_001.md`. The `.saf
 
 - Branch before run: `feature/ai-llama-lora-training`
 - Commit before run: `e977769ab29fc7eb6242f5c32599d34eb7fc5cd2`
-- Primary Git commit/push: pending at initial log creation.
-- Follow-up Git commit/push: pending at initial log creation.
+- Primary Git commit: `6e6b7bf174476dde7ed44488f29d024aaa44b561` (`docs(ai): record llama smoke test result`)
+- Primary Git push: pushed to `origin/feature/ai-llama-lora-training`
+- Follow-up Git commit/push: pending at this log revision so the pushed worker log can record the primary commit/push result.
 
 ## Blockers Or Deviations
 
