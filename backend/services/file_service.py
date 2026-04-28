@@ -18,6 +18,7 @@ TEXT_EXTENSIONS = {
     ".rtf",
 }
 
+#
 # Extensions that need a dedicated parser before text can be read.
 BINARY_EXTENSIONS = {
     ".pdf",
@@ -126,9 +127,7 @@ def extract_text_from_upload(filename: str, content_base64: str):
     notice = ""
     if was_truncated:
         # Tell the frontend when only part of the file was loaded.
-        notice = (
-            f"Only the first {MAX_EXTRACTED_TEXT_CHARS} characters were loaded so the text fits the reading tool."
-        )
+        notice = f"Only the first {MAX_EXTRACTED_TEXT_CHARS} characters were loaded so the text fits the reading tool."
 
     return {
         "text": truncated_text,
@@ -136,4 +135,3 @@ def extract_text_from_upload(filename: str, content_base64: str):
         "usedFallback": False,
         "notice": notice,
     }
-
