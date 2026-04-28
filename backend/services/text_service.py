@@ -3,13 +3,15 @@ import os
 import re
 from collections import Counter
 from contextlib import contextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 from openai import OpenAI
 
 # Load API keys and model settings from the backend environment file.
-load_dotenv()
+BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(BACKEND_ENV_PATH)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # Keep this switch so the service can be forced into local fallback mode during testing.

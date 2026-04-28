@@ -16,11 +16,22 @@ def process_reading_text(text: str) -> dict:
             "notice": "No text was provided.",
             "usedFallback": True,
             "fallbackReason": "empty_text",
+            "segmentation": _build_segmentation_info(
+                {},
+                True,
+                "empty_text",
+                0,
+            ),
             "blocks": [],
         }
 
     # The preprocessor cleans the text and splits it into semantic reading segments.
-    segments, preprocessing_used_fallback, preprocessing_reason = _build_segments(source_text)
+    (
+        segments,
+        preprocessing_used_fallback,
+        preprocessing_reason,
+        segmentation_metadata,
+    ) = _build_segments(source_text)
     blocks = []
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
@@ -54,25 +65,36 @@ def process_reading_text(text: str) -> dict:
         "notice": _build_notice(used_fallback, fallback_reasons),
         "usedFallback": used_fallback,
         "fallbackReason": ",".join(fallback_reasons),
+        "segmentation": _build_segmentation_info(
+            segmentation_metadata,
+            preprocessing_used_fallback,
+            preprocessing_reason,
+            len(blocks),
+        ),
         "blocks": blocks,
     }
 
 
-def _build_segments(text: str) -> tuple[list[dict], bool, str]:
+def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
     # Use semantic preprocessing first. If it fails, keep the page usable by treating
     # the whole input as a single block.
     preprocessing_result = preprocess_text(text)
     if preprocessing_result.get("status") == "success":
         segments = preprocessing_result.get("segments") or []
+        metadata = preprocessing_result.get("metadata") or {}
+        used_local_fallback = metadata.get("segmentation_mode") == "local_fallback"
         valid_segments = [
             segment
             for segment in segments
             if isinstance(segment, dict) and str(segment.get("cleaned_text") or "").strip()
         ]
         if valid_segments:
-            return valid_segments, False, ""
+            if used_local_fallback:
+                return valid_segments, True, "local_segmentation_fallback", metadata
+            return valid_segments, False, "", metadata
 
-    return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed"
+    metadata = preprocessing_result.get("metadata") or {}
+    return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", metadata
 
 
 def _summarise_block(text: str) -> dict:
@@ -104,4 +126,46 @@ def _build_notice(used_fallback: bool, fallback_reasons: list[str]) -> str:
     if "preprocessing_failed" in fallback_reasons:
         return "Text was processed without semantic segmentation."
 
+    if "local_segmentation_fallback" in fallback_reasons:
+        return "Text was segmented locally because AI segmentation is unavailable."
+
     return "AI service is unavailable right now. Showing a basic result."
+
+
+def _build_segmentation_info(
+    metadata: dict,
+    used_fallback: bool,
+    fallback_reason: str,
+    segment_count: int,
+) -> dict:
+    mode = metadata.get("segmentation_mode") or ""
+    reason = metadata.get("fallback_reason") or fallback_reason or "ok"
+    detail = metadata.get("processing_notes") or ""
+
+    if mode == "sentence_range" and not used_fallback:
+        source = "ai"
+        reason = "ai_sentence_range_success"
+        detail = detail or "AI sentence-range segmentation succeeded."
+    elif mode == "local_fallback":
+        source = "local_fallback"
+        detail = detail or "Local fallback segmentation was used."
+    elif fallback_reason == "preprocessing_failed":
+        source = "single_block_fallback"
+        reason = "preprocessing_failed"
+        detail = metadata.get("error") or "AI preprocessing failed and no local segments were available."
+    elif fallback_reason == "empty_text":
+        source = "none"
+        reason = "empty_text"
+        detail = "No text was provided."
+    else:
+        source = "unknown"
+        detail = detail or metadata.get("error") or "Segmentation source could not be determined."
+
+    return {
+        "source": source,
+        "mode": mode or source,
+        "reason": reason,
+        "detail": detail,
+        "segmentCount": segment_count,
+        "model": metadata.get("model") or "",
+    }

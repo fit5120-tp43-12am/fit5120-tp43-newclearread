@@ -1,5 +1,5 @@
 ﻿from pydantic import BaseModel
-from typing import List
+from typing import Any, Dict, List
 
 
 MAX_TEXT_CHARS = 50000
@@ -43,6 +43,8 @@ class TextResponse(BaseModel):
     usedFallback: bool
     # Machine-readable reason for fallback, empty when the normal path succeeds.
     fallbackReason: str
+    # Explains whether block segmentation came from AI or local fallback.
+    segmentation: Dict[str, Any]
     # Block list consumed directly by ReadingPage.vue.
     blocks: List[TextBlock]
 
