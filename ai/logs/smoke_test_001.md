@@ -146,3 +146,16 @@ The ETA callback printed every step. The first step estimated about 2m 44s remai
 ### Decision
 
 Smoke training passed locally. The 20-step QLoRA run completed without OOM, saved the LoRA adapter, and inference passed schema checks for 3 of 3 smoke examples. The next central-brain review should verify logs, Git-safe commit contents, and whether to proceed to full Candidate A training or adjust smoke settings first.
+
+## Inference Sanity Check
+
+Date/time: 2026-04-28T15:09:33+10:00
+Adapter path: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration1/training/models/adapters/smoke_llama31_8b_qlora`
+Examples checked: `3`
+Schema pass count: `3`
+
+| # | Schema OK | Reason | Output Preview |
+| --- | --- | --- | --- |
+| 1 | True | ok | {"main_idea":"The text explains nausea and vomiting and gives common causes, warning signs, diagnosis, and treatment. It says these symptoms are usually not ser |
+| 2 | True | ok | {"main_idea":"The text explains infectious mononucleosis, or mono. It says EBV is the most common cause, and people can spread it through body fluids, so it's o |
+| 3 | True | ok | {"main_idea":"The text explains how to report suspected tax fraud to the IRS. It says the IRS wants serious, well-supported cases and gives the form and mailing |
