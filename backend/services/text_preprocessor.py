@@ -15,7 +15,7 @@ except ImportError:
 
 
 DEFAULT_CHAT_API_BASE_URL = "https://api.openai.com/v1"
-DEFAULT_CHAT_API_MODEL = "gpt-4o-mini"
+DEFAULT_CHAT_API_MODEL = "gpt-5.4-mini"
 CHAT_API_TIMEOUT_SECONDS = 30
 
 CHAT_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -94,7 +94,7 @@ Important rules:
 - Do not return full segment content.
 - Return sentence ID ranges only.
 - Keep each segment focused on one topic.
-- Each segment should usually contain 450-850 words after local assembly if possible.
+- Each segment should usually contain 600 words after local assembly if possible.
 - If the source text is short, fewer words are acceptable.
 - Keep conclusion as a separate segment if present.
 - Create a short heading for each segment.
