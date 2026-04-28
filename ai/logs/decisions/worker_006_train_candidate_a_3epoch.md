@@ -89,7 +89,8 @@ Status: `passed`
 - After primary push, local HEAD equaled upstream at `cdba362f2754b827a0d9204e966d0b27f7a1d85b`.
 - `git ls-files 'ai/**/*.jsonl'` returned empty.
 - `git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin'` returned empty.
-- This updated worker log should be mirrored and pushed in a small follow-up docs/log commit.
+- Follow-up docs/log commit pushed: `7a637a8195d1b708bf482a5dcd48ca0bd68cb402` (`docs(ai): record worker 006 training result`).
+- After that follow-up push, local HEAD equaled upstream at `7a637a8195d1b708bf482a5dcd48ca0bd68cb402`.
 
 ## Blockers Or Deviations
 
