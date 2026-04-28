@@ -1,6 +1,9 @@
 # Logs
 logs
 *.log
+!ai/logs/
+!ai/logs/decisions/
+!ai/logs/decisions/*.md
 
 # Node (前端)
 frontend/node_modules/
@@ -27,3 +30,16 @@ backend/venv/
 
 # Local work logs (do not publish)
 frontend/WORKLOG.md
+
+# AI training artifacts (keep large/generated files out of Git)
+ai/data/**/*.jsonl
+ai/data/**/*.json
+ai/models/
+ai/outputs/
+ai/checkpoints/
+ai/cache/
+*.safetensors
+*.pt
+*.pth
+*.bin
+unsloth_compiled_cache/
