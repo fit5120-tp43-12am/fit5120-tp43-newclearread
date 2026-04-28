@@ -470,7 +470,7 @@ Central-brain review summary:
 
 ### Worker 009: Artifact Packaging And Local Deployment Notes
 
-Status: task file created on 2026-04-28 and ready for a worker chat.
+Status: completed and passed central-brain review on 2026-04-28.
 
 Task file:
 
@@ -495,6 +495,19 @@ Git gate after Worker 009:
 
 - Commit deployment notes and artifact metadata only.
 - Keep actual model artifacts outside normal Git.
+
+Central-brain review summary:
+
+- Candidate A was packaged as the selected final raw adapter.
+- Final adapter remains local at `models/adapters/full_candidate_a_3epoch`.
+- Final metadata exists under `models/final/clearread_llama31_8b_qlora_candidate_a`.
+- Inference config, local wrapper, runbook, final model selection report, and artifact manifest were created.
+- The wrapper imports Unsloth before PEFT-related imports, runs deterministic generation by default, and enforces the exact JSON contract before returning user-facing output.
+- Schema guard behavior was verified: valid output returns normally, more than four key points are truncated to the first four with `schema_guard_action: truncated_key_points`, and parse/type/key/too-few failures return machine-readable error objects.
+- Central brain reran compile, dry-run, manifest JSON validation, adapter hash checks, split hash checks, and one live smoke-wrapper check using `smoke_test_10.jsonl`.
+- No training, tuning, Candidate B, or held-out test rerun occurred.
+- Git safety checks confirmed no JSONL data or model binary artifacts are tracked.
+- The training/model-selection/packaging phase is complete.
 
 ## 5. Central-Brain Review Gates
 
@@ -559,10 +572,13 @@ Do not commit:
 
 ## 7. Immediate Next Step
 
-Worker 008 has passed. The immediate next step is to run Worker 009 from:
+Worker 009 has passed. The training/model-selection/packaging phase is complete.
 
-```text
-training/work_orders/009_package_artifact_and_deployment_notes.md
-```
+The next phase should be scoped separately. Likely options are:
 
-The user can open a worker chat and instruct it to read that work order and execute it fully.
+- backend/application integration using `scripts/infer_clearread_candidate_a.py`;
+- a deployment handoff/runbook review;
+- a teammate-facing documentation package;
+- archiving or backing up the local adapter artifacts outside normal Git.
+
+No new worker task is currently approved. Create the next work order only after the central-brain chat decides the next phase boundary with the user.
