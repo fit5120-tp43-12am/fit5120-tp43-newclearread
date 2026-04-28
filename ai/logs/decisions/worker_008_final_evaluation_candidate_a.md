@@ -69,4 +69,32 @@ Candidate A is strong overall, but one held-out test row violated the exact 4-ke
 
 ## Git Result
 
-Pending mirror, safety checks, commit, and push.
+Git-safe files were mirrored to the team repo under:
+
+- `ai/scripts/evaluate_final_test_candidate_a.py`
+- `ai/reports/FINAL_TEST_EVALUATION_CANDIDATE_A_REPORT.md`
+- `ai/logs/final_test_evaluation_candidate_a.md`
+- `ai/logs/decisions/worker_008_final_evaluation_candidate_a.md`
+
+Primary pushed commit:
+
+```text
+f53e1fe3b8ad9097e0aaedcc24a2182265cfe123 feat(ai): add final candidate a test evaluation
+```
+
+Branch pushed:
+
+```text
+origin/feature/ai-llama-lora-training
+```
+
+Safety checks after the primary push:
+
+```text
+git ls-files 'ai/**/*.jsonl' -> empty
+git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin' -> empty
+```
+
+Local HEAD and upstream HEAD both resolved to `f53e1fe3b8ad9097e0aaedcc24a2182265cfe123` after the primary push.
+
+This updated worker decision log is intended to be pushed in a follow-up docs/log commit so the repo records the primary commit result.
