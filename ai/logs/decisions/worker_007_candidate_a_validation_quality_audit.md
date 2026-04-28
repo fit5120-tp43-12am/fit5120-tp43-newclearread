@@ -91,4 +91,31 @@ Final evaluation should still watch public-service exact numeric details, especi
 
 ## Git Result
 
-Pending at time of initial log. This section should be updated after mirroring Git-safe files, committing, pushing, and running Git safety checks.
+Git-safe files mirrored to the team repo under:
+
+- `ai/scripts/evaluate_candidate_a_validation.py`
+- `ai/reports/CANDIDATE_A_VALIDATION_QUALITY_REPORT.md`
+- `ai/logs/candidate_a_validation_quality_audit.md`
+- `ai/logs/decisions/worker_007_candidate_a_validation_quality_audit.md`
+
+Primary commit pushed:
+
+```text
+2adc1f22b4b24e085685215392279d8537844d6c feat(ai): add candidate a validation audit
+```
+
+Push target:
+
+```text
+origin/feature/ai-llama-lora-training
+```
+
+Post-push verification after the primary commit:
+
+- local HEAD: `2adc1f22b4b24e085685215392279d8537844d6c`
+- upstream HEAD: `2adc1f22b4b24e085685215392279d8537844d6c`
+- `git status --short --branch` showed `feature/ai-llama-lora-training...origin/feature/ai-llama-lora-training` with no file changes.
+- `git ls-files 'ai/**/*.jsonl'` returned empty.
+- `git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin'` returned empty.
+
+A follow-up docs/log commit will mirror this Git-result update so the pushed worker log records the primary commit and safety checks.
