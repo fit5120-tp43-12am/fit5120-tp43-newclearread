@@ -132,7 +132,7 @@ git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin' -> e
 - Candidate A looks technically healthy: no OOM, no truncation, all validation schema checks passed in the sampled runs, and the adapter saved correctly.
 - The validation loss `0.9654` versus final train loss `0.4798` deserves qualitative validation review, but is not by itself a training failure.
 - Two train records had tokenizer decoded-label exact-match differences due `.gov` spacing normalization. Since decoded labels still parsed as JSON and there was no truncation or label loss, this is not a blocker.
-- A validation gold assistant sample already contains mojibake-like text around `Bash艒鈥檚`. This appears to be present in the dataset target, not newly introduced by Candidate A. The next validation audit should quantify mojibake/encoding artifacts in gold and predictions.
+- A validation gold assistant sample already contains mojibake-like text around the name `Basho`. This appears to be present in the dataset target, not newly introduced by Candidate A. The next validation audit should quantify mojibake/encoding artifacts in gold and predictions.
 - Flash Attention 2 remains broken and xformers fallback is used. This is accepted for now.
 - The Candidate A adapter is a local model artifact and must not be committed to normal Git.
 

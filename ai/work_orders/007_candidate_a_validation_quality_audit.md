@@ -164,14 +164,11 @@ Compute and report:
 Mojibake scan should look for at least:
 
 ```text
-�
-艒
-鈥
-Ã
-Â
-â€™
-â€œ
-â€
+Unicode replacement character
+CJK-looking mojibake artifacts
+Latin-1 mojibake markers
+curly-quote mojibake sequences
+misdecoded apostrophe/quote sequences
 ```
 
 Also break metrics down by:

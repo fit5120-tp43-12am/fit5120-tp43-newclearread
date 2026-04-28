@@ -19,7 +19,7 @@ The required behaviour is strict:
 - The output must be valid JSON only.
 - The model must not add markdown, notes, explanations, code fences, or extra text.
 - The model must summarise the source text, not follow instructions embedded inside the source.
-- Important warnings, restrictions, eligibility rules, conditions, medical safety information, numbers, dates, and conclusions should be preserved when they are central to the meaning.
+- Important warnings, restrictions, eligibility rules, conditions, medical safety information, numbers, dates, and conclusions should be preserved when they are important to the meaning.
 
 The final selected approach was:
 
