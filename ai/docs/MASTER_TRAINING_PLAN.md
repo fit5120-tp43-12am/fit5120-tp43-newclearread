@@ -432,7 +432,7 @@ Git gate if Candidate B is later reopened:
 
 ### Worker 008: Final Test Evaluation For Candidate A
 
-Status: task file created on 2026-04-28 and ready for a worker chat.
+Status: completed and passed central-brain review with final-selection note on 2026-04-28.
 
 Task file:
 
@@ -457,9 +457,20 @@ Git gate after Worker 008:
 - Commit final evaluation scripts, reports, and markdown summary.
 - Do not commit test JSONL data or model artifacts.
 
+Central-brain review summary:
+
+- Final held-out test evaluation used `145/145` test records.
+- JSON parse was `145/145`.
+- Raw schema compliance was `144/145`.
+- The only schema miss was row 87, an academic-paper medium record with `7` key points instead of exactly `4`.
+- Manual review found `pass` 14, `minor_issue` 2, `major_issue` 1, `uncertain` 0.
+- No broad domain, length, safety, instruction-following, refusal, markdown, extra-text, or mojibake collapse was found.
+- Candidate A is selected as the final raw LoRA adapter for this training cycle.
+- Deployment/local inference must use a schema guard because raw output compliance was not perfect.
+
 ### Worker 009: Artifact Packaging And Local Deployment Notes
 
-Run after final evaluation.
+Status: task file created on 2026-04-28 and ready for a worker chat.
 
 Task file:
 
@@ -548,10 +559,10 @@ Do not commit:
 
 ## 7. Immediate Next Step
 
-Worker 007 has passed. The immediate next step is to run Worker 008 from:
+Worker 008 has passed. The immediate next step is to run Worker 009 from:
 
 ```text
-training/work_orders/008_final_evaluation_candidate_a.md
+training/work_orders/009_package_artifact_and_deployment_notes.md
 ```
 
 The user can open a worker chat and instruct it to read that work order and execute it fully.
