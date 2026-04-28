@@ -319,7 +319,7 @@ Git gate after Worker 005:
 
 ### Worker 006: Full Training Candidate A
 
-Status: task file created on 2026-04-28 and ready for a worker chat.
+Status: completed and passed central-brain review with notes on 2026-04-28.
 
 Task file:
 
@@ -347,14 +347,58 @@ Git gate after Worker 006:
 - Commit formal training config, training script changes, and markdown experiment log.
 - Do not commit adapters/checkpoints/model files.
 
-### Worker 007: Optional Candidate B
+Central-brain review summary:
+
+- Candidate A completed 3 epochs without OOM.
+- Train/validation preflight found `0` truncated records and non-empty assistant labels for all records.
+- Final train loss was `0.4797596574748216`.
+- Validation loss was `0.9654271602630615`.
+- Validation inference schema check passed in Worker 006 on `10/10` examples.
+- Central brain independently reran validation inference on `5` examples and got `5/5` schema pass.
+- No test set usage was found.
+- Candidate A is viable for validation-quality audit, but not yet selected as final model.
+
+### Worker 007: Candidate A Validation Quality Audit
+
+Status: task file created on 2026-04-28 and ready for a worker chat.
+
+Task file:
+
+```text
+training/work_orders/007_candidate_a_validation_quality_audit.md
+```
+
+Scope:
+
+- Use Candidate A only.
+- Generate predictions for all validation records.
+- Compute deterministic JSON/schema/sentence/readability/encoding checks.
+- Break down metrics by domain and length bucket.
+- Perform stratified manual validation review.
+- Decide whether Candidate A is ready for final evaluation or whether Candidate B should be considered.
+- Do not train.
+- Do not use the test set.
+
+Acceptance gate:
+
+- All 145 validation records are evaluated or any missing records are explained.
+- Reports separate deterministic checks from manual/heuristic quality judgments.
+- Mojibake/encoding artifacts are counted in both predictions and gold targets.
+- Local prediction JSONL is not committed to normal Git.
+
+Git gate after Worker 007:
+
+- Commit validation-audit script, markdown report, and decision log only.
+- Do not commit prediction JSONL, raw data, adapters, checkpoints, or model files.
+
+### Worker 008: Optional Candidate B
 
 Run only if Candidate A underfits or format/quality checks are weak.
 
 Task file:
 
 ```text
-training/work_orders/007_train_candidate_b_optional.md
+training/work_orders/008_train_candidate_b_optional.md
 ```
 
 Possible changes:
@@ -369,17 +413,17 @@ Acceptance gate:
 - Decision explains whether Candidate B replaces Candidate A.
 - Test set is still unused.
 
-Git gate after Worker 007:
+Git gate after Worker 008:
 
 - Commit Candidate B config and experiment log if Candidate B is run.
 - Do not commit adapters/checkpoints/model files.
 
-### Worker 008: Final Evaluation
+### Worker 009: Final Evaluation
 
 Task file:
 
 ```text
-training/work_orders/008_final_evaluation.md
+training/work_orders/009_final_evaluation.md
 ```
 
 Scope:
@@ -394,19 +438,19 @@ Acceptance gate:
 - Evaluation clearly separates deterministic checks from human/LLM semantic judgments.
 - Special attention is given to `medlineplus`, `public_service`, long inputs, and assignment/rubric instruction-like inputs.
 
-Git gate after Worker 008:
+Git gate after Worker 009:
 
 - Commit final evaluation scripts, reports, and markdown summary.
 - Do not commit test JSONL data or model artifacts.
 
-### Worker 009: Artifact Packaging And Local Deployment Notes
+### Worker 010: Artifact Packaging And Local Deployment Notes
 
 Run after final evaluation.
 
 Task file:
 
 ```text
-training/work_orders/009_package_artifact_and_deployment_notes.md
+training/work_orders/010_package_artifact_and_deployment_notes.md
 ```
 
 Scope:
@@ -422,7 +466,7 @@ Acceptance gate:
 - Run instructions are reproducible.
 - Git-safe files are separated from large artifacts.
 
-Git gate after Worker 009:
+Git gate after Worker 010:
 
 - Commit deployment notes and artifact metadata only.
 - Keep actual model artifacts outside normal Git.
@@ -490,10 +534,10 @@ Do not commit:
 
 ## 7. Immediate Next Step
 
-Worker 005 has passed. The immediate next step is to run Worker 006 from:
+Worker 006 has passed. The immediate next step is to run Worker 007 from:
 
 ```text
-training/work_orders/006_train_candidate_a_3epoch.md
+training/work_orders/007_candidate_a_validation_quality_audit.md
 ```
 
 The user can open a worker chat and instruct it to read that work order and execute it fully.

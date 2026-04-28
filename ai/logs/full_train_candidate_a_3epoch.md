@@ -214,3 +214,19 @@ Schema pass count: `10`
 | 8 | True | ok | {"main_idea":"The source text is an assignment brief for a critical essay on Haushofer’s geopolitics of empire. It also gives a detailed rubric that sets many r |
 | 9 | True | ok | {"main_idea":"The text explains how Python variables work in different scopes. It also shows how global and nonlocal rules control access to variables, and how  |
 | 10 | True | ok | {"main_idea":"The text explains how Python exceptions work. It shows how to raise, catch, and handle errors, and also how exceptions can be used for more than j |
+
+## Inference Sanity Check
+
+Date/time: 2026-04-28T17:07:39+10:00
+Adapter path: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration1/training/models/adapters/full_candidate_a_3epoch`
+Data path: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration1/training/data/splits/val.jsonl`
+Examples checked: `5`
+Schema pass count: `5`
+
+| # | Schema OK | Reason | Output Preview |
+| --- | --- | --- | --- |
+| 1 | True | ok | {"main_idea":"The text is an assignment brief for a literature review on multimedia resources in mobile-assisted language learning. It also gives a long grading |
+| 2 | True | ok | {"main_idea":"The text is an assignment brief for a research paper introduction on cloud cybersecurity. It asks for a formal paper that explains cloud security  |
+| 3 | True | ok | {"main_idea":"The text is an assignment brief for a research paper section on the theoretical and practical significance of a blockchain-based trust mechanism f |
+| 4 | True | ok | {"main_idea":"The text is an assignment brief for a research paper methodology section. It asks for a technical description of a VR training system for smart he |
+| 5 | True | ok | {"main_idea":"The source text is an assignment brief for a long critical essay about the child narrator in *The Catcher in the Rye*. It gives detailed grading r |
