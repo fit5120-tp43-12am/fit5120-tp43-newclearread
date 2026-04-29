@@ -14,6 +14,24 @@ backend/venv/
 
 # Env
 .env
+.env.*
+
+# AI model artifacts, generated data, and local runtime caches
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.gguf
+adapter_model*
+checkpoint*/
+checkpoints/
+models/
+hf_cache/
+huggingface_cache/
+unsloth_compiled_cache/
+*.jsonl
+*predictions*.json
+*predictions*.jsonl
 
 # Editor
 .vscode/

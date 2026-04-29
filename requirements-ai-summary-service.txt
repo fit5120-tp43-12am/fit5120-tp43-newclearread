@@ -1,0 +1,10 @@
+fastapi==0.135.3
+uvicorn==0.44.0
+pydantic==2.12.5
+PyYAML>=6.0
+httpx==0.28.1
+pytest>=8.0
+
+# Real Transformers/Unsloth inference should run in the already validated
+# clearread-llama-lora WSL environment. Do not install model weights or adapters
+# through this requirements file.
