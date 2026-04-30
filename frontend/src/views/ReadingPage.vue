@@ -14,9 +14,12 @@ function onScroll() { scrolled.value = window.scrollY > 10 }
 
 // ── Input state ───────────────────────────────────────────────────────────────
 
-const inputText   = ref('')       // text the user has typed or pasted
+const inputText        = ref('')  // text the user has typed or pasted
+const uploadedFileText = ref('')  // extracted file text kept out of the visible textarea
+const uploadedFileName = ref('')
 const charLimit   = 50000         // max characters allowed
-const charCount   = computed(() => inputText.value.length)
+const processingText = computed(() => uploadedFileText.value || inputText.value)
+const charCount   = computed(() => processingText.value.length)
 const overLimit   = computed(() => charCount.value > charLimit)
 const textareaRef = ref(null)     // ref to the textarea DOM element for auto-resize
 
@@ -320,7 +323,7 @@ function showFeedback(type, message, autoDismiss = 3000) {
 
 const fileInputRef  = ref(null)
 const isDragging    = ref(false)
-const SUPPORTED_EXT = ['.txt', '.md', '.markdown', '.csv', '.rtf', '.log', '.pdf', '.docx']
+const SUPPORTED_EXT = ['.txt', '.pdf', '.docx']
 
 
 // ── Auto-resize textarea ──────────────────────────────────────────────────────
@@ -337,7 +340,8 @@ watch(inputText, () => nextTick(autoResize))
 // ── Submit / process text ─────────────────────────────────────────────────────
 
 async function handleSubmit() {
-  if (!inputText.value.trim() || overLimit.value || mode.value === 'loading') return
+  const textToProcess = processingText.value.trim()
+  if (!textToProcess || overLimit.value || mode.value === 'loading') return
 
   showFeedback('loading', 'Processing your text…', 0)
   stopAudio()                        // stop any playing audio before new submission
@@ -350,7 +354,7 @@ async function handleSubmit() {
     const res = await fetch(`${API_BASE_URL}/api/process-text`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ text: inputText.value }),
+      body:    JSON.stringify({ text: textToProcess }),
     })
     const data = await res.json()
 
@@ -385,25 +389,25 @@ function handleBackToInput() {
 // ── Clear input ───────────────────────────────────────────────────────────────
 
 function handleClear() {
-  inputText.value = ''
-  feedback.value  = null
+  inputText.value        = ''
+  uploadedFileText.value = ''
+  uploadedFileName.value = ''
+  feedback.value         = null
   clearTimeout(feedbackTimer)
   nextTick(autoResize)
+}
+
+function handleTextInput() {
+  if (!uploadedFileText.value) return
+  uploadedFileText.value = ''
+  uploadedFileName.value = ''
+  feedback.value = null
 }
 
 
 // ── File read helpers ─────────────────────────────────────────────────────────
 
-function readAsText(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader()
-    r.onload  = e => res(e.target.result)
-    r.onerror = () => rej(new Error('Could not read file.'))
-    r.readAsText(file)
-  })
-}
-
-// Reads a binary file (PDF, DOCX) as a base64 string for sending to the backend
+// Reads supported uploads as base64 so the backend handles all text extraction consistently
 function readAsBase64(file) {
   return new Promise((res, rej) => {
     const r = new FileReader()
@@ -431,16 +435,6 @@ async function processFile(file) {
   showFeedback('uploading', `Uploading "${file.name}"…`, 0)
 
   try {
-    // Plain-text files can be read directly in the browser
-    if (['.txt', '.md', '.markdown', '.csv', '.rtf', '.log'].includes(ext)) {
-      const text = await readAsText(file)
-      if (!text.trim()) throw new Error('No readable text found.')
-      inputText.value = text
-      showFeedback('success', `"${file.name}" ready — click Process Text to continue`)
-      return
-    }
-
-    // PDF / DOCX need backend extraction
     const base64 = await readAsBase64(file)
     const res = await fetch(`${API_BASE_URL}/api/extract-text`, {
       method:  'POST',
@@ -450,8 +444,11 @@ async function processFile(file) {
     const data = await res.json()
     if (!res.ok)            throw new Error(data.detail || 'Could not extract text.')
     if (!data.text?.trim()) throw new Error('No readable text found.')
-    inputText.value = data.text
-    showFeedback('success', `"${file.name}" ready — click Process Text to continue`)
+    inputText.value = ''
+    uploadedFileText.value = data.text
+    uploadedFileName.value = file.name
+    showFeedback('success', `"${file.name}" ready — click Process Text to continue`, 0)
+    nextTick(autoResize)
   } catch (err) {
     showFeedback('error', err.message || 'Upload failed. Please try again.', 6000)
   }
@@ -940,7 +937,7 @@ onUnmounted(() => {
             </svg>
           </div>
           <p class="drag-title">Drop your file here</p>
-          <p class="drag-sub">TXT · PDF · DOCX · MD</p>
+          <p class="drag-sub">TXT · PDF · DOCX</p>
         </div>
       </div>
     </Transition>
@@ -992,6 +989,7 @@ onUnmounted(() => {
             placeholder="Type or paste your text here…"
             rows="1"
             spellcheck="false"
+            @input="handleTextInput"
             @keydown="onKeydown"
           ></textarea>
 
@@ -1006,7 +1004,7 @@ onUnmounted(() => {
               <input
                 ref="fileInputRef"
                 type="file"
-                accept=".txt,.md,.markdown,.csv,.rtf,.log,.pdf,.docx"
+                accept=".txt,.pdf,.docx"
                 style="display:none"
                 @change="handleFileChange"
               />
@@ -1030,7 +1028,7 @@ onUnmounted(() => {
             <div class="actions-right">
               <!-- Clear button only appears when there is text to clear -->
               <Transition name="fade-btn">
-                <button v-if="inputText" class="btn-clear" @click="handleClear" title="Clear input">
+                <button v-if="inputText || uploadedFileText" class="btn-clear" @click="handleClear" title="Clear input">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                   </svg>
@@ -1041,7 +1039,7 @@ onUnmounted(() => {
               <!-- Primary submit button — disabled when input is empty or over limit -->
               <button
                 class="btn-submit"
-                :disabled="!inputText.trim() || overLimit || mode === 'loading'"
+                :disabled="!processingText.trim() || overLimit || mode === 'loading'"
                 @click="handleSubmit"
               >
                 <span v-if="mode === 'loading'" class="btn-spinner"></span>
