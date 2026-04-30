@@ -863,23 +863,31 @@ kbd {
 
 /* ── Game section ── */
 .game-section {
-  padding: 40px 0 80px;
+  padding: 24px 0 48px;
 }
-/* Game layout uses a wider max-width than the page container so the canvas
-   gets as much horizontal space as possible. Side panels are kept compact. */
+/* Layout spans the full width. Canvas column (1fr) stretches to fill the row
+   height; both side panels scroll independently if their content overflows. */
 .game-layout {
   display: grid;
   grid-template-columns: 210px 1fr 210px;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;   /* all three columns share the same row height */
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 28px;
+  /* Arena height = viewport minus navbar (64px) + page-hero (~220px) + section padding */
+  height: calc(100vh - 340px);
+  min-height: 500px;
 }
 
 /* ── Side panels ── */
+/* Panels scroll vertically if their content is taller than the arena height */
 .game-panel {
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  overflow-y: auto;
+  /* Thin scrollbar so it doesn't eat into the narrow panel width */
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
 }
 
 /* Cue card */
@@ -990,13 +998,15 @@ kbd {
 .btn-ghost-sm:hover { color: #ef4444; background: #fef2f2; border-color: #fecaca; }
 
 /* ── Canvas arena ── */
+/* Fill the full column height (set by .game-layout height).
+   No aspect-ratio — the canvas stretches to whatever height is available. */
 .arena-wrap {
   position: relative;
   border-radius: 20px; overflow: hidden;
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  aspect-ratio: 16 / 9;    /* wider ratio gives more horizontal play space */
   background: #edf6f4;
+  height: 100%;
 }
 .game-canvas {
   width: 100%; height: 100%;
@@ -1150,10 +1160,11 @@ kbd {
   .game-layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
+    height: auto;         /* let content determine height when stacked */
   }
   /* Re-order: controls first, then canvas, then history */
   .game-panel:first-child { order: 1; }
-  .arena-wrap             { order: 2; aspect-ratio: 4 / 3; }
+  .arena-wrap             { order: 2; aspect-ratio: 4 / 3; height: auto; }
   .game-panel:last-child  { order: 3; }
 
   .page-hero { padding: 96px 0 40px; }
