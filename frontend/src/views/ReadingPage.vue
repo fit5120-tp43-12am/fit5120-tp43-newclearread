@@ -536,6 +536,7 @@ onUnmounted(() => {
           <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link nav-link--active">Reading Support</RouterLink></li>
           <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
+          <li><RouterLink to="/training" class="nav-link">Training</RouterLink></li>
         </ul>
 
         <!-- Hamburger icon — only visible on small screens -->
@@ -556,6 +557,7 @@ onUnmounted(() => {
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
         <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
         <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
+        <li><RouterLink to="/training" class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
       </ul>
     </div>
 
