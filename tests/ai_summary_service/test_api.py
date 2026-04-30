@@ -8,11 +8,12 @@ from ai_summary_service import ServiceSettings, create_app
 API_KEY = "test-clearread-key"
 
 
-def make_client(max_chars: int = 6000) -> TestClient:
+def make_client(max_chars: int = 6000, max_body_bytes: int = 512 * 1024) -> TestClient:
     settings = ServiceSettings(
         api_key=API_KEY,
         runtime="mock",
         max_characters_per_text=max_chars,
+        max_request_body_bytes=max_body_bytes,
         max_texts_per_request=32,
         request_timeout_seconds=5,
         enable_debug_responses=False,
@@ -180,6 +181,19 @@ def test_oversized_text_returns_item_level_error() -> None:
     assert response.status_code == 200
     assert body["status"] == "error"
     assert body["results"][0]["error"]["code"] == "text_too_large"
+
+
+def test_oversized_request_body_returns_413() -> None:
+    client = make_client(max_body_bytes=32)
+
+    response = client.post(
+        "/v1/clearread/summarize",
+        headers={**auth_headers(), "Content-Type": "application/json"},
+        content='{"texts":[{"id":"block-1","text":"This body is intentionally too large."}]}',
+    )
+
+    assert response.status_code == 413
+    assert response.json()["errors"][0]["code"] == "request_body_too_large"
 
 
 def test_partial_success_with_mock_schema_error() -> None:

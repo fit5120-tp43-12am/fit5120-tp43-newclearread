@@ -2,12 +2,12 @@
 logs
 *.log
 
-# Node (前端)
+# Node frontend
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
 
-# Python (后端)
+# Python backend and local bytecode
 backend/venv/
 **/__pycache__/
 *.pyc

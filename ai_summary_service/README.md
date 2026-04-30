@@ -34,9 +34,26 @@ export CLEARREAD_AI_MAX_CONCURRENT_REQUESTS=1
 python -m uvicorn ai_summary_service.main:app --host 127.0.0.1 --port 8010
 ```
 
+Use the vLLM HTTP runtime when a local or private vLLM OpenAI-compatible server
+is already running behind the ClearRead service:
+
+```bash
+export CLEARREAD_AI_RUNTIME=vllm_http
+export CLEARREAD_AI_SERVICE_API_KEY="<secret-from-local-env>"
+export CLEARREAD_AI_VLLM_BASE_URL="http://127.0.0.1:8014"
+export CLEARREAD_AI_VLLM_API_KEY="<internal-vllm-key>"
+export CLEARREAD_AI_VLLM_MODEL="clearread"
+export CLEARREAD_AI_VLLM_INTERNAL_CONCURRENCY=8
+export CLEARREAD_AI_VLLM_REQUEST_TIMEOUT_SECONDS=30
+export CLEARREAD_AI_VLLM_SCHEMA_RETRY_ATTEMPTS=0
+python -m uvicorn ai_summary_service.main:app --host 127.0.0.1 --port 8010
+```
+
 Do not put real secrets, private local paths, model weights, adapters, caches, or
 generated prediction files in Git. The real runtime dynamically imports the final
-wrapper and keeps the model loaded in the long-running service process.
+wrapper and keeps the model loaded in the long-running service process. The
+vLLM runtime keeps vLLM internal and still returns only the ClearRead public
+schema.
 
 ## Example Request
 
