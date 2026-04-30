@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useAccessibility, applyToDom } from '../composables/useAccessibility.js'
 
 // Pull shared state and config from the singleton composable
-const { settings, THEMES, FONT_SIZES, LINE_HEIGHTS, resetSettings } = useAccessibility()
+const { settings, THEMES, FONT_FAMILIES, FONT_SIZES, LINE_HEIGHTS, resetSettings } = useAccessibility()
 
 // Controls whether the settings panel is open or closed
 const panelOpen = ref(false)
@@ -75,8 +75,9 @@ onMounted(() => applyToDom())
           </div>
 
           <!--
-            Six dyslexia-friendly colour overlays.
-            Light themes use mix-blend-mode multiply overlay on the page.
+            Dyslexia-friendly colour overlays.
+            Light themes use mix-blend-mode multiply overlay on the page —
+            avoids pure white which can cause visual stress for dyslexic readers.
             Dark Calm uses CSS filter invert on the body.
           -->
           <div class="theme-grid">
@@ -103,6 +104,47 @@ onMounted(() => applyToDom())
 
           <!-- Active theme label -->
           <p class="theme-active-label">{{ THEMES[settings.theme].label }}</p>
+        </div>
+
+        <div class="panel-divider"></div>
+
+        <!-- ── Section: Font Family ── -->
+        <div class="panel-section">
+          <div class="section-label">
+            <!-- Letter "F" icon representing font -->
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 2h8M2 2v1.5M10 2v1.5M6 2v8M4.5 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Font Family
+            <span class="section-note">Dyslexia-friendly</span>
+          </div>
+
+          <!--
+            Dropdown for font selection.
+            Each option previews the font name in that font via inline style.
+            Sans-serif only — Courier (monospace) excluded per dyslexia guidelines
+            which recommend against serif/monospace typefaces.
+          -->
+          <div class="font-select-wrap">
+            <select
+              class="font-select"
+              v-model="settings.font"
+              aria-label="Select font family"
+            >
+              <option
+                v-for="(cfg, key) in FONT_FAMILIES"
+                :key="key"
+                :value="key"
+              >{{ cfg.label }}</option>
+            </select>
+            <!-- Chevron icon for the custom select arrow -->
+            <svg class="font-select-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <!-- Note shown below the dropdown -->
+          <p class="theme-active-label">{{ FONT_FAMILIES[settings.font].note }}</p>
         </div>
 
         <div class="panel-divider"></div>
@@ -189,7 +231,9 @@ onMounted(() => applyToDom())
   top: 14px;
   right: 20px;
   z-index: 200;
-  font-family: 'Inter', system-ui, sans-serif;  /* always use Inter regardless of user font setting */
+  /* Always use Inter in the toolbar, regardless of the user's font selection,
+     so the panel remains readable and visually consistent. */
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* ─────────────────────────────────────────
@@ -370,6 +414,44 @@ onMounted(() => applyToDom())
   font-weight: 500;
   margin-top: 8px;
   text-align: center;
+}
+
+
+/* ── Font select dropdown ── */
+.font-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Native <select> styled to match the panel aesthetic */
+.font-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 32px 8px 10px;   /* right padding leaves room for the chevron icon */
+  font-size: 13px;
+  font-weight: 500;
+  color: #0d1117;
+  background: #f3f4f6;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  /* Keep Inter here so the select chrome itself stays readable */
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.font-select:hover  { background: #e8eaf0; }
+.font-select:focus  { border-color: #93c5fd; background: #eff6ff; }
+
+/* Custom chevron arrow overlaid on the right side of the select */
+.font-select-arrow {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+  color: #9ca3af;
 }
 
 
