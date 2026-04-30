@@ -1,0 +1,5 @@
+requests>=2.31.0
+tqdm>=4.66.0
+
+# Optional (only needed for benchmark_check.py --semantic-sim / --qa-semantic)
+sentence-transformers>=2.7.0
