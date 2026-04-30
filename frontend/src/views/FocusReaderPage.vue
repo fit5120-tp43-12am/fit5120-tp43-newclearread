@@ -865,11 +865,16 @@ kbd {
 .game-section {
   padding: 40px 0 80px;
 }
+/* Game layout uses a wider max-width than the page container so the canvas
+   gets as much horizontal space as possible. Side panels are kept compact. */
 .game-layout {
   display: grid;
-  grid-template-columns: 240px 1fr 240px;
-  gap: 20px;
+  grid-template-columns: 210px 1fr 210px;
+  gap: 16px;
   align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 28px;
 }
 
 /* ── Side panels ── */
@@ -990,7 +995,7 @@ kbd {
   border-radius: 20px; overflow: hidden;
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  aspect-ratio: 16 / 10;   /* keeps the arena proportional at any width */
+  aspect-ratio: 16 / 9;    /* wider ratio gives more horizontal play space */
   background: #edf6f4;
 }
 .game-canvas {
@@ -1114,9 +1119,10 @@ kbd {
 .container { max-width: 1160px; margin: 0 auto; padding: 0 36px; }
 
 /* ── Responsive ── */
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
   .game-layout {
-    grid-template-columns: 200px 1fr 200px;
+    grid-template-columns: 180px 1fr 180px;
+    padding: 0 16px;
   }
 }
 
