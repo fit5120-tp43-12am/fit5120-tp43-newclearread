@@ -8,6 +8,8 @@ SERVICE_NAME = "clearread-ai-summary"
 API_VERSION = "v1"
 DEFAULT_MODEL_LABEL = "clearread-llama31-8b-qlora-candidate-a"
 DEFAULT_BASE_MODEL_ID = "unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit"
+DEFAULT_MAX_CHARACTERS_PER_TEXT = 11000
+DEFAULT_MAX_REQUEST_BODY_BYTES = 2 * 1024 * 1024
 
 
 def _env_str(name: str, default: str = "") -> str:
@@ -56,8 +58,8 @@ class ServiceSettings:
     inference_config: str = ""
     wrapper_path: str = ""
     max_texts_per_request: int = 32
-    max_characters_per_text: int = 6000
-    max_request_body_bytes: int = 512 * 1024
+    max_characters_per_text: int = DEFAULT_MAX_CHARACTERS_PER_TEXT
+    max_request_body_bytes: int = DEFAULT_MAX_REQUEST_BODY_BYTES
     request_timeout_seconds: float = 120.0
     max_concurrent_requests: int = 1
     enable_debug_responses: bool = False
@@ -84,8 +86,15 @@ class ServiceSettings:
             inference_config=_env_str("CLEARREAD_AI_INFERENCE_CONFIG"),
             wrapper_path=_env_str("CLEARREAD_AI_WRAPPER_PATH"),
             max_texts_per_request=_env_int("CLEARREAD_AI_MAX_TEXTS_PER_REQUEST", 32),
-            max_characters_per_text=_env_int("CLEARREAD_AI_MAX_CHARACTERS_PER_TEXT", 6000),
-            max_request_body_bytes=_env_int("CLEARREAD_AI_MAX_REQUEST_BODY_BYTES", 512 * 1024, minimum=1024),
+            max_characters_per_text=_env_int(
+                "CLEARREAD_AI_MAX_CHARACTERS_PER_TEXT",
+                DEFAULT_MAX_CHARACTERS_PER_TEXT,
+            ),
+            max_request_body_bytes=_env_int(
+                "CLEARREAD_AI_MAX_REQUEST_BODY_BYTES",
+                DEFAULT_MAX_REQUEST_BODY_BYTES,
+                minimum=1024,
+            ),
             request_timeout_seconds=_env_float("CLEARREAD_AI_REQUEST_TIMEOUT_SECONDS", 120.0),
             max_concurrent_requests=_env_int("CLEARREAD_AI_MAX_CONCURRENT_REQUESTS", 1),
             enable_debug_responses=_env_bool("CLEARREAD_AI_ENABLE_DEBUG_RESPONSES", False),

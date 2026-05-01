@@ -14,6 +14,7 @@ from ai_summary_service import ServiceSettings, create_app
 
 API_KEY = "test-clearread-key"
 VLLM_API_KEY = "test-vllm-key"
+DEFAULT_MAX_CHARS = 11000
 
 
 class FakeVLLMServer:
@@ -125,7 +126,7 @@ def make_client(fake_vllm: FakeVLLMServer, logger: logging.Logger | None = None)
         api_key=API_KEY,
         runtime="vllm_http",
         max_texts_per_request=32,
-        max_characters_per_text=6000,
+        max_characters_per_text=DEFAULT_MAX_CHARS,
         request_timeout_seconds=5,
         enable_debug_responses=False,
         vllm_base_url=fake_vllm.url,

@@ -3,7 +3,7 @@ from services.text_service import basic_algorithm, use_openai
 
 
 # Keep each block small enough for one summary request.
-MAX_BLOCK_CHARS = 6000
+MAX_BLOCK_CHARS = 11000
 
 
 def process_reading_text(text: str) -> dict:

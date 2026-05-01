@@ -30,6 +30,8 @@ export CLEARREAD_AI_BASE_MODEL_ID="unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bi
 export CLEARREAD_AI_WRAPPER_PATH="/path/to/infer_clearread_candidate_a.py"
 export CLEARREAD_AI_INFERENCE_CONFIG="/path/to/final_candidate_a_inference.yaml"
 export CLEARREAD_AI_ADAPTER_DIR="/path/to/full_candidate_a_3epoch"
+export CLEARREAD_AI_MAX_CHARACTERS_PER_TEXT=11000
+export CLEARREAD_AI_MAX_REQUEST_BODY_BYTES=2097152
 export CLEARREAD_AI_MAX_CONCURRENT_REQUESTS=1
 python -m uvicorn ai_summary_service.main:app --host 127.0.0.1 --port 8010
 ```
@@ -46,6 +48,8 @@ export CLEARREAD_AI_VLLM_MODEL="clearread"
 export CLEARREAD_AI_VLLM_INTERNAL_CONCURRENCY=8
 export CLEARREAD_AI_VLLM_REQUEST_TIMEOUT_SECONDS=30
 export CLEARREAD_AI_VLLM_SCHEMA_RETRY_ATTEMPTS=0
+export CLEARREAD_AI_MAX_CHARACTERS_PER_TEXT=11000
+export CLEARREAD_AI_MAX_REQUEST_BODY_BYTES=2097152
 python -m uvicorn ai_summary_service.main:app --host 127.0.0.1 --port 8010
 ```
 
@@ -54,6 +58,17 @@ generated prediction files in Git. The real runtime dynamically imports the fina
 wrapper and keeps the model loaded in the long-running service process. The
 vLLM runtime keeps vLLM internal and still returns only the ClearRead public
 schema.
+
+## Input Limits
+
+The default per-block character cap is `11000`, and the default request body cap
+is `2097152` bytes (2 MiB). The character cap is based on the accepted training
+input distribution: the largest observed `role=user` text was `8756` characters,
+and `11000` gives about 1.2x headroom.
+
+Character limits are not token limits. The current deployment still needs cloud
+pressure testing to validate vLLM context length, latency, schema success, and GPU
+memory before the larger cap is treated as cloud-validated.
 
 ## Example Request
 

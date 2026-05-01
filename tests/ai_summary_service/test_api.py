@@ -6,9 +6,14 @@ from ai_summary_service import ServiceSettings, create_app
 
 
 API_KEY = "test-clearread-key"
+DEFAULT_MAX_CHARS = 11000
+DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024
 
 
-def make_client(max_chars: int = 6000, max_body_bytes: int = 512 * 1024) -> TestClient:
+def make_client(
+    max_chars: int = DEFAULT_MAX_CHARS,
+    max_body_bytes: int = DEFAULT_MAX_BODY_BYTES,
+) -> TestClient:
     settings = ServiceSettings(
         api_key=API_KEY,
         runtime="mock",
@@ -23,6 +28,16 @@ def make_client(max_chars: int = 6000, max_body_bytes: int = 512 * 1024) -> Test
 
 def auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {API_KEY}"}
+
+
+def test_from_env_uses_expanded_limit_defaults(monkeypatch) -> None:
+    monkeypatch.delenv("CLEARREAD_AI_MAX_CHARACTERS_PER_TEXT", raising=False)
+    monkeypatch.delenv("CLEARREAD_AI_MAX_REQUEST_BODY_BYTES", raising=False)
+
+    settings = ServiceSettings.from_env()
+
+    assert settings.max_characters_per_text == DEFAULT_MAX_CHARS
+    assert settings.max_request_body_bytes == DEFAULT_MAX_BODY_BYTES
 
 
 def test_health_returns_liveness() -> None:
@@ -90,6 +105,22 @@ def test_one_valid_text_returns_one_successful_result() -> None:
     assert isinstance(body["results"][0]["summary"], str)
     assert len(body["results"][0]["keyPoints"]) == 4
     assert "raw_output" not in body["results"][0]
+
+
+def test_default_limit_accepts_text_at_new_character_cap() -> None:
+    client = make_client()
+    text_at_cap = "A" * DEFAULT_MAX_CHARS
+
+    response = client.post(
+        "/v1/clearread/summarize",
+        headers=auth_headers(),
+        json={"texts": [{"id": "block-1", "text": text_at_cap}]},
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["status"] == "ok"
+    assert body["results"][0]["status"] == "ok"
 
 
 def test_multiple_valid_texts_preserve_order() -> None:
