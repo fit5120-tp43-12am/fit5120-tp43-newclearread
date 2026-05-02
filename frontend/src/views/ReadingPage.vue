@@ -98,14 +98,52 @@ const volume         = ref(70)       // 0–100
 // Speed options shown in the toolbar dropdown
 const SPEED_OPTIONS  = [0.75, 1.0, 1.25, 1.5, 2.0]
 
-// Voice options — labels are UI-facing; the backend maps these keys to actual TTS voice IDs
-// (e.g. gemini-2.5-flash-tts voice names: Aoede, Kore, Puck, Fenrir, Charon …)
+// Voice preference keys shown in the toolbar dropdown.
+// These are mapped to actual browser SpeechSynthesisVoice objects by getSelectedVoice().
 const VOICE_OPTIONS  = [
   { value: 'default-female', label: 'Default Female' },
   { value: 'default-male',   label: 'Default Male'   },
   { value: 'calm-female',    label: 'Calm Female'    },
   { value: 'clear-male',     label: 'Clear Male'     },
 ]
+
+// Browser voices loaded asynchronously via the Web Speech API
+const availableVoices = ref([])
+
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return
+  availableVoices.value = window.speechSynthesis.getVoices()
+}
+
+/**
+ * Returns the best matching SpeechSynthesisVoice for the user's preference.
+ * Searches English voices by common name patterns for male / female voices.
+ */
+function getSelectedVoice() {
+  // Only look at English voices
+  const en = availableVoices.value.filter(v => v.lang.startsWith('en'))
+  if (!en.length) return null
+
+  const pref = selectedVoice.value
+
+  if (pref === 'default-female' || pref === 'calm-female') {
+    // Common female voice name keywords across Windows / macOS / Chrome
+    return (
+      en.find(v => /zira|victoria|samantha|karen|moira|fiona|female|woman/i.test(v.name)) ||
+      en[0]
+    )
+  }
+
+  if (pref === 'default-male' || pref === 'clear-male') {
+    // Common male voice name keywords
+    return (
+      en.find(v => /david|mark|daniel|alex|james|george|male|man/i.test(v.name)) ||
+      en[0]
+    )
+  }
+
+  return en[0]
+}
 
 // ── TTS via Browser Web Speech API ───────────────────────────────────────────
 //
@@ -129,18 +167,21 @@ function requestTTS(text) {
       return
     }
 
-    // Cancel any previous utterance before starting a new one
-    window.speechSynthesis.cancel()
-
-    const utterance  = new SpeechSynthesisUtterance(text)
+    const synth     = window.speechSynthesis
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang   = 'en-US'
     utterance.rate   = playbackSpeed.value
     utterance.volume = volume.value / 100
 
-    // Resolve cleanly when speech ends naturally
+    // Apply the selected browser voice (mapped from user preference to real voice object)
+    const voice = getSelectedVoice()
+    if (voice) utterance.voice = voice
+
+    // Resolve when speech ends naturally
     utterance.onend = () => resolve('done')
 
-    // 'interrupted' / 'canceled' fire when we call speechSynthesis.cancel()
-    // programmatically — treat these as a clean stop, not an error.
+    // 'interrupted' / 'canceled' fire when stopAudio() calls speechSynthesis.cancel().
+    // Treat them as a normal clean stop, not an error.
     utterance.onerror = (e) => {
       if (e.error === 'interrupted' || e.error === 'canceled') {
         resolve('cancelled')
@@ -150,10 +191,12 @@ function requestTTS(text) {
       }
     }
 
-    window.speechSynthesis.speak(utterance)
-    // ⚠️ Do NOT call resolve() here — resolving before onend would
-    // immediately unblock the await in playBlock() and trigger stopAudio(),
-    // cancelling the speech the moment it starts.
+    // ⚠️ Chrome bug: calling cancel() + speak() in the same synchronous block
+    // causes the new utterance to immediately receive an 'interrupted' error.
+    // stopAudio() already called cancel() before we get here, so we must NOT
+    // call cancel() again. We also defer speak() by 50 ms so Chrome has time
+    // to flush the previous cancellation before queuing the new utterance.
+    setTimeout(() => synth.speak(utterance), 50)
   })
 }
 
@@ -229,73 +272,6 @@ function stopAudio() {
   activeBlockId.value   = null
   activeBlockType.value = 'original'
   playbackState.value   = 'idle'
-}
-
-
-// ── Mock data (demo only) ─────────────────────────────────────────────────────
-
-// Sample blocks that simulate what the backend would return.
-// Used by the "Try Demo" button so the UI can be previewed without a real API call.
-const MOCK_RESULT = {
-  notice: 'Demo mode — this is sample data, not a real backend response.',
-  blocks: [
-    {
-      id: 1,
-      originalText:
-        'Dyslexia is a learning difference that primarily affects reading and writing skills. It is neurological in origin, meaning it is related to how the brain processes written language. People with dyslexia may have difficulty recognising letters, decoding words, and spelling accurately. Despite these challenges, dyslexia does not affect general intelligence — many people with dyslexia are highly creative and excel in problem-solving, art, and entrepreneurship.',
-      summary:
-        'Dyslexia is a brain-based learning difference that makes reading and writing harder, but it does not affect overall intelligence or creativity.',
-      keyPoints: [
-        'Dyslexia is neurological — it stems from how the brain processes language.',
-        'Common difficulties include letter recognition, word decoding, and spelling.',
-        'It does not reduce general intelligence or creative ability.',
-      ],
-    },
-    {
-      id: 2,
-      originalText:
-        'Early identification of dyslexia is crucial for providing the right support. Signs often appear in early childhood and can include delayed speech development, difficulty rhyming, trouble learning the alphabet, and slow reading progress compared to peers. Teachers and parents play a vital role in noticing these signs and seeking professional assessment. With early intervention and appropriate teaching strategies, children with dyslexia can make significant progress and build confidence in their literacy skills.',
-      summary:
-        'Spotting dyslexia early — through signs like delayed speech or slow reading — allows timely support that can greatly improve a child\'s literacy and self-confidence.',
-      keyPoints: [
-        'Early signs include delayed speech, difficulty rhyming, and slow reading progress.',
-        'Teachers and parents are key to recognising early warning signs.',
-        'Early intervention leads to better literacy outcomes and greater confidence.',
-      ],
-    },
-    {
-      id: 3,
-      originalText:
-        'There are many effective strategies and tools that support people with dyslexia in everyday reading and writing tasks. These include the use of dyslexia-friendly fonts such as OpenDyslexic, adjusting text size and line spacing, using coloured overlays to reduce visual stress, and text-to-speech software that reads content aloud. Technology has made a significant difference — screen readers, speech-to-text apps, and reading support platforms like Clearead help users engage with written content more comfortably and independently.',
-      summary:
-        'A range of tools — from dyslexia-friendly fonts and colour overlays to text-to-speech software — help people with dyslexia read and write more comfortably.',
-      keyPoints: [
-        'Dyslexia-friendly fonts (e.g. OpenDyslexic) and adjusted spacing reduce reading friction.',
-        'Coloured overlays can ease visual stress associated with reading.',
-        'Text-to-speech and reading support apps like Clearead promote independent reading.',
-      ],
-    },
-  ],
-}
-
-// Load mock data directly — skips the API call and jumps straight to result mode
-async function loadDemo() {
-  // Clear the input box so it stays compact while the user views demo results
-  inputText.value        = ''
-  uploadedFileText.value = ''
-  uploadedFileName.value = ''
-  if (textareaRef.value) {
-    textareaRef.value.value = ''
-    textareaRef.value.style.height = 'auto'
-  }
-  await nextTick()
-  autoResize()
-
-  expandedBlocks.value  = new Set()
-  clampedBlocks.value   = {}
-  result.value          = MOCK_RESULT
-  mode.value            = 'result'
-  stopAudio()   // ensure clean audio state on demo load
 }
 
 
@@ -498,10 +474,21 @@ function onKeydown(e) {
 onMounted(() => {
   window.addEventListener('scroll', onScroll)
   nextTick(autoResize)
+
+  // Load browser voices — they populate asynchronously after page load.
+  // voiceschanged fires once the list is ready (required in Chrome).
+  loadVoices()
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadVoices
+  }
 })
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   clearTimeout(feedbackTimer)
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = null
+    window.speechSynthesis.cancel()
+  }
 })
 </script>
 
@@ -619,8 +606,6 @@ onUnmounted(() => {
             <span>to submit quickly</span>
           </p>
 
-          <!-- Demo button: loads sample data so the result UI can be previewed instantly -->
-          <button class="btn-demo" @click="loadDemo">Try Demo</button>
         </div>
 
 
@@ -675,108 +660,108 @@ onUnmounted(() => {
 
           <!--
             ── Audio Control Toolbar ──────────────────────────────────────────
-            Appears when any block is playing or paused.
-            Controls: pause/resume, replay, playback speed, voice, volume, stop.
-
-            BACKEND NOTE:
-              Voice selector values map to TTS voice IDs on the backend.
-              Speed and volume are forwarded as-is in the /api/tts request body.
-              See requestTTS() in the script section for the full API contract.
+            Always visible in result mode so users can configure voice/speed
+            before or during playback. Playback controls are disabled when idle.
           -->
-          <Transition name="audio-bar">
-            <div v-if="playbackState !== 'idle'" class="audio-toolbar">
+          <div class="audio-toolbar">
 
-              <!-- Left: icon + title + now-playing label -->
-              <div class="at-info">
-                <div class="at-icon">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 5.5h2.5l3-3v11l-3-3H2V5.5z" fill="#2563eb"/>
-                    <path d="M11 4.5a5 5 0 0 1 0 7M13 2.5a8 8 0 0 1 0 11" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="at-title">Audio Control Panel</div>
-                  <div class="at-status">
-                    Now Playing: Block {{ activeBlockId }}
-                    ({{ activeBlockType === 'summary' ? 'Summary &amp; Key Points' : 'Original Text' }})
-                    <span v-if="playbackState === 'paused'" class="at-paused-tag">· Paused</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Centre: playback action buttons -->
-              <div class="at-actions">
-                <!-- Pause / Resume -->
-                <button
-                  class="at-btn"
-                  :class="{ 'at-btn--primary': playbackState === 'playing' }"
-                  @click="playbackState === 'playing' ? pauseAudio() : resumeAudio()"
-                >
-                  <svg v-if="playbackState === 'playing'" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                    <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                  </svg>
-                  <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="currentColor"/>
-                  </svg>
-                  {{ playbackState === 'playing' ? 'Pause' : 'Resume' }}
-                </button>
-
-                <!-- Replay -->
-                <button class="at-btn" @click="replayBlock">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M11 7A4 4 0 1 1 7 3M11 3v4H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Replay
-                </button>
-              </div>
-
-              <!-- Speed selector -->
-              <div class="at-control">
-                <label class="at-label">Speed</label>
-                <select v-model="playbackSpeed" class="at-select">
-                  <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
-                </select>
-              </div>
-
-              <!-- Voice selector -->
-              <div class="at-control">
-                <label class="at-label">Voice</label>
-                <select v-model="selectedVoice" class="at-select">
-                  <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
-                </select>
-              </div>
-
-              <!-- Volume slider -->
-              <div class="at-control at-volume">
-                <label class="at-label">Volume</label>
-                <input
-                  type="range"
-                  v-model="volume"
-                  min="0" max="100" step="1"
-                  class="at-slider"
-                  :aria-label="`Volume: ${volume}%`"
-                />
-                <span class="at-vol-num">{{ volume }}%</span>
-              </div>
-
-              <!-- Stop button -->
-              <button class="at-btn-stop" @click="stopAudio" title="Stop playback">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+            <!-- Left: status label — shows idle hint or now-playing info -->
+            <div class="at-info">
+              <div class="at-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 5.5h2.5l3-3v11l-3-3H2V5.5z" fill="#2563eb"/>
+                  <path d="M11 4.5a5 5 0 0 1 0 7M13 2.5a8 8 0 0 1 0 11" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
                 </svg>
-                Stop
+              </div>
+              <div>
+                <div class="at-title">Audio</div>
+                <div class="at-status">
+                  <template v-if="playbackState === 'idle'">Press Play on any block to listen</template>
+                  <template v-else>
+                    Block {{ activeBlockId }}
+                    · {{ activeBlockType === 'summary' ? 'Summary' : 'Original' }}
+                    <span v-if="playbackState === 'paused'" class="at-paused-tag">· Paused</span>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Playback controls — disabled when nothing is playing -->
+            <div class="at-actions">
+              <button
+                class="at-btn"
+                :class="{ 'at-btn--primary': playbackState === 'playing' }"
+                :disabled="playbackState === 'idle'"
+                @click="playbackState === 'playing' ? pauseAudio() : resumeAudio()"
+              >
+                <svg v-if="playbackState === 'playing'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/>
+                  <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/>
+                </svg>
+                <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="currentColor"/>
+                </svg>
+                {{ playbackState === 'playing' ? 'Pause' : 'Resume' }}
               </button>
 
+              <button class="at-btn" :disabled="playbackState === 'idle'" @click="replayBlock">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M11 7A4 4 0 1 1 7 3M11 3v4H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Replay
+              </button>
             </div>
-          </Transition>
+
+            <!-- Speed selector -->
+            <div class="at-control">
+              <label class="at-label">Speed</label>
+              <select v-model="playbackSpeed" class="at-select">
+                <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+              </select>
+            </div>
+
+            <!-- Voice selector — applies to the next Play press -->
+            <div class="at-control">
+              <label class="at-label">Voice</label>
+              <select v-model="selectedVoice" class="at-select">
+                <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+              </select>
+            </div>
+
+            <!-- Volume slider -->
+            <div class="at-control at-volume">
+              <label class="at-label">Volume</label>
+              <input
+                type="range"
+                v-model="volume"
+                min="0" max="100" step="1"
+                class="at-slider"
+                :aria-label="`Volume: ${volume}%`"
+              />
+              <span class="at-vol-num">{{ volume }}%</span>
+            </div>
+
+            <!-- Stop button — only enabled when playing or paused -->
+            <button
+              class="at-btn-stop"
+              :disabled="playbackState === 'idle'"
+              @click="stopAudio"
+              title="Stop playback"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+              </svg>
+              Stop
+            </button>
+
+          </div>
 
           <!--
             Two-column layout.
             Structure: one sticky header row + one grid row per block.
             Left and right cards share the same row, so they always align in height.
           -->
-          <!-- result-grid--orig-hidden collapses the left column to a 44px strip -->
+          <!-- result-grid--orig-hidden collapses the left column to a 72px strip -->
           <div :class="['result-grid', { 'result-grid--orig-hidden': !showOriginal }]">
 
             <!-- ── Sticky column headers ── -->
@@ -830,7 +815,7 @@ onUnmounted(() => {
               -->
               <div :class="['block-card', 'block-card--left', { 'block-card--active': activeBlockId === block.id }]">
 
-                <!-- Collapsed strip — shown only when the original-text panel is hidden -->
+                <!-- Collapsed strip — click to expand the original column -->
                 <div v-if="!showOriginal" class="orig-strip-hint" @click="showOriginal = true">
                   <!-- Right-pointing expand icon -->
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -843,9 +828,15 @@ onUnmounted(() => {
                 <!-- Expanded — full original-text card content -->
                 <template v-else>
 
-                  <!-- Card header: block label on the left, play button on the right -->
+                  <!-- Card header: block label (click to collapse) + play button -->
                   <div class="block-card-header">
-                    <div class="block-label">Block {{ block.id }}</div>
+                    <!-- Clicking the label collapses the original column back -->
+                    <button class="block-label block-label--collapse" @click="showOriginal = false" :title="`Block ${block.id} — click to hide original`">
+                      Block {{ block.id }}
+                      <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                        <path d="M6 1.5L3 4.5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
 
                     <!-- Play / Pause button for this specific block -->
                     <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
@@ -1283,22 +1274,7 @@ onUnmounted(() => {
   font-size: 13px; color: #9ca3af; margin: 0;
 }
 
-/* Demo button — sits below the shortcut hint */
-.btn-demo {
-  display: inline-flex; align-items: center; gap: 7px;
-  margin-top: 20px;
-  padding: 10px 28px;
-  font-size: 14px; font-weight: 600;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1.5px solid #bfdbfe;
-  border-radius: 999px; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
-}
-.btn-demo:hover {
-  background: #dbeafe; border-color: #93c5fd;
-  transform: translateY(-1px);
-}
+
 kbd {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 2px 7px;
@@ -1550,13 +1526,14 @@ kbd {
 /* ─────────────────────────────────────────
    Collapsible original-text panel
    When .result-grid--orig-hidden is applied the left column narrows to
-   a 44px clickable strip and the right (summary) column fills the rest.
+   a 72px clickable strip and the right (summary) column fills the rest.
 ───────────────────────────────────────── */
 
-/* Narrow the left column for both the header and all block rows */
+/* Narrow the left column for both the header and all block rows.
+   72px is wide enough to read the strip labels without taking space from summary. */
 .result-grid--orig-hidden .result-grid-header,
 .result-grid--orig-hidden .block-row {
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 72px 1fr;
 }
 
 /* ── Left column header toggle button ── */
@@ -1689,6 +1666,7 @@ kbd {
 /* "Block X" label badge */
 .block-label {
   display: inline-flex;
+  align-items: center; gap: 4px;
   padding: 3px 10px;
   font-size: 11.5px; font-weight: 700;
   color: #2563eb;
@@ -1696,6 +1674,17 @@ kbd {
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   align-self: flex-start;
+}
+
+/* Collapse variant — resets button defaults, keeps badge look, adds pointer */
+.block-label--collapse {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.block-label--collapse:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
 }
 
 /* Original text — smaller font to de-emphasise vs the summary */
