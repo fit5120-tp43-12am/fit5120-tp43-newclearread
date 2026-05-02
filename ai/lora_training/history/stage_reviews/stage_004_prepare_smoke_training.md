@@ -1,4 +1,4 @@
-# Worker 004: Prepare Smoke Training
+# Stage 004: Prepare Smoke Training
 
 Date/time: 2026-04-28T14:28:11+10:00
 
@@ -6,7 +6,7 @@ Date/time: 2026-04-28T14:28:11+10:00
 
 Prepared smoke training scripts, config, assistant-token-only label-mask verification, dry-run checks, and process reports for the ClearRead Llama-3.1-8B-Instruct SFT + QLoRA path.
 
-This is a worker report and is provisional pending central-brain review.
+This is a stage report and is provisional pending model-selection review.
 
 ## Files Created
 
@@ -17,7 +17,7 @@ This is a worker report and is provisional pending central-brain review.
 - `scripts/run_inference_check.py`
 - `reports/LABEL_MASK_SANITY_CHECK.md`
 - `reports/SMOKE_TRAINING_PREP_REPORT.md`
-- `logs/decisions/worker_004_prepare_smoke_training.md`
+- `logs/decisions/stage_004_prepare_smoke_training.md`
 
 ## Key Implementation Points
 
@@ -61,15 +61,15 @@ python scripts/run_inference_check.py --config configs/smoke_llama31_8b_qlora.ex
 - Raw JSONL split files were not modified.
 - Source datasets and teammate exports were not modified.
 - Hugging Face CLI remains unauthenticated; tokenizer access emitted an unauthenticated warning only.
-- Unsloth still reports Flash Attention 2 as broken and falls back to xformers, matching Worker 003 notes.
+- Unsloth still reports Flash Attention 2 as broken and falls back to xformers, matching Stage 003 notes.
 
 ## Git Result
 
-- Git-safe files were mirrored to the team repo under `ai/configs`, `ai/scripts`, `ai/reports`, and `ai/logs/decisions`.
+- package-ready files were mirrored to the team repo under `ai/configs`, `ai/scripts`, `ai/reports`, and `ai/logs/decisions`.
 - Primary commit pushed: `a118a70cf58b97ad48373740b965ba6f87931bb0` (`feat(ai): add smoke training preparation`).
 - Branch pushed: `origin/feature/ai-llama-lora-training`.
 - Follow-up docs/log commit is expected so this pushed result is recorded in Git.
 
-## Recommended Next Worker
+## Recommended Next Stage
 
-Worker 005: run the Llama smoke training test, save the adapter, run inference sanity checks, and write `logs/smoke_test_001.md`.
+Stage 005: run the Llama smoke training test, save the adapter, run inference sanity checks, and write `logs/smoke_test_001.md`.

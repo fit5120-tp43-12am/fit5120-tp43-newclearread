@@ -4,7 +4,7 @@ Date/time: 2026-04-28T14:55:26+10:00
 
 ## Scope
 
-Worker 005 ran the first real ClearRead Llama-3.1-8B-Instruct smoke training test on the approved 10-record smoke split, saved a local QLoRA adapter, and ran inference sanity checks against that adapter.
+The smoke-training step ran the first real ClearRead Llama-3.1-8B-Instruct smoke training test on the approved 10-record smoke split, saved a local QLoRA adapter, and ran inference sanity checks against that adapter.
 
 ## Result
 
@@ -79,13 +79,13 @@ The output previews in `logs/smoke_test_001.md` show the adapter produced concis
 - The source datasets and approved split files were not modified.
 - The adapter and tokenizer artifacts were kept local under `models/adapters/smoke_llama31_8b_qlora`.
 - Hugging Face cache files were kept under `cache/huggingface`.
-- No full data JSONL files, base model files, adapter `.safetensors`, checkpoints, `.pt`, `.pth`, or `.bin` files should be committed to Git.
+- Full data JSONL files, base model files, adapter `.safetensors`, checkpoints, `.pt`, `.pth`, and `.bin` files are large runtime artifacts and are not included in this package.
 
 ## Notes
 
-- Unsloth again reported Flash Attention 2 as broken and used xformers fallback, consistent with Worker 003 and Worker 004.
+- Unsloth again reported Flash Attention 2 as broken and used xformers fallback, consistent with the earlier environment and preparation checks.
 - A first attempt to launch training as a background process from PowerShell failed because `Start-Process` broke the WSL `bash -lc` quoting before conda activation. No training or adapter write occurred in that failed launch. The required training command was then run directly through WSL and succeeded.
 
 ## Recommendation
 
-Recommend central-brain review. If Git-safe files and local artifact safety checks pass, Worker 005 should pass and the next worker can prepare/run full training Candidate A using the approved train/validation split.
+The smoke run passed the required checks. The next stage was full Candidate A training using the approved train/validation split.

@@ -1,17 +1,17 @@
-# Central Review: Worker 003 WSL Environment Setup
+# Project Review: Stage 003 WSL Environment Setup
 
 Date: 2026-04-28
 
 ## Reviewed Inputs
 
-- Worker return summary from the central-brain chat.
+- Stage review summary.
 - `ai/lora_training/reports/WSL_ENVIRONMENT_REPORT.md`
-- `ai/lora_training/history/decision_reviews/worker_003_wsl_environment_setup.md`
+- `ai/lora_training/history/stage_reviews/stage_003_wsl_environment_setup.md`
 - `ai/lora_training/scripts/check_wsl_training_env.py`
 - `ai/lora_training/scripts/check_wsl_training_env.sh`
 - Team repo status under `<team-repo-root>`
 
-## Central Verification
+## Independent Verification
 
 - Reran `scripts/check_wsl_training_env.sh --hf-check` in WSL from the training workspace.
 - Environment check returned `overall_ok: true`.
@@ -57,10 +57,10 @@ Date: 2026-04-28
 
 ## Decision
 
-Worker 003 passes central-brain review with notes.
+Stage 003 passes model-selection review with notes.
 
-The next approved work unit is Worker 004, smoke training scripts/configs and assistant-only loss mask checks, using:
+The next approved work unit is Stage 004, smoke training scripts/configs and assistant-only loss mask checks, using:
 
 ```text
-ai/lora_training/history/work_orders/004_prepare_smoke_training.md
+Stage 004 smoke-training preparation
 ```

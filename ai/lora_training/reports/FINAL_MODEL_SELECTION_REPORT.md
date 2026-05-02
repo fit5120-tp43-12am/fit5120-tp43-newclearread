@@ -92,5 +92,5 @@ This guard is a deployment safety layer, not a change to the final held-out test
 
 1. Use `docs/local_inference_runbook.md` to run local inference from WSL.
 2. Integrate `scripts/infer_clearread_candidate_a.py` as the local safety wrapper around Candidate A.
-3. Preserve the selected adapter in `models/adapters/full_candidate_a_3epoch`; do not commit adapter or model weights.
+3. Preserve the selected adapter in `models/adapters/full_candidate_a_3epoch`; keep adapter and model weights in external artifact storage.
 4. For application integration, consume only successful final JSON outputs or handle the wrapper's machine-readable error object.

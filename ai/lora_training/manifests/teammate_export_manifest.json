@@ -2,10 +2,10 @@
   "manifest_type": "teammate_export_metadata_only",
   "schema_version": "1.0",
   "timestamp_policy": "No wall-clock timestamp is embedded so reruns are deterministic.",
-  "work_order_path": "ai/lora_training/history/work_orders/002_create_teammate_exports.md",
+  "stage_reference": "Stage 002 teammate export",
   "script_path": "ai/lora_training/scripts/create_teammate_exports.py",
-  "script_sha256": "160b1059a5a70dab37a67956e3a411bd308dfa8c3f9abd0ca1afc80e4a2e2189",
-  "training_workspace_git_commit": null,
+  "script_sha256": "80da172dace81865844c9df277908a04ad929b5bca3bada353029e189f5cbb09",
+  "training_workspace_revision_reference": null,
   "approved_inputs": {
     "train.jsonl": {
       "path": "ai/lora_training/data/splits\\train.jsonl",
@@ -44,7 +44,7 @@
     }
   },
   "stable_hash_method_used": "sha256(json.dumps(record, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()",
-  "pair_id_source": "Worker 001 split_manifest.json record_id",
+  "pair_id_source": "split_manifest.json record_id",
   "row_shape_descriptions": {
     "source_export_keys_in_order": [
       "pair_index",

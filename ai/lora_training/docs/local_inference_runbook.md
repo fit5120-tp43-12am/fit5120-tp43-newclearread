@@ -1,6 +1,6 @@
 # Local Inference Runbook
 
-This runbook explains how the selected Candidate A adapter was intended to be used locally. Model weights and adapters are not stored in Git.
+This runbook explains how the selected Candidate A adapter was intended to be used locally. Model weights and adapters are not included in this package.
 
 ## Required Local Artifacts
 
@@ -19,7 +19,7 @@ data/splits/val.jsonl
 data/splits/split_manifest.json
 ```
 
-These paths are ignored by Git.
+These paths are expected to be provided locally when running inference.
 
 ## Environment
 

@@ -1,10 +1,10 @@
-# Worker 001 Profile Source Distributions And Create Data Splits
+# Stage 001 Profile Source Distributions And Create Data Splits
 
 Date/time: 2026-04-28 13:20:44 +10:00
 
 ## Scope
 
-- Work order: `ai/lora_training/history/work_orders/001_profile_and_create_data_splits.md`
+- Stage reference: `Stage 001 profile and split`
 - Source dataset path: `ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted`
 - Training workspace: `ai/lora_training`
 - Team repo: `<team-repo-root>`
@@ -106,7 +106,7 @@ The documented word-count regex is `[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*`. With thi
 - Primary artifact commit: `1105b245edb419fe3830a683c850f4a3461a9457`
 - Primary commit message: `feat(ai): add stratified split profiling workflow`
 - Primary push result: pushed to `origin/feature/ai-llama-lora-training` (`c017273..1105b24`).
-- Git-safe files mirrored in primary commit:
+- package-ready files mirrored in primary commit:
   - `ai\scripts\create_stratified_splits.py`
   - `ai\reports\source_distribution_profile.json`
   - `ai\reports\SOURCE_DISTRIBUTION_PROFILE.md`
@@ -119,8 +119,8 @@ The documented word-count regex is `[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*`. With thi
 - No blockers.
 - No allocation deviations were needed; largest-remainder allocations were feasible without adjustment.
 - `rg` was unavailable in this environment with an access denied error, so PowerShell native file enumeration was used.
-- A docs-only follow-up commit is expected to mirror this worker log to the team repo, matching the Worker 000 pattern for post-push logs.
+- A docs-only follow-up commit is expected to mirror this stage log to the team repo, matching the Stage 000 pattern for post-push logs.
 
 ## Recommendation
 
-Central brain should pass Worker 001. Worker 002 can proceed with teammate exports after central-brain review.
+Project review should pass Stage 001. Stage 002 can proceed with teammate exports after model-selection review.

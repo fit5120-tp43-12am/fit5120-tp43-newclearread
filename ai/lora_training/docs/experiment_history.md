@@ -6,7 +6,7 @@ This history summarizes the main iterations and decision gates behind the final 
 
 | Step | Purpose | Outcome |
 | --- | --- | --- |
-| 000 | Branch and artifact-safety setup | Added Git protections for generated data, model files, checkpoints, and cache artifacts. |
+| 000 | Branch and artifact-safety setup | Added repository protections for generated data, model files, checkpoints, and cache artifacts. |
 | 001 | Profile accepted data and create splits | Created deterministic train/validation/test/smoke splits from 1452 records. |
 | 002 | Create teammate exports | Created aligned user-only and assistant-only local exports with metadata-only manifest. |
 | 003 | Build clean WSL training environment | Verified CUDA, BF16, package imports, and Llama training dependencies. |
@@ -51,8 +51,7 @@ The final held-out test found one schema-contract failure: a parseable academic-
 
 The `history/` folder keeps sanitized details:
 
-- `history/work_orders/` - task definitions for each worker stage
-- `history/decision_reviews/` - central review and worker decision records
+- `history/stage_reviews/` - stage review and model-selection records
 - `history/run_logs/` - selected smoke, training, validation, and final-test run logs
 
-These files are optional reading. The primary teacher-facing narrative is in this document and `docs/end_to_end_training_process.md`.
+These files are optional reading. The primary narrative is in this document and `docs/end_to_end_training_process.md`.

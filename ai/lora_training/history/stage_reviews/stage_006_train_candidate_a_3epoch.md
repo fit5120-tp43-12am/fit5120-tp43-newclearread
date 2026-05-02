@@ -1,10 +1,10 @@
-# Worker 006 Train Candidate A 3 Epoch
+# Stage 006 Train Candidate A 3 Epoch
 
 Date/time: 2026-04-28T16:37:14+10:00
 
-## Work Order
+## Stage Reference
 
-`ai/lora_training/history/work_orders/006_train_candidate_a_3epoch.md`
+`Stage 006 Candidate A full training`
 
 ## Files Created Or Changed
 
@@ -13,8 +13,8 @@ Date/time: 2026-04-28T16:37:14+10:00
 - `scripts\run_inference_check.py`
 - `logs\full_train_candidate_a_3epoch.md`
 - `reports\FULL_TRAIN_CANDIDATE_A_REPORT.md`
-- `logs\decisions\worker_006_train_candidate_a_3epoch.md`
-- `TRAINING_MEMORY.md` will receive a provisional Worker 006 update.
+- `logs\decisions\stage_006_train_candidate_a_3epoch.md`
+- `TRAINING_MEMORY.md` will receive a provisional Stage 006 update.
 
 ## Commands Run
 
@@ -27,7 +27,7 @@ python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_ca
 
 All training/inference commands were run in WSL env `clearread-llama-lora` from `ai/lora_training` with the project-local Hugging Face cache variables.
 
-A first background launch attempt through Windows `Start-Process wsl.exe` did not enter training or create stdout/stderr/exitcode files. This matched the known Worker 005 quoting issue, so the actual training was run directly through WSL.
+A first background launch attempt through Windows `Start-Process wsl.exe` did not enter training or create stdout/stderr/exitcode files. This matched the known Stage 005 quoting issue, so the actual training was run directly through WSL.
 
 ## Preflight Result
 
@@ -82,14 +82,14 @@ Status: `passed`
 ## Git Result
 
 - Branch: `feature/ai-llama-lora-training`
-- Commit before Worker 006 run: `4c49a33aeb5c5d7816560d95e293db40c4e5f4e6`
+- Commit before Stage 006 run: `4c49a33aeb5c5d7816560d95e293db40c4e5f4e6`
 - Primary commit pushed: `cdba362f2754b827a0d9204e966d0b27f7a1d85b`
 - Primary commit message: `feat(ai): train candidate a qlora workflow`
 - Push target: `origin/feature/ai-llama-lora-training`
 - After primary push, local HEAD equaled upstream at `cdba362f2754b827a0d9204e966d0b27f7a1d85b`.
 - `git ls-files 'ai/**/*.jsonl'` returned empty.
 - `git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin'` returned empty.
-- Follow-up docs/log commit pushed: `7a637a8195d1b708bf482a5dcd48ca0bd68cb402` (`docs(ai): record worker 006 training result`).
+- Follow-up docs/log commit pushed: `7a637a8195d1b708bf482a5dcd48ca0bd68cb402` (`docs(ai): record stage 006 training result`).
 - After that follow-up push, local HEAD equaled upstream at `7a637a8195d1b708bf482a5dcd48ca0bd68cb402`.
 
 ## Blockers Or Deviations
@@ -103,4 +103,4 @@ Status: `passed`
 
 ## Recommendation
 
-Recommend central-brain review. Candidate A is viable for later evaluation review. Candidate B should not be automatic from this worker's evidence; consider it only if central-brain qualitative validation review finds weak output quality or overfitting concerns.
+Recommend model-selection review. Candidate A is viable for later evaluation review. Candidate B should not be automatic from this stage's evidence; consider it only if project review qualitative validation review finds weak output quality or overfitting concerns.

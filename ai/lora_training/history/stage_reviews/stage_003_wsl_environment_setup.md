@@ -1,24 +1,21 @@
-# Worker 003 WSL Environment Setup
+# Stage 003 WSL Environment Setup
 
 Date/time: 2026-04-28 14:08:17 +10:00
 
-Status: executed, pending central-brain review.
+Status: executed, pending model-selection review.
 
-## Work Order
+## Stage Reference
 
 ```text
-ai/lora_training/history/work_orders/003_setup_wsl_training_environment.md
+Stage 003 WSL environment setup
 ```
 
 ## Command Summary
 
-Read required project context:
+Reviewed prior project context and the Stage 002 review:
 
 ```powershell
-Get-Content -LiteralPath 'ai/lora_training/history/internal_planning/TRAINING_MEMORY_SUMMARY.md' -Raw
-Get-Content -LiteralPath 'ai/lora_training/history/internal_planning/CENTRAL_BRAIN_WORKER_PROTOCOL.md' -Raw
-Get-Content -LiteralPath 'ai/lora_training/history/internal_planning/MASTER_TRAINING_PLAN.md' -Raw
-Get-Content -LiteralPath 'ai/lora_training/history/decision_reviews/central_review_worker_002.md' -Raw
+Get-Content -LiteralPath 'ai/lora_training/history/stage_reviews/review_stage_002.md' -Raw
 ```
 
 Consulted current docs:
@@ -109,14 +106,14 @@ Core package versions:
 
 ## Git Result
 
-Initial repo check before Worker 003 repo-side changes:
+Initial repo check before Stage 003 repo-side changes:
 
 - Branch: `feature/ai-llama-lora-training`
 - Local HEAD: `b5177957f8857004d02ed309d4ec50a709fdf8e9`
 - Upstream HEAD: `b5177957f8857004d02ed309d4ec50a709fdf8e9`
 - Worktree: clean
 
-Primary Worker 003 commit/push result:
+Primary Stage 003 commit/push result:
 
 - Commit: `9e1ff8a702c99b5651cf0b3b1df86cb5ceaa584c`
 - Message: `chore(ai): document WSL training environment`
@@ -124,15 +121,15 @@ Primary Worker 003 commit/push result:
 - Push result: success
 - Local HEAD equaled upstream after push at `9e1ff8a702c99b5651cf0b3b1df86cb5ceaa584c`.
 
-A small follow-up docs commit was used to mirror this final Git result into the repo-side worker log.
+A small follow-up docs commit was used to mirror this final Git result into the repo-side stage log.
 
 ## Blockers Or Deviations
 
 - No environment setup blocker.
 - Hugging Face CLI is not logged in. This is recorded as a limitation for gated official Meta fallback access.
-- Unsloth reported Flash Attention 2 as broken and fell back to xformers. This is not a blocker for the next smoke-script worker.
+- Unsloth reported Flash Attention 2 as broken and fell back to xformers. This is not a blocker for the next smoke-script stage.
 - The initial PyTorch CUDA 12.6 install was superseded by the simple Unsloth pip route, which selected `torch 2.10.0+cu128`. CUDA runtime verification passed.
 
 ## Recommendation
 
-Recommend central-brain review as pass with notes. Next worker should prepare smoke training scripts/configs and include assistant-token-only loss masking checks before any model training.
+Recommend model-selection review as pass with notes. Next stage should prepare smoke training scripts/configs and include assistant-token-only loss masking checks before any model training.

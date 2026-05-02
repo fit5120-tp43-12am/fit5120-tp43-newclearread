@@ -14,7 +14,7 @@ Candidate A completed successfully.
 - Adapter: `models/adapters/full_candidate_a_3epoch`
 - Training log: `logs/full_train_candidate_a_3epoch.md`
 
-Candidate A should be considered a viable candidate for later central-brain review and possible final evaluation. Do not use the test set until the central-brain chat chooses the final model candidate.
+Candidate A should be considered a viable candidate for later project review and possible final evaluation. Do not use the test set until the the project selects the final model candidate.
 
 ## Preflight
 
@@ -64,4 +64,4 @@ Early ETA estimates were conservative while the run warmed up; later estimates s
 
 ## Recommendation
 
-Candidate A is viable for central-brain review. Candidate B is not automatically recommended from this worker's evidence alone because Candidate A completed cleanly and passed `10/10` validation schema checks. Consider Candidate B only if central-brain qualitative review finds weak summaries, overfitting concerns, or poor behavior on broader validation samples.
+Candidate A is viable for validation review. Candidate B is not recommended at this stage because Candidate A completed cleanly and passed `10/10` validation schema checks. Candidate B should only be considered if later quality review finds weak summaries, overfitting concerns, or poor behavior on broader validation samples.

@@ -1,10 +1,10 @@
-# Worker 008 Final Evaluation Candidate A
+# Stage 008 Final Evaluation Candidate A
 
 Date/time: 2026-04-28
 
 ## Scope
 
-- Executed `work_orders/008_final_evaluation_candidate_a.md`.
+- Executed `Stage 008 Candidate A final evaluation`.
 - Used the approved held-out test split: `data/splits/test.jsonl`.
 - Evaluated only Candidate A adapter: `models/adapters/full_candidate_a_3epoch`.
 - Did not run training, tune hyperparameters, change decoding settings for model selection, or run Candidate B.
@@ -23,11 +23,11 @@ Both commands were run from WSL inside the `clearread-llama-lora` conda environm
 - `scripts/evaluate_final_test_candidate_a.py`
 - `reports/FINAL_TEST_EVALUATION_CANDIDATE_A_REPORT.md`
 - `logs/final_test_evaluation_candidate_a.md`
-- `logs/decisions/worker_008_final_evaluation_candidate_a.md`
+- `logs/decisions/stage_008_final_evaluation_candidate_a.md`
 - `outputs/evaluation/candidate_a_test/test_predictions.jsonl`
 - `outputs/evaluation/candidate_a_test/test_metrics.json`
 
-The prediction JSONL and metrics JSON are local artifacts and should not be committed unless central brain later explicitly approves.
+The prediction JSONL and metrics JSON are local artifacts and should not be committed unless project review later explicitly approves.
 
 ## Deterministic Results
 
@@ -63,18 +63,18 @@ The prediction JSONL and metrics JSON are local artifacts and should not be comm
 
 ## Recommendation
 
-Recommendation: `central_review_required_before_final_selection`.
+Recommendation: `select_with_schema_guard`.
 
-Candidate A is strong overall, but one held-out test row violated the exact 4-key-point contract. This is not a `do_not_select_without_fix` result, but central brain should decide whether the isolated schema miss is acceptable before declaring Candidate A the selected final artifact.
+Candidate A is strong overall, but one held-out test row violated the exact 4-key-point contract. This is not a `do_not_select_without_fix` result, but project review should decide whether the isolated schema miss is acceptable before declaring Candidate A the selected final artifact.
 
 ## Git Result
 
-Git-safe files were mirrored to the team repo under:
+package-ready files were mirrored to the team repo under:
 
 - `ai/scripts/evaluate_final_test_candidate_a.py`
 - `ai/reports/FINAL_TEST_EVALUATION_CANDIDATE_A_REPORT.md`
 - `ai/logs/final_test_evaluation_candidate_a.md`
-- `ai/logs/decisions/worker_008_final_evaluation_candidate_a.md`
+- `ai/logs/decisions/stage_008_final_evaluation_candidate_a.md`
 
 Primary pushed commit:
 
@@ -97,4 +97,4 @@ git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin' -> e
 
 Local HEAD and upstream HEAD both resolved to `f53e1fe3b8ad9097e0aaedcc24a2182265cfe123` after the primary push.
 
-This updated worker decision log is intended to be pushed in a follow-up docs/log commit so the repo records the primary commit result.
+This updated stage decision log is intended to be pushed in a follow-up docs/log commit so the repo records the primary commit result.

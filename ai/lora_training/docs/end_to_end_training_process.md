@@ -64,7 +64,7 @@ Relevant files:
 
 ## 3. Teammate Export
 
-After splitting, aligned user-only and assistant-only exports were generated for teammate use. These exports were local derived data and are not committed here, but their counts and hashes are recorded.
+After splitting, aligned user-only and assistant-only exports were generated for teammate use. These exports were local derived data and are not stored in this package, but their counts and hashes are recorded.
 
 The export preserved one-to-one alignment across:
 
@@ -242,7 +242,7 @@ Relevant files:
 
 ## 10. Final Selection And Inference Wrapper
 
-Candidate A was selected as the final raw LoRA adapter for this training cycle. The selected adapter remains a local model artifact and is not committed to Git.
+Candidate A was selected as the final raw LoRA adapter for this training cycle. The selected adapter remains a local model artifact and is not included in this package.
 
 Because the final held-out test had one key-point-count failure, deployment requires a schema guard. The inference wrapper validates:
 

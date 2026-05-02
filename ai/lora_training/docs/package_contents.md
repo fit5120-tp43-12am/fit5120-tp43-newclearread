@@ -1,6 +1,6 @@
 # Package Contents
 
-This package contains only Git-safe files needed to understand and reproduce the ClearRead LoRA training workflow.
+This package contains the scripts, configurations, reports, and metadata needed to understand and reproduce the ClearRead LoRA training workflow.
 
 ## Main Folders
 
@@ -31,9 +31,9 @@ This package contains only Git-safe files needed to understand and reproduce the
 | `scripts/evaluate_final_test_candidate_a.py` | Evaluates Candidate A on the final held-out test split. |
 | `scripts/infer_clearread_candidate_a.py` | Runs final local inference with schema guard behavior. |
 
-## Excluded Artifacts
+## Large Artifacts
 
-The package intentionally excludes:
+The training run also produced large generated artifacts. They are summarized by reports, counts, hashes, and metadata rather than stored in this folder:
 
 - raw source `.jsonl` files
 - train/validation/test/smoke `.jsonl` split files
@@ -45,4 +45,4 @@ The package intentionally excludes:
 - Hugging Face cache and Unsloth compiled cache
 - local command-output `.log` files
 
-These artifacts are represented by counts, SHA256 hashes, metadata manifests, and reports.
+These artifacts can be recreated or verified from the scripts, manifests, and reports included here.

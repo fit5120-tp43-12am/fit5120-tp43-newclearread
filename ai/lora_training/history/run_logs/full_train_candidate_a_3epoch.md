@@ -1,7 +1,7 @@
 # Full Training Candidate A 3 Epoch
 
 Date/time: 2026-04-28T16:34:13+10:00
-Worker id: `Worker 006`
+Stage id: `Stage 006`
 
 ## Environment
 

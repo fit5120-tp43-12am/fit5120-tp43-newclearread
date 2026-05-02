@@ -4,7 +4,7 @@ Date/time: 2026-04-28 14:08:17 +10:00
 
 ## Scope
 
-Worker 003 created and verified the clean WSL conda environment for the ClearRead Llama-3.1-8B-Instruct SFT + QLoRA path.
+The environment setup step created and verified the clean WSL conda environment for the ClearRead Llama-3.1-8B-Instruct SFT + QLoRA path.
 
 No model training was run. No source datasets, approved split files, teammate exports, old WSL reference env, or old WSL reference project were modified.
 
@@ -130,4 +130,4 @@ No model weights were downloaded. No Hugging Face token was printed or saved.
 
 ## Recommendation
 
-Recommend central-brain review as pass with notes for Worker 003 environment setup. The environment is ready for Worker 004 smoke training script/config preparation, with the caveat that gated official Meta model access will need authentication if the project uses the official Meta fallback instead of the public Unsloth 4-bit model IDs.
+The environment setup passed with notes. The environment was ready for smoke-training script and config preparation, with the caveat that gated official Meta model access would need authentication if the project used the official Meta fallback instead of the public Unsloth 4-bit model IDs.

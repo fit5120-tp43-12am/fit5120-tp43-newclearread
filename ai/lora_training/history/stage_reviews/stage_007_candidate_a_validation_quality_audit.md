@@ -1,10 +1,10 @@
-# Worker 007 Candidate A Validation Quality Audit
+# Stage 007 Candidate A Validation Quality Audit
 
 Date/time: 2026-04-28T17:53:55+10:00
 
 ## Scope
 
-- Executed `work_orders/007_candidate_a_validation_quality_audit.md`.
+- Executed `Stage 007 Candidate A validation audit`.
 - Evaluated Candidate A on validation split only.
 - Did not use `data/splits/test.jsonl`.
 - Did not run training.
@@ -25,12 +25,12 @@ The first full evaluation exposed that the mojibake pattern literals in the new 
 - `scripts/evaluate_candidate_a_validation.py`
 - `reports/CANDIDATE_A_VALIDATION_QUALITY_REPORT.md`
 - `logs/candidate_a_validation_quality_audit.md`
-- `logs/decisions/worker_007_candidate_a_validation_quality_audit.md`
+- `logs/decisions/stage_007_candidate_a_validation_quality_audit.md`
 - `outputs/evaluation/candidate_a_validation/validation_predictions.jsonl`
 - `outputs/evaluation/candidate_a_validation/validation_metrics.json`
 - `TRAINING_MEMORY.md` provisional update
 
-The prediction JSONL and metrics JSON are local artifacts only and must not be committed unless the central brain later approves.
+The prediction JSONL and metrics JSON are local artifacts only and must not be committed unless the project review later approves.
 
 ## Prediction Run
 
@@ -85,18 +85,18 @@ Domain and natural-length-bucket breakdowns are in `reports/CANDIDATE_A_VALIDATI
 
 Recommendation: `proceed_to_final_evaluation`.
 
-Candidate A should be sent to central-brain review and final test evaluation planning. Candidate B is not recommended from this validation audit because format/schema quality is excellent, sentence compliance is strong, no domain or length bucket fails broadly, mojibake is absent, and manual review found no major faithfulness or instruction-following issue.
+Candidate A should be sent to model-selection review and final test evaluation planning. Candidate B is not recommended from this validation audit because format/schema quality is excellent, sentence compliance is strong, no domain or length bucket fails broadly, mojibake is absent, and manual review found no major faithfulness or instruction-following issue.
 
 Final evaluation should still watch public-service exact numeric details, especially fees and time windows.
 
 ## Git Result
 
-Git-safe files mirrored to the team repo under:
+package-ready files mirrored to the team repo under:
 
 - `ai/scripts/evaluate_candidate_a_validation.py`
 - `ai/reports/CANDIDATE_A_VALIDATION_QUALITY_REPORT.md`
 - `ai/logs/candidate_a_validation_quality_audit.md`
-- `ai/logs/decisions/worker_007_candidate_a_validation_quality_audit.md`
+- `ai/logs/decisions/stage_007_candidate_a_validation_quality_audit.md`
 
 Primary commit pushed:
 
@@ -121,7 +121,7 @@ Post-push verification after the primary commit:
 Follow-up docs/log commit pushed:
 
 ```text
-40ebc747a4d83afd910633b6e3028f616b4f6d67 docs(ai): record worker 007 validation audit result
+40ebc747a4d83afd910633b6e3028f616b4f6d67 docs(ai): record stage 007 validation audit result
 ```
 
-This follow-up commit records the primary commit and safety checks in the pushed worker log.
+This follow-up commit records the primary commit and safety checks in the pushed stage log.

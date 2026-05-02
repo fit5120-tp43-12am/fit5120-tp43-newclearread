@@ -1,6 +1,6 @@
 # ClearRead Llama LoRA Training Package
 
-This folder is the Git-safe, teacher-facing package for the ClearRead local model training work. It documents how the final Candidate A LoRA adapter was prepared, trained, evaluated, and packaged, without committing raw JSONL data, model weights, checkpoints, cache files, or local machine paths.
+This folder documents the ClearRead local model training work. It explains how the final Candidate A LoRA adapter was prepared, trained, evaluated, and packaged, with scripts, configuration files, reports, and metadata needed to understand the workflow.
 
 ## Final Result
 
@@ -47,24 +47,22 @@ Read these files in order:
 ai/lora_training/
   configs/            Example training, smoke-test, inference, and environment configs
   scripts/            Training, split, evaluation, inference, and environment-check scripts
-  docs/               Teacher-facing process docs and runbooks
+  docs/               Process documentation and runbooks
   reports/            Training, validation, final-test, and QA reports
   manifests/          Metadata-only manifests and artifact metadata
   artifact_metadata/  Metadata pointer for the selected local adapter
-  history/            Sanitized work orders, decision reviews, and run logs
+  history/            Sanitized stage reviews and run logs
 ```
 
-## What Is Excluded
+## Large Artifacts
 
-The following files are deliberately excluded from Git:
+Large generated artifacts are represented by reports, counts, hashes, and metadata instead of being stored in this folder:
 
 - raw and derived `.jsonl` datasets
 - model adapter weights such as `.safetensors`
 - base model files, tokenizer large artifacts, checkpoints, optimizer states
 - generated prediction JSONL files
 - Hugging Face cache, Unsloth compiled cache, and local runtime logs
-
-The excluded artifacts are represented by hashes, counts, reports, and metadata manifests where useful.
 
 ## Reproducibility Notes
 
@@ -74,7 +72,7 @@ The scripts assume they are run from this package root:
 cd ai/lora_training
 ```
 
-Raw accepted training data should be supplied outside Git, then passed to scripts with command-line options or placed under an ignored local `data/` directory. The package-level `.gitignore` protects these generated and private artifacts.
+Raw accepted training data should be supplied separately, then passed to scripts with command-line options or placed under a local `data/` directory.
 
 ## Relationship To Other AI Work
 
