@@ -63,7 +63,10 @@ def process_reading_text(text: str) -> dict:
             }
         )
 
-    model_blocks = prepared_blocks[: model_service.get_summary_max_blocks()]
+    model_enabled = model_service.is_summary_model_enabled()
+    model_blocks = (
+        prepared_blocks[: model_service.get_summary_max_blocks()] if model_enabled else []
+    )
     if model_blocks:
         try:
             model_response = model_service.summarize_blocks(
@@ -85,12 +88,18 @@ def process_reading_text(text: str) -> dict:
         used_summary_fallback = False
 
         if model_result and model_result.get("status") == "ok":
-            summary_result = {
-                "summary": model_result.get("summary") or "",
-                "keyPoints": model_result.get("keyPoints") or [],
-                "usedFallback": False,
-                "fallbackReason": "",
-            }
+            summary = str(model_result.get("summary") or "").strip()
+            key_points = model_result.get("keyPoints") or []
+            if not summary or not key_points:
+                used_summary_fallback = True
+                summary_result = _summarise_block_fallback(block["text"])
+            else:
+                summary_result = {
+                    "summary": summary,
+                    "keyPoints": key_points,
+                    "usedFallback": False,
+                    "fallbackReason": "",
+                }
         else:
             used_summary_fallback = True
             summary_result = _summarise_block_fallback(block["text"])
@@ -100,6 +109,7 @@ def process_reading_text(text: str) -> dict:
             used_fallback = True
             reason = _get_summary_fallback_reason(
                 block,
+                model_enabled,
                 model_blocks,
                 model_result,
                 summary_result,
@@ -177,16 +187,23 @@ def _limit_block_text(text: str) -> str:
 
 def _get_summary_fallback_reason(
     block: dict,
+    model_enabled: bool,
     model_blocks: list[dict],
     model_result: dict | None,
     summary_result: dict,
 ) -> str:
+    if not model_enabled:
+        return summary_result.get("fallbackReason") or "summary_fallback"
+
     model_block_ids = {model_block["model_id"] for model_block in model_blocks}
     if block["model_id"] not in model_block_ids:
         return "team_model_block_limit_exceeded"
 
     if model_result and model_result.get("status") == "error":
         return "team_model_item_error"
+
+    if model_result and model_result.get("status") == "ok":
+        return "team_model_item_empty"
 
     if model_result is None:
         return "team_model_item_missing"
