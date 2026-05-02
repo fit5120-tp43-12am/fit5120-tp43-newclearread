@@ -107,72 +107,53 @@ const VOICE_OPTIONS  = [
   { value: 'clear-male',     label: 'Clear Male'     },
 ]
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BACKEND INTERFACE — TTS API
-// ─────────────────────────────────────────────────────────────────────────────
+// ── TTS via Browser Web Speech API ───────────────────────────────────────────
 //
-// Endpoint : POST /api/tts
-// Request  : { text: string, voice: string, speed: number, volume: number }
-//             voice  → one of the VOICE_OPTIONS values above
-//             speed  → playback rate multiplier (0.75–2.0)
-//             volume → 0.0–1.0 float (volume.value / 100)
+// Uses the browser's built-in SpeechSynthesis — no backend required.
+// Works in Chrome, Edge, and Safari. Firefox support is partial.
 //
-// Response : audio/mpeg binary stream
-//            (or JSON { audioUrl: string } if the backend returns a hosted URL)
-//
-// The frontend will:
-//   1. Create a Blob URL from the stream:   URL.createObjectURL(blob)
-//   2. Pass it to:                          new Audio(url)
-//   3. Set:                                 audio.playbackRate = speed
-//                                           audio.volume       = volume / 100
-//   4. Call:                                audio.play()
-//
-// Currently using Web Speech API as a placeholder until this endpoint is live.
-// Replace the body of requestTTS() below when the backend is ready.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Internal reference to the current Audio object (used with real backend audio)
-let currentAudio = null
+// The Promise resolves ONLY when speech actually ends (onend).
+// Resolving early (before onend) would cause playBlock() to immediately
+// call stopAudio(), cancelling the speech before it finishes — the
+// original bug that made TTS appear broken.
 
 /**
- * requestTTS — sends text to the TTS backend and returns a playable audio URL.
- *
- * PLACEHOLDER: Uses the browser's built-in Web Speech API.
- * Replace the entire function body with the fetch block below once the backend is ready.
+ * Speak text using the Web Speech API.
+ * Returns a Promise that resolves when the utterance naturally finishes,
+ * or when it is cancelled programmatically (treated as a clean stop).
  */
-async function requestTTS(text) {
-  // ── TODO (Backend): Replace everything inside this function with: ──────────
-  //
-  //   const res = await fetch(`${API_BASE_URL}/api/tts`, {
-  //     method:  'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({
-  //       text,
-  //       voice:  selectedVoice.value,          // e.g. 'default-female'
-  //       speed:  playbackSpeed.value,           // e.g. 1.25
-  //       volume: volume.value / 100,            // e.g. 0.70
-  //     }),
-  //   })
-  //   if (!res.ok) throw new Error('TTS request failed')
-  //   const blob = await res.blob()
-  //   return URL.createObjectURL(blob)           // pass this URL to new Audio(url).play()
-  //
-  // ─────────────────────────────────────────────────────────────────────────
-
-  // Web Speech API fallback — works in Chrome/Edge/Safari without a backend
+function requestTTS(text) {
   return new Promise((resolve, reject) => {
     if (!('speechSynthesis' in window)) {
       reject(new Error('Text-to-speech is not supported in this browser.'))
       return
     }
-    window.speechSynthesis.cancel()   // clear any previous utterance
-    const utterance     = new SpeechSynthesisUtterance(text)
-    utterance.rate      = playbackSpeed.value
-    utterance.volume    = volume.value / 100
-    utterance.onend     = () => resolve('done')
-    utterance.onerror   = (e) => reject(e)
+
+    // Cancel any previous utterance before starting a new one
+    window.speechSynthesis.cancel()
+
+    const utterance  = new SpeechSynthesisUtterance(text)
+    utterance.rate   = playbackSpeed.value
+    utterance.volume = volume.value / 100
+
+    // Resolve cleanly when speech ends naturally
+    utterance.onend = () => resolve('done')
+
+    // 'interrupted' / 'canceled' fire when we call speechSynthesis.cancel()
+    // programmatically — treat these as a clean stop, not an error.
+    utterance.onerror = (e) => {
+      if (e.error === 'interrupted' || e.error === 'canceled') {
+        resolve('cancelled')
+      } else {
+        console.warn('[TTS] Speech error:', e.error)
+        reject(new Error(e.error))
+      }
+    }
+
     window.speechSynthesis.speak(utterance)
-    resolve('speaking')   // resolve immediately so UI updates right away
+    // ⚠️ Do NOT call resolve() here — resolving before onend would
+    // immediately unblock the await in playBlock() and trigger stopAudio(),
+    // cancelling the speech the moment it starts.
   })
 }
 
@@ -196,13 +177,13 @@ async function playBlock(blockId, textType = 'original') {
     resumeAudio(); return
   }
 
-  // Switch to a new block or side — stop current first
+  // New block / different side — stop anything currently playing first
   stopAudio()
   activeBlockId.value   = blockId
   activeBlockType.value = textType
   playbackState.value   = 'playing'
 
-  // Build the text to speak depending on which side was clicked
+  // Build the text to speak depending on which card was clicked
   let textToSpeak = ''
   if (textType === 'original') {
     textToSpeak = block.originalText
@@ -215,7 +196,9 @@ async function playBlock(blockId, textType = 'original') {
   }
 
   try {
+    // Await speech completion — state resets to idle only after speech ends
     await requestTTS(textToSpeak)
+    // Only reset if this block is still the active one (user may have moved on)
     if (activeBlockId.value === blockId) stopAudio()
   } catch (err) {
     console.error('[TTS] Playback error:', err)
@@ -226,14 +209,12 @@ async function playBlock(blockId, textType = 'original') {
 /** Pause the current playback. */
 function pauseAudio() {
   if ('speechSynthesis' in window) window.speechSynthesis.pause()
-  // TODO (Backend): currentAudio?.pause()
   playbackState.value = 'paused'
 }
 
 /** Resume a paused playback. */
 function resumeAudio() {
   if ('speechSynthesis' in window) window.speechSynthesis.resume()
-  // TODO (Backend): currentAudio?.play()
   playbackState.value = 'playing'
 }
 
@@ -245,7 +226,6 @@ function replayBlock() {
 /** Stop all playback and reset to idle. */
 function stopAudio() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
-  // TODO (Backend): currentAudio?.pause(); currentAudio = null
   activeBlockId.value   = null
   activeBlockType.value = 'original'
   playbackState.value   = 'idle'
