@@ -1,4 +1,4 @@
-# Central-Brain Review: Worker 007 Candidate A Validation Quality Audit
+# Project Review: Stage 007 Candidate A Validation Quality Audit
 
 Date/time: 2026-04-28
 
@@ -6,7 +6,7 @@ Date/time: 2026-04-28
 
 Result: pass.
 
-Worker 007 completed a validation-only quality audit for Candidate A. The evidence supports proceeding to final test evaluation with Candidate A. Candidate B is not recommended at this point.
+Stage 007 completed a validation-only quality audit for Candidate A. The evidence supports proceeding to final test evaluation with Candidate A. Candidate B is not recommended at this point.
 
 Candidate A is now selected for final test evaluation, but it is not yet declared the final model artifact until the held-out test evaluation is reviewed.
 
@@ -18,7 +18,7 @@ Local files reviewed:
 ai/lora_training/scripts/evaluate_candidate_a_validation.py
 ai/lora_training/reports/CANDIDATE_A_VALIDATION_QUALITY_REPORT.md
 ai/lora_training/history/run_logs/candidate_a_validation_quality_audit.md
-ai/lora_training/history/decision_reviews/worker_007_candidate_a_validation_quality_audit.md
+ai/lora_training/history/stage_reviews/stage_007_candidate_a_validation_quality_audit.md
 ai/lora_training/outputs/evaluation\candidate_a_validation\validation_predictions.jsonl
 ai/lora_training/outputs/evaluation\candidate_a_validation\validation_metrics.json
 ```
@@ -42,7 +42,7 @@ Key reported result:
 
 ## Independent Verification
 
-Central-brain reran compile checks in WSL env `clearread-llama-lora`:
+Independent review reran compile checks in WSL env `clearread-llama-lora`:
 
 ```bash
 python -m py_compile scripts/evaluate_candidate_a_validation.py scripts/run_inference_check.py
@@ -50,7 +50,7 @@ python -m py_compile scripts/evaluate_candidate_a_validation.py scripts/run_infe
 
 Result: pass.
 
-Central-brain verified `validation_metrics.json` is valid JSON using WSL Python:
+Independent review verified `validation_metrics.json` is valid JSON using WSL Python:
 
 ```bash
 python -m json.tool outputs/evaluation/candidate_a_validation/validation_metrics.json
@@ -58,7 +58,7 @@ python -m json.tool outputs/evaluation/candidate_a_validation/validation_metrics
 
 Result: pass.
 
-Central-brain independently parsed local metrics and confirmed:
+Independent review independently parsed local metrics and confirmed:
 
 ```text
 validation_count: 145
@@ -74,7 +74,7 @@ validation_sha256: a7cf5277eda97ef1868376caa79343b040ba6920602bc607dc145a2039d2d
 split_manifest_sha256: 42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19
 ```
 
-Central-brain independently parsed `validation_predictions.jsonl` and confirmed:
+Independent review independently parsed `validation_predictions.jsonl` and confirmed:
 
 ```text
 rows: 145
@@ -85,9 +85,9 @@ prediction mojibake rows from deterministic_counts: 0
 gold mojibake rows from deterministic_counts: 0
 ```
 
-Central-brain checked the previously suspicious validation rows with Python UTF-8 parsing. The `Bash` sample contains proper Unicode `Bashō’s` with no non-ASCII mojibake code points in the inspected preview. The earlier mojibake-looking display was a terminal/rendering artifact, not dataset corruption.
+Independent review checked the previously suspicious validation rows with Python UTF-8 parsing. The `Bash` sample contains proper Unicode `Bashō’s` with no non-ASCII mojibake code points in the inspected preview. The earlier mojibake-looking display was a terminal/rendering artifact, not dataset corruption.
 
-Central-brain searched Worker 007 script/report/log for test-set usage and training calls. The only `test.jsonl` hits are explicit refusal/scope statements:
+Independent review searched Stage 007 script/report/log for test-set usage and training calls. The only `test.jsonl` hits are explicit refusal/scope statements:
 
 ```text
 if data_path.name == "test.jsonl": raise ValueError(...)
@@ -104,24 +104,24 @@ Team repo:
 <team-repo-root>
 ```
 
-Central-brain verified:
+Independent review verified:
 
 - branch: `feature/ai-llama-lora-training`
 - local HEAD: `8e5aeae6db2dcb79b7dd9fbfb0a7b31408916a8a`
 - upstream HEAD: `8e5aeae6db2dcb79b7dd9fbfb0a7b31408916a8a`
 - latest commits:
-  - `8e5aeae docs(ai): finalize worker 007 git record`
-  - `40ebc74 docs(ai): record worker 007 validation audit result`
+  - `8e5aeae docs(ai): finalize stage 007 git record`
+  - `40ebc74 docs(ai): record stage 007 validation audit result`
   - `2adc1f2 feat(ai): add candidate a validation audit`
 
-Git safety checks returned no tracked raw data or model binary artifacts:
+artifact storage checks returned no tracked raw data or model binary artifacts:
 
 ```text
 git ls-files 'ai/**/*.jsonl' -> empty
 git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin' -> empty
 ```
 
-Central-brain also checked the repo-side `ai` tree and found no `outputs`, `validation_predictions`, `validation_metrics`, JSONL files, or model binary artifacts.
+Independent review also checked the repo-side `ai` tree and found no `outputs`, `validation_predictions`, `validation_metrics`, JSONL files, or model binary artifacts.
 
 ## Notes
 
@@ -135,4 +135,4 @@ Central-brain also checked the repo-side `ai` tree and found no `outputs`, `vali
 
 Proceed to final held-out test evaluation with Candidate A.
 
-Candidate B is skipped for now. Do not train or tune further unless final evaluation reveals a blocking issue and the central brain explicitly reopens the model-selection phase.
+Candidate B is skipped for now. Do not train or tune further unless final evaluation reveals a blocking issue and the project review explicitly reopens the model-selection phase.

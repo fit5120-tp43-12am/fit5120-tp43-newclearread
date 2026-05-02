@@ -70,9 +70,9 @@ Schema pass count: `3`
 | 2 | True | ok | {"main_idea":"The text explains infectious mononucleosis, or mono. It says EBV is the most common cause, and people can spread it through body fluids, so it's o |
 | 3 | True | ok | {"main_idea":"The text explains how to report suspected tax fraud to the IRS. It says the IRS wants serious, well-supported cases and gives the form and mailing |
 
-## Worker 005 Supplemental Audit
+## Stage 005 Supplemental Audit
 
-- Worker id: `Worker 005`
+- Stage id: `Stage 005`
 - Git branch before run: `feature/ai-llama-lora-training`
 - Git commit before run: `e977769ab29fc7eb6242f5c32599d34eb7fc5cd2`
 - OOM: `no`
@@ -133,7 +133,7 @@ export TRANSFORMERS_CACHE=ai/lora_training/cache/huggingface/transformers
 | File | Size bytes | SHA256 |
 | --- | ---: | --- |
 | `adapter_config.json` | 1262 | `A78911EE5F9E9C50DB81F356B1A8963CFA0F001D10687CFA818A085902D25FE0` |
-| `adapter_model.safetensors` | 167832240 | not recorded here; large model artifact, not Git-safe |
+| `adapter_model.safetensors` | 167832240 | not recorded here; large model artifact, not package-ready |
 | `chat_template.jinja` | 4614 | `E10CA381B1CCC5CF9DB52E371F3B6651576CAEE0A630B452E2816B2D404D4B65` |
 | `README.md` | 5256 | `1DADFF2F9ED0BE94F4D1253AE61DE95DA79F7EDEA3D641FC157B9270B2C62612` |
 | `tokenizer.json` | 17209920 | not recorded here; large tokenizer artifact, not committed |
@@ -145,7 +145,7 @@ The ETA callback printed every step. The first step estimated about 2m 44s remai
 
 ### Decision
 
-Smoke training passed locally. The 20-step QLoRA run completed without OOM, saved the LoRA adapter, and inference passed schema checks for 3 of 3 smoke examples. The next central-brain review should verify logs, Git-safe commit contents, and whether to proceed to full Candidate A training or adjust smoke settings first.
+Smoke training passed locally. The 20-step QLoRA run completed without OOM, saved the LoRA adapter, and inference passed schema checks for 3 of 3 smoke examples. The next model-selection review should verify logs, package-ready commit contents, and whether to proceed to full Candidate A training or adjust smoke settings first.
 
 ## Inference Sanity Check
 

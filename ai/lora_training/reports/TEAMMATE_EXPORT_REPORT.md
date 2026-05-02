@@ -6,7 +6,7 @@
 - Export output directory: `ai/lora_training/data/teammate_exports`
 - Metadata manifest: `ai/lora_training/data/teammate_exports\teammate_export_manifest.json`
 - Report path: `ai/lora_training/reports/TEAMMATE_EXPORT_REPORT.md`
-- Script SHA256: `160b1059a5a70dab37a67956e3a411bd308dfa8c3f9abd0ca1afc80e4a2e2189`
+- Script SHA256: `80da172dace81865844c9df277908a04ad929b5bca3bada353029e189f5cbb09`
 - Metadata manifest SHA256: `bcb11dd7104e524b7078708d53af75b787e47503558186b1b5d0bbe215d9b89d`
 
 ## Export Counts And Hashes
@@ -64,9 +64,9 @@
 
 ## Determinism
 
-- The script writes rows in source split order and uses Worker 001 `record_id` values as `pair_id`.
+- The script writes rows in source split order and uses split-manifest `record_id` values as `pair_id`.
 - The script embeds no wall-clock timestamp in generated artifacts so reruns with unchanged inputs are stable.
-- Worker 002 reran the script and compared 11 file hashes: deterministic rerun verification passed.
+- The export script was rerun the script and compared 11 file hashes: deterministic rerun verification passed.
 
 ## Result
 

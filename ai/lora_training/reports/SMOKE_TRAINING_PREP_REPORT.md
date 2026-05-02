@@ -20,8 +20,8 @@ The implementation follows the current Unsloth guidance to start with Instruct m
 | `configs/smoke_llama31_8b_qlora.example.yaml` | Smoke QLoRA config for model ids, data, LoRA, training, output, and ETA settings. |
 | `scripts/training_data_utils.py` | Shared JSONL loading, role validation, chat rendering, assistant-only label masking, token summaries, duration/ETA helpers, and a supervised collator. |
 | `scripts/verify_assistant_loss_mask.py` | Tokenizer-only label-mask sanity check for the 10-record smoke set. |
-| `scripts/train_smoke_qlora.py` | Worker 005 smoke training entry point with Unsloth QLoRA loading, explicit assistant-only labels, dry-run mode, adapter saving, and ETA progress callback. |
-| `scripts/run_inference_check.py` | Worker 005 inference sanity-check entry point with adapter loading, JSON/schema checks, dry-run mode, and smoke-log append support. |
+| `scripts/train_smoke_qlora.py` | Smoke-training entry point with Unsloth QLoRA loading, explicit assistant-only labels, dry-run mode, adapter saving, and ETA progress callback. |
+| `scripts/run_inference_check.py` | Inference sanity-check entry point with adapter loading, JSON/schema checks, dry-run mode, and smoke-log append support. |
 | `reports/LABEL_MASK_SANITY_CHECK.md` | Generated label-mask verification report. |
 
 ## Config Summary
@@ -78,7 +78,7 @@ Results:
 - `models/adapters` exists as an empty prepared directory only.
 - `outputs/smoke` is empty.
 - Tokenizer access produced an unauthenticated Hugging Face warning only; no token was printed or saved.
-- Importing Unsloth emitted the known Flash Attention 2 warning and xformers fallback; this matches Worker 003 notes and did not block dry-run checks.
+- Importing Unsloth emitted the known Flash Attention 2 warning and xformers fallback; this matches the earlier environment setup notes and did not block dry-run checks.
 
 ## File Hashes
 
@@ -93,4 +93,4 @@ Results:
 
 ## Decision
 
-Worker 004 preparation checks pass locally and are ready for central-brain review. Recommended next worker: Worker 005, run the Llama smoke training test.
+The smoke-training preparation checks passed locally. The next step was to run the Llama smoke training test.

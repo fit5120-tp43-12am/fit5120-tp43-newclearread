@@ -106,26 +106,26 @@
       "sha256": "52a57d911c30cf2b645e3350aafd9f1c424d2529483fd4628e7e34bfb33a7fe2"
     }
   ],
-  "git_policy": {
-    "commit_adapter_or_model_files": false,
-    "commit_cache_or_checkpoint_files": false,
-    "do_not_commit_patterns": [
-      "ai/**/*.jsonl",
-      "ai/**/*.safetensors",
-      "ai/**/*.pt",
-      "ai/**/*.pth",
-      "ai/**/*.bin",
+  "artifact_storage_policy": {
+    "include_adapter_or_model_files": false,
+    "include_cache_or_checkpoint_files": false,
+    "external_artifact_patterns": [
+      "ai/lora_training/**/*.jsonl",
+      "ai/lora_training/**/*.safetensors",
+      "ai/lora_training/**/*.pt",
+      "ai/lora_training/**/*.pth",
+      "ai/lora_training/**/*.bin",
       "Hugging Face cache",
       "Unsloth compiled cache",
       "checkpoints",
       "optimizer states"
     ],
-    "git_safe_mirrors": [
-      "ai/configs/final_candidate_a_inference.example.yaml",
-      "ai/scripts/infer_clearread_candidate_a.py",
-      "ai/docs/local_inference_runbook.md",
-      "ai/reports/FINAL_MODEL_SELECTION_REPORT.md",
-      "ai/logs/decisions/worker_009_package_artifact_and_deployment_notes.md"
+    "repository_files": [
+      "ai/lora_training/configs/final_candidate_a_inference.example.yaml",
+      "ai/lora_training/scripts/infer_clearread_candidate_a.py",
+      "ai/lora_training/docs/local_inference_runbook.md",
+      "ai/lora_training/reports/FINAL_MODEL_SELECTION_REPORT.md",
+      "ai/lora_training/history/stage_reviews/stage_009_package_artifact_and_deployment_notes.md"
     ]
   }
 }

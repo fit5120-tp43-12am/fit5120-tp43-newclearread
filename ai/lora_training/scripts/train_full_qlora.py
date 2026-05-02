@@ -739,7 +739,7 @@ def write_preflight_log(
             "# Full Training Candidate A 3 Epoch",
             "",
             f"Date/time: {local_timestamp()}",
-            "Worker id: `Worker 006`",
+            "Stage id: `Stage 006`",
             "",
             render_environment_section(config),
             render_config_section(config, command),
@@ -939,7 +939,7 @@ def run_training(root: Path, config_path: Path, config: dict[str, Any], model_id
                 "# Full Training Candidate A 3 Epoch",
                 "",
                 f"Date/time: {local_timestamp()}",
-                "Worker id: `Worker 006`",
+                "Stage id: `Stage 006`",
                 "",
                 render_environment_section(config),
                 render_config_section(config, training_command(config_path, dry_run=False)),
@@ -977,7 +977,7 @@ def run_training(root: Path, config_path: Path, config: dict[str, Any], model_id
                 "",
                 "## Decision",
                 "",
-                "- Candidate A training completed and requires validation inference sanity checks before central-brain review."
+                "- Candidate A training completed and requires validation inference sanity checks before model-selection review."
                 if result_status == "success"
                 else "- Candidate A training failed; see error details above.",
                 "",

@@ -1,10 +1,10 @@
-# Central Review: Worker 004 Smoke Training Preparation
+# Project Review: Stage 004 Smoke Training Preparation
 
 Date: 2026-04-28
 
 ## Reviewed Inputs
 
-- Worker return summary from the central-brain chat.
+- Stage review summary.
 - `ai/lora_training/configs/smoke_llama31_8b_qlora.example.yaml`
 - `ai/lora_training/scripts/training_data_utils.py`
 - `ai/lora_training/scripts/verify_assistant_loss_mask.py`
@@ -12,11 +12,11 @@ Date: 2026-04-28
 - `ai/lora_training/scripts/run_inference_check.py`
 - `ai/lora_training/reports/LABEL_MASK_SANITY_CHECK.md`
 - `ai/lora_training/reports/SMOKE_TRAINING_PREP_REPORT.md`
-- `ai/lora_training/history/decision_reviews/worker_004_prepare_smoke_training.md`
+- `ai/lora_training/history/stage_reviews/stage_004_prepare_smoke_training.md`
 
-## Central Verification
+## Independent Verification
 
-- Reran the Worker 004 verification commands inside WSL env `clearread-llama-lora`.
+- Reran the Stage 004 verification commands inside WSL env `clearread-llama-lora`.
 - Compile check passed for all four scripts.
 - Loss-mask check passed on all 10 smoke records.
 - 10 records had trainable assistant tokens.
@@ -33,7 +33,7 @@ Date: 2026-04-28
 - `run_inference_check.py` imports `unsloth` before `peft`/model loading.
 - `training_data_utils.py` explicitly masks prompt tokens with `-100` and keeps only assistant completion tokens trainable.
 - ETA/progress callback reports current step, total steps, elapsed time, average seconds per step, estimated remaining time, and estimated completion time.
-- `models\adapters` and `outputs\smoke` exist but are empty; no adapter/checkpoint was created by Worker 004.
+- `models\adapters` and `outputs\smoke` exist but are empty; no adapter/checkpoint was created by Stage 004.
 - No `.safetensors`, `.pt`, `.pth`, or `.bin` files were found under the training workspace after review.
 
 ## Git Verification
@@ -47,15 +47,15 @@ Date: 2026-04-28
 ## Notes
 
 - Tokenizer access emitted unauthenticated Hugging Face warnings only. No token was printed or saved.
-- Unsloth still reports Flash Attention 2 as broken and falls back to xformers, matching Worker 003.
-- Worker 004 intentionally did not run training and did not load full model weights.
+- Unsloth still reports Flash Attention 2 as broken and falls back to xformers, matching Stage 003.
+- Stage 004 intentionally did not run training and did not load full model weights.
 
 ## Decision
 
-Worker 004 passes central-brain review.
+Stage 004 passes model-selection review.
 
-The next approved work unit is Worker 005, Llama smoke training run, using:
+The next approved work unit is Stage 005, Llama smoke training run, using:
 
 ```text
-ai/lora_training/history/work_orders/005_run_llama_smoke_test.md
+Stage 005 Llama smoke test
 ```

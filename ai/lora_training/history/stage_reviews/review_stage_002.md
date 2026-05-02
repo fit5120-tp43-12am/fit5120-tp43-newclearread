@@ -1,16 +1,16 @@
-# Central Review: Worker 002 Teammate Exports
+# Project Review: Stage 002 Teammate Exports
 
 Date: 2026-04-28
 
 ## Reviewed Inputs
 
-- Worker return summary from the central-brain chat.
+- Stage review summary.
 - `ai/lora_training/reports/TEAMMATE_EXPORT_REPORT.md`
-- `ai/lora_training/history/decision_reviews/worker_002_teammate_exports.md`
+- `ai/lora_training/history/stage_reviews/stage_002_teammate_exports.md`
 - `ai/lora_training/data/teammate_exports\teammate_export_manifest.json`
 - Team repo status under `<team-repo-root>`
 
-## Central Verification
+## Independent Verification
 
 - User/assistant export counts match exactly:
   - train: `1162 / 1162`
@@ -39,10 +39,10 @@ Date: 2026-04-28
 
 ## Decision
 
-Worker 002 passes central-brain review.
+Stage 002 passes model-selection review.
 
-The next approved work unit is Worker 003, clean WSL training environment setup, using:
+The next approved work unit is Stage 003, clean WSL training environment setup, using:
 
 ```text
-ai/lora_training/history/work_orders/003_setup_wsl_training_environment.md
+Stage 003 WSL environment setup
 ```

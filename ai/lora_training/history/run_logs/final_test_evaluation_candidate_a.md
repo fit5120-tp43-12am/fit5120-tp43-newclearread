@@ -50,6 +50,6 @@ Date/time: 2026-04-28T18:29:42+10:00
 
 ## Recommendation
 
-Recommendation: `central_review_required_before_final_selection`.
+Recommendation: `select_with_schema_guard`.
 
-Rationale: Candidate A is strong overall and does not show broad domain, length, safety, instruction-following, or encoding collapse. The single held-out schema failure is isolated but important enough that central-brain review should decide whether to accept Candidate A as the final artifact.
+Rationale: Candidate A is strong overall and does not show broad domain, length, safety, instruction-following, or encoding collapse. The single held-out schema failure is isolated but important enough that model-selection review should decide whether to accept Candidate A as the final artifact.

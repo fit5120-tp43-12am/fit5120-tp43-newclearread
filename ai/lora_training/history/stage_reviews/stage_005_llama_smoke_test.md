@@ -1,10 +1,10 @@
-# Worker 005 Llama Smoke Test Log
+# Stage 005 Llama Smoke Test Log
 
 Date/time: 2026-04-28T14:55:26+10:00
 
-## Work Order
+## Stage Reference
 
-`ai/lora_training/history/work_orders/005_run_llama_smoke_test.md`
+`Stage 005 Llama smoke test`
 
 ## Commands Run
 
@@ -57,7 +57,7 @@ export TRANSFORMERS_CACHE=ai/lora_training/cache/huggingface/transformers
 
 Local adapter files:
 
-| File | Size bytes | Git-safe? |
+| File | Size bytes | package-ready? |
 | --- | ---: | --- |
 | `adapter_config.json` | 1262 | metadata only |
 | `adapter_model.safetensors` | 167832240 | no |
@@ -74,21 +74,21 @@ Small metadata SHA256 hashes are recorded in `logs/smoke_test_001.md`. The `.saf
 - Commit before run: `e977769ab29fc7eb6242f5c32599d34eb7fc5cd2`
 - Primary Git commit: `6e6b7bf174476dde7ed44488f29d024aaa44b561` (`docs(ai): record llama smoke test result`)
 - Primary Git push: pushed to `origin/feature/ai-llama-lora-training`
-- Follow-up Git commit/push: pending at this log revision so the pushed worker log can record the primary commit/push result.
+- Follow-up Git commit/push: pending at this log revision so the pushed stage log can record the primary commit/push result.
 
 ## Blockers Or Deviations
 
 - No training blocker.
 - A first attempt to launch the training command as a background WSL process from PowerShell failed because `Start-Process` broke the `bash -lc` quoting before conda activation. It exited before training and before any adapter write. The required direct WSL training command was then run and succeeded.
-- Unsloth reported the known Flash Attention 2 issue and used xformers fallback, consistent with Worker 003/004.
+- Unsloth reported the known Flash Attention 2 issue and used xformers fallback, consistent with Stage 003/004.
 - Hugging Face requests were unauthenticated; no token was printed or saved.
 
 ## Recommendation
 
-Recommend central-brain review and likely pass if independent checks confirm:
+Recommend model-selection review and likely pass if independent checks confirm:
 
-- `logs/smoke_test_001.md` and this worker log exist,
+- `logs/smoke_test_001.md` and this stage log exist,
 - the adapter exists locally,
 - inference passed against the adapter,
-- Git contains only Git-safe logs/reports,
+- Git contains only package-ready logs/reports,
 - no JSONL data or model/checkpoint artifacts were committed.

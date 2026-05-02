@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create paired teammate user/assistant export datasets.
 
-This script reads only the approved Worker 001 split outputs and writes derived
+This script reads only the approved Stage 001 split outputs and writes derived
 paired JSONL exports under the training workspace. It never writes to the
 approved split directory.
 """
@@ -21,7 +21,7 @@ TRAINING_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SPLIT_DIR = TRAINING_ROOT / "data" / "splits"
 DEFAULT_EXPORT_DIR = TRAINING_ROOT / "data" / "teammate_exports"
 DEFAULT_REPORT_DIR = TRAINING_ROOT / "reports"
-DEFAULT_WORK_ORDER = TRAINING_ROOT / "work_orders" / "002_create_teammate_exports.md"
+DEFAULT_STAGE_REFERENCE = "Stage 002 teammate export"
 
 SPLITS = ("train", "val", "test")
 EXPECTED_COUNTS = {"train": 1162, "val": 145, "test": 145, "all": 1452}
@@ -70,7 +70,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--split-dir", type=Path, default=DEFAULT_SPLIT_DIR)
     parser.add_argument("--export-dir", type=Path, default=DEFAULT_EXPORT_DIR)
     parser.add_argument("--report-dir", type=Path, default=DEFAULT_REPORT_DIR)
-    parser.add_argument("--work-order", type=Path, default=DEFAULT_WORK_ORDER)
+    parser.add_argument("--stage-reference", default=DEFAULT_STAGE_REFERENCE)
     return parser.parse_args()
 
 
@@ -481,9 +481,9 @@ def build_report(
             "",
             "## Determinism",
             "",
-            "- The script writes rows in source split order and uses Worker 001 `record_id` values as `pair_id`.",
+            "- The script writes rows in source split order and uses Stage 001 `record_id` values as `pair_id`.",
             "- The script embeds no wall-clock timestamp in generated artifacts so reruns with unchanged inputs are stable.",
-            "- Worker 002 reran the script and compared 11 file hashes: deterministic rerun verification passed.",
+            "- Stage 002 reran the script and compared 11 file hashes: deterministic rerun verification passed.",
             "",
             "## Result",
             "",
@@ -614,10 +614,10 @@ def main() -> None:
         "manifest_type": "teammate_export_metadata_only",
         "schema_version": "1.0",
         "timestamp_policy": "No wall-clock timestamp is embedded so reruns are deterministic.",
-        "work_order_path": str(args.work_order),
+        "stage_reference": args.stage_reference,
         "script_path": str(Path(__file__).resolve()),
         "script_sha256": script_hash,
-        "training_workspace_git_commit": git_commit_hash(TRAINING_ROOT),
+        "training_workspace_revision_reference": git_commit_hash(TRAINING_ROOT),
         "approved_inputs": {
             name: {
                 "path": str(path),
@@ -635,7 +635,7 @@ def main() -> None:
             "natural_length_buckets": manifest_input.get("natural_length_buckets"),
         },
         "stable_hash_method_used": STABLE_HASH_METHOD,
-        "pair_id_source": "Worker 001 split_manifest.json record_id",
+        "pair_id_source": "Stage 001 split_manifest.json record_id",
         "row_shape_descriptions": {
             "source_export_keys_in_order": USER_ROW_KEYS,
             "answer_export_keys_in_order": ASSISTANT_ROW_KEYS,

@@ -1,4 +1,4 @@
-# Worker 000 Git Branch And Safety Setup
+# Stage 000 Git Branch And Safety Setup
 
 Date/time: 2026-04-28 12:58:37 +10:00
 
@@ -37,11 +37,11 @@ ai/cache/
 unsloth_compiled_cache/
 ```
 
-Also added a narrow exception so Git-safe process records can be committed under `ai/logs/decisions/*.md` while general logs remain ignored.
+Also added a narrow exception so package-ready process records can be committed under `ai/logs/decisions/*.md` while general logs remain ignored.
 
 ## Files Staged Or Committed
 
-Expected Git-safe files:
+Expected package-ready files:
 
 - `.gitignore`
 - `ai/logs/decisions/git_setup_000.md`
@@ -62,8 +62,8 @@ Push result: pushed `feature/ai-llama-lora-training` to `origin`, set upstream t
 ## Blockers Or Deviations
 
 - No blockers.
-- The existing repo-side AI convention is `ai/`, so the Git-safe decision log mirror is placed under `ai/logs/decisions/`.
+- The existing repo-side AI convention is `ai/`, so the package-ready decision log mirror is placed under `ai/logs/decisions/`.
 
-## Next Recommended Worker
+## Next Recommended Stage
 
-Worker 001: Profile Source Distributions And Create Splits.
+Stage 001: Profile Source Distributions And Create Splits.

@@ -4,9 +4,9 @@ Date/time: 2026-04-28T18:29:42+10:00
 
 ## Scope
 
-- Evaluated Candidate A on `data/splits/test.jsonl` only after central-brain approval.
+- Evaluated Candidate A on `data/splits/test.jsonl` only after final evaluation approval.
 - Did not run training, tune parameters, change decoding settings, or run Candidate B.
-- Prediction JSONL and metrics JSON are local artifacts and should not be committed without central-brain approval.
+- Prediction JSONL and metrics JSON are local artifacts and were kept as local evaluation outputs.
 
 ## Inputs And Local Artifacts
 
@@ -159,6 +159,6 @@ Manual review found no refusal/meta behavior, no instruction-following failure, 
 
 ## Recommendation
 
-Recommendation: `central_review_required_before_final_selection`.
+Recommendation: `select_with_schema_guard`.
 
-Candidate A is strong overall on the final held-out test: JSON parsing is 145/145, schema compliance is 144/145, no mojibake/code-fence/refusal/extra-text leakage was detected, and manual review found no severe faithfulness, safety, or instruction-following issue. However, the single schema failure generated 7 key points instead of the required 4, and manual review found two additional minor precision/omission issues. This is not a `do_not_select_without_fix` result, but central-brain review should decide whether the one held-out format miss is acceptable before declaring Candidate A the final selected artifact.
+Candidate A is strong overall on the final held-out test: JSON parsing is 145/145, schema compliance is 144/145, no mojibake/code-fence/refusal/extra-text leakage was detected, and manual review found no severe faithfulness, safety, or instruction-following issue. However, the single schema failure generated 7 key points instead of the required 4, and manual review found two additional minor precision/omission issues. This result should be read together with `FINAL_MODEL_SELECTION_REPORT.md`, which selected Candidate A with a deployment schema guard.

@@ -1,4 +1,4 @@
-# Central-Brain Review: Worker 009 Artifact Packaging And Deployment Notes
+# Project Review: Stage 009 Artifact Packaging And Deployment Notes
 
 Date/time: 2026-04-28
 
@@ -6,7 +6,7 @@ Date/time: 2026-04-28
 
 Result: pass.
 
-Worker 009 successfully packaged Candidate A as the selected final raw adapter for this training cycle and created the local inference wrapper, runbook, final selection report, and artifact manifest.
+Stage 009 successfully packaged Candidate A as the selected final raw adapter for this training cycle and created the local inference wrapper, runbook, final selection report, and artifact manifest.
 
 The final selected raw adapter remains:
 
@@ -27,7 +27,7 @@ ai/lora_training/docs/local_inference_runbook.md
 ai/lora_training/reports/FINAL_MODEL_SELECTION_REPORT.md
 ai/lora_training/models/final\clearread_llama31_8b_qlora_candidate_a\FINAL_ARTIFACT_MANIFEST.json
 ai/lora_training/models/final\clearread_llama31_8b_qlora_candidate_a\README.md
-ai/lora_training/history/decision_reviews/worker_009_package_artifact_and_deployment_notes.md
+ai/lora_training/history/stage_reviews/stage_009_package_artifact_and_deployment_notes.md
 ```
 
 Key reviewed behavior:
@@ -44,7 +44,7 @@ Key reviewed behavior:
 
 ## Independent Verification
 
-Central-brain reran the wrapper compile, dry-run, and manifest JSON checks in WSL env `clearread-llama-lora`:
+Independent review reran the wrapper compile, dry-run, and manifest JSON checks in WSL env `clearread-llama-lora`:
 
 ```bash
 python -m py_compile scripts/infer_clearread_candidate_a.py
@@ -66,7 +66,7 @@ too-few-key-points fixture: return_error_object
 invalid-JSON fixture: return_error_object
 ```
 
-Central-brain independently verified split hashes still match the approved values:
+Independent review independently verified split hashes still match the approved values:
 
 ```text
 train.jsonl: b99caa6b06963a05ca7e32da3c3be3237c9ea6b128ce1ccf329b78d2d56929fb
@@ -75,13 +75,13 @@ test.jsonl: 6613390f654c55a69c5ddb90234f81005fc3baca8e57651206f1ef024c939b7f
 split_manifest.json: 42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19
 ```
 
-Central-brain independently verified every manifest-listed local adapter file exists and matches its recorded SHA256, including:
+Independent review independently verified every manifest-listed local adapter file exists and matches its recorded SHA256, including:
 
 ```text
 adapter_model.safetensors: ef220721c78e72f41c3b14749f25a09ef39f6aaf351266b276cee41ec724cf92
 ```
 
-Central-brain reran one live wrapper check on non-test smoke data:
+Independent review reran one live wrapper check on non-test smoke data:
 
 ```bash
 python scripts/infer_clearread_candidate_a.py --config configs/final_candidate_a_inference.example.yaml --input-jsonl data/splits/smoke_test_10.jsonl --num-examples 1 --debug
@@ -105,23 +105,23 @@ Team repo:
 <team-repo-root>
 ```
 
-Central-brain verified:
+Independent review verified:
 
 - branch: `feature/ai-llama-lora-training`
 - local HEAD: `23c8e1fa0342e63c2656ed473caf6b52068d94ed`
 - upstream HEAD: `23c8e1fa0342e63c2656ed473caf6b52068d94ed`
-- latest Worker 009 commits:
-  - `23c8e1f docs(ai): record worker 009 package result`
+- latest Stage 009 commits:
+  - `23c8e1f docs(ai): record stage 009 package result`
   - `3418651 docs(ai): package final candidate a artifact`
 
-Git safety checks returned no tracked raw data or model binary artifacts:
+artifact storage checks returned no tracked raw data or model binary artifacts:
 
 ```text
 git ls-files 'ai/**/*.jsonl' -> empty
 git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin' -> empty
 ```
 
-Central-brain also inspected the repo-side `ai` tree. The Worker 009 Git mirror contains only Git-safe config/script/docs/report/log files, not adapter weights, split JSONL files, evaluation JSONL files, outputs, checkpoints, or cache artifacts.
+Independent review also inspected the repo-side `ai` tree. The Stage 009 package copy contains only package-ready config/script/docs/report/log files, not adapter weights, split JSONL files, evaluation JSONL files, outputs, checkpoints, or cache artifacts.
 
 ## Notes
 
@@ -157,4 +157,4 @@ Final local wrapper:
 ai/lora_training/scripts/infer_clearread_candidate_a.py
 ```
 
-Next work should be an integration or handoff phase, scoped separately. No new worker is required for training unless the user decides to start backend/application integration or a separate deployment task.
+Next work should be an integration or handoff phase, scoped separately. No new stage is required for training unless the user decides to start backend/application integration or a separate deployment task.

@@ -43,7 +43,7 @@ First, the model needed to produce a consistent JSON format that could be consum
 
 Second, the model had to handle multiple source domains. The dataset included academic papers, academic books, assignment rubrics, technical documentation, public service information, medical information, and general knowledge text. These domains have different writing styles and different risks. For example, public-service and medical examples often contain eligibility rules, warnings, time windows, or safety information that must not be distorted.
 
-Third, the work had to be reproducible and safe. Original source datasets were treated as read-only. Derived datasets, split files, reports, scripts, and model artifacts were created separately. Large data files and model weights were kept out of the normal Git repository.
+Third, the work had to be reproducible and safe. Original source datasets were treated as read-only. Derived datasets, split files, reports, scripts, and model artifacts were created separately. Large data files and model weights were kept out of the repository.
 
 The final model also needed to be trainable on available local hardware. The available GPU was an NVIDIA RTX 4070 Ti SUPER with approximately 16 GB VRAM. This strongly influenced the technical route: full fine-tuning of an 8B model would be too expensive locally, so QLoRA was chosen to reduce memory requirements while still allowing effective adaptation.
 
@@ -152,7 +152,7 @@ The export created user-only and assistant-only files for train, validation, tes
 
 The export was verified row by row. User and assistant records matched on pair index, pair id, record id, stable hash, split, domain, source file, source line, and length bucket. The export did not include the system prompt or full `messages` field. Source split hashes remained unchanged.
 
-These export files were kept as derived local data and were not committed to Git.
+These export files were kept as derived local data and were not included in this package.
 
 ## 6. Training Environment
 
@@ -462,9 +462,9 @@ Default successful output is only the final JSON object. Debug mode can show raw
 
 ## 16. Reproducibility and Artifact Management
 
-The project kept a clear separation between Git-safe process records and large or sensitive artifacts.
+The project kept a clear separation between process records and large or sensitive artifacts.
 
-Committed items included:
+This package includes:
 
 - scripts;
 - configs;
@@ -473,7 +473,7 @@ Committed items included:
 - decision logs;
 - small metadata files.
 
-Items intentionally not committed included:
+Large artifacts are represented by metadata rather than stored directly:
 
 - full train/validation/test JSONL files;
 - teammate export JSONL files;
@@ -486,7 +486,7 @@ Items intentionally not committed included:
 - Unsloth cache files;
 - `.pt`, `.pth`, and `.bin` files.
 
-This separation made the work reproducible without placing large model artifacts or raw datasets into the normal repository.
+This separation keeps the workflow reproducible while avoiding large model artifacts and raw datasets in the submitted package.
 
 ## 17. Main Problems and Solutions
 
@@ -547,7 +547,7 @@ Training outcome:
 | Final test raw schema pass | 144/145 |
 | Final decision | Candidate A selected |
 
-The final model should be used with the implemented schema guard. The next stage should focus on application integration, user-facing handling of wrapper errors, and long-term artifact backup outside normal Git.
+The final model should be used with the implemented schema guard. The next stage should focus on application integration, user-facing handling of wrapper errors, and long-term backup for the external model artifacts.
 
 ## 20. Future Work
 
@@ -556,5 +556,5 @@ Recommended next steps are:
 1. Integrate the inference wrapper into the ClearRead application backend.
 2. Define how the application should handle machine-readable schema guard errors.
 3. Add controlled retry logic only if it can be evaluated without contaminating held-out results.
-4. Preserve the final adapter in a reliable storage location outside normal Git.
+4. Preserve the final adapter in a reliable storage location outside this repository.
 5. Continue monitoring public-service numeric details, medical safety wording, and exact output shape during application testing.

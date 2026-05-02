@@ -1,10 +1,10 @@
-# Worker 002 Teammate User And Assistant Exports
+# Stage 002 Teammate User And Assistant Exports
 
 Date/time: 2026-04-28 13:41:54 +10:00
 
 ## Scope
 
-- Work order: `ai/lora_training/history/work_orders/002_create_teammate_exports.md`
+- Stage reference: `Stage 002 teammate export`
 - Training workspace: `ai/lora_training`
 - Team repo: `<team-repo-root>`
 - Required branch: `feature/ai-llama-lora-training`
@@ -23,9 +23,9 @@ Source split files were unchanged.
 ## Script
 
 - Path: `ai/lora_training/scripts/create_teammate_exports.py`
-- SHA256: `160b1059a5a70dab37a67956e3a411bd308dfa8c3f9abd0ca1afc80e4a2e2189`
+- SHA256: `80da172dace81865844c9df277908a04ad929b5bca3bada353029e189f5cbb09`
 - Stable hash method: `sha256(json.dumps(record, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()`
-- Pair id source: Worker 001 `record_id` from `split_manifest.json`.
+- Pair id source: Stage 001 `record_id` from `split_manifest.json`.
 
 ## Export Outputs
 
@@ -68,7 +68,7 @@ Source split files were unchanged.
 - Branch status before repo-side changes: clean and aligned with `origin/feature/ai-llama-lora-training` at `e720eaa6661cdaf4e04fc3819a68e405250b61f6`.
 - Primary commit: `704225f9d45e0e6f75f71b6d74c930500fd9ed8f` (`feat(ai): add teammate export workflow`).
 - Primary push result: pushed to `origin/feature/ai-llama-lora-training` (`e720eaa..704225f`).
-- Follow-up docs/log commit: `b5177955352bbd2239267179eea5a4a62c5f4c8f` (`docs(ai): record worker 002 teammate export result`).
+- Follow-up docs/log commit: `b5177955352bbd2239267179eea5a4a62c5f4c8f` (`docs(ai): record stage 002 teammate export result`).
 - Follow-up push result: pushed to `origin/feature/ai-llama-lora-training` (`704225f..b517795`).
 - `git ls-files 'ai/**/*.jsonl'` before repo-side changes returned no tracked JSONL files.
 
@@ -80,4 +80,4 @@ Source split files were unchanged.
 
 ## Recommendation
 
-Central brain should pass Worker 002. Git-safe files were mirrored, committed, and pushed, and no `ai/**/*.jsonl` files are tracked.
+Project review should pass Stage 002. package-ready files were mirrored, committed, and pushed, and no `ai/**/*.jsonl` files are tracked.

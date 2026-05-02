@@ -1,12 +1,12 @@
-# Worker 009 Package Artifact And Deployment Notes
+# Stage 009 Package Artifact And Deployment Notes
 
 Date/time: 2026-04-28
 
-Status: completed and pushed; pending central-brain review.
+Status: completed and pushed; pending model-selection review.
 
 ## Scope
 
-Worker 009 packaged Candidate A as the selected final raw adapter and prepared local inference/deployment notes. No training, tuning, Candidate B work, held-out test rerun, source split modification, or adapter modification was performed.
+Stage 009 packaged Candidate A as the selected final raw adapter and prepared local inference/deployment notes. No training, tuning, Candidate B work, held-out test rerun, source split modification, or adapter modification was performed.
 
 ## Selected Artifact
 
@@ -24,7 +24,7 @@ Worker 009 packaged Candidate A as the selected final raw adapter and prepared l
 - `reports\FINAL_MODEL_SELECTION_REPORT.md`
 - `models\final\clearread_llama31_8b_qlora_candidate_a\FINAL_ARTIFACT_MANIFEST.json`
 - `models\final\clearread_llama31_8b_qlora_candidate_a\README.md`
-- `logs\decisions\worker_009_package_artifact_and_deployment_notes.md`
+- `logs\decisions\stage_009_package_artifact_and_deployment_notes.md`
 
 ## Artifact Hashes
 
@@ -69,13 +69,13 @@ Smoke wrapper check:
 
 ## Git
 
-Git-safe files mirrored to `<team-repo-root>`:
+package-ready files mirrored to `<team-repo-root>`:
 
 - `ai\configs\final_candidate_a_inference.yaml`
 - `ai\scripts\infer_clearread_candidate_a.py`
 - `ai\docs\LOCAL_INFERENCE_RUNBOOK.md`
 - `ai\reports\FINAL_MODEL_SELECTION_REPORT.md`
-- `ai\logs\decisions\worker_009_package_artifact_and_deployment_notes.md`
+- `ai\logs\decisions\stage_009_package_artifact_and_deployment_notes.md`
 
 Pre-commit safety checks:
 
@@ -100,8 +100,8 @@ Post-push verification:
 - `git ls-files 'ai/**/*.jsonl'` returned nothing.
 - `git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin'` returned nothing.
 
-This worker log is updated after the primary push and should be committed in a follow-up docs/log commit.
+This stage log is updated after the primary push and should be committed in a follow-up docs/log commit.
 
 ## Recommendation
 
-Submit to central-brain review after verification, Git safety checks, commit, push, and provisional memory update are complete.
+Submit to model-selection review after verification, artifact storage checks, commit, push, and provisional memory update are complete.

@@ -1,6 +1,6 @@
 {
   "package": "ai/lora_training",
-  "purpose": "Git-safe teacher-facing package for ClearRead Llama LoRA training",
+  "purpose": "Document the ClearRead Llama LoRA training workflow",
   "source_work": {
     "training_branch": "feature/ai-llama-lora-training",
     "training_workspace": "local training workspace",
@@ -9,12 +9,12 @@
   "included_file_groups": {
     "configs": "Example training, inference, and environment configs",
     "scripts": "Split, export, environment, training, evaluation, and inference scripts",
-    "docs": "Teacher-facing process and runbook documents",
+    "docs": "Process and runbook documents",
     "reports": "QA, training, validation, final test, and model-selection reports",
     "manifests": "Metadata-only manifests and artifact metadata",
-    "history": "Sanitized work orders, decision reviews, and selected run logs"
+    "history": "Sanitized stage reviews and selected run logs"
   },
-  "excluded_artifacts": [
+  "large_artifacts_summarized_by_metadata": [
     "raw and derived JSONL datasets",
     "model adapter weights",
     "base model files",

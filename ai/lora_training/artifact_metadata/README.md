@@ -12,6 +12,6 @@ This directory is a local metadata pointer for the selected final raw adapter. I
 - Inference config: `configs/final_candidate_a_inference.example.yaml`
 - Final test report: `reports/FINAL_TEST_EVALUATION_CANDIDATE_A_REPORT.md`
 
-The adapter itself remains in `models/adapters/full_candidate_a_3epoch`. Do not copy `.safetensors`, base model weights, checkpoints, optimizer states, or cache files into Git.
+The adapter itself remains in `models/adapters/full_candidate_a_3epoch`. The full adapter weights, base model weights, checkpoints, optimizer states, and cache files are large runtime artifacts and are not included in this package.
 
 Use `docs/local_inference_runbook.md` for local inference commands and schema guard behavior.

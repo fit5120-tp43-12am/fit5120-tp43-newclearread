@@ -1,4 +1,4 @@
-# Central-Brain Review: Worker 005 Llama Smoke Test
+# Project Review: Stage 005 Llama Smoke Test
 
 Date/time: 2026-04-28
 
@@ -6,7 +6,7 @@ Date/time: 2026-04-28
 
 Result: pass.
 
-Worker 005 successfully ran the first real Llama-3.1-8B-Instruct QLoRA smoke training test on the approved 10-record smoke split. The run completed without OOM, saved a local LoRA adapter, and produced valid-schema inference outputs on 3 of 3 smoke examples.
+Stage 005 successfully ran the first real Llama-3.1-8B-Instruct QLoRA smoke training test on the approved 10-record smoke split. The run completed without OOM, saved a local LoRA adapter, and produced valid-schema inference outputs on 3 of 3 smoke examples.
 
 ## Evidence Reviewed
 
@@ -14,7 +14,7 @@ Local files reviewed:
 
 ```text
 ai/lora_training/history/run_logs/smoke_test_001.md
-ai/lora_training/history/decision_reviews/worker_005_llama_smoke_test.md
+ai/lora_training/history/stage_reviews/stage_005_llama_smoke_test.md
 ai/lora_training/reports/SMOKE_TRAINING_RUN_REPORT.md
 ```
 
@@ -32,14 +32,14 @@ Key reported result:
 
 ## Independent Verification
 
-Central-brain checks confirmed the smoke split and manifest hashes:
+Independent review checks confirmed the smoke split and manifest hashes:
 
 ```text
 smoke_test_10.jsonl: 8F51D083E8FAFAE143EC146C0155F85DC23A5CFDAF931A04092E7F8543D2D3A8
 split_manifest.json: 42BFE9974C31E74B98B45D45DAA792F8582D517541E153439B510E9A9B307F19
 ```
 
-Central-brain verified the local adapter directory exists:
+Independent review verified the local adapter directory exists:
 
 ```text
 ai/lora_training/models/adapters/smoke_llama31_8b_qlora
@@ -56,7 +56,7 @@ Adapter directory contents:
 | `tokenizer.json` | 17209920 |
 | `tokenizer_config.json` | 50669 |
 
-Central-brain independently reran inference in WSL env `clearread-llama-lora`:
+Independent review independently reran inference in WSL env `clearread-llama-lora`:
 
 ```bash
 python scripts/run_inference_check.py --config configs/smoke_llama31_8b_qlora.example.yaml --num-examples 3
@@ -80,17 +80,17 @@ Team repo:
 <team-repo-root>
 ```
 
-Central-brain verified:
+Independent review verified:
 
 - branch: `feature/ai-llama-lora-training`
 - local HEAD: `919fc29575075e0fd60664ae1f6e7792de2f377c`
 - upstream HEAD: `919fc29575075e0fd60664ae1f6e7792de2f377c`
-- worktree was clean before central-brain follow-up files
+- worktree was clean before project review follow-up files
 - latest commits:
-  - `919fc29 docs(ai): record worker 005 smoke result`
+  - `919fc29 docs(ai): record stage 005 smoke result`
   - `6e6b7bf docs(ai): record llama smoke test result`
 
-Git safety checks returned no tracked raw data or model binary artifacts:
+artifact storage checks returned no tracked raw data or model binary artifacts:
 
 ```text
 git ls-files 'ai/**/*.jsonl' -> empty
@@ -99,11 +99,11 @@ git ls-files 'ai/**/*.safetensors' 'ai/**/*.pt' 'ai/**/*.pth' 'ai/**/*.bin' -> e
 
 ## Notes
 
-- The worker decision log still says the follow-up Git commit/push was pending at that log revision. This is not a blocker because the actual Git state confirms the follow-up commit exists and HEAD equals upstream at `919fc29575075e0fd60664ae1f6e7792de2f377c`.
+- The stage decision log still says the follow-up Git commit/push was pending at that log revision. This is not a blocker because the actual Git state confirms the follow-up commit exists and HEAD equals upstream at `919fc29575075e0fd60664ae1f6e7792de2f377c`.
 - Flash Attention 2 remains broken in this environment, but Unsloth successfully uses xformers fallback. This is accepted for now.
 - Hugging Face CLI is still not logged in. The successful smoke run used the public Unsloth model path, so this is not a blocker unless the official gated Meta fallback becomes necessary.
-- The saved smoke adapter is a local model artifact and must not be committed to normal Git.
+- The saved smoke adapter is a local model artifact and must not be committed to submitted package.
 
 ## Next Decision
 
-Worker 005 is approved. The next worker should proceed to Worker 006: full training Candidate A, with a full train/validation tokenization preflight before starting the 3-epoch run.
+Stage 005 is approved. The next stage should proceed to Stage 006: full training Candidate A, with a full train/validation tokenization preflight before starting the 3-epoch run.

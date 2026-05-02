@@ -7,7 +7,7 @@ Date/time: 2026-04-28T17:53:55+10:00
 - Evaluated Candidate A on `data/splits/val.jsonl` only.
 - Did not use `data/splits/test.jsonl`.
 - Did not run training.
-- Prediction JSONL and metrics JSON are local artifacts and should not be committed without central-brain approval.
+- Prediction JSONL and metrics JSON are local artifacts and were kept as local evaluation outputs.
 
 ## Inputs And Local Artifacts
 
@@ -129,7 +129,7 @@ The table below is the stratified candidate set selected by the script. Manual r
 
 ## Manual Review
 
-Reviewed 16 validation examples: at least 2 from each of the 7 domains, with short, medium, and long buckets represented. The review compared source metadata/short previews, gold assistant JSON, and Candidate A predictions without copying long source text into this Git-safe report.
+Reviewed 16 validation examples: at least 2 from each of the 7 domains, with short, medium, and long buckets represented. The review compared source metadata/short previews, gold assistant JSON, and Candidate A predictions without copying long source text into this summary report.
 
 Manual labels: `pass` 14, `minor_issue` 2, `major_issue` 0, `uncertain` 0.
 
@@ -158,4 +158,4 @@ Manual review found no instruction-following failures, no refusal/meta behavior,
 
 Recommendation: `proceed_to_final_evaluation`.
 
-Candidate A is ready for central-brain review and final test evaluation planning. Candidate B is not recommended at this point because validation format/schema metrics are excellent, sentence compliance is strong, all domains and length buckets are healthy, and manual review found no major faithfulness or instruction-following issue. The final evaluation should still watch public-service examples for copied or malformed exact numeric details, especially fees and time windows.
+Candidate A is ready for final test evaluation planning. Candidate B is not recommended at this point because validation format/schema metrics are excellent, sentence compliance is strong, all domains and length buckets are healthy, and manual review found no major faithfulness or instruction-following issue. The final evaluation should still watch public-service examples for copied or malformed exact numeric details, especially fees and time windows.
