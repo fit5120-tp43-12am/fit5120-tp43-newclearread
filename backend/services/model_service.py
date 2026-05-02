@@ -36,7 +36,7 @@ def _env_int(name: str, default: int) -> int:
 
 
 def is_summary_model_enabled() -> bool:
-    return _env_bool("CLEARREAD_AI_SUMMARY_ENABLED", False)
+    return _env_bool("CLEARREAD_AI_SUMMARY_ENABLED", True)
 
 
 def get_summary_max_blocks() -> int:

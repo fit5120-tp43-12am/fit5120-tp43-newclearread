@@ -1,4 +1,5 @@
 import os
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -52,6 +53,12 @@ def process_reading_text(text: str) -> dict:
             block_count=0,
             model_block_count=0,
             fallback_block_count=0,
+            segmentation_info=_build_segmentation_info(
+                {},
+                True,
+                "empty_text",
+                0,
+            ),
         )
         return {
             "notice": "No text was provided.",
@@ -85,12 +92,13 @@ def process_reading_text(text: str) -> dict:
         fallback_reasons.append(preprocessing_reason)
 
     for index, segment in enumerate(segments, start=1):
-        block_text = _limit_block_text(segment.get("cleaned_text") or source_text)
+        display_text = str(segment.get("cleaned_text") or source_text).strip()
         prepared_blocks.append(
             {
                 "frontend_id": index,
                 "model_id": f"block-{index}",
-                "text": block_text,
+                "original_text": display_text,
+                "summary_text": _limit_block_text(display_text),
             }
         )
 
@@ -103,7 +111,7 @@ def process_reading_text(text: str) -> dict:
         try:
             model_response = model_service.summarize_blocks(
                 [
-                    {"id": block["model_id"], "text": block["text"]}
+                    {"id": block["model_id"], "text": block["summary_text"]}
                     for block in model_blocks
                 ]
             )
@@ -158,7 +166,7 @@ def process_reading_text(text: str) -> dict:
         blocks.append(
             {
                 "id": block["frontend_id"],
-                "originalText": block["text"],
+                "originalText": block["original_text"],
                 "summary": summary_result.get("summary") or "",
                 "keyPoints": summary_result.get("keyPoints") or [],
             }
@@ -173,6 +181,12 @@ def process_reading_text(text: str) -> dict:
         block_count=len(blocks),
         model_block_count=len(model_blocks),
         fallback_block_count=len(fallback_blocks),
+        segmentation_info=_build_segmentation_info(
+            segmentation_metadata,
+            preprocessing_used_fallback,
+            preprocessing_reason,
+            len(blocks),
+        ),
     )
 
     return {
@@ -196,15 +210,24 @@ def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
     if preprocessing_result.get("status") == "success":
         segments = preprocessing_result.get("segments") or []
         metadata = preprocessing_result.get("metadata") or {}
-        used_local_fallback = metadata.get("segmentation_mode") == "local_fallback"
+        segmentation_mode = metadata.get("segmentation_mode")
+        used_segmentation_fallback = segmentation_mode in {
+            "local_fallback",
+            "chunked_mixed_fallback",
+        }
         valid_segments = [
             segment
             for segment in segments
             if isinstance(segment, dict) and str(segment.get("cleaned_text") or "").strip()
         ]
         if valid_segments:
-            if used_local_fallback:
-                return valid_segments, True, "local_segmentation_fallback", metadata
+            if used_segmentation_fallback:
+                return (
+                    valid_segments,
+                    True,
+                    metadata.get("fallback_reason") or "local_segmentation_fallback",
+                    metadata,
+                )
             return valid_segments, False, "", metadata
 
     metadata = preprocessing_result.get("metadata") or {}
@@ -229,13 +252,13 @@ def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
     if not blocks:
         return {}
 
-    max_workers = max(1, _env_int("CLEARREAD_OPENAI_FALLBACK_CONCURRENCY", 3))
+    max_workers = max(1, _env_int("CLEARREAD_OPENAI_FALLBACK_CONCURRENCY", 6))
     max_workers = min(max_workers, len(blocks))
 
     results = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_block = {
-            executor.submit(_summarise_block_fallback, block["text"]): block
+            executor.submit(_summarise_block_fallback, block["summary_text"]): block
             for block in blocks
         }
         for future in as_completed(future_to_block):
@@ -244,7 +267,7 @@ def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
                 results[block["model_id"]] = future.result()
             except Exception:
                 results[block["model_id"]] = basic_algorithm(
-                    block["text"],
+                    block["summary_text"],
                     notice="AI service is unavailable right now. Showing a basic result.",
                     fallback_reason="temporary_ai_unavailable",
                 )
@@ -270,22 +293,37 @@ def _log_reading_timing(
     block_count: int,
     model_block_count: int,
     fallback_block_count: int,
+    segmentation_info: dict | None = None,
 ) -> None:
     if not enabled:
         return
 
     total_seconds = time.perf_counter() - total_start
+    segmentation_info = segmentation_info or {}
     print(
-        "[reading timing] "
+        "[reading pipeline] "
         f"preprocess={preprocess_seconds:.2f}s "
         f"team_model={team_model_seconds:.2f}s "
         f"fallback={fallback_seconds:.2f}s "
         f"total={total_seconds:.2f}s "
         f"blocks={block_count} "
         f"model_blocks={model_block_count} "
-        f"fallback_blocks={fallback_block_count}",
+        f"fallback_blocks={fallback_block_count} "
+        f"segmentation_source={segmentation_info.get('source') or 'unknown'} "
+        f"segmentation_mode={segmentation_info.get('mode') or 'unknown'} "
+        f"segmentation_reason={segmentation_info.get('reason') or 'unknown'} "
+        f"segmentation_detail={_format_log_value(segmentation_info.get('detail'))}",
         flush=True,
     )
+
+
+def _format_log_value(value: object, max_length: int = 300) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if not text:
+        return "none"
+    if len(text) <= max_length:
+        return text
+    return f"{text[:max_length].rstrip()}..."
 
 
 def _limit_block_text(text: str) -> str:
@@ -334,6 +372,12 @@ def _build_notice(used_fallback: bool, fallback_reasons: list[str]) -> str:
     if "local_segmentation_fallback" in fallback_reasons:
         return "Text was segmented locally because AI segmentation is unavailable."
 
+    if "ai_segmentation_failed" in fallback_reasons:
+        return "Text was segmented locally because AI segmentation is unavailable."
+
+    if "partial_ai_segmentation_failed" in fallback_reasons:
+        return "Some text was segmented locally because AI segmentation was partially unavailable."
+
     return "AI service is unavailable right now. Showing a basic result."
 
 
@@ -347,13 +391,16 @@ def _build_segmentation_info(
     reason = metadata.get("fallback_reason") or fallback_reason or "ok"
     detail = metadata.get("processing_notes") or ""
 
-    if mode == "sentence_range" and not used_fallback:
+    if mode in {"sentence_range", "chunked_sentence_range"} and not used_fallback:
         source = "ai"
         reason = "ai_sentence_range_success"
         detail = detail or "AI sentence-range segmentation succeeded."
     elif mode == "local_fallback":
         source = "local_fallback"
-        detail = detail or "Local fallback segmentation was used."
+        detail = metadata.get("error") or detail or "Local fallback segmentation was used."
+    elif mode == "chunked_mixed_fallback":
+        source = "mixed"
+        detail = metadata.get("error") or detail or "Some chunks used local fallback."
     elif fallback_reason == "preprocessing_failed":
         source = "single_block_fallback"
         reason = "preprocessing_failed"
