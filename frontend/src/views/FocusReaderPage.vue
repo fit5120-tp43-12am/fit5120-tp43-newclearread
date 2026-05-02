@@ -63,6 +63,8 @@ const CONFUSABLES = {
   thop: ['thin', 'then', 'shop'], prail: ['trail', 'plain', 'prail'],
 }
 
+const STORAGE_KEY = 'focus-reader-sessions'
+
 // ── Chip colour palette ───────────────────────────────────────────────────────
 // Target chips are always teal so the learner can distinguish colours if needed,
 // but the task still requires reading the label to pick the correct one.
@@ -84,16 +86,16 @@ const settings = reactive({
 // ── UI state (reactive — everything the template reads) ──────────────────────
 const ui = reactive({
   cueLabel:     'Ready',
-  message:      'Press Start, then tap the chip that matches the cue.',
+  message:      'Press Start, then tap the circle that matches the word shown above.',
   timePct:      0,       // 0-100, drives the timer progress bar width
   score:        0,
   accuracy:     '--',
   reaction:     '--',
   level:        1,
   showOverlay:  true,
-  overlayTitle: 'Catch the Target Chip',
-  overlayBody:  'Each round gives you a cue — visual text or a spoken word. Tap the chip that matches it. Avoid look-alike distractors.',
-  // sessions list is now kept in sessionHistory (in-memory only)
+  overlayTitle: 'Find the Right Circle',
+  overlayBody:  'Each round shows you a word or letter. Tap the moving circle that matches it — watch out for ones that look similar!',
+  sessions:     [],      // recent session history for the sidebar
   cueIsAudio:   false,   // controls whether the ♪ Replay button is shown
 })
 
@@ -111,10 +113,6 @@ const G = {
 // ── Reactive flags that drive button visibility ───────────────────────────────
 const isRunning = ref(false)
 const isPaused  = ref(false)
-
-// In-memory session history — cleared when the page is refreshed or closed.
-// Intentionally NOT persisted to localStorage so records only exist for this visit.
-const sessionHistory = ref([])
 
 // ── Canvas ref ────────────────────────────────────────────────────────────────
 const canvasEl = ref(null)
@@ -286,12 +284,12 @@ function resolveChoice(chip) {
     G.score += 80 + G.level * 12 + speedBonus
     G.recent.push({ ok: true, rt })
     G.reactionTimes.push(rt)
-    ui.message = `Hit! "${chip.label}" — ${Math.round(rt)} ms.`
+    ui.message = `Great! You got "${chip.label}" in ${Math.round(rt)} ms.`
   } else {
     G.wrong++; G.streak = 0
     G.score = Math.max(0, G.score - 30)
     G.recent.push({ ok: false, rt })
-    ui.message = `That was a distractor: "${chip.label}". The target was "${G.target}".`
+    ui.message = `Not quite — "${chip.label}" looks similar but the answer was "${G.target}". Try again!`
   }
 
   G.recent = G.recent.slice(-6)
@@ -306,7 +304,7 @@ function missRound() {
   G.misses++; G.streak = 0
   G.recent.push({ ok: false, rt: G.roundDuration })
   G.recent = G.recent.slice(-6)
-  ui.message = `Time's up. The target was "${G.target}".`
+  ui.message = `Time's up! The answer was "${G.target}". Keep going!`
   adaptDifficulty()
   syncUiStats()
   setTimeout(nextRound, 900)
@@ -331,14 +329,14 @@ function nextRound() {
   G.chips = labels.map((lbl, i) => makeChip(lbl, lbl === G.target, i, labels.length))
 
   if (G.cueMode === 'audio') {
-    ui.cueLabel  = '♪ Listen'
+    ui.cueLabel   = '♪ Listen'
     ui.cueIsAudio = true
-    ui.message   = 'Listen to the audio cue, then tap the matching chip.'
+    ui.message    = 'Listen to the word, then tap the circle that shows it.'
     speakTarget()
   } else {
-    ui.cueLabel  = G.target
+    ui.cueLabel   = G.target
     ui.cueIsAudio = false
-    ui.message   = 'Find the chip that matches the visual cue above.'
+    ui.message    = 'Tap the circle that matches the word shown above.'
   }
   syncUiStats()
 }
@@ -373,11 +371,29 @@ function loop(now) {
   G.animId = requestAnimationFrame(loop)
 }
 
-// ── Session recording (in-memory only) ───────────────────────────────────────
-// Prepends a completed session record to sessionHistory so the right panel
-// always shows newest first. Capped at 20 entries to keep the list readable.
-function recordSession(session) {
-  sessionHistory.value = [session, ...sessionHistory.value].slice(0, 20)
+// ── Session persistence ───────────────────────────────────────────────────────
+function getSessions() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [] } catch { return [] }
+}
+
+function saveSession(session) {
+  const all = getSessions()
+  all.unshift(session)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all.slice(0, 30)))
+}
+
+function loadHistory() {
+  ui.sessions = getSessions().slice(0, 5)
+}
+
+function exportHistory() {
+  const blob = new Blob([JSON.stringify(getSessions(), null, 2)], { type: 'application/json' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url
+  a.download = `focus-reader-sessions-${new Date().toISOString().slice(0, 10)}.json`
+  document.body.append(a); a.click(); a.remove()
+  URL.revokeObjectURL(url)
 }
 
 // ── Session end ───────────────────────────────────────────────────────────────
@@ -392,9 +408,8 @@ function finishSession(completed) {
     : null
 
   if (completed || attempts > 0) {
-    // Save to in-memory list only — cleared on page reload (current-login records)
-    recordSession({ date: new Date().toISOString(), score: G.score, accuracy, level: G.level,
-                    avgRt, hits: G.hits, wrong: G.wrong, misses: G.misses, completed })
+    saveSession({ date: new Date().toISOString(), score: G.score, accuracy, level: G.level,
+                  avgRt, hits: G.hits, wrong: G.wrong, misses: G.misses, completed })
   }
 
   G.running = false; G.paused = false; G.roundActive = false; G.chips = []
@@ -403,15 +418,16 @@ function finishSession(completed) {
   ui.cueIsAudio   = false
   ui.timePct      = 0
   ui.showOverlay  = true
-  ui.overlayTitle = completed ? 'Session Complete' : 'Session Reset'
+  ui.overlayTitle = completed ? 'Well done!' : 'Game Reset'
   ui.overlayBody  = completed
-    ? `${accuracy}% accuracy · Peak level ${G.level}. Short, regular sessions build reading fluency over time.`
-    : 'Session saved. Click Start to begin again.'
+    ? `You got ${accuracy}% correct and reached level ${G.level}. Short, regular practice makes a real difference!`
+    : 'Your results have been saved. Press Start whenever you are ready.'
   ui.message = completed
-    ? `Done! ${accuracy}% accuracy, peak level ${G.level}.`
-    : 'Session saved. Click Start to train again.'
+    ? `Finished! ${accuracy}% correct, highest level ${G.level}.`
+    : 'Results saved. Press Start to play again.'
   syncUiStats()
   drawEmpty()
+  loadHistory()
 }
 
 // ── Game controls ─────────────────────────────────────────────────────────────
@@ -494,6 +510,7 @@ onMounted(() => {
   ctx = canvasEl.value.getContext('2d')
   resizeCanvas()
   drawEmpty()
+  loadHistory()
   window.addEventListener('scroll', onScroll)
   window.addEventListener('resize', onResize)
   document.addEventListener('keydown', handleKey)
@@ -556,16 +573,16 @@ onUnmounted(() => {
     <!-- ── Page header ── -->
     <section class="page-hero">
       <div class="container">
-        <span class="eyebrow">Reading Training</span>
+        <span class="eyebrow">Reading Practice</span>
         <h1 class="page-title">Focus Reader</h1>
         <p class="page-sub">
-          Build visual discrimination and phoneme awareness through short, targeted practice sessions.
-          Designed for learners who struggle with letter reversals and sound–spelling connections.
+          A short, fun exercise to help you tell apart letters and words that look or sound alike.
+          Great for anyone who finds reading tricky.
         </p>
-        <!-- Keyboard hint -->
+        <!-- Keyboard shortcuts hint -->
         <div class="kbd-hints">
           <span class="kbd-hint"><kbd>P</kbd> Pause / Resume</span>
-          <span class="kbd-hint"><kbd>R</kbd> Replay audio cue</span>
+          <span class="kbd-hint"><kbd>R</kbd> Hear the word again</span>
         </div>
       </div>
     </section>
@@ -611,16 +628,16 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Stats grid -->
+          <!-- Stats grid — simple labels so they are easy to understand at a glance -->
           <dl class="stats-grid">
             <div class="stat-cell">
               <dt>Score</dt><dd>{{ ui.score }}</dd>
             </div>
             <div class="stat-cell">
-              <dt>Accuracy</dt><dd>{{ ui.accuracy }}</dd>
+              <dt>Correct</dt><dd>{{ ui.accuracy }}</dd>
             </div>
             <div class="stat-cell">
-              <dt>Reaction</dt><dd>{{ ui.reaction }}</dd>
+              <dt>Speed</dt><dd>{{ ui.reaction }}</dd>
             </div>
             <div class="stat-cell">
               <dt>Level</dt><dd>{{ ui.level }} / 6</dd>
@@ -674,18 +691,18 @@ onUnmounted(() => {
         <!-- Right panel: settings + history -->
         <aside class="game-panel">
 
-          <!-- Training mode selector -->
+          <!-- Practice type selector — simplified labels avoid jargon -->
           <div class="settings-block">
-            <span class="panel-eyebrow">Training Mode</span>
+            <span class="panel-eyebrow">Practice Type</span>
             <select v-model="settings.mode" class="mode-select" :disabled="isRunning && !isPaused">
-              <option value="mixed">Mixed — Letters, Phonemes &amp; Words</option>
-              <option value="letters">Confusable Letters (b/d/p/q)</option>
-              <option value="chunks">Phoneme Chunks (sh/ch/th)</option>
-              <option value="words">Short &amp; Nonsense Words</option>
+              <option value="mixed">Mix it up — Letters, Sounds &amp; Words</option>
+              <option value="letters">Tricky Letters (b, d, p, q)</option>
+              <option value="chunks">Sound Groups (sh, ch, th)</option>
+              <option value="words">Short Words &amp; Made-up Words</option>
             </select>
           </div>
 
-          <!-- Toggle options -->
+          <!-- Toggle switches for sound and speed -->
           <div class="toggles-block">
             <label class="toggle-row">
               <span class="toggle-wrap">
@@ -694,7 +711,7 @@ onUnmounted(() => {
                   <span class="toggle-thumb"></span>
                 </span>
               </span>
-              <span class="toggle-label">Audio Cues</span>
+              <span class="toggle-label">Hear the Word</span>
             </label>
             <label class="toggle-row">
               <span class="toggle-wrap">
@@ -703,25 +720,26 @@ onUnmounted(() => {
                   <span class="toggle-thumb"></span>
                 </span>
               </span>
-              <span class="toggle-label">Calm Speed</span>
+              <span class="toggle-label">Slower Speed</span>
             </label>
           </div>
 
-          <!-- Session history — in-memory only, cleared on page reload -->
+          <!-- Past game results stored in browser -->
           <div class="history-block">
-            <span class="panel-eyebrow">This Session's History</span>
+            <span class="panel-eyebrow">Your History</span>
             <ol class="history-list">
-              <li v-if="!sessionHistory.length" class="history-empty">No sessions yet</li>
-              <li v-for="(s, i) in sessionHistory" :key="i" class="history-item">
+              <li v-if="!ui.sessions.length" class="history-empty">No games played yet</li>
+              <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
                 <span class="history-time">{{ formatDate(s.date) }}</span>
-                <span class="history-stats">{{ s.accuracy }}% · {{ s.score }} pts · Lv{{ s.level }}</span>
+                <span class="history-stats">{{ s.accuracy }}% correct · {{ s.score }} pts · Level {{ s.level }}</span>
               </li>
             </ol>
+            <button class="btn-export" @click="exportHistory">Save my results</button>
           </div>
 
-          <!-- Clinical disclaimer -->
+          <!-- Short note — plain language, not clinical -->
           <p class="disclaimer">
-            This is a practice aid, not a clinical tool. Use it alongside professional reading intervention and specialist advice.
+            This is a practice game, not a medical test. For extra support, talk to a reading specialist or teacher.
           </p>
 
         </aside>
@@ -808,32 +826,32 @@ onUnmounted(() => {
   display: none;
 }
 
-/* ── Page hero header (compact — leaves more vertical room for the arena) ── */
+/* ── Page hero header ── */
 .page-hero {
-  padding: 80px 0 18px;
+  padding: 120px 0 56px;
   background: linear-gradient(160deg, #eef2ff 0%, #f9f7f4 60%);
   border-bottom: 1px solid #e5e7eb;
 }
 .eyebrow {
-  font-size: 11px; font-weight: 700;
+  font-size: 12px; font-weight: 700;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: #2563eb; display: block; margin-bottom: 8px;
+  color: #2563eb; display: block; margin-bottom: 14px;
 }
 .page-title {
-  font-size: clamp(22px, 3vw, 32px);
-  font-weight: 800; letter-spacing: -0.03em;
-  margin: 0 0 8px;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 800; letter-spacing: -0.04em;
+  margin: 0 0 16px;
 }
 .page-sub {
-  font-size: 13px; color: #4b5563;
-  line-height: 1.65; max-width: 540px; margin: 0 0 14px;
+  font-size: 16px; color: #4b5563;
+  line-height: 1.7; max-width: 600px; margin: 0 0 24px;
 }
 .kbd-hints {
-  display: flex; gap: 16px; flex-wrap: wrap;
+  display: flex; gap: 20px; flex-wrap: wrap;
 }
 .kbd-hint {
-  font-size: 12px; color: #6b7280;
-  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: #6b7280;
+  display: flex; align-items: center; gap: 7px;
 }
 kbd {
   display: inline-block;
@@ -863,7 +881,8 @@ kbd {
 }
 
 /* ── Side panels ── */
-/* Panels scroll vertically if their content is taller than the arena height */
+/* Panels scroll vertically if their content is taller than the arena height.
+   Gray text in panels uses #4b5563 minimum for sufficient contrast. */
 .game-panel {
   display: flex; flex-direction: column; gap: 12px;
   overflow-y: auto;
@@ -882,7 +901,7 @@ kbd {
 .panel-eyebrow {
   display: block;
   font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: #9ca3af; margin-bottom: 10px;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
 }
 .cue-display {
   font-size: 36px; font-weight: 900;
@@ -920,7 +939,7 @@ kbd {
 }
 .timer-label {
   display: block; font-size: 11px; font-weight: 600;
-  color: #9ca3af; text-transform: uppercase;
+  color: #6b7280; text-transform: uppercase;
   letter-spacing: 0.06em; margin-bottom: 8px;
 }
 .timer-track {
@@ -942,7 +961,7 @@ kbd {
 .stat-cell { display: flex; flex-direction: column; gap: 2px; }
 .stat-cell dt {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #9ca3af;
+  text-transform: uppercase; color: #6b7280;
 }
 .stat-cell dd {
   font-size: 20px; font-weight: 800;
@@ -972,7 +991,7 @@ kbd {
 .btn-secondary:hover { background: #e8eaf0; }
 .btn-ghost-sm {
   width: 100%; padding: 9px;
-  background: none; color: #9ca3af;
+  background: none; color: #6b7280;
   font-size: 13px; font-weight: 500;
   border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer;
   transition: color 0.15s, background 0.15s;
@@ -1065,16 +1084,25 @@ kbd {
   list-style: none; padding: 0; margin: 10px 0 14px;
   display: flex; flex-direction: column; gap: 8px;
 }
-.history-empty { font-size: 13px; color: #9ca3af; text-align: center; padding: 8px 0; }
+.history-empty { font-size: 13px; color: #6b7280; text-align: center; padding: 8px 0; }
 .history-item {
   display: flex; flex-direction: column; gap: 2px;
   padding: 10px 12px; background: #f8fafc;
   border-radius: 10px; border: 1px solid #f3f4f6;
 }
-.history-time { font-size: 11px; color: #9ca3af; font-weight: 500; }
+.history-time { font-size: 11px; color: #4b5563; font-weight: 500; }
 .history-stats { font-size: 13px; color: #374151; font-weight: 600; }
+.btn-export {
+  width: 100%; padding: 9px;
+  background: #f3f4f6; color: #4b5563;
+  font-size: 13px; font-weight: 600;
+  border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-export:hover { background: #e8eaf0; color: #0d1117; }
+
 .disclaimer {
-  font-size: 11.5px; color: #9ca3af;
+  font-size: 11.5px; color: #4b5563;
   line-height: 1.6; margin: 0;
   background: #fff; border: 1px solid #e5e7eb;
   border-radius: 12px; padding: 14px;
@@ -1140,7 +1168,7 @@ kbd {
   .arena-wrap             { order: 2; aspect-ratio: 4 / 3; height: auto; }
   .game-panel:last-child  { order: 3; }
 
-  .page-hero { padding: 72px 0 14px; }
+  .page-hero { padding: 96px 0 40px; }
   .container { padding: 0 20px; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
