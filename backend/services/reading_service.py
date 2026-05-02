@@ -1,9 +1,22 @@
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+from services import model_service
 from services.text_preprocessor import preprocess_text
 from services.text_service import basic_algorithm, use_openai
 
 
-# Keep each block small enough for one summary request.
-MAX_BLOCK_CHARS = 6000
+BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(BACKEND_ENV_PATH)
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 def process_reading_text(text: str) -> dict:
@@ -32,30 +45,72 @@ def process_reading_text(text: str) -> dict:
         preprocessing_reason,
         segmentation_metadata,
     ) = _build_segments(source_text)
-    blocks = []
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
+    prepared_blocks = []
+    model_results_by_id = {}
 
     if preprocessing_reason:
         fallback_reasons.append(preprocessing_reason)
 
     for index, segment in enumerate(segments, start=1):
+        block_text = _limit_block_text(segment.get("cleaned_text") or source_text)
+        prepared_blocks.append(
+            {
+                "frontend_id": index,
+                "model_id": f"block-{index}",
+                "text": block_text,
+            }
+        )
+
+    model_blocks = prepared_blocks[: model_service.get_summary_max_blocks()]
+    if model_blocks:
+        try:
+            model_response = model_service.summarize_blocks(
+                [
+                    {"id": block["model_id"], "text": block["text"]}
+                    for block in model_blocks
+                ]
+            )
+            model_results_by_id = model_service.normalize_model_results(model_response)
+        except Exception:
+            used_fallback = True
+            fallback_reasons.append("team_model_unavailable")
+
+    blocks = []
+    for block in prepared_blocks:
         # Each segment becomes one frontend block. The originalText field keeps the
         # cleaned source content, while summary/keyPoints are generated per block.
-        block_text = _limit_block_text(segment.get("cleaned_text") or source_text)
-        summary_result = _summarise_block(block_text)
+        model_result = model_results_by_id.get(block["model_id"])
+        used_summary_fallback = False
 
-        if summary_result.get("usedFallback"):
+        if model_result and model_result.get("status") == "ok":
+            summary_result = {
+                "summary": model_result.get("summary") or "",
+                "keyPoints": model_result.get("keyPoints") or [],
+                "usedFallback": False,
+                "fallbackReason": "",
+            }
+        else:
+            used_summary_fallback = True
+            summary_result = _summarise_block_fallback(block["text"])
+
+        if used_summary_fallback or summary_result.get("usedFallback"):
             # Track partial failures without dropping the rest of the blocks.
             used_fallback = True
-            reason = summary_result.get("fallbackReason") or "summary_fallback"
+            reason = _get_summary_fallback_reason(
+                block,
+                model_blocks,
+                model_result,
+                summary_result,
+            )
             if reason not in fallback_reasons:
                 fallback_reasons.append(reason)
 
         blocks.append(
             {
-                "id": index,
-                "originalText": block_text,
+                "id": block["frontend_id"],
+                "originalText": block["text"],
                 "summary": summary_result.get("summary") or "",
                 "keyPoints": summary_result.get("keyPoints") or [],
             }
@@ -97,25 +152,46 @@ def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
     return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", metadata
 
 
-def _summarise_block(text: str) -> dict:
-    # OpenAI is the temporary external summary provider until the project model is ready.
-    try:
-        return use_openai(text)
-    except Exception:
-        # If the external provider is unavailable, generate a simple local result.
-        return basic_algorithm(
-            text,
-            notice="AI service is unavailable right now. Showing a basic result.",
-            fallback_reason="temporary_ai_unavailable",
-        )
+def _summarise_block_fallback(text: str) -> dict:
+    if _env_bool("CLEARREAD_OPENAI_SUMMARY_FALLBACK", True):
+        try:
+            return use_openai(text)
+        except Exception:
+            pass
+
+    return basic_algorithm(
+        text,
+        notice="AI service is unavailable right now. Showing a basic result.",
+        fallback_reason="temporary_ai_unavailable",
+    )
 
 
 def _limit_block_text(text: str) -> str:
     # Truncate very large segments before summary generation to avoid oversized API requests.
     cleaned = str(text or "").strip()
-    if len(cleaned) <= MAX_BLOCK_CHARS:
+    max_chars = model_service.get_summary_max_chars_per_block()
+    if len(cleaned) <= max_chars:
         return cleaned
-    return cleaned[:MAX_BLOCK_CHARS].rstrip()
+    return cleaned[:max_chars].rstrip()
+
+
+def _get_summary_fallback_reason(
+    block: dict,
+    model_blocks: list[dict],
+    model_result: dict | None,
+    summary_result: dict,
+) -> str:
+    model_block_ids = {model_block["model_id"] for model_block in model_blocks}
+    if block["model_id"] not in model_block_ids:
+        return "team_model_block_limit_exceeded"
+
+    if model_result and model_result.get("status") == "error":
+        return "team_model_item_error"
+
+    if model_result is None:
+        return "team_model_item_missing"
+
+    return summary_result.get("fallbackReason") or "summary_fallback"
 
 
 def _build_notice(used_fallback: bool, fallback_reasons: list[str]) -> str:
