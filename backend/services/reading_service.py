@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,6 +18,16 @@ def _env_bool(name: str, default: bool = False) -> bool:
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
 
 
 def process_reading_text(text: str) -> dict:
@@ -45,6 +56,7 @@ def process_reading_text(text: str) -> dict:
         preprocessing_reason,
         segmentation_metadata,
     ) = _build_segments(source_text)
+
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
     prepared_blocks = []
@@ -80,29 +92,31 @@ def process_reading_text(text: str) -> dict:
             used_fallback = True
             fallback_reasons.append("team_model_unavailable")
 
+    fallback_blocks = []
+    model_summaries_by_id = {}
+    for block in prepared_blocks:
+        model_result = model_results_by_id.get(block["model_id"])
+        if _has_valid_model_summary(model_result):
+            model_summaries_by_id[block["model_id"]] = {
+                "summary": str(model_result.get("summary") or "").strip(),
+                "keyPoints": model_result.get("keyPoints") or [],
+                "usedFallback": False,
+                "fallbackReason": "",
+            }
+        else:
+            fallback_blocks.append(block)
+
+    fallback_results_by_id = _summarise_fallback_blocks(fallback_blocks)
+
     blocks = []
     for block in prepared_blocks:
         # Each segment becomes one frontend block. The originalText field keeps the
         # cleaned source content, while summary/keyPoints are generated per block.
         model_result = model_results_by_id.get(block["model_id"])
-        used_summary_fallback = False
-
-        if model_result and model_result.get("status") == "ok":
-            summary = str(model_result.get("summary") or "").strip()
-            key_points = model_result.get("keyPoints") or []
-            if not summary or not key_points:
-                used_summary_fallback = True
-                summary_result = _summarise_block_fallback(block["text"])
-            else:
-                summary_result = {
-                    "summary": summary,
-                    "keyPoints": key_points,
-                    "usedFallback": False,
-                    "fallbackReason": "",
-                }
-        else:
-            used_summary_fallback = True
-            summary_result = _summarise_block_fallback(block["text"])
+        used_summary_fallback = block["model_id"] in fallback_results_by_id
+        summary_result = model_summaries_by_id.get(block["model_id"])
+        if summary_result is None:
+            summary_result = fallback_results_by_id.get(block["model_id"]) or {}
 
         if used_summary_fallback or summary_result.get("usedFallback"):
             # Track partial failures without dropping the rest of the blocks.
@@ -174,6 +188,42 @@ def _summarise_block_fallback(text: str) -> dict:
         notice="AI service is unavailable right now. Showing a basic result.",
         fallback_reason="temporary_ai_unavailable",
     )
+
+
+def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
+    if not blocks:
+        return {}
+
+    max_workers = max(1, _env_int("CLEARREAD_OPENAI_FALLBACK_CONCURRENCY", 3))
+    max_workers = min(max_workers, len(blocks))
+
+    results = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_block = {
+            executor.submit(_summarise_block_fallback, block["text"]): block
+            for block in blocks
+        }
+        for future in as_completed(future_to_block):
+            block = future_to_block[future]
+            try:
+                results[block["model_id"]] = future.result()
+            except Exception:
+                results[block["model_id"]] = basic_algorithm(
+                    block["text"],
+                    notice="AI service is unavailable right now. Showing a basic result.",
+                    fallback_reason="temporary_ai_unavailable",
+                )
+
+    return results
+
+
+def _has_valid_model_summary(model_result: dict | None) -> bool:
+    if not model_result or model_result.get("status") != "ok":
+        return False
+
+    summary = str(model_result.get("summary") or "").strip()
+    key_points = model_result.get("keyPoints") or []
+    return bool(summary and key_points)
 
 
 def _limit_block_text(text: str) -> str:
