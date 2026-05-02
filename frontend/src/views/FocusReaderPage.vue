@@ -386,16 +386,6 @@ function loadHistory() {
   ui.sessions = getSessions().slice(0, 5)
 }
 
-function exportHistory() {
-  const blob = new Blob([JSON.stringify(getSessions(), null, 2)], { type: 'application/json' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href = url
-  a.download = `focus-reader-sessions-${new Date().toISOString().slice(0, 10)}.json`
-  document.body.append(a); a.click(); a.remove()
-  URL.revokeObjectURL(url)
-}
-
 // ── Session end ───────────────────────────────────────────────────────────────
 function finishSession(completed) {
   cancelAnimationFrame(G.animId)
@@ -734,7 +724,6 @@ onUnmounted(() => {
                 <span class="history-stats">{{ s.accuracy }}% correct · {{ s.score }} pts · Level {{ s.level }}</span>
               </li>
             </ol>
-            <button class="btn-export" @click="exportHistory">Save my results</button>
           </div>
 
           <!-- Short note — plain language, not clinical -->
@@ -1092,14 +1081,6 @@ kbd {
 }
 .history-time { font-size: 11px; color: #4b5563; font-weight: 500; }
 .history-stats { font-size: 13px; color: #374151; font-weight: 600; }
-.btn-export {
-  width: 100%; padding: 9px;
-  background: #f3f4f6; color: #4b5563;
-  font-size: 13px; font-weight: 600;
-  border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-export:hover { background: #e8eaf0; color: #0d1117; }
 
 .disclaimer {
   font-size: 11.5px; color: #4b5563;
