@@ -1,0 +1,63 @@
+{
+  "dataset_version": "final_lora_v1_training_system_clean",
+  "record_format": "chat_sft_messages",
+  "assistant_label_schema": {
+    "main_idea": "exactly 2 short faithful sentences",
+    "key_points": "exactly 4 short high-level sentences"
+  },
+  "source_counts": {
+    "assignment_rubric": 89,
+    "tech_doc": 99,
+    "academic_book": 250,
+    "academic_paper": 500,
+    "public_service": 200,
+    "medlineplus": 250,
+    "gen_know": 149,
+    "total": 1537
+  },
+  "final_accepted_counts": {
+    "assignment_rubric": 83,
+    "tech_doc": 89,
+    "academic_book": 233,
+    "academic_paper": 486,
+    "public_service": 198,
+    "medlineplus": 230,
+    "gen_know": 133,
+    "total": 1452
+  },
+  "final_quarantine_counts": {
+    "assignment_rubric": 6,
+    "tech_doc": 10,
+    "academic_book": 17,
+    "academic_paper": 14,
+    "public_service": 2,
+    "medlineplus": 20,
+    "gen_know": 16,
+    "total": 85
+  },
+  "coverage": {
+    "accepted_plus_quarantine": 1537,
+    "missing_source_records": 0,
+    "accepted_quarantine_overlap": 0,
+    "accepted_structural_validation_issues": 0
+  },
+  "git_package_policy": {
+    "included": [
+      "data processing scripts",
+      "final regeneration pipeline source",
+      "prompts",
+      "schemas",
+      "configuration examples",
+      "QA summaries",
+      "source and final count manifests"
+    ],
+    "excluded": [
+      "generated JSONL datasets",
+      "raw XML or ZIP source snapshots",
+      "SQLite checkpoints",
+      "API logs",
+      "model artifacts",
+      "local caches"
+    ]
+  }
+}
