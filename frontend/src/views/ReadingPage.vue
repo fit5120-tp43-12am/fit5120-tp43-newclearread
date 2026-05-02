@@ -98,14 +98,52 @@ const volume         = ref(70)       // 0–100
 // Speed options shown in the toolbar dropdown
 const SPEED_OPTIONS  = [0.75, 1.0, 1.25, 1.5, 2.0]
 
-// Voice options — labels are UI-facing; the backend maps these keys to actual TTS voice IDs
-// (e.g. gemini-2.5-flash-tts voice names: Aoede, Kore, Puck, Fenrir, Charon …)
+// Voice preference keys shown in the toolbar dropdown.
+// These are mapped to actual browser SpeechSynthesisVoice objects by getSelectedVoice().
 const VOICE_OPTIONS  = [
   { value: 'default-female', label: 'Default Female' },
   { value: 'default-male',   label: 'Default Male'   },
   { value: 'calm-female',    label: 'Calm Female'    },
   { value: 'clear-male',     label: 'Clear Male'     },
 ]
+
+// Browser voices loaded asynchronously via the Web Speech API
+const availableVoices = ref([])
+
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return
+  availableVoices.value = window.speechSynthesis.getVoices()
+}
+
+/**
+ * Returns the best matching SpeechSynthesisVoice for the user's preference.
+ * Searches English voices by common name patterns for male / female voices.
+ */
+function getSelectedVoice() {
+  // Only look at English voices
+  const en = availableVoices.value.filter(v => v.lang.startsWith('en'))
+  if (!en.length) return null
+
+  const pref = selectedVoice.value
+
+  if (pref === 'default-female' || pref === 'calm-female') {
+    // Common female voice name keywords across Windows / macOS / Chrome
+    return (
+      en.find(v => /zira|victoria|samantha|karen|moira|fiona|female|woman/i.test(v.name)) ||
+      en[0]
+    )
+  }
+
+  if (pref === 'default-male' || pref === 'clear-male') {
+    // Common male voice name keywords
+    return (
+      en.find(v => /david|mark|daniel|alex|james|george|male|man/i.test(v.name)) ||
+      en[0]
+    )
+  }
+
+  return en[0]
+}
 
 // ── TTS via Browser Web Speech API ───────────────────────────────────────────
 //
@@ -129,18 +167,21 @@ function requestTTS(text) {
       return
     }
 
-    // Cancel any previous utterance before starting a new one
-    window.speechSynthesis.cancel()
-
-    const utterance  = new SpeechSynthesisUtterance(text)
+    const synth     = window.speechSynthesis
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang   = 'en-US'
     utterance.rate   = playbackSpeed.value
     utterance.volume = volume.value / 100
 
-    // Resolve cleanly when speech ends naturally
+    // Apply the selected browser voice (mapped from user preference to real voice object)
+    const voice = getSelectedVoice()
+    if (voice) utterance.voice = voice
+
+    // Resolve when speech ends naturally
     utterance.onend = () => resolve('done')
 
-    // 'interrupted' / 'canceled' fire when we call speechSynthesis.cancel()
-    // programmatically — treat these as a clean stop, not an error.
+    // 'interrupted' / 'canceled' fire when stopAudio() calls speechSynthesis.cancel().
+    // Treat them as a normal clean stop, not an error.
     utterance.onerror = (e) => {
       if (e.error === 'interrupted' || e.error === 'canceled') {
         resolve('cancelled')
@@ -150,10 +191,12 @@ function requestTTS(text) {
       }
     }
 
-    window.speechSynthesis.speak(utterance)
-    // ⚠️ Do NOT call resolve() here — resolving before onend would
-    // immediately unblock the await in playBlock() and trigger stopAudio(),
-    // cancelling the speech the moment it starts.
+    // ⚠️ Chrome bug: calling cancel() + speak() in the same synchronous block
+    // causes the new utterance to immediately receive an 'interrupted' error.
+    // stopAudio() already called cancel() before we get here, so we must NOT
+    // call cancel() again. We also defer speak() by 50 ms so Chrome has time
+    // to flush the previous cancellation before queuing the new utterance.
+    setTimeout(() => synth.speak(utterance), 50)
   })
 }
 
@@ -503,10 +546,21 @@ function onKeydown(e) {
 onMounted(() => {
   window.addEventListener('scroll', onScroll)
   nextTick(autoResize)
+
+  // Load browser voices — they populate asynchronously after page load.
+  // voiceschanged fires once the list is ready (required in Chrome).
+  loadVoices()
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadVoices
+  }
 })
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   clearTimeout(feedbackTimer)
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = null
+    window.speechSynthesis.cancel()
+  }
 })
 </script>
 
@@ -681,101 +735,101 @@ onUnmounted(() => {
 
           <!--
             ── Audio Control Toolbar ──────────────────────────────────────────
-            Appears when any block is playing or paused.
-            Controls: pause/resume, replay, playback speed, voice, volume, stop.
-
-            BACKEND NOTE:
-              Voice selector values map to TTS voice IDs on the backend.
-              Speed and volume are forwarded as-is in the /api/tts request body.
-              See requestTTS() in the script section for the full API contract.
+            Always visible in result mode so users can configure voice/speed
+            before or during playback. Playback controls are disabled when idle.
           -->
-          <Transition name="audio-bar">
-            <div v-if="playbackState !== 'idle'" class="audio-toolbar">
+          <div class="audio-toolbar">
 
-              <!-- Left: icon + title + now-playing label -->
-              <div class="at-info">
-                <div class="at-icon">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 5.5h2.5l3-3v11l-3-3H2V5.5z" fill="#2563eb"/>
-                    <path d="M11 4.5a5 5 0 0 1 0 7M13 2.5a8 8 0 0 1 0 11" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="at-title">Audio Control Panel</div>
-                  <div class="at-status">
-                    Now Playing: Block {{ activeBlockId }}
-                    ({{ activeBlockType === 'summary' ? 'Summary &amp; Key Points' : 'Original Text' }})
-                    <span v-if="playbackState === 'paused'" class="at-paused-tag">· Paused</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Centre: playback action buttons -->
-              <div class="at-actions">
-                <!-- Pause / Resume -->
-                <button
-                  class="at-btn"
-                  :class="{ 'at-btn--primary': playbackState === 'playing' }"
-                  @click="playbackState === 'playing' ? pauseAudio() : resumeAudio()"
-                >
-                  <svg v-if="playbackState === 'playing'" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                    <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                  </svg>
-                  <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="currentColor"/>
-                  </svg>
-                  {{ playbackState === 'playing' ? 'Pause' : 'Resume' }}
-                </button>
-
-                <!-- Replay -->
-                <button class="at-btn" @click="replayBlock">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M11 7A4 4 0 1 1 7 3M11 3v4H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Replay
-                </button>
-              </div>
-
-              <!-- Speed selector -->
-              <div class="at-control">
-                <label class="at-label">Speed</label>
-                <select v-model="playbackSpeed" class="at-select">
-                  <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
-                </select>
-              </div>
-
-              <!-- Voice selector -->
-              <div class="at-control">
-                <label class="at-label">Voice</label>
-                <select v-model="selectedVoice" class="at-select">
-                  <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
-                </select>
-              </div>
-
-              <!-- Volume slider -->
-              <div class="at-control at-volume">
-                <label class="at-label">Volume</label>
-                <input
-                  type="range"
-                  v-model="volume"
-                  min="0" max="100" step="1"
-                  class="at-slider"
-                  :aria-label="`Volume: ${volume}%`"
-                />
-                <span class="at-vol-num">{{ volume }}%</span>
-              </div>
-
-              <!-- Stop button -->
-              <button class="at-btn-stop" @click="stopAudio" title="Stop playback">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+            <!-- Left: status label — shows idle hint or now-playing info -->
+            <div class="at-info">
+              <div class="at-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 5.5h2.5l3-3v11l-3-3H2V5.5z" fill="#2563eb"/>
+                  <path d="M11 4.5a5 5 0 0 1 0 7M13 2.5a8 8 0 0 1 0 11" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
                 </svg>
-                Stop
+              </div>
+              <div>
+                <div class="at-title">Audio</div>
+                <div class="at-status">
+                  <template v-if="playbackState === 'idle'">Press Play on any block to listen</template>
+                  <template v-else>
+                    Block {{ activeBlockId }}
+                    · {{ activeBlockType === 'summary' ? 'Summary' : 'Original' }}
+                    <span v-if="playbackState === 'paused'" class="at-paused-tag">· Paused</span>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Playback controls — disabled when nothing is playing -->
+            <div class="at-actions">
+              <button
+                class="at-btn"
+                :class="{ 'at-btn--primary': playbackState === 'playing' }"
+                :disabled="playbackState === 'idle'"
+                @click="playbackState === 'playing' ? pauseAudio() : resumeAudio()"
+              >
+                <svg v-if="playbackState === 'playing'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/>
+                  <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/>
+                </svg>
+                <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="currentColor"/>
+                </svg>
+                {{ playbackState === 'playing' ? 'Pause' : 'Resume' }}
               </button>
 
+              <button class="at-btn" :disabled="playbackState === 'idle'" @click="replayBlock">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M11 7A4 4 0 1 1 7 3M11 3v4H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Replay
+              </button>
             </div>
-          </Transition>
+
+            <!-- Speed selector -->
+            <div class="at-control">
+              <label class="at-label">Speed</label>
+              <select v-model="playbackSpeed" class="at-select">
+                <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+              </select>
+            </div>
+
+            <!-- Voice selector — applies to the next Play press -->
+            <div class="at-control">
+              <label class="at-label">Voice</label>
+              <select v-model="selectedVoice" class="at-select">
+                <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+              </select>
+            </div>
+
+            <!-- Volume slider -->
+            <div class="at-control at-volume">
+              <label class="at-label">Volume</label>
+              <input
+                type="range"
+                v-model="volume"
+                min="0" max="100" step="1"
+                class="at-slider"
+                :aria-label="`Volume: ${volume}%`"
+              />
+              <span class="at-vol-num">{{ volume }}%</span>
+            </div>
+
+            <!-- Stop button — only enabled when playing or paused -->
+            <button
+              class="at-btn-stop"
+              :disabled="playbackState === 'idle'"
+              @click="stopAudio"
+              title="Stop playback"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+              </svg>
+              Stop
+            </button>
+
+          </div>
 
           <!--
             Two-column layout.
