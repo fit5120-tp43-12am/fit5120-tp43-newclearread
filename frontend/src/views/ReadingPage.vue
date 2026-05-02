@@ -45,6 +45,12 @@ const result = ref(null)
 function wordCount(t) { return t.trim().split(/\s+/).filter(Boolean).length }
 
 
+// ── Original-text panel visibility ───────────────────────────────────────────
+
+// Collapsed by default so the user sees only the clean summary on first load.
+// Clicking the left-column toggle or any collapsed block strip sets this to true.
+const showOriginal = ref(false)
+
 // ── Block expand / collapse (left column) ────────────────────────────────────
 
 // Tracks which blocks have been manually expanded by the user
@@ -561,57 +567,59 @@ onUnmounted(() => {
     <main class="reading-area">
       <div :class="['reading-inner', { 'reading-inner--wide': mode === 'result' }]">
 
-        <!-- ── STATE: idle — welcome screen ── -->
+        <!-- ── STATE: idle — welcome / how-to screen ── -->
         <div v-if="mode === 'idle'" class="empty-state">
-          <div class="empty-icon">
-            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-              <rect x="9" y="6" width="34" height="40" rx="6" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
-              <path d="M17 20h18M17 27h18M17 34h11" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
-              <circle cx="40" cy="40" r="9" fill="#2563eb"/>
-              <path d="M40 36v8M36 40h8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h2 class="empty-title">Ready to support your reading</h2>
+
+          <h2 class="empty-title">Reading Support</h2>
           <p class="empty-sub">
-            Paste your text or drop a file into the bar below.<br>
-            Clearead will break it into blocks and summarise each one for you.
+            Paste or upload your text — Clearead will break it into sections
+            and write a plain-English summary for each one.
           </p>
-          <!-- Quick-feature pills -->
-          <div class="empty-features">
-            <div class="feature-pill">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M2 6.5h9M7.5 3l3.5 3.5L7.5 10" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Paste text
+
+          <!-- Three-step flow — horizontal cards with arrows showing the process -->
+          <div class="how-flow">
+
+            <div class="how-card how-card--1">
+              <span class="how-step-num">1</span>
+              <strong class="how-card-title">Add your text</strong>
+              <p class="how-card-desc">Paste, type, or upload a TXT, PDF, or DOCX file into the box below.</p>
             </div>
-            <div class="feature-pill">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M6.5 9V2.5M6.5 2.5L4 5M6.5 2.5L9 5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 10h9" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/>
+
+            <!-- Arrow connector -->
+            <div class="how-arrow" aria-hidden="true">
+              <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                <path d="M0 8h24M18 2l6 6-6 6" stroke="#c7d2fe" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Upload TXT / PDF / DOCX
             </div>
-            <div class="feature-pill">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <rect x="1.5" y="4" width="4" height="5" rx="1" fill="#2563eb" opacity="0.3"/>
-                <path d="M7 4.5l4 2-4 2" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <div class="how-card how-card--2">
+              <span class="how-step-num">2</span>
+              <strong class="how-card-title">Process</strong>
+              <p class="how-card-desc">Click Process Text — Clearead breaks it into paragraphs and writes a clear summary for each.</p>
+            </div>
+
+            <!-- Arrow connector -->
+            <div class="how-arrow" aria-hidden="true">
+              <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                <path d="M0 8h24M18 2l6 6-6 6" stroke="#c7d2fe" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Drag &amp; drop anywhere
             </div>
+
+            <div class="how-card how-card--3">
+              <span class="how-step-num">3</span>
+              <strong class="how-card-title">Read or listen</strong>
+              <p class="how-card-desc">Read the summaries, or press Play on any block to hear it read aloud.</p>
+            </div>
+
           </div>
+
           <p class="empty-shortcut">
             <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
             <span>to submit quickly</span>
           </p>
 
           <!-- Demo button: loads sample data so the result UI can be previewed instantly -->
-          <button class="btn-demo" @click="loadDemo">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
-              <path d="M5 4.5l4 2-4 2V4.5z" fill="currentColor"/>
-            </svg>
-            Try Demo
-          </button>
+          <button class="btn-demo" @click="loadDemo">Try Demo</button>
         </div>
 
 
@@ -767,23 +775,38 @@ onUnmounted(() => {
             Structure: one sticky header row + one grid row per block.
             Left and right cards share the same row, so they always align in height.
           -->
-          <div class="result-grid">
+          <!-- result-grid--orig-hidden collapses the left column to a 44px strip -->
+          <div :class="['result-grid', { 'result-grid--orig-hidden': !showOriginal }]">
 
             <!-- ── Sticky column headers ── -->
             <div class="result-grid-header">
+
+              <!-- Left header: acts as a toggle button to show/hide the original-text column -->
+              <button
+                class="col-header col-orig-toggle"
+                @click="showOriginal = !showOriginal"
+                :title="showOriginal ? 'Hide original text' : 'Show original text'"
+                :aria-label="showOriginal ? 'Hide original text' : 'Show original text'"
+              >
+                <!-- Expanded state: label + collapse-left chevron (no decorative icon) -->
+                <template v-if="showOriginal">
+                  Original Text
+                  <!-- Left-pointing chevron = "click to collapse" -->
+                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M8.5 2.5L4 6.5l4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </template>
+                <!-- Collapsed state: right-pointing chevron + rotated label -->
+                <template v-else>
+                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M4.5 2.5L9 6.5l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span class="col-orig-label-vert">Original</span>
+                </template>
+              </button>
+
+              <!-- Right column header — no decorative icon -->
               <div class="col-header">
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                  <rect x="2" y="1" width="11" height="13" rx="2" stroke="#6b7280" stroke-width="1.3"/>
-                  <path d="M5 5h5M5 8h5M5 11h3" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
-                </svg>
-                Original Text
-                <span class="col-header-sub">(Paragraph Breakdown)</span>
-              </div>
-              <div class="col-header">
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                  <rect x="1.5" y="1.5" width="12" height="12" rx="3" stroke="#6b7280" stroke-width="1.3"/>
-                  <path d="M4.5 5h6M4.5 8h6M4.5 11h4" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
-                </svg>
                 Summary &amp; Key Points
               </div>
             </div>
@@ -798,60 +821,76 @@ onUnmounted(() => {
               class="block-row"
             >
 
-              <!-- ── Left card: original text ── -->
+              <!-- ── Left card: original text (collapsible) ── -->
               <!--
-                Active block gets a blue border + animated waveform indicator.
-                Play button in the header toggles play / pause for this block.
+                When showOriginal is false this card is a narrow strip.
+                Clicking the strip sets showOriginal = true to reveal the full column.
+                When showOriginal is true the card behaves like the original layout.
               -->
               <div :class="['block-card', 'block-card--left', { 'block-card--active': activeBlockId === block.id }]">
 
-                <!-- Card header: block label on the left, play button on the right -->
-                <div class="block-card-header">
-                  <div class="block-label">Block {{ block.id }}</div>
-
-                  <!-- Play / Pause button for this specific block -->
-                  <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
-                    <!-- Animated waveform bars when this block is playing -->
-                    <span v-if="activeBlockId === block.id && playbackState === 'playing'" class="play-badge play-badge--playing">
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      Now Playing…
-                    </span>
-                    <!-- Paused state indicator -->
-                    <span v-else-if="activeBlockId === block.id && playbackState === 'paused'" class="play-badge play-badge--paused">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                        <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                      </svg>
-                      Paused
-                    </span>
-                    <!-- Default: play icon + label -->
-                    <span v-else class="play-badge play-badge--idle">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
-                      </svg>
-                      Play
-                    </span>
-                  </button>
+                <!-- Collapsed strip — shown only when the original-text panel is hidden -->
+                <div v-if="!showOriginal" class="orig-strip-hint" @click="showOriginal = true">
+                  <!-- Right-pointing expand icon -->
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 2L9 6l-4.5 4" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <!-- Rotated block label so it reads bottom-to-top in the strip -->
+                  <span class="orig-strip-label">B{{ block.id }}</span>
                 </div>
 
-                <!-- Original text — clamped by default, expandable via Read more -->
-                <p
-                  :ref="el => checkClamp(el, block.id)"
-                  :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
-                >
-                  {{ block.originalText }}
-                </p>
+                <!-- Expanded — full original-text card content -->
+                <template v-else>
 
-                <!-- Read more / Show less toggle — only when text actually overflows -->
-                <button
-                  v-if="clampedBlocks[block.id] || isExpanded(block.id)"
-                  class="btn-toggle"
-                  @click="toggleBlock(block.id)"
-                >
-                  {{ isExpanded(block.id) ? 'Show less ↑' : 'Read more ↓' }}
-                </button>
+                  <!-- Card header: block label on the left, play button on the right -->
+                  <div class="block-card-header">
+                    <div class="block-label">Block {{ block.id }}</div>
+
+                    <!-- Play / Pause button for this specific block -->
+                    <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
+                      <!-- Animated waveform bars when this block is playing -->
+                      <span v-if="activeBlockId === block.id && playbackState === 'playing'" class="play-badge play-badge--playing">
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                        Now Playing…
+                      </span>
+                      <!-- Paused state indicator -->
+                      <span v-else-if="activeBlockId === block.id && playbackState === 'paused'" class="play-badge play-badge--paused">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                          <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                          <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                        </svg>
+                        Paused
+                      </span>
+                      <!-- Default: play icon + label -->
+                      <span v-else class="play-badge play-badge--idle">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                          <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
+                        </svg>
+                        Play
+                      </span>
+                    </button>
+                  </div>
+
+                  <!-- Original text — clamped by default, expandable via Read more -->
+                  <p
+                    :ref="el => checkClamp(el, block.id)"
+                    :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
+                  >
+                    {{ block.originalText }}
+                  </p>
+
+                  <!-- Read more / Show less toggle — only when text actually overflows -->
+                  <button
+                    v-if="clampedBlocks[block.id] || isExpanded(block.id)"
+                    class="btn-toggle"
+                    @click="toggleBlock(block.id)"
+                  >
+                    {{ isExpanded(block.id) ? 'Show less ↑' : 'Read more ↓' }}
+                  </button>
+
+                </template>
               </div>
 
               <!-- ── Right card: summary + key points ── -->
@@ -885,25 +924,16 @@ onUnmounted(() => {
                 </div>
 
                 <div class="summary-section">
-                  <div class="section-title">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <rect x="1.5" y="1.5" width="10" height="10" rx="2" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
-                      <path d="M4 6.5h5M4 4.5h3" stroke="#2563eb" stroke-width="1" stroke-linecap="round"/>
-                    </svg>
-                    Summary
-                  </div>
+                  <!-- Section label — no icon, plain text -->
+                  <div class="section-title">Summary</div>
                   <p class="summary-text">
                     {{ block.summary || 'Summary is not available.' }}
                   </p>
                 </div>
 
                 <div class="keypoints-section">
-                  <div class="section-title">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <path d="M2 4l1.5 1.5L6 2M2 8l1.5 1.5L6 6M8 4h3M8 8h3" stroke="#f59e0b" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Key Points
-                  </div>
+                  <!-- Section label — no icon, plain text -->
+                  <div class="section-title">Key Points</div>
                   <p v-if="!block.keyPoints || block.keyPoints.length === 0" class="fallback-text">
                     No key points available.
                   </p>
@@ -1173,41 +1203,91 @@ onUnmounted(() => {
   text-align: center;
   padding: 56px 0 0;
 }
-.empty-icon { margin-bottom: 24px; }
 .empty-title {
-  font-size: 22px; font-weight: 700;
+  font-size: 28px; font-weight: 700;
   color: #0d1117; letter-spacing: -0.03em;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
 }
 .empty-sub {
-  font-size: 15px; line-height: 1.65;
-  color: #6b7280; margin: 0 0 28px;
+  font-size: 16px; line-height: 1.7;
+  color: #4b5563; margin: 0 0 40px;
+  max-width: 520px;
 }
-.empty-features {
-  display: flex; flex-wrap: wrap;
-  justify-content: center; gap: 8px;
-  margin-bottom: 24px;
+
+/* ── Three-step process flow ── */
+/* Horizontal cards with arrow connectors between them. */
+.how-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 32px;
 }
-.feature-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px;
-  font-size: 13px; font-weight: 500; color: #374151;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+/* Arrow between cards */
+.how-arrow {
+  flex-shrink: 0;
+  padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
 }
+
+/* Each step card */
+.how-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px 18px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  text-align: left;
+}
+
+/* Subtle distinct tint per step so they feel like a sequence */
+.how-card--1 { background: #eff6ff; border-color: #dbeafe; }
+.how-card--2 { background: #f0fdf4; border-color: #bbf7d0; }
+.how-card--3 { background: #fefce8; border-color: #fef08a; }
+
+/* Large step number badge at the top of each card */
+.how-step-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  font-size: 14px; font-weight: 800;
+}
+.how-card--1 .how-step-num { background: #2563eb; color: #fff; }
+.how-card--2 .how-step-num { background: #16a34a; color: #fff; }
+.how-card--3 .how-step-num { background: #ca8a04; color: #fff; }
+
+.how-card-title {
+  font-size: 15px; font-weight: 700;
+  color: #0d1117; line-height: 1.3;
+}
+.how-card-desc {
+  font-size: 13px; line-height: 1.65;
+  color: #4b5563; margin: 0;
+}
+
+/* On narrow screens: stack cards vertically, hide arrows */
+@media (max-width: 600px) {
+  .how-flow   { flex-direction: column; max-width: 100%; }
+  .how-arrow  { display: none; }
+  .how-card   { width: 100%; }
+}
+
 .empty-shortcut {
   display: flex; align-items: center; gap: 6px;
   font-size: 13px; color: #9ca3af; margin: 0;
 }
 
-/* Demo button — subtle outlined style, sits below the shortcut hint */
+/* Demo button — sits below the shortcut hint */
 .btn-demo {
   display: inline-flex; align-items: center; gap: 7px;
   margin-top: 20px;
-  padding: 9px 22px;
-  font-size: 13px; font-weight: 600;
+  padding: 10px 28px;
+  font-size: 14px; font-weight: 600;
   color: #2563eb;
   background: #eff6ff;
   border: 1.5px solid #bfdbfe;
@@ -1464,6 +1544,116 @@ kbd {
   grid-template-columns: 2fr 3fr;
   gap: 16px;
   align-items: stretch;
+}
+
+/* ─────────────────────────────────────────
+   Collapsible original-text panel
+   When .result-grid--orig-hidden is applied the left column narrows to
+   a 44px clickable strip and the right (summary) column fills the rest.
+───────────────────────────────────────── */
+
+/* Narrow the left column for both the header and all block rows */
+.result-grid--orig-hidden .result-grid-header,
+.result-grid--orig-hidden .block-row {
+  grid-template-columns: 44px 1fr;
+}
+
+/* ── Left column header toggle button ── */
+/* Shares base styles with .col-header but resets browser button defaults */
+.col-orig-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  padding: 0 4px 8px;
+  border: none;
+  border-bottom: 2px solid #e5e7eb;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s;
+  width: 100%;
+}
+.col-orig-toggle:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+.col-toggle-arrow { flex-shrink: 0; }
+
+/* In collapsed mode, stack icon + rotated label vertically */
+.result-grid--orig-hidden .col-orig-toggle {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 0 8px;
+  gap: 6px;
+}
+
+/* Rotated "Original" text shown in the collapsed header strip */
+.col-orig-label-vert {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* ── Collapsed left block cards ── */
+/* When collapsed, hide the normal content and show only the strip */
+.result-grid--orig-hidden .block-card--left {
+  padding: 10px 4px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed; /* visual cue that the panel is collapsed/hidden */
+  min-height: 80px;
+}
+.result-grid--orig-hidden .block-card--left:hover {
+  border-color: #93c5fd;
+  background: #f0f6ff;
+}
+
+/* Strip hint: icon + rotated block label, stacked vertically inside the narrow card */
+.orig-strip-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  min-height: 60px;
+  width: 100%;
+}
+
+/* Rotated "B1 / B2 / B3" label inside each collapsed block strip */
+.orig-strip-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b0b8cc;
+}
+
+/* ── Mobile: hide the strip entirely, just stack normally ── */
+@media (max-width: 860px) {
+  /* Revert narrow columns — mobile already stacks to 1fr */
+  .result-grid--orig-hidden .result-grid-header,
+  .result-grid--orig-hidden .block-row {
+    grid-template-columns: 1fr;
+  }
+  /* Hide the collapsed left cards on mobile to avoid a confusing stub */
+  .result-grid--orig-hidden .block-card--left {
+    display: none;
+  }
 }
 
 /* Column header label */
