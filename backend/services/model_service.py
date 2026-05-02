@@ -40,7 +40,7 @@ def is_summary_model_enabled() -> bool:
 
 
 def get_summary_max_blocks() -> int:
-    return max(0, _env_int("CLEARREAD_AI_SUMMARY_MAX_BLOCKS", 28))
+    return max(0, _env_int("CLEARREAD_AI_SUMMARY_MAX_BLOCKS", 100))
 
 
 def get_summary_max_chars_per_block() -> int:
