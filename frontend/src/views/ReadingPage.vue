@@ -299,12 +299,17 @@ const MOCK_RESULT = {
 }
 
 // Load mock data directly — skips the API call and jumps straight to result mode
-function loadDemo() {
+async function loadDemo() {
   // Clear the input box so it stays compact while the user views demo results
   inputText.value        = ''
   uploadedFileText.value = ''
   uploadedFileName.value = ''
-  nextTick(autoResize)
+  if (textareaRef.value) {
+    textareaRef.value.value = ''
+    textareaRef.value.style.height = 'auto'
+  }
+  await nextTick()
+  autoResize()
 
   expandedBlocks.value  = new Set()
   clampedBlocks.value   = {}
@@ -352,13 +357,18 @@ async function handleSubmit() {
   const textToProcess = processingText.value.trim()
   if (!textToProcess || overLimit.value || mode.value === 'loading') return
 
-  // Clear the input box immediately after capturing the text —
-  // this resets the textarea back to its compact single-line size
-  // so it does not take up space while the user reads the results.
+  // Clear the input box immediately after capturing the text.
+  // We also directly reset the textarea DOM height so it collapses
+  // right away — reactive updates alone can lag on larger content.
   inputText.value        = ''
   uploadedFileText.value = ''
   uploadedFileName.value = ''
-  nextTick(autoResize)
+  if (textareaRef.value) {
+    textareaRef.value.value = ''         // force-clear the native element
+    textareaRef.value.style.height = 'auto'  // collapse immediately
+  }
+  await nextTick()
+  autoResize()   // recalculate to the correct min height
 
   showFeedback('loading', 'Processing your text…', 0)
   stopAudio()                        // stop any playing audio before new submission
