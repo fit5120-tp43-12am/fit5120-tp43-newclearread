@@ -275,73 +275,6 @@ function stopAudio() {
 }
 
 
-// ── Mock data (demo only) ─────────────────────────────────────────────────────
-
-// Sample blocks that simulate what the backend would return.
-// Used by the "Try Demo" button so the UI can be previewed without a real API call.
-const MOCK_RESULT = {
-  notice: 'Demo mode — this is sample data, not a real backend response.',
-  blocks: [
-    {
-      id: 1,
-      originalText:
-        'Dyslexia is a learning difference that primarily affects reading and writing skills. It is neurological in origin, meaning it is related to how the brain processes written language. People with dyslexia may have difficulty recognising letters, decoding words, and spelling accurately. Despite these challenges, dyslexia does not affect general intelligence — many people with dyslexia are highly creative and excel in problem-solving, art, and entrepreneurship.',
-      summary:
-        'Dyslexia is a brain-based learning difference that makes reading and writing harder, but it does not affect overall intelligence or creativity.',
-      keyPoints: [
-        'Dyslexia is neurological — it stems from how the brain processes language.',
-        'Common difficulties include letter recognition, word decoding, and spelling.',
-        'It does not reduce general intelligence or creative ability.',
-      ],
-    },
-    {
-      id: 2,
-      originalText:
-        'Early identification of dyslexia is crucial for providing the right support. Signs often appear in early childhood and can include delayed speech development, difficulty rhyming, trouble learning the alphabet, and slow reading progress compared to peers. Teachers and parents play a vital role in noticing these signs and seeking professional assessment. With early intervention and appropriate teaching strategies, children with dyslexia can make significant progress and build confidence in their literacy skills.',
-      summary:
-        'Spotting dyslexia early — through signs like delayed speech or slow reading — allows timely support that can greatly improve a child\'s literacy and self-confidence.',
-      keyPoints: [
-        'Early signs include delayed speech, difficulty rhyming, and slow reading progress.',
-        'Teachers and parents are key to recognising early warning signs.',
-        'Early intervention leads to better literacy outcomes and greater confidence.',
-      ],
-    },
-    {
-      id: 3,
-      originalText:
-        'There are many effective strategies and tools that support people with dyslexia in everyday reading and writing tasks. These include the use of dyslexia-friendly fonts such as OpenDyslexic, adjusting text size and line spacing, using coloured overlays to reduce visual stress, and text-to-speech software that reads content aloud. Technology has made a significant difference — screen readers, speech-to-text apps, and reading support platforms like Clearead help users engage with written content more comfortably and independently.',
-      summary:
-        'A range of tools — from dyslexia-friendly fonts and colour overlays to text-to-speech software — help people with dyslexia read and write more comfortably.',
-      keyPoints: [
-        'Dyslexia-friendly fonts (e.g. OpenDyslexic) and adjusted spacing reduce reading friction.',
-        'Coloured overlays can ease visual stress associated with reading.',
-        'Text-to-speech and reading support apps like Clearead promote independent reading.',
-      ],
-    },
-  ],
-}
-
-// Load mock data directly — skips the API call and jumps straight to result mode
-async function loadDemo() {
-  // Clear the input box so it stays compact while the user views demo results
-  inputText.value        = ''
-  uploadedFileText.value = ''
-  uploadedFileName.value = ''
-  if (textareaRef.value) {
-    textareaRef.value.value = ''
-    textareaRef.value.style.height = 'auto'
-  }
-  await nextTick()
-  autoResize()
-
-  expandedBlocks.value  = new Set()
-  clampedBlocks.value   = {}
-  result.value          = MOCK_RESULT
-  mode.value            = 'result'
-  stopAudio()   // ensure clean audio state on demo load
-}
-
-
 // ── Feedback strip ────────────────────────────────────────────────────────────
 
 // { type: 'loading' | 'uploading' | 'success' | 'error', message: string }
@@ -673,8 +606,6 @@ onUnmounted(() => {
             <span>to submit quickly</span>
           </p>
 
-          <!-- Demo button: loads sample data so the result UI can be previewed instantly -->
-          <button class="btn-demo" @click="loadDemo">Try Demo</button>
         </div>
 
 
@@ -830,7 +761,7 @@ onUnmounted(() => {
             Structure: one sticky header row + one grid row per block.
             Left and right cards share the same row, so they always align in height.
           -->
-          <!-- result-grid--orig-hidden collapses the left column to a 44px strip -->
+          <!-- result-grid--orig-hidden collapses the left column to a 72px strip -->
           <div :class="['result-grid', { 'result-grid--orig-hidden': !showOriginal }]">
 
             <!-- ── Sticky column headers ── -->
@@ -884,7 +815,7 @@ onUnmounted(() => {
               -->
               <div :class="['block-card', 'block-card--left', { 'block-card--active': activeBlockId === block.id }]">
 
-                <!-- Collapsed strip — shown only when the original-text panel is hidden -->
+                <!-- Collapsed strip — click to expand the original column -->
                 <div v-if="!showOriginal" class="orig-strip-hint" @click="showOriginal = true">
                   <!-- Right-pointing expand icon -->
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -897,9 +828,15 @@ onUnmounted(() => {
                 <!-- Expanded — full original-text card content -->
                 <template v-else>
 
-                  <!-- Card header: block label on the left, play button on the right -->
+                  <!-- Card header: block label (click to collapse) + play button -->
                   <div class="block-card-header">
-                    <div class="block-label">Block {{ block.id }}</div>
+                    <!-- Clicking the label collapses the original column back -->
+                    <button class="block-label block-label--collapse" @click="showOriginal = false" :title="`Block ${block.id} — click to hide original`">
+                      Block {{ block.id }}
+                      <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                        <path d="M6 1.5L3 4.5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
 
                     <!-- Play / Pause button for this specific block -->
                     <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
@@ -1337,22 +1274,7 @@ onUnmounted(() => {
   font-size: 13px; color: #9ca3af; margin: 0;
 }
 
-/* Demo button — sits below the shortcut hint */
-.btn-demo {
-  display: inline-flex; align-items: center; gap: 7px;
-  margin-top: 20px;
-  padding: 10px 28px;
-  font-size: 14px; font-weight: 600;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1.5px solid #bfdbfe;
-  border-radius: 999px; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
-}
-.btn-demo:hover {
-  background: #dbeafe; border-color: #93c5fd;
-  transform: translateY(-1px);
-}
+
 kbd {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 2px 7px;
@@ -1604,13 +1526,14 @@ kbd {
 /* ─────────────────────────────────────────
    Collapsible original-text panel
    When .result-grid--orig-hidden is applied the left column narrows to
-   a 44px clickable strip and the right (summary) column fills the rest.
+   a 72px clickable strip and the right (summary) column fills the rest.
 ───────────────────────────────────────── */
 
-/* Narrow the left column for both the header and all block rows */
+/* Narrow the left column for both the header and all block rows.
+   72px is wide enough to read the strip labels without taking space from summary. */
 .result-grid--orig-hidden .result-grid-header,
 .result-grid--orig-hidden .block-row {
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 72px 1fr;
 }
 
 /* ── Left column header toggle button ── */
@@ -1743,6 +1666,7 @@ kbd {
 /* "Block X" label badge */
 .block-label {
   display: inline-flex;
+  align-items: center; gap: 4px;
   padding: 3px 10px;
   font-size: 11.5px; font-weight: 700;
   color: #2563eb;
@@ -1750,6 +1674,17 @@ kbd {
   border: 1px solid #bfdbfe;
   border-radius: 999px;
   align-self: flex-start;
+}
+
+/* Collapse variant — resets button defaults, keeps badge look, adds pointer */
+.block-label--collapse {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.block-label--collapse:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
 }
 
 /* Original text — smaller font to de-emphasise vs the summary */
