@@ -20,7 +20,7 @@ except ImportError:
 
 
 DEFAULT_CHAT_API_BASE_URL = "https://api.openai.com/v1"
-DEFAULT_CHAT_API_MODEL = "gpt-4o-mini"
+DEFAULT_CHAT_API_MODEL = "gpt-5.4-mini"
 CHAT_API_TIMEOUT_SECONDS = 60
 
 # AI chunking limits:
@@ -33,9 +33,9 @@ SEGMENTATION_CONCURRENCY = 4
 # Local segmentation limits:
 # These control fallback block size and prevent the backend from producing too
 # many downstream summary requests when AI segmentation is unavailable.
-LOCAL_SEGMENT_TARGET_CHARS = 1800
-LOCAL_SEGMENT_MAX_CHARS = 4500
-LOCAL_SEGMENT_MAX_SEGMENTS = 28
+LOCAL_SEGMENT_TARGET_CHARS = 3500
+LOCAL_SEGMENT_MAX_CHARS = 6000
+LOCAL_SEGMENT_MAX_SEGMENTS = 100
 
 # Load the same backend .env file used by the API service.
 BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
@@ -210,7 +210,9 @@ def segment_sentence_chunks(
     local_chunk_count = 0
     max_workers = min(
         len(sentence_chunks),
-        max(1, _env_int("CLEARREAD_SEGMENTATION_CONCURRENCY", SEGMENTATION_CONCURRENCY)),
+        max(
+            1, _env_int("CLEARREAD_SEGMENTATION_CONCURRENCY", SEGMENTATION_CONCURRENCY)
+        ),
     )
 
     # Parallel chunk processing:
@@ -218,7 +220,9 @@ def segment_sentence_chunks(
     # Results are sorted by chunk_index afterward so final blocks keep article order.
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(_process_sentence_chunk, raw_text, chunk_index, chunk): chunk_index
+            executor.submit(
+                _process_sentence_chunk, raw_text, chunk_index, chunk
+            ): chunk_index
             for chunk_index, chunk in enumerate(sentence_chunks, start=1)
         }
         for future in as_completed(futures):
@@ -241,7 +245,9 @@ def segment_sentence_chunks(
     # Tell the rest of the backend whether segmentation was all AI, all local,
     # or mixed AI/local fallback across chunks.
     if local_chunk_count == 0:
-        mode = "sentence_range" if len(sentence_chunks) == 1 else "chunked_sentence_range"
+        mode = (
+            "sentence_range" if len(sentence_chunks) == 1 else "chunked_sentence_range"
+        )
         fallback_reason = ""
         model_used = CHAT_API_MODEL
         note = "Segmented by semantic boundaries using sentence ID ranges."
@@ -443,7 +449,11 @@ def assemble_segments_from_sentence_ranges(
             )
             continue
 
-        if start_id < first_sentence_id or end_id > last_sentence_id or start_id > end_id:
+        if (
+            start_id < first_sentence_id
+            or end_id > last_sentence_id
+            or start_id > end_id
+        ):
             warnings.append(
                 f"Segment {index} was skipped because its sentence range is invalid."
             )
@@ -513,12 +523,9 @@ def build_sentence_chunks(sentences: list[dict]) -> list[list[dict]]:
         if not sentence_text:
             continue
 
-        should_flush = (
-            current_chunk
-            and (
-                len(current_chunk) >= AI_CHUNK_TARGET_SENTENCES
-                or current_chars + len(sentence_text) > AI_CHUNK_TARGET_CHARS
-            )
+        should_flush = current_chunk and (
+            len(current_chunk) >= AI_CHUNK_TARGET_SENTENCES
+            or current_chars + len(sentence_text) > AI_CHUNK_TARGET_CHARS
         )
         if should_flush:
             chunks.append(current_chunk)
@@ -591,7 +598,9 @@ Important rules:
 - Do not return full segment content.
 - Return sentence ID ranges only.
 - Keep each segment focused on one topic.
-- Each segment should usually contain 450-850 words after local assembly if possible.
+- Prefer 450-700 words per segment after local assembly.
+- Avoid segments under 300 words unless they are the introduction, conclusion, or a clearly separate short section.
+- If two short neighboring sections discuss the same topic, merge them into one segment.
 - If the source text is short, fewer words are acceptable.
 - Keep conclusion as a separate segment if present.
 - Create a short heading for each segment.
