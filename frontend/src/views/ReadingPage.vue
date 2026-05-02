@@ -300,14 +300,17 @@ const MOCK_RESULT = {
 
 // Load mock data directly — skips the API call and jumps straight to result mode
 function loadDemo() {
+  // Clear the input box so it stays compact while the user views demo results
+  inputText.value        = ''
+  uploadedFileText.value = ''
+  uploadedFileName.value = ''
+  nextTick(autoResize)
+
   expandedBlocks.value  = new Set()
   clampedBlocks.value   = {}
   result.value          = MOCK_RESULT
   mode.value            = 'result'
-  // Pre-set audio toolbar to a visible paused state so the UI can be previewed
-  activeBlockId.value   = 1
-  activeBlockType.value = 'original'
-  playbackState.value   = 'paused'
+  stopAudio()   // ensure clean audio state on demo load
 }
 
 
@@ -348,6 +351,14 @@ watch(inputText, () => nextTick(autoResize))
 async function handleSubmit() {
   const textToProcess = processingText.value.trim()
   if (!textToProcess || overLimit.value || mode.value === 'loading') return
+
+  // Clear the input box immediately after capturing the text —
+  // this resets the textarea back to its compact single-line size
+  // so it does not take up space while the user reads the results.
+  inputText.value        = ''
+  uploadedFileText.value = ''
+  uploadedFileName.value = ''
+  nextTick(autoResize)
 
   showFeedback('loading', 'Processing your text…', 0)
   stopAudio()                        // stop any playing audio before new submission
