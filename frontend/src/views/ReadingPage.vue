@@ -45,6 +45,12 @@ const result = ref(null)
 function wordCount(t) { return t.trim().split(/\s+/).filter(Boolean).length }
 
 
+// ── Original-text panel visibility ───────────────────────────────────────────
+
+// Collapsed by default so the user sees only the clean summary on first load.
+// Clicking the left-column toggle or any collapsed block strip sets this to true.
+const showOriginal = ref(false)
+
 // ── Block expand / collapse (left column) ────────────────────────────────────
 
 // Tracks which blocks have been manually expanded by the user
@@ -773,18 +779,41 @@ onUnmounted(() => {
             Structure: one sticky header row + one grid row per block.
             Left and right cards share the same row, so they always align in height.
           -->
-          <div class="result-grid">
+          <!-- result-grid--orig-hidden collapses the left column to a 44px strip -->
+          <div :class="['result-grid', { 'result-grid--orig-hidden': !showOriginal }]">
 
             <!-- ── Sticky column headers ── -->
             <div class="result-grid-header">
-              <div class="col-header">
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                  <rect x="2" y="1" width="11" height="13" rx="2" stroke="#6b7280" stroke-width="1.3"/>
-                  <path d="M5 5h5M5 8h5M5 11h3" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
-                </svg>
-                Original Text
-                <span class="col-header-sub">(Paragraph Breakdown)</span>
-              </div>
+
+              <!-- Left header: acts as a toggle button to show/hide the original-text column -->
+              <button
+                class="col-header col-orig-toggle"
+                @click="showOriginal = !showOriginal"
+                :title="showOriginal ? 'Hide original text' : 'Show original text'"
+                :aria-label="showOriginal ? 'Hide original text' : 'Show original text'"
+              >
+                <!-- Expanded state: icon + full label + collapse-left chevron -->
+                <template v-if="showOriginal">
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                    <rect x="2" y="1" width="11" height="13" rx="2" stroke="#6b7280" stroke-width="1.3"/>
+                    <path d="M5 5h5M5 8h5M5 11h3" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
+                  </svg>
+                  Original Text
+                  <span class="col-header-sub">(Paragraph Breakdown)</span>
+                  <!-- Left-pointing chevron = "click to collapse" -->
+                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M8.5 2.5L4 6.5l4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </template>
+                <!-- Collapsed state: right-pointing chevron + rotated label -->
+                <template v-else>
+                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M4.5 2.5L9 6.5l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span class="col-orig-label-vert">Original</span>
+                </template>
+              </button>
+
               <div class="col-header">
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
                   <rect x="1.5" y="1.5" width="12" height="12" rx="3" stroke="#6b7280" stroke-width="1.3"/>
@@ -804,60 +833,76 @@ onUnmounted(() => {
               class="block-row"
             >
 
-              <!-- ── Left card: original text ── -->
+              <!-- ── Left card: original text (collapsible) ── -->
               <!--
-                Active block gets a blue border + animated waveform indicator.
-                Play button in the header toggles play / pause for this block.
+                When showOriginal is false this card is a narrow strip.
+                Clicking the strip sets showOriginal = true to reveal the full column.
+                When showOriginal is true the card behaves like the original layout.
               -->
               <div :class="['block-card', 'block-card--left', { 'block-card--active': activeBlockId === block.id }]">
 
-                <!-- Card header: block label on the left, play button on the right -->
-                <div class="block-card-header">
-                  <div class="block-label">Block {{ block.id }}</div>
-
-                  <!-- Play / Pause button for this specific block -->
-                  <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
-                    <!-- Animated waveform bars when this block is playing -->
-                    <span v-if="activeBlockId === block.id && playbackState === 'playing'" class="play-badge play-badge--playing">
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      Now Playing…
-                    </span>
-                    <!-- Paused state indicator -->
-                    <span v-else-if="activeBlockId === block.id && playbackState === 'paused'" class="play-badge play-badge--paused">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                        <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                      </svg>
-                      Paused
-                    </span>
-                    <!-- Default: play icon + label -->
-                    <span v-else class="play-badge play-badge--idle">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
-                      </svg>
-                      Play
-                    </span>
-                  </button>
+                <!-- Collapsed strip — shown only when the original-text panel is hidden -->
+                <div v-if="!showOriginal" class="orig-strip-hint" @click="showOriginal = true">
+                  <!-- Right-pointing expand icon -->
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 2L9 6l-4.5 4" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <!-- Rotated block label so it reads bottom-to-top in the strip -->
+                  <span class="orig-strip-label">B{{ block.id }}</span>
                 </div>
 
-                <!-- Original text — clamped by default, expandable via Read more -->
-                <p
-                  :ref="el => checkClamp(el, block.id)"
-                  :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
-                >
-                  {{ block.originalText }}
-                </p>
+                <!-- Expanded — full original-text card content -->
+                <template v-else>
 
-                <!-- Read more / Show less toggle — only when text actually overflows -->
-                <button
-                  v-if="clampedBlocks[block.id] || isExpanded(block.id)"
-                  class="btn-toggle"
-                  @click="toggleBlock(block.id)"
-                >
-                  {{ isExpanded(block.id) ? 'Show less ↑' : 'Read more ↓' }}
-                </button>
+                  <!-- Card header: block label on the left, play button on the right -->
+                  <div class="block-card-header">
+                    <div class="block-label">Block {{ block.id }}</div>
+
+                    <!-- Play / Pause button for this specific block -->
+                    <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
+                      <!-- Animated waveform bars when this block is playing -->
+                      <span v-if="activeBlockId === block.id && playbackState === 'playing'" class="play-badge play-badge--playing">
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                        Now Playing…
+                      </span>
+                      <!-- Paused state indicator -->
+                      <span v-else-if="activeBlockId === block.id && playbackState === 'paused'" class="play-badge play-badge--paused">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                          <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                          <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
+                        </svg>
+                        Paused
+                      </span>
+                      <!-- Default: play icon + label -->
+                      <span v-else class="play-badge play-badge--idle">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                          <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
+                        </svg>
+                        Play
+                      </span>
+                    </button>
+                  </div>
+
+                  <!-- Original text — clamped by default, expandable via Read more -->
+                  <p
+                    :ref="el => checkClamp(el, block.id)"
+                    :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
+                  >
+                    {{ block.originalText }}
+                  </p>
+
+                  <!-- Read more / Show less toggle — only when text actually overflows -->
+                  <button
+                    v-if="clampedBlocks[block.id] || isExpanded(block.id)"
+                    class="btn-toggle"
+                    @click="toggleBlock(block.id)"
+                  >
+                    {{ isExpanded(block.id) ? 'Show less ↑' : 'Read more ↓' }}
+                  </button>
+
+                </template>
               </div>
 
               <!-- ── Right card: summary + key points ── -->
@@ -1470,6 +1515,116 @@ kbd {
   grid-template-columns: 2fr 3fr;
   gap: 16px;
   align-items: stretch;
+}
+
+/* ─────────────────────────────────────────
+   Collapsible original-text panel
+   When .result-grid--orig-hidden is applied the left column narrows to
+   a 44px clickable strip and the right (summary) column fills the rest.
+───────────────────────────────────────── */
+
+/* Narrow the left column for both the header and all block rows */
+.result-grid--orig-hidden .result-grid-header,
+.result-grid--orig-hidden .block-row {
+  grid-template-columns: 44px 1fr;
+}
+
+/* ── Left column header toggle button ── */
+/* Shares base styles with .col-header but resets browser button defaults */
+.col-orig-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  padding: 0 4px 8px;
+  border: none;
+  border-bottom: 2px solid #e5e7eb;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s;
+  width: 100%;
+}
+.col-orig-toggle:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+.col-toggle-arrow { flex-shrink: 0; }
+
+/* In collapsed mode, stack icon + rotated label vertically */
+.result-grid--orig-hidden .col-orig-toggle {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 0 8px;
+  gap: 6px;
+}
+
+/* Rotated "Original" text shown in the collapsed header strip */
+.col-orig-label-vert {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* ── Collapsed left block cards ── */
+/* When collapsed, hide the normal content and show only the strip */
+.result-grid--orig-hidden .block-card--left {
+  padding: 10px 4px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed; /* visual cue that the panel is collapsed/hidden */
+  min-height: 80px;
+}
+.result-grid--orig-hidden .block-card--left:hover {
+  border-color: #93c5fd;
+  background: #f0f6ff;
+}
+
+/* Strip hint: icon + rotated block label, stacked vertically inside the narrow card */
+.orig-strip-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  min-height: 60px;
+  width: 100%;
+}
+
+/* Rotated "B1 / B2 / B3" label inside each collapsed block strip */
+.orig-strip-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b0b8cc;
+}
+
+/* ── Mobile: hide the strip entirely, just stack normally ── */
+@media (max-width: 860px) {
+  /* Revert narrow columns — mobile already stacks to 1fr */
+  .result-grid--orig-hidden .result-grid-header,
+  .result-grid--orig-hidden .block-row {
+    grid-template-columns: 1fr;
+  }
+  /* Hide the collapsed left cards on mobile to avoid a confusing stub */
+  .result-grid--orig-hidden .block-card--left {
+    display: none;
+  }
 }
 
 /* Column header label */

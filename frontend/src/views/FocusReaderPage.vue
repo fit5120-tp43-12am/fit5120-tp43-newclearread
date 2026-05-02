@@ -63,8 +63,6 @@ const CONFUSABLES = {
   thop: ['thin', 'then', 'shop'], prail: ['trail', 'plain', 'prail'],
 }
 
-const STORAGE_KEY = 'focus-reader-sessions'
-
 // ── Chip colour palette ───────────────────────────────────────────────────────
 // Target chips are always teal so the learner can distinguish colours if needed,
 // but the task still requires reading the label to pick the correct one.
@@ -95,7 +93,7 @@ const ui = reactive({
   showOverlay:  true,
   overlayTitle: 'Catch the Target Chip',
   overlayBody:  'Each round gives you a cue — visual text or a spoken word. Tap the chip that matches it. Avoid look-alike distractors.',
-  sessions:     [],      // recent session history for the sidebar
+  // sessions list is now kept in sessionHistory (in-memory only)
   cueIsAudio:   false,   // controls whether the ♪ Replay button is shown
 })
 
@@ -113,6 +111,10 @@ const G = {
 // ── Reactive flags that drive button visibility ───────────────────────────────
 const isRunning = ref(false)
 const isPaused  = ref(false)
+
+// In-memory session history — cleared when the page is refreshed or closed.
+// Intentionally NOT persisted to localStorage so records only exist for this visit.
+const sessionHistory = ref([])
 
 // ── Canvas ref ────────────────────────────────────────────────────────────────
 const canvasEl = ref(null)
@@ -371,29 +373,11 @@ function loop(now) {
   G.animId = requestAnimationFrame(loop)
 }
 
-// ── Session persistence ───────────────────────────────────────────────────────
-function getSessions() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [] } catch { return [] }
-}
-
-function saveSession(session) {
-  const all = getSessions()
-  all.unshift(session)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all.slice(0, 30)))
-}
-
-function loadHistory() {
-  ui.sessions = getSessions().slice(0, 5)
-}
-
-function exportHistory() {
-  const blob = new Blob([JSON.stringify(getSessions(), null, 2)], { type: 'application/json' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href = url
-  a.download = `focus-reader-sessions-${new Date().toISOString().slice(0, 10)}.json`
-  document.body.append(a); a.click(); a.remove()
-  URL.revokeObjectURL(url)
+// ── Session recording (in-memory only) ───────────────────────────────────────
+// Prepends a completed session record to sessionHistory so the right panel
+// always shows newest first. Capped at 20 entries to keep the list readable.
+function recordSession(session) {
+  sessionHistory.value = [session, ...sessionHistory.value].slice(0, 20)
 }
 
 // ── Session end ───────────────────────────────────────────────────────────────
@@ -408,8 +392,9 @@ function finishSession(completed) {
     : null
 
   if (completed || attempts > 0) {
-    saveSession({ date: new Date().toISOString(), score: G.score, accuracy, level: G.level,
-                  avgRt, hits: G.hits, wrong: G.wrong, misses: G.misses, completed })
+    // Save to in-memory list only — cleared on page reload (current-login records)
+    recordSession({ date: new Date().toISOString(), score: G.score, accuracy, level: G.level,
+                    avgRt, hits: G.hits, wrong: G.wrong, misses: G.misses, completed })
   }
 
   G.running = false; G.paused = false; G.roundActive = false; G.chips = []
@@ -427,7 +412,6 @@ function finishSession(completed) {
     : 'Session saved. Click Start to train again.'
   syncUiStats()
   drawEmpty()
-  loadHistory()
 }
 
 // ── Game controls ─────────────────────────────────────────────────────────────
@@ -510,7 +494,6 @@ onMounted(() => {
   ctx = canvasEl.value.getContext('2d')
   resizeCanvas()
   drawEmpty()
-  loadHistory()
   window.addEventListener('scroll', onScroll)
   window.addEventListener('resize', onResize)
   document.addEventListener('keydown', handleKey)
@@ -724,17 +707,16 @@ onUnmounted(() => {
             </label>
           </div>
 
-          <!-- Session history -->
+          <!-- Session history — in-memory only, cleared on page reload -->
           <div class="history-block">
-            <span class="panel-eyebrow">Recent Sessions</span>
+            <span class="panel-eyebrow">This Session's History</span>
             <ol class="history-list">
-              <li v-if="!ui.sessions.length" class="history-empty">No sessions yet</li>
-              <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
+              <li v-if="!sessionHistory.length" class="history-empty">No sessions yet</li>
+              <li v-for="(s, i) in sessionHistory" :key="i" class="history-item">
                 <span class="history-time">{{ formatDate(s.date) }}</span>
                 <span class="history-stats">{{ s.accuracy }}% · {{ s.score }} pts · Lv{{ s.level }}</span>
               </li>
             </ol>
-            <button class="btn-export" @click="exportHistory">Export JSON</button>
           </div>
 
           <!-- Clinical disclaimer -->
@@ -826,32 +808,32 @@ onUnmounted(() => {
   display: none;
 }
 
-/* ── Page hero header ── */
+/* ── Page hero header (compact — leaves more vertical room for the arena) ── */
 .page-hero {
-  padding: 120px 0 56px;
+  padding: 80px 0 18px;
   background: linear-gradient(160deg, #eef2ff 0%, #f9f7f4 60%);
   border-bottom: 1px solid #e5e7eb;
 }
 .eyebrow {
-  font-size: 12px; font-weight: 700;
+  font-size: 11px; font-weight: 700;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: #2563eb; display: block; margin-bottom: 14px;
+  color: #2563eb; display: block; margin-bottom: 8px;
 }
 .page-title {
-  font-size: clamp(32px, 5vw, 52px);
-  font-weight: 800; letter-spacing: -0.04em;
-  margin: 0 0 16px;
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 800; letter-spacing: -0.03em;
+  margin: 0 0 8px;
 }
 .page-sub {
-  font-size: 16px; color: #4b5563;
-  line-height: 1.7; max-width: 600px; margin: 0 0 24px;
+  font-size: 13px; color: #4b5563;
+  line-height: 1.65; max-width: 540px; margin: 0 0 14px;
 }
 .kbd-hints {
-  display: flex; gap: 20px; flex-wrap: wrap;
+  display: flex; gap: 16px; flex-wrap: wrap;
 }
 .kbd-hint {
-  font-size: 13px; color: #6b7280;
-  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: #6b7280;
+  display: flex; align-items: center; gap: 6px;
 }
 kbd {
   display: inline-block;
@@ -1091,15 +1073,6 @@ kbd {
 }
 .history-time { font-size: 11px; color: #9ca3af; font-weight: 500; }
 .history-stats { font-size: 13px; color: #374151; font-weight: 600; }
-.btn-export {
-  width: 100%; padding: 9px;
-  background: #f3f4f6; color: #4b5563;
-  font-size: 13px; font-weight: 600;
-  border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-export:hover { background: #e8eaf0; color: #0d1117; }
-
 .disclaimer {
   font-size: 11.5px; color: #9ca3af;
   line-height: 1.6; margin: 0;
@@ -1167,7 +1140,7 @@ kbd {
   .arena-wrap             { order: 2; aspect-ratio: 4 / 3; height: auto; }
   .game-panel:last-child  { order: 3; }
 
-  .page-hero { padding: 96px 0 40px; }
+  .page-hero { padding: 72px 0 14px; }
   .container { padding: 0 20px; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
