@@ -572,57 +572,59 @@ onUnmounted(() => {
     <main class="reading-area">
       <div :class="['reading-inner', { 'reading-inner--wide': mode === 'result' }]">
 
-        <!-- ── STATE: idle — welcome screen ── -->
+        <!-- ── STATE: idle — welcome / how-to screen ── -->
         <div v-if="mode === 'idle'" class="empty-state">
-          <div class="empty-icon">
-            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-              <rect x="9" y="6" width="34" height="40" rx="6" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
-              <path d="M17 20h18M17 27h18M17 34h11" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
-              <circle cx="40" cy="40" r="9" fill="#2563eb"/>
-              <path d="M40 36v8M36 40h8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h2 class="empty-title">Ready to support your reading</h2>
+
+          <h2 class="empty-title">Reading Support</h2>
           <p class="empty-sub">
-            Paste your text or drop a file into the bar below.<br>
-            Clearead will break it into blocks and summarise each one for you.
+            Paste or upload your text — Clearead will break it into sections
+            and write a plain-English summary for each one.
           </p>
-          <!-- Quick-feature pills -->
-          <div class="empty-features">
-            <div class="feature-pill">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M2 6.5h9M7.5 3l3.5 3.5L7.5 10" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Paste text
+
+          <!-- Three-step flow — horizontal cards with arrows showing the process -->
+          <div class="how-flow">
+
+            <div class="how-card how-card--1">
+              <span class="how-step-num">1</span>
+              <strong class="how-card-title">Add your text</strong>
+              <p class="how-card-desc">Paste, type, or upload a TXT, PDF, or DOCX file into the box below.</p>
             </div>
-            <div class="feature-pill">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M6.5 9V2.5M6.5 2.5L4 5M6.5 2.5L9 5" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 10h9" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/>
+
+            <!-- Arrow connector -->
+            <div class="how-arrow" aria-hidden="true">
+              <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                <path d="M0 8h24M18 2l6 6-6 6" stroke="#c7d2fe" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Upload TXT / PDF / DOCX
             </div>
-            <div class="feature-pill">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <rect x="1.5" y="4" width="4" height="5" rx="1" fill="#2563eb" opacity="0.3"/>
-                <path d="M7 4.5l4 2-4 2" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <div class="how-card how-card--2">
+              <span class="how-step-num">2</span>
+              <strong class="how-card-title">Process</strong>
+              <p class="how-card-desc">Click Process Text — Clearead breaks it into paragraphs and writes a clear summary for each.</p>
+            </div>
+
+            <!-- Arrow connector -->
+            <div class="how-arrow" aria-hidden="true">
+              <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                <path d="M0 8h24M18 2l6 6-6 6" stroke="#c7d2fe" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Drag &amp; drop anywhere
             </div>
+
+            <div class="how-card how-card--3">
+              <span class="how-step-num">3</span>
+              <strong class="how-card-title">Read or listen</strong>
+              <p class="how-card-desc">Read the summaries, or press Play on any block to hear it read aloud.</p>
+            </div>
+
           </div>
+
           <p class="empty-shortcut">
             <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
             <span>to submit quickly</span>
           </p>
 
           <!-- Demo button: loads sample data so the result UI can be previewed instantly -->
-          <button class="btn-demo" @click="loadDemo">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
-              <path d="M5 4.5l4 2-4 2V4.5z" fill="currentColor"/>
-            </svg>
-            Try Demo
-          </button>
+          <button class="btn-demo" @click="loadDemo">Try Demo</button>
         </div>
 
 
@@ -792,14 +794,9 @@ onUnmounted(() => {
                 :title="showOriginal ? 'Hide original text' : 'Show original text'"
                 :aria-label="showOriginal ? 'Hide original text' : 'Show original text'"
               >
-                <!-- Expanded state: icon + full label + collapse-left chevron -->
+                <!-- Expanded state: label + collapse-left chevron (no decorative icon) -->
                 <template v-if="showOriginal">
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                    <rect x="2" y="1" width="11" height="13" rx="2" stroke="#6b7280" stroke-width="1.3"/>
-                    <path d="M5 5h5M5 8h5M5 11h3" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
-                  </svg>
                   Original Text
-                  <span class="col-header-sub">(Paragraph Breakdown)</span>
                   <!-- Left-pointing chevron = "click to collapse" -->
                   <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
                     <path d="M8.5 2.5L4 6.5l4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -814,11 +811,8 @@ onUnmounted(() => {
                 </template>
               </button>
 
+              <!-- Right column header — no decorative icon -->
               <div class="col-header">
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                  <rect x="1.5" y="1.5" width="12" height="12" rx="3" stroke="#6b7280" stroke-width="1.3"/>
-                  <path d="M4.5 5h6M4.5 8h6M4.5 11h4" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/>
-                </svg>
                 Summary &amp; Key Points
               </div>
             </div>
@@ -936,25 +930,16 @@ onUnmounted(() => {
                 </div>
 
                 <div class="summary-section">
-                  <div class="section-title">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <rect x="1.5" y="1.5" width="10" height="10" rx="2" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
-                      <path d="M4 6.5h5M4 4.5h3" stroke="#2563eb" stroke-width="1" stroke-linecap="round"/>
-                    </svg>
-                    Summary
-                  </div>
+                  <!-- Section label — no icon, plain text -->
+                  <div class="section-title">Summary</div>
                   <p class="summary-text">
                     {{ block.summary || 'Summary is not available.' }}
                   </p>
                 </div>
 
                 <div class="keypoints-section">
-                  <div class="section-title">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <path d="M2 4l1.5 1.5L6 2M2 8l1.5 1.5L6 6M8 4h3M8 8h3" stroke="#f59e0b" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Key Points
-                  </div>
+                  <!-- Section label — no icon, plain text -->
+                  <div class="section-title">Key Points</div>
                   <p v-if="!block.keyPoints || block.keyPoints.length === 0" class="fallback-text">
                     No key points available.
                   </p>
@@ -1224,41 +1209,91 @@ onUnmounted(() => {
   text-align: center;
   padding: 56px 0 0;
 }
-.empty-icon { margin-bottom: 24px; }
 .empty-title {
-  font-size: 22px; font-weight: 700;
+  font-size: 28px; font-weight: 700;
   color: #0d1117; letter-spacing: -0.03em;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
 }
 .empty-sub {
-  font-size: 15px; line-height: 1.65;
-  color: #6b7280; margin: 0 0 28px;
+  font-size: 16px; line-height: 1.7;
+  color: #4b5563; margin: 0 0 40px;
+  max-width: 520px;
 }
-.empty-features {
-  display: flex; flex-wrap: wrap;
-  justify-content: center; gap: 8px;
-  margin-bottom: 24px;
+
+/* ── Three-step process flow ── */
+/* Horizontal cards with arrow connectors between them. */
+.how-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 32px;
 }
-.feature-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px;
-  font-size: 13px; font-weight: 500; color: #374151;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+/* Arrow between cards */
+.how-arrow {
+  flex-shrink: 0;
+  padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
 }
+
+/* Each step card */
+.how-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px 18px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  text-align: left;
+}
+
+/* Subtle distinct tint per step so they feel like a sequence */
+.how-card--1 { background: #eff6ff; border-color: #dbeafe; }
+.how-card--2 { background: #f0fdf4; border-color: #bbf7d0; }
+.how-card--3 { background: #fefce8; border-color: #fef08a; }
+
+/* Large step number badge at the top of each card */
+.how-step-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  font-size: 14px; font-weight: 800;
+}
+.how-card--1 .how-step-num { background: #2563eb; color: #fff; }
+.how-card--2 .how-step-num { background: #16a34a; color: #fff; }
+.how-card--3 .how-step-num { background: #ca8a04; color: #fff; }
+
+.how-card-title {
+  font-size: 15px; font-weight: 700;
+  color: #0d1117; line-height: 1.3;
+}
+.how-card-desc {
+  font-size: 13px; line-height: 1.65;
+  color: #4b5563; margin: 0;
+}
+
+/* On narrow screens: stack cards vertically, hide arrows */
+@media (max-width: 600px) {
+  .how-flow   { flex-direction: column; max-width: 100%; }
+  .how-arrow  { display: none; }
+  .how-card   { width: 100%; }
+}
+
 .empty-shortcut {
   display: flex; align-items: center; gap: 6px;
   font-size: 13px; color: #9ca3af; margin: 0;
 }
 
-/* Demo button — subtle outlined style, sits below the shortcut hint */
+/* Demo button — sits below the shortcut hint */
 .btn-demo {
   display: inline-flex; align-items: center; gap: 7px;
   margin-top: 20px;
-  padding: 9px 22px;
-  font-size: 13px; font-weight: 600;
+  padding: 10px 28px;
+  font-size: 14px; font-weight: 600;
   color: #2563eb;
   background: #eff6ff;
   border: 1.5px solid #bfdbfe;
