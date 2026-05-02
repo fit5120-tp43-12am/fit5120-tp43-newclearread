@@ -1,0 +1,38 @@
+{
+  "package": "ai/lora_training",
+  "purpose": "Document the ClearRead Llama LoRA training workflow",
+  "source_work": {
+    "training_branch": "feature/ai-llama-lora-training",
+    "training_workspace": "local training workspace",
+    "clean_package_branch_base": "origin/dev"
+  },
+  "included_file_groups": {
+    "configs": "Example training, inference, and environment configs",
+    "scripts": "Split, export, environment, training, evaluation, and inference scripts",
+    "docs": "Process and runbook documents",
+    "reports": "QA, training, validation, final test, and model-selection reports",
+    "manifests": "Metadata-only manifests and artifact metadata",
+    "history": "Sanitized stage reviews and selected run logs"
+  },
+  "large_artifacts_summarized_by_metadata": [
+    "raw and derived JSONL datasets",
+    "model adapter weights",
+    "base model files",
+    "tokenizer large artifacts",
+    "checkpoints",
+    "optimizer states",
+    "prediction JSONL outputs",
+    "cache folders",
+    "local command-output logs"
+  ],
+  "final_model_summary": {
+    "selected_candidate": "Candidate A",
+    "base_model": "unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit",
+    "training_route": "SFT + QLoRA",
+    "epochs": 3,
+    "optimizer_steps": 438,
+    "validation_schema_pass": "145/145",
+    "final_test_schema_pass": "144/145",
+    "deployment_requirement": "schema guard"
+  }
+}
