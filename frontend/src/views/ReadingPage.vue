@@ -414,11 +414,6 @@ async function handleSubmit() {
     result.value = data
     mode.value   = 'result'
     showFeedback('success', 'Text processed successfully.')
-
-    if (data.notice) {
-      // If the backend sent an informational notice (e.g. fallback used), show it too
-      showFeedback('success', data.notice, 6000)
-    }
   } catch (err) {
     mode.value = 'idle'
     showFeedback('error', err.message || 'Something went wrong. Please try again.', 6000)
@@ -722,8 +717,7 @@ onUnmounted(() => {
                 <circle cx="7" cy="7" r="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
                 <path d="M4 7l2.2 2.2 3.8-4.4" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <!-- Show a custom backend notice if provided, otherwise a default message -->
-              {{ result.notice || 'Text processed successfully.' }}
+              Text processed successfully.
             </div>
             <button class="btn-back" @click="handleBackToInput">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">

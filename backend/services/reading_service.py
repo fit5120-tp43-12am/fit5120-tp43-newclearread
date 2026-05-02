@@ -187,6 +187,9 @@ def process_reading_text(text: str) -> dict:
             preprocessing_reason,
             len(blocks),
         ),
+        block_word_counts=[
+            _count_words(block.get("originalText") or "") for block in blocks
+        ],
     )
 
     return {
@@ -294,12 +297,14 @@ def _log_reading_timing(
     model_block_count: int,
     fallback_block_count: int,
     segmentation_info: dict | None = None,
+    block_word_counts: list[int] | None = None,
 ) -> None:
     if not enabled:
         return
 
     total_seconds = time.perf_counter() - total_start
     segmentation_info = segmentation_info or {}
+    block_word_counts = block_word_counts or []
     print(
         "[reading pipeline] "
         f"preprocess={preprocess_seconds:.2f}s "
@@ -313,6 +318,7 @@ def _log_reading_timing(
         f"segmentation_mode={segmentation_info.get('mode') or 'unknown'} "
         f"segmentation_reason={segmentation_info.get('reason') or 'unknown'} "
         f"segmentation_detail={_format_log_value(segmentation_info.get('detail'))}",
+        f"block_words={block_word_counts}",
         flush=True,
     )
 
@@ -324,6 +330,11 @@ def _format_log_value(value: object, max_length: int = 300) -> str:
     if len(text) <= max_length:
         return text
     return f"{text[:max_length].rstrip()}..."
+
+
+def _count_words(text: str) -> int:
+    # Simple word count for checking block size in logs.
+    return len(re.findall(r"\S+", str(text or "")))
 
 
 def _limit_block_text(text: str) -> str:
