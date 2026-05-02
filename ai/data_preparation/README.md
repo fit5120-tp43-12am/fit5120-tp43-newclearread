@@ -2,7 +2,7 @@
 
 This directory documents and preserves the data-processing work used to prepare the LoRA training dataset for the reading-support summarization feature.
 
-The package is organized for code review. It includes scripts, prompts, schemas, configuration examples, and QA summaries. Generated datasets, raw XML/ZIP files, SQLite checkpoints, API logs, model artifacts, and Python caches are intentionally excluded from Git.
+The package is organized for review. It includes scripts, prompts, schemas, configuration examples, and QA summaries. Generated datasets, raw XML/ZIP files, SQLite checkpoints, API logs, model artifacts, and Python caches are intentionally not included in this repository.
 
 ## What This Pipeline Produces
 
@@ -129,6 +129,6 @@ A targeted recovery rerun processed 100 allowlisted records in a separate namesp
 
 ## Data Files
 
-The large generated `.jsonl` datasets are not committed here. The repository `.gitignore` excludes generated JSONL, model artifacts, checkpoints, logs, and caches to keep the Git history lightweight and reviewable.
+The large generated `.jsonl` datasets are not included here. The repository excludes generated JSONL, model artifacts, checkpoints, logs, and caches so the submitted materials stay lightweight and reviewable.
 
 If a reviewer needs the actual training JSONL files, they should be supplied through the agreed project data handoff channel rather than committed with the application source code.
