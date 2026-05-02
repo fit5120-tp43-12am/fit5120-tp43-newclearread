@@ -29,6 +29,11 @@ CHAT_API_TIMEOUT_SECONDS = 60
 AI_CHUNK_TARGET_SENTENCES = 160
 AI_CHUNK_TARGET_CHARS = 16000
 SEGMENTATION_CONCURRENCY = 4
+AI_MIN_SEGMENT_WORDS = 300
+AI_FORCE_MERGE_SEGMENT_WORDS = 180
+AI_MERGE_TARGET_MAX_WORDS = 800
+AI_SPLIT_TARGET_WORDS = 500
+AI_SPLIT_MAX_WORDS = 850
 
 # Local segmentation limits:
 # These control fallback block size and prevent the backend from producing too
@@ -251,6 +256,14 @@ def segment_sentence_chunks(
         fallback_reason = ""
         model_used = CHAT_API_MODEL
         note = "Segmented by semantic boundaries using sentence ID ranges."
+        all_segments = _post_process_ai_segments(
+            all_segments,
+            AI_MIN_SEGMENT_WORDS,
+            AI_FORCE_MERGE_SEGMENT_WORDS,
+            AI_MERGE_TARGET_MAX_WORDS,
+            AI_SPLIT_TARGET_WORDS,
+            AI_SPLIT_MAX_WORDS,
+        )
     elif local_chunk_count == len(sentence_chunks):
         mode = "local_fallback"
         fallback_reason = "ai_segmentation_failed"
@@ -599,10 +612,9 @@ Important rules:
 - Return sentence ID ranges only.
 - Keep each segment focused on one topic.
 - Prefer 450-700 words per segment after local assembly.
-- Avoid segments under 300 words unless they are the introduction, conclusion, or a clearly separate short section.
-- If two short neighboring sections discuss the same topic, merge them into one segment.
+- Avoid segments under 300 words unless they are a clearly separate short section.
 - If the source text is short, fewer words are acceptable.
-- Keep conclusion as a separate segment if present.
+- Keep conclusion separate only if it has enough content. If it is short, merge it with the previous segment.
 - Create a short heading for each segment.
 - Choose segment_type from: introduction, background, method, result, discussion, conclusion, general, unknown.
 - Sentence ranges must be continuous, non-overlapping, and ordered.
@@ -823,6 +835,164 @@ def _cap_local_segments(segments: list[dict]) -> list[dict]:
     ).strip()
     _append_local_segment(head, tail_text)
     return head
+
+
+def _post_process_ai_segments(
+    segments: list[dict],
+    min_words: int,
+    force_merge_words: int,
+    merge_target_max_words: int,
+    split_target_words: int,
+    split_max_words: int,
+) -> list[dict]:
+    # Keep AI blocks close to reading size.
+    # First remove tiny blocks, then split very large blocks.
+    merged = _merge_short_segments(
+        segments,
+        min_words,
+        force_merge_words,
+        merge_target_max_words,
+    )
+    return _split_large_segments(merged, split_target_words, split_max_words)
+
+
+def _merge_short_segments(
+    segments: list[dict],
+    min_words: int,
+    force_merge_words: int,
+    merge_target_max_words: int,
+) -> list[dict]:
+    # AI sometimes creates tiny blocks.
+    # Merge those blocks so the reading page is less jumpy.
+    pending: list[dict] = []
+    index = 0
+
+    while index < len(segments):
+        current = dict(segments[index])
+        current_words = _count_words(current.get("cleaned_text") or "")
+
+        if current_words >= min_words:
+            pending.append(current)
+            index += 1
+            continue
+
+        previous_words = (
+            _count_words(pending[-1].get("cleaned_text") or "") if pending else 0
+        )
+        must_merge = current_words < force_merge_words
+        can_merge_previous = pending and (
+            must_merge or previous_words + current_words <= merge_target_max_words
+        )
+        if can_merge_previous:
+            pending[-1] = _combine_segments(pending[-1], current)
+            index += 1
+            continue
+
+        if index + 1 < len(segments):
+            next_segment = dict(segments[index + 1])
+            next_words = _count_words(next_segment.get("cleaned_text") or "")
+            if must_merge or current_words + next_words <= merge_target_max_words:
+                pending.append(_combine_segments(current, next_segment))
+                index += 2
+                continue
+
+        pending.append(current)
+        index += 1
+
+    if len(pending) >= 2:
+        last_words = _count_words(pending[-1].get("cleaned_text") or "")
+        previous_words = _count_words(pending[-2].get("cleaned_text") or "")
+        must_merge = last_words < force_merge_words
+        can_merge = last_words + previous_words <= merge_target_max_words
+        if last_words < min_words and (must_merge or can_merge):
+            last = pending.pop()
+            pending[-1] = _combine_segments(pending[-1], last)
+
+    return _renumber_segments(pending)
+
+
+def _split_large_segments(
+    segments: list[dict],
+    target_words: int,
+    max_words: int,
+) -> list[dict]:
+    # Split only blocks that are clearly too big.
+    # Sentence order is kept.
+    split_segments: list[dict] = []
+
+    for segment in segments:
+        text = str(segment.get("cleaned_text") or "").strip()
+        if _count_words(text) <= max_words:
+            split_segments.append(dict(segment))
+            continue
+
+        sentence_texts = [
+            sentence["text"]
+            for sentence in split_text_into_sentences(text)
+            if sentence.get("text")
+        ]
+        if len(sentence_texts) <= 1:
+            split_segments.append(dict(segment))
+            continue
+
+        current_sentences: list[str] = []
+        current_words = 0
+        for sentence_text in sentence_texts:
+            sentence_words = _count_words(sentence_text)
+            if current_sentences and current_words + sentence_words > target_words:
+                split_segments.append(_copy_segment_with_text(segment, current_sentences))
+                current_sentences = []
+                current_words = 0
+
+            current_sentences.append(sentence_text)
+            current_words += sentence_words
+
+        if current_sentences:
+            split_segments.append(_copy_segment_with_text(segment, current_sentences))
+
+    return _renumber_segments(_merge_tiny_tail_segments(split_segments, target_words))
+
+
+def _merge_tiny_tail_segments(segments: list[dict], target_words: int) -> list[dict]:
+    # After splitting, avoid a tiny tail block.
+    if len(segments) < 2:
+        return segments
+
+    last_words = _count_words(segments[-1].get("cleaned_text") or "")
+    if last_words >= AI_FORCE_MERGE_SEGMENT_WORDS:
+        return segments
+
+    previous_words = _count_words(segments[-2].get("cleaned_text") or "")
+    if previous_words + last_words <= target_words + AI_FORCE_MERGE_SEGMENT_WORDS:
+        last = segments.pop()
+        segments[-1] = _combine_segments(segments[-1], last)
+
+    return segments
+
+
+def _copy_segment_with_text(segment: dict, sentence_texts: list[str]) -> dict:
+    text = " ".join(sentence_texts).strip()
+    copied = dict(segment)
+    copied["cleaned_text"] = text
+    copied["token_count"] = estimate_token_count(text)
+    return copied
+
+
+def _combine_segments(first: dict, second: dict) -> dict:
+    # Keep the text order when two neighboring blocks are merged.
+    first_text = str(first.get("cleaned_text") or "").strip()
+    second_text = str(second.get("cleaned_text") or "").strip()
+    combined_text = " ".join(text for text in (first_text, second_text) if text).strip()
+    combined = dict(first)
+    combined["heading"] = first.get("heading") or second.get("heading")
+    combined["segment_type"] = first.get("segment_type") or second.get("segment_type")
+    combined["cleaned_text"] = combined_text
+    combined["token_count"] = estimate_token_count(combined_text)
+    return combined
+
+
+def _count_words(text: str) -> int:
+    return len(re.findall(r"\S+", str(text or "")))
 
 
 def _segmentation_success_response(
