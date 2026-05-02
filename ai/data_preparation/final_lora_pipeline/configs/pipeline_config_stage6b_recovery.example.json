@@ -1,0 +1,83 @@
+{
+  "project_root": ".",
+  "generation_model": "gpt-5.4-mini-2026-03-17",
+  "judge_model": "gpt-5.5",
+  "max_attempts": 4,
+  "write_combined_file": true,
+  "flush_every_records": 25,
+  "api": {
+    "provider": "openai",
+    "use_structured_outputs": true,
+    "generation_max_output_tokens": 700,
+    "judge_max_output_tokens": 2400,
+    "generation_reasoning_effort": null,
+    "judge_reasoning_effort": null,
+    "text_verbosity": null,
+    "request_timeout_seconds": 120,
+    "max_api_retries": 5,
+    "backoff_base_seconds": 2.0,
+    "backoff_max_seconds": 60.0
+  },
+  "paths": {
+    "generation_prompt": "prompts/generation_system.txt",
+    "judge_prompt": "prompts/judge_system.txt",
+    "assistant_schema": "schemas/assistant_label.schema.json",
+    "judge_schema": "schemas/judge_result.schema.json",
+    "accepted_dir": "outputs/stage6b_recovery_v2/accepted",
+    "quarantine_dir": "outputs/stage6b_recovery_v2/quarantine",
+    "logs_dir": "outputs/stage6b_recovery_v2/logs",
+    "checkpoint_db": "outputs/stage6b_recovery_v2/checkpoints/stage6b_recovery_v2.sqlite3",
+    "reports_dir": "outputs/stage6b_recovery_v2/reports"
+  },
+  "datasets": [
+    {
+      "slug": "assignment_rubric",
+      "domain_hint": "assignment",
+      "source_path": "../source_sft/assignment_rubric_cleaned_sft.jsonl",
+      "expected_records": 89,
+      "accepted_filename": "assignment_rubric_v1.jsonl"
+    },
+    {
+      "slug": "tech_doc",
+      "domain_hint": "technical",
+      "source_path": "../source_sft/tech_doc_100_sft.repaired.jsonl",
+      "expected_records": 99,
+      "accepted_filename": "tech_doc_v1.jsonl"
+    },
+    {
+      "slug": "academic_book",
+      "domain_hint": "academic_book",
+      "source_path": "../source_sft/academic_book_cleaned_sft.jsonl",
+      "expected_records": 250,
+      "accepted_filename": "academic_book_v1.jsonl"
+    },
+    {
+      "slug": "academic_paper",
+      "domain_hint": "academic_paper",
+      "source_path": "../source_sft/academic_paper_500_repaired_sft.jsonl",
+      "expected_records": 500,
+      "accepted_filename": "academic_paper_v1.jsonl"
+    },
+    {
+      "slug": "public_service",
+      "domain_hint": "public_service",
+      "source_path": "../source_sft/public_service_200_sft_reviewed.jsonl",
+      "expected_records": 200,
+      "accepted_filename": "public_service_v1.jsonl"
+    },
+    {
+      "slug": "medlineplus",
+      "domain_hint": "medical",
+      "source_path": "../source_sft/medlineplus_250_english_sft.jsonl",
+      "expected_records": 250,
+      "accepted_filename": "medlineplus_v1.jsonl"
+    },
+    {
+      "slug": "gen_know",
+      "domain_hint": "general_expository",
+      "source_path": "../source_sft/gen_know_150_sft.jsonl",
+      "expected_records": 149,
+      "accepted_filename": "gen_know_v1.jsonl"
+    }
+  ]
+}
