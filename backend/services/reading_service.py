@@ -1,4 +1,5 @@
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -33,9 +34,25 @@ def _env_int(name: str, default: int) -> int:
 def process_reading_text(text: str) -> dict:
     # This is the main service used by the Reading Support page.
     # It converts one raw article into the block-based response expected by the frontend.
+    total_start = time.perf_counter()
+    preprocess_seconds = 0.0
+    team_model_seconds = 0.0
+    fallback_seconds = 0.0
+    timing_enabled = _env_bool("CLEARREAD_READING_TIMING_LOGS", False)
+
     source_text = (text or "").strip()
     if not source_text:
         # Empty input is handled here so the API can return a consistent response shape.
+        _log_reading_timing(
+            timing_enabled,
+            total_start,
+            preprocess_seconds,
+            team_model_seconds,
+            fallback_seconds,
+            block_count=0,
+            model_block_count=0,
+            fallback_block_count=0,
+        )
         return {
             "notice": "No text was provided.",
             "usedFallback": True,
@@ -50,12 +67,14 @@ def process_reading_text(text: str) -> dict:
         }
 
     # The preprocessor cleans the text and splits it into semantic reading segments.
+    preprocess_start = time.perf_counter()
     (
         segments,
         preprocessing_used_fallback,
         preprocessing_reason,
         segmentation_metadata,
     ) = _build_segments(source_text)
+    preprocess_seconds = time.perf_counter() - preprocess_start
 
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
@@ -80,6 +99,7 @@ def process_reading_text(text: str) -> dict:
         prepared_blocks[: model_service.get_summary_max_blocks()] if model_enabled else []
     )
     if model_blocks:
+        team_model_start = time.perf_counter()
         try:
             model_response = model_service.summarize_blocks(
                 [
@@ -91,6 +111,8 @@ def process_reading_text(text: str) -> dict:
         except Exception:
             used_fallback = True
             fallback_reasons.append("team_model_unavailable")
+        finally:
+            team_model_seconds = time.perf_counter() - team_model_start
 
     fallback_blocks = []
     model_summaries_by_id = {}
@@ -106,7 +128,9 @@ def process_reading_text(text: str) -> dict:
         else:
             fallback_blocks.append(block)
 
+    fallback_start = time.perf_counter()
     fallback_results_by_id = _summarise_fallback_blocks(fallback_blocks)
+    fallback_seconds = time.perf_counter() - fallback_start
 
     blocks = []
     for block in prepared_blocks:
@@ -139,6 +163,17 @@ def process_reading_text(text: str) -> dict:
                 "keyPoints": summary_result.get("keyPoints") or [],
             }
         )
+
+    _log_reading_timing(
+        timing_enabled,
+        total_start,
+        preprocess_seconds,
+        team_model_seconds,
+        fallback_seconds,
+        block_count=len(blocks),
+        model_block_count=len(model_blocks),
+        fallback_block_count=len(fallback_blocks),
+    )
 
     return {
         "notice": _build_notice(used_fallback, fallback_reasons),
@@ -224,6 +259,33 @@ def _has_valid_model_summary(model_result: dict | None) -> bool:
     summary = str(model_result.get("summary") or "").strip()
     key_points = model_result.get("keyPoints") or []
     return bool(summary and key_points)
+
+
+def _log_reading_timing(
+    enabled: bool,
+    total_start: float,
+    preprocess_seconds: float,
+    team_model_seconds: float,
+    fallback_seconds: float,
+    block_count: int,
+    model_block_count: int,
+    fallback_block_count: int,
+) -> None:
+    if not enabled:
+        return
+
+    total_seconds = time.perf_counter() - total_start
+    print(
+        "[reading timing] "
+        f"preprocess={preprocess_seconds:.2f}s "
+        f"team_model={team_model_seconds:.2f}s "
+        f"fallback={fallback_seconds:.2f}s "
+        f"total={total_seconds:.2f}s "
+        f"blocks={block_count} "
+        f"model_blocks={model_block_count} "
+        f"fallback_blocks={fallback_block_count}",
+        flush=True,
+    )
 
 
 def _limit_block_text(text: str) -> str:
