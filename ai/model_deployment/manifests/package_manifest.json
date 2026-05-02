@@ -1,0 +1,35 @@
+{
+  "package": "ai/model_deployment",
+  "createdDate": "2026-05-02",
+  "purpose": "Organised ClearRead AI model deployment package",
+  "includedSections": [
+    "service",
+    "benchmarks",
+    "docs",
+    "reports",
+    "integration",
+    "manifests"
+  ],
+  "serviceEndpoints": [
+    "GET /health",
+    "GET /ready",
+    "POST /v1/clearread/summarize"
+  ],
+  "currentMvpLimits": {
+    "maxTextsPerRequestCodeDefault": 32,
+    "maxTextsPerRequestMeasuredL4": 28,
+    "maxTextsPerRequestConservative": 24,
+    "maxCharactersPerText": 11000,
+    "maxRequestBodyBytes": 2097152
+  },
+  "excluded": [
+    "model weights",
+    "LoRA adapter archive",
+    "raw benchmark results",
+    "raw logs",
+    "temporary endpoint identifiers",
+    "API keys",
+    "local environment files",
+    "internal planning records"
+  ]
+}
