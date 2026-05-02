@@ -1,6 +1,6 @@
 # Package Contents
 
-This package is intended for Git review of the data-preparation work.
+This package documents the data-preparation work and the files needed to review the processing logic.
 
 ## Included
 
@@ -21,7 +21,7 @@ The final v1 regeneration pipeline, including:
 
 ### `docs/`
 
-Teacher-facing explanations of the end-to-end workflow and package layout.
+Explanations of the end-to-end workflow and package layout.
 
 ### `manifests/`
 
@@ -33,7 +33,7 @@ Short QA summary suitable for review.
 
 ## Excluded
 
-The following are intentionally excluded from Git:
+The following are intentionally not included in this repository:
 
 - generated `.jsonl` datasets,
 - raw XML/ZIP source snapshots,
