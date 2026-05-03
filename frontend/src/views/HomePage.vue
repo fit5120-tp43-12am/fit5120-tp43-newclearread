@@ -34,7 +34,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link nav-link--active">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
+          <li><RouterLink to="/dyslexia" class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/training" class="nav-link">Training</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -52,7 +53,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
         <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
+        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/training" class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
       </ul>
     </div>
 
@@ -83,6 +85,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <RouterLink to="/dyslexia" class="btn-ghost">
             Learn About Dyslexia
           </RouterLink>
+          <RouterLink to="/training" class="btn-ghost">
+            Try Training Game
+          </RouterLink>
         </div>
       </div>
     </section>
@@ -109,6 +114,69 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             <h3>Adjust the Display</h3>
             <p>Change font size, spacing, and background colour. Find what works for you.</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Training game promo ── -->
+    <section class="section-training">
+      <div class="container training-inner">
+        <!-- Left: text content -->
+        <div class="training-text">
+          <p class="eyebrow">New — Reading Training</p>
+          <h2 class="section-title">Build reading skills with Focus Reader</h2>
+          <p class="training-desc">
+            A short, game-based exercise that trains you to tell apart easily confused
+            letters and sounds — like b/d/p/q and sh/ch/th. Tap the right moving chip
+            before time runs out. Difficulty adapts to your pace.
+          </p>
+          <ul class="training-bullets">
+            <li>
+              <span class="bullet-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                  <path d="M4 7l2 2 4-4" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Confusable letters, phoneme chunks, and short words
+            </li>
+            <li>
+              <span class="bullet-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                  <path d="M4 7l2 2 4-4" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Visual and audio cues — trains both reading pathways
+            </li>
+            <li>
+              <span class="bullet-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                  <path d="M4 7l2 2 4-4" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Adapts difficulty automatically as you improve
+            </li>
+          </ul>
+          <RouterLink to="/training" class="btn-training">
+            Try Focus Reader
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </RouterLink>
+        </div>
+        <!-- Right: visual preview of the game chips -->
+        <div class="training-visual" aria-hidden="true">
+          <div class="chip-preview">
+            <div class="chip chip--target">b</div>
+            <div class="chip chip--distractor chip--blue">d</div>
+            <div class="chip chip--distractor chip--rose">p</div>
+            <div class="chip chip--distractor chip--yellow">q</div>
+            <div class="chip chip--distractor chip--plain">sh</div>
+            <div class="chip chip--distractor chip--blue">ch</div>
+          </div>
+          <p class="preview-caption">Tap the chip that matches the cue</p>
         </div>
       </div>
     </section>
@@ -178,7 +246,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </div>
         <nav class="footer-links">
           <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Dyslexia</RouterLink>
+          <RouterLink to="/dyslexia" class="footer-link">Understand Dyslexia</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
@@ -505,6 +573,77 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 
 /* ── Responsive ── */
+/* ── Training promo section ── */
+.section-training {
+  padding: 96px 0;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.training-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+.training-text { max-width: 520px; }
+.training-desc {
+  font-size: 15.5px; color: #4b5563;
+  line-height: 1.72; margin: 0 0 28px;
+}
+.training-bullets {
+  list-style: none; padding: 0; margin: 0 0 32px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.training-bullets li {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14.5px; color: #374151; line-height: 1.5;
+}
+.bullet-icon { flex-shrink: 0; display: flex; }
+.btn-training {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 26px;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: #fff;
+  font-size: 15px; font-weight: 600;
+  border-radius: 999px; text-decoration: none;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-training:hover { opacity: 0.92; transform: translateY(-2px); }
+
+/* Decorative chip preview (right side of training promo) */
+.training-visual {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 20px;
+}
+.chip-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  grid-template-rows: repeat(2, 80px);
+  gap: 16px;
+  justify-items: center; align-items: center;
+}
+.chip {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 900;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+.chip:hover { transform: scale(1.08); }
+.chip--target    { background: #0f766e; color: #fff; border: 3px solid #07413e; }
+.chip--blue      { background: #2f6fbb; color: #fff; border: 2px solid #18395f; }
+.chip--yellow    { background: #f9d56e; color: #1f2937; border: 2px solid #8b6215; }
+.chip--rose      { background: #e76f73; color: #fff; border: 2px solid #82373a; }
+.chip--plain     { background: #fff; color: #20242a; border: 2px solid #aab6c1; }
+.chip--distractor { opacity: 0.88; }
+.preview-caption {
+  font-size: 12.5px; color: #9ca3af;
+  font-weight: 500; margin: 0;
+}
+
 @media (max-width: 1024px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -537,6 +676,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   .step-arrow { display: none; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
   .container { padding: 0 20px; }
-  .section-features, .section-steps, .section-cta { padding: 64px 0; }
+  .section-features, .section-steps, .section-cta, .section-training { padding: 64px 0; }
+  .training-inner { grid-template-columns: 1fr; gap: 40px; }
+  .training-visual { order: -1; }
+  .chip-preview { grid-template-columns: repeat(3, 68px); grid-template-rows: repeat(2, 68px); }
+  .chip { width: 64px; height: 64px; font-size: 18px; }
 }
 </style>

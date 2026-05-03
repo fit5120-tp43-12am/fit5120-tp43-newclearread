@@ -2,18 +2,33 @@
 logs
 *.log
 
-# Node (前端)
+# Node frontend
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
 
-# Python (后端)
+# Python backend and bytecode
 backend/venv/
 **/__pycache__/
 *.pyc
 
 # Env
 .env
+.env.*
+
+# AI training artifacts and generated data
+ai/lora_training/data/
+ai/lora_training/models/
+ai/lora_training/outputs/
+ai/lora_training/checkpoints/
+ai/lora_training/cache/
+ai/lora_training/unsloth_compiled_cache/
+ai/lora_training/**/*.safetensors
+ai/lora_training/**/*.pt
+ai/lora_training/**/*.pth
+ai/lora_training/**/*.bin
+ai/lora_training/**/*.gguf
+ai/lora_training/**/*.jsonl
 
 # Editor
 .vscode/

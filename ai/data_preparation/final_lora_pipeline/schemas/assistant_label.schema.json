@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "main_idea": {
+      "type": "string",
+      "description": "Exactly two short faithful sentences in simple English."
+    },
+    "key_points": {
+      "type": "array",
+      "description": "Exactly four short high-level sentences.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "main_idea",
+    "key_points"
+  ],
+  "additionalProperties": false
+}
