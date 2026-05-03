@@ -34,7 +34,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link nav-link--active">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
+          <li><RouterLink to="/dyslexia" class="nav-link">Understand Dyslexia</RouterLink></li>
           <li><RouterLink to="/training" class="nav-link">Training</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
@@ -53,7 +53,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
         <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
+        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
         <li><RouterLink to="/training" class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
       </ul>
     </div>
@@ -246,7 +246,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         </div>
         <nav class="footer-links">
           <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Dyslexia</RouterLink>
+          <RouterLink to="/dyslexia" class="footer-link">Understand Dyslexia</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
