@@ -536,7 +536,7 @@ onUnmounted(() => {
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
+          <li><RouterLink to="/dyslexia" class="nav-link">Understand Dyslexia</RouterLink></li>
           <li><RouterLink to="/training" class="nav-link nav-link--active">Training</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
@@ -555,7 +555,7 @@ onUnmounted(() => {
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
         <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
+        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
         <li><RouterLink to="/training" class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
       </ul>
     </div>
@@ -744,7 +744,7 @@ onUnmounted(() => {
         </div>
         <nav class="footer-links">
           <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Dyslexia</RouterLink>
+          <RouterLink to="/dyslexia" class="footer-link">Understand Dyslexia</RouterLink>
           <RouterLink to="/training" class="footer-link">Training</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
