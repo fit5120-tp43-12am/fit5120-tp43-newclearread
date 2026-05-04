@@ -71,10 +71,13 @@ const clampedBlocks = ref({})
 // Called after each block card renders — checks if the paragraph is overflowing
 function checkClamp(el, id) {
   if (!el) return
-  // scrollHeight > clientHeight means the text is taller than the visible area
+  const isClamped = el.scrollHeight > el.clientHeight + 2  // +2px to avoid sub-pixel false positives
+  // Only update if the value actually changed — prevents an infinite render loop
+  // where assigning clampedBlocks.value triggers a re-render which calls checkClamp again.
+  if (clampedBlocks.value[id] === isClamped) return
   clampedBlocks.value = {
     ...clampedBlocks.value,
-    [id]: el.scrollHeight > el.clientHeight + 2,   // +2px to avoid sub-pixel false positives
+    [id]: isClamped,
   }
 }
 
