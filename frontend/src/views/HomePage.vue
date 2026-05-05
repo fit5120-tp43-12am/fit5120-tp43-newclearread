@@ -1,15 +1,23 @@
 <script setup>
+// ── HomePage.vue ──────────────────────────────────────────────────────────────
+// The landing page. Shows the hero section, feature overview, training game promo,
+// how-it-works steps, a CTA banner, and the footer.
+// The script only handles two UI behaviours: navbar scroll shadow and mobile menu toggle.
 import { ref, onMounted, onUnmounted } from 'vue'
 
-// track whether the user has scrolled down — used to add a shadow to the navbar
+// scrolled drives the .navbar--scrolled CSS class.
+// The navbar starts transparent; once the user scrolls 10px it becomes frosted-glass.
 const scrolled  = ref(false)
-// track whether the mobile hamburger menu is open or closed
+// menuOpen controls whether the mobile slide-down nav drawer is visible.
 const menuOpen  = ref(false)
 
-// called on every scroll event — sets scrolled to true once the user goes past 10px
+// Simple scroll handler — called ~60× per second during scrolling.
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
-// add the scroll listener when the page loads, remove it when the page is destroyed
+// onMounted / onUnmounted are Vue lifecycle hooks.
+// We attach the scroll listener after the component is in the DOM, and REMOVE it when
+// the user navigates away — failing to remove it would cause a memory leak because the
+// callback would keep running on a component that no longer exists.
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
