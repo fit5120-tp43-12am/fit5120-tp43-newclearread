@@ -21,8 +21,10 @@ function prevChart() { if (chartIdx.value > 0) chartIdx.value-- }
 function nextChart() { if (chartIdx.value < CHARTS - 1) chartIdx.value++ }
 
 /* ── Chart 1: Horizontal Bar Chart ───────────────────────────────────── */
-// data for each disability group — m = male %, f = female %
-// source: ABS SDAC 2022, ages 0–24
+// Raw data sourced from the Australian Bureau of Statistics (ABS)
+// Survey of Disability, Ageing and Carers (SDAC) 2022, ages 0–24.
+// m = percentage of males with this disability type
+// f = percentage of females with this disability type
 const barGroups = [
   { lines: ['Learning and', 'understanding'], m: 8.3, f: 4.9 },
   { lines: ['Psychosocial'],                  m: 6.4, f: 5.1 },
@@ -35,34 +37,51 @@ const barGroups = [
 const sexFlt = ref('both')  // filter: 'both' | 'm' | 'f' — controls which bars are highlighted
 const bTip   = ref(null)    // tooltip data: { x, y, text } — null means no tooltip
 
-/* SVG bar-chart layout constants — these define the chart's coordinate system */
-const BAR_W     = 600        // total SVG width
-const BAR_H_SVG = 295        // total SVG height
-const ML  = 185, MR = 15, MT = 44, MB = 38   // margins: left, right, top, bottom
-const CW  = BAR_W - ML - MR          // chart drawing width = 400px
-const CH  = BAR_H_SVG - MT - MB      // chart drawing height = 213px
-const MAX_V = 9.5                     // max x-axis value (percentage)
-const SX  = CW / MAX_V               // pixels per 1% on the x-axis (≈ 42.1)
-const GH  = CH / barGroups.length    // height per group row (≈ 35.5)
-const BH  = 13, BG = 4               // individual bar height, gap between male/female bars
-const AXISY = BAR_H_SVG - MB         // y position of the x-axis line = 257
-const DYLX  = ML + 4.9 * SX         // x position of the dyslexia reference line (≈ 391)
+// ── SVG bar-chart coordinate system ──────────────────────────────────────────
+// The chart is drawn as an inline SVG element with a fixed viewBox.
+// All positions are calculated in SVG user units using these constants,
+// so the chart looks the same regardless of the display's actual pixel density.
+//
+// Layout diagram (not to scale):
+//   ┌──────────────────────────────────────────────────────┐ ← MT (top margin 44)
+//   │  label area │         bar drawing area       │ MR    │
+//   │  ML = 185px │ ←──────── CW = 400px ────────→ │ 15px  │
+//   │             │                                │       │
+//   └─────────────────────────────────────────────────────── ← AXISY (x-axis line)
+//                 ← MB (bottom margin 38) →
+const BAR_W     = 600        // total SVG viewBox width
+const BAR_H_SVG = 295        // total SVG viewBox height
+const ML  = 185, MR = 15, MT = 44, MB = 38   // margins: left (label area), right, top, bottom
+const CW  = BAR_W - ML - MR          // usable drawing width = 400px
+const CH  = BAR_H_SVG - MT - MB      // usable drawing height = 213px
+const MAX_V = 9.5                     // x-axis max value (% — just above the 8.3% peak)
+const SX  = CW / MAX_V               // scale factor: pixels per 1% → ≈ 42.1 px/%
+const GH  = CH / barGroups.length    // row height per disability group ≈ 35.5px
+const BH  = 13, BG = 4               // individual bar height (13px), gap between male/female bars (4px)
+const AXISY = BAR_H_SVG - MB         // y-coordinate of the x-axis baseline line
+const DYLX  = ML + 4.9 * SX         // x-coordinate of the dyslexia reference line (4.9% mark)
 
-// y-position helpers for each row's male bar, female bar, and centre
+// ── Row y-position helpers ────────────────────────────────────────────────────
+// Each group i has two bars (male on top, female below) stacked within its row.
+// mY(i) = top edge of the male bar for group i
+// fY(i) = top edge of the female bar for group i (male bar height + gap below it)
+// cY(i) = vertical centre of both bars combined (used to vertically centre the label)
 function mY(i) { return MT + i * GH }
 function fY(i) { return MT + i * GH + BH + BG }
 function cY(i) { return MT + i * GH + (BH * 2 + BG) / 2 }
 
-// return 1 (full opacity) if the bar matches the current filter, 0.15 (faded) otherwise
+// Returns the opacity for a bar based on the sex filter toggle.
+// When the user selects "Males", female bars fade to 0.15 opacity (dim but still visible).
 function barAlpha(sex) {
   return sexFlt.value === 'both' || sexFlt.value === sex ? 1 : 0.15
 }
 
-// show a tooltip when the user hovers a bar — flip position if it would go off screen
+// Build the tooltip data object when the user hovers a bar.
+// If the tooltip would overflow the right edge of the SVG, flip it to the left side.
 function showTip(i, sex, val) {
-  const bx = ML + val * SX
-  let tx = bx + 10
-  if (tx + 122 > BAR_W) tx = bx - 130
+  const bx = ML + val * SX           // x-coordinate of the right end of the bar
+  let tx = bx + 10                   // default: tooltip appears to the right of the bar end
+  if (tx + 122 > BAR_W) tx = bx - 130  // flip left if it would go off-screen
   bTip.value = {
     x: tx,
     y: (sex === 'm' ? mY(i) : fY(i)) + BH / 2,
@@ -71,65 +90,85 @@ function showTip(i, sex, val) {
 }
 
 /* ── Chart 2: Donut Chart ────────────────────────────────────────────── */
-// breakdown of the "psychological development" disability category
-// dyslexia falls under this category in ABS data
+// Shows the breakdown of "psychological development" disabilities (ABS SDAC 2022).
+// Dyslexia falls under this category in the ABS classification.
 const donutRaw = [
   { label: 'ASD',      v: 18.5, color: '#2563eb', note: 'Autism Spectrum Disorder' },
   { label: 'Dyslexia', v:  4.9, color: '#ef4444', note: 'Reading & learning difficulty' },
   { label: 'Others',   v:  0.5, color: '#9ca3af', note: 'Other conditions (derived)' },
 ]
-const PSYCH  = 23.9       // total % of people with a psychological development condition
-const hovSeg = ref(-1)    // index of the segment being hovered (-1 means none)
+const PSYCH  = 23.9       // total % of young people (0-24) with any psychological development condition
+const hovSeg = ref(-1)    // index of the hovered segment; -1 = nothing hovered
 
-/* SVG donut constants — viewBox is 560×380, donut centred at (280, 190) */
-const DCX = 280, DCY = 190   // centre of the donut
-const DRO = 155, DRI = 92    // outer and inner radius
+// ── Donut SVG coordinate system ───────────────────────────────────────────────
+// viewBox="0 0 560 380", donut centre = (280, 190)
+const DCX = 280, DCY = 190   // centre point of the donut circle
+const DRO = 155, DRI = 92    // outer radius and inner radius (inner creates the donut hole)
 
-// convert polar coordinates (angle in degrees) to an SVG [x, y] point
+// ── Polar-to-Cartesian converter ─────────────────────────────────────────────
+// SVG arcs require x,y coordinates, but it's easier to define donut segments
+// using angles. pol() converts (angle in degrees measured clockwise from 12 o'clock)
+// to (x, y) using standard trigonometry, then rotating -90° so 0° = top.
 function pol(cx, cy, r, deg) {
-  const rad = (deg - 90) * Math.PI / 180
+  const rad = (deg - 90) * Math.PI / 180   // convert degrees → radians, offset so 0° = up
   return [+(cx + r * Math.cos(rad)).toFixed(2), +(cy + r * Math.sin(rad)).toFixed(2)]
 }
 
-// build the SVG path string for one donut segment
-// if expand is true, the segment pops outward a bit (used on hover)
+// ── SVG donut segment path builder ───────────────────────────────────────────
+// Builds the SVG <path d="..."> string for one filled donut segment.
+// A donut segment is a shape with:
+//   - an outer arc from a0 to a1 (at radius ro)
+//   - two straight lines connecting the arc ends to the inner ring
+//   - an inner arc from a1 back to a0 (at radius ri)
+//
+// If expand=true the entire segment shifts outward from the centre (pop-out hover effect).
+//
+// SVG arc syntax: A rx ry x-rotation large-arc-flag sweep-flag x y
+//   large-arc-flag = 1 if the arc should take the long way round (> 180°), else 0
+//   sweep-flag     = 1 for clockwise (outer arc) / 0 for counter-clockwise (inner arc)
 function makeSectorPath(cx, cy, ro, ri, a0, a1, expand) {
   const off = expand ? 8 : 0
   const mid = (a0 + a1) / 2
-  // offset the centre point slightly outward to create the pop-out effect
+  // Shift the origin outward along the segment's midpoint angle to create the pop-out effect
   const ox = off * Math.cos((mid - 90) * Math.PI / 180)
   const oy = off * Math.sin((mid - 90) * Math.PI / 180)
-  const ccx = cx + ox, ccy = cy + oy
-  const [x1, y1] = pol(ccx, ccy, ro, a0)
-  const [x2, y2] = pol(ccx, ccy, ro, a1)
-  const [x3, y3] = pol(ccx, ccy, ri, a1)
-  const [x4, y4] = pol(ccx, ccy, ri, a0)
-  const lg = (a1 - a0 > 180) ? 1 : 0   // large-arc flag required by SVG arc command
+  const ccx = cx + ox, ccy = cy + oy    // shifted centre
+  const [x1, y1] = pol(ccx, ccy, ro, a0)   // outer arc start
+  const [x2, y2] = pol(ccx, ccy, ro, a1)   // outer arc end
+  const [x3, y3] = pol(ccx, ccy, ri, a1)   // inner arc start (going back)
+  const [x4, y4] = pol(ccx, ccy, ri, a0)   // inner arc end
+  const lg = (a1 - a0 > 180) ? 1 : 0       // large-arc-flag: 1 if segment spans > 180°
   return `M${x1} ${y1} A${ro} ${ro} 0 ${lg} 1 ${x2} ${y2} L${x3} ${y3} A${ri} ${ri} 0 ${lg} 0 ${x4} ${y4}Z`
 }
 
-// compute all the segment paths and label positions based on the raw data
+// ── Segment geometry (computed) ───────────────────────────────────────────────
+// Converts the raw data array into a computed array of fully-drawn segment objects.
+// Each item contains: the SVG path string, label line endpoints, text anchor direction,
+// and the percentage value within its parent category.
+// Runs again automatically whenever hovSeg changes (pop-out state changes).
 const segs = computed(() => {
-  const tot = donutRaw.reduce((s, d) => s + d.v, 0)
-  let a = 0
+  const tot = donutRaw.reduce((s, d) => s + d.v, 0)   // sum of all shown values
+  let a = 0   // running angle cursor (degrees, starting from 12 o'clock)
   return donutRaw.map((d, i) => {
-    const sweep = (d.v / tot) * 360    // degrees this segment takes up
+    const sweep = (d.v / tot) * 360    // how many degrees this segment spans
     const a1   = a + sweep
-    const hov  = hovSeg.value === i    // true if this segment is being hovered
+    const hov  = hovSeg.value === i    // is this segment currently being hovered?
     const path = makeSectorPath(DCX, DCY, DRO, DRI, a, a1, hov)
-    const mid  = a + sweep / 2         // midpoint angle (used to position the label)
-    const [lx1, ly1] = pol(DCX, DCY, DRO + 6,  mid)   // start of the label line
-    const [lx,  ly ] = pol(DCX, DCY, DRO + 26, mid)   // end of the label line / text anchor
-    const anc  = lx > DCX ? 'start' : 'end'            // left or right text alignment
-    const pct  = (d.v / PSYCH * 100).toFixed(1)        // % within the psychological category
+    const mid  = a + sweep / 2         // midpoint angle — used to position the callout label
+    const [lx1, ly1] = pol(DCX, DCY, DRO + 6,  mid)   // where the label line starts (at outer edge)
+    const [lx,  ly ] = pol(DCX, DCY, DRO + 26, mid)   // where the label text sits
+    const anc  = lx > DCX ? 'start' : 'end'            // right-side segments = left-align; left = right-align
+    const pct  = (d.v / PSYCH * 100).toFixed(1)        // percentage of the psychological-dev total
     const seg  = { ...d, path, a0: a, a1, mid, lx1, ly1, lx, ly, anc, pct, sweep }
-    a = a1
+    a = a1   // advance the angle cursor for the next segment
     return seg
   })
 })
 
-// the text shown in the centre of the donut
-// defaults to the category total, but updates when a segment is hovered
+// ── Donut centre text (computed) ─────────────────────────────────────────────
+// Shows a summary label in the hole of the donut.
+// Default: shows the overall category total (23.9% psychological development).
+// On hover: updates to show the hovered segment's label + value + relative %.
 const ctxt = computed(() => {
   if (hovSeg.value >= 0) {
     const s = donutRaw[hovSeg.value]
