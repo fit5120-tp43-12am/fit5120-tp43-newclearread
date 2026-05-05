@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 
-MAX_EXTRACTED_TEXT_CHARS = 5000
+MAX_EXTRACTED_TEXT_CHARS = 50000
 
 # Extensions that can be decoded directly as text.
 TEXT_EXTENSIONS = {
