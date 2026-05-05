@@ -555,6 +555,13 @@ const ctxt = computed(() => {
                 ></iframe>
               </div>
               <p class="video-caption">What it feels like to have dyslexia</p>
+              <p class="video-attribution">
+                Video embedded via YouTube. In accordance with YouTube's Terms of Service,
+                videos made available with the standard embed feature may be accessed and
+                displayed on third-party websites using YouTube's official embed link.
+                All rights to the video content remain with the original copyright holder.
+                No reproduction, download, or redistribution of this content is implied.
+              </p>
             </div>
           </div>
         </div>
@@ -974,6 +981,16 @@ const ctxt = computed(() => {
   font-size: 13px;
   color: #9ca3af;
   text-align: center;
+}
+.video-attribution {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #b0b8c8;
+  line-height: 1.6;
+  text-align: center;
+  font-style: italic;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 8px;
 }
 
 /* ── ④ Signs ── */
