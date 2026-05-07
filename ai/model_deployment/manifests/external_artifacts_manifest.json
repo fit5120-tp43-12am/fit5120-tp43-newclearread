@@ -1,0 +1,32 @@
+{
+  "externalArtifacts": [
+    {
+      "name": "full_candidate_a_3epoch",
+      "type": "LoRA adapter directory",
+      "requiredFor": "real Transformers or vLLM model inference",
+      "gitStatus": "excluded",
+      "expectedRuntimeVariable": "CLEARREAD_AI_ADAPTER_DIR"
+    },
+    {
+      "name": "infer_clearread_candidate_a.py",
+      "type": "final inference wrapper",
+      "requiredFor": "real Transformers runtime and model output schema guard",
+      "gitStatus": "tracked in the training package, referenced here as an external artifact",
+      "expectedRuntimeVariable": "CLEARREAD_AI_WRAPPER_PATH"
+    },
+    {
+      "name": "final_candidate_a_inference.yaml",
+      "type": "inference configuration",
+      "requiredFor": "real model loading and generation settings",
+      "gitStatus": "tracked in the training package, referenced here as an external artifact",
+      "expectedRuntimeVariable": "CLEARREAD_AI_INFERENCE_CONFIG"
+    },
+    {
+      "name": "service API key",
+      "type": "secret",
+      "requiredFor": "authenticated backend-to-AI-service calls",
+      "gitStatus": "excluded",
+      "expectedRuntimeVariable": "CLEARREAD_AI_SERVICE_API_KEY"
+    }
+  ]
+}
