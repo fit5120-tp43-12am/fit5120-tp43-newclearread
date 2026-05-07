@@ -536,6 +536,7 @@ function onResize() {
 }
 
 // ── Guide modal (multi-step carousel) ────────────────────────────────────────
+const GUIDE_SEEN_KEY = 'clearead-training-guide-seen'
 const showGuide  = ref(false)
 const guideStep  = ref(0)
 const guideDir   = ref(1)   // 1 = forward, -1 = backward (drives slide direction)
@@ -546,7 +547,10 @@ function openGuide() {
   guideStep.value = 0
   showGuide.value = true
 }
-function closeGuide() { showGuide.value = false }
+function closeGuide() {
+  showGuide.value = false
+  localStorage.setItem(GUIDE_SEEN_KEY, '1')
+}
 function nextStep() {
   if (guideStep.value < TOTAL_GUIDE_STEPS - 1) {
     guideDir.value = 1; guideStep.value++
@@ -601,6 +605,11 @@ onMounted(() => {
   window.addEventListener('scroll', onScroll)
   window.addEventListener('resize', onResize)
   document.addEventListener('keydown', handleKey)
+
+  // Auto-open guide on first visit — only once, never again after closing
+  if (!localStorage.getItem(GUIDE_SEEN_KEY)) {
+    setTimeout(() => { showGuide.value = true }, 600)
+  }
 })
 
 onUnmounted(() => {
