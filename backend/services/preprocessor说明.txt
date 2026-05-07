@@ -1,0 +1,90 @@
+功能说明
+
+segment_long_text() 用于把一篇长文本切分成连续、有语义边界的 segment。它会本地完成文本清洗、切句、embedding 边界检测、segment 组装和验证，并可选地并发调用 LLM 为每个 segment 生成 viewpoint 和 summary。
+
+导入方式
+
+from backend.services.text_preprocessor import segment_long_text
+函数签名
+
+def segment_long_text(
+    text: str,
+    model: str = "text-embedding-3-small",
+    target_words: int = 650,
+    min_words: int = 450,
+    max_words: int = 850,
+    block_size: int = 4,
+    fallback_to_tfidf: bool = True,
+    keep_references: bool = False,
+    debug: bool = False,
+    enrich_with_llm: bool = True,
+    llm_model: str = "gpt-4.1-mini",
+    llm_concurrency: int = 5,
+    llm_max_retries: int = 3,
+) -> dict:
+基础用法
+
+result = segment_long_text(long_text)
+返回结构：
+
+{
+  "segments": [
+    {
+      "segment_id": 1,
+      "viewpoint": "A short mind map style idea label.",
+      "summary": "One factual sentence summarizing the segment.",
+      "word_count": 620,
+      "content": "Full cleaned segment content."
+    }
+  ]
+}
+常用配置
+
+如果希望提高 LLM 生成 viewpoint 和 summary 的速度，可以调整并发数：
+
+result = segment_long_text(
+    long_text,
+    enrich_with_llm=True,
+    llm_concurrency=5
+)
+如果只想使用本地规则，不调用 LLM 生成 viewpoint 和 summary：
+
+result = segment_long_text(
+    long_text,
+    enrich_with_llm=False
+)
+如果需要调试信息：
+
+result = segment_long_text(
+    long_text,
+    debug=True
+)
+debug=True 时会额外返回：
+
+{
+  "debug": {
+    "sentence_count": 0,
+    "content_sentence_count": 0,
+    "reference_sentence_count": 0,
+    "boundaries": [],
+    "segment_sentence_ranges": [],
+    "segment_viewpoints": [],
+    "heading_count_per_segment": [],
+    "split_reasons": []
+  }
+}
+环境变量
+
+如果使用 OpenAI embeddings 或 LLM enrichment，需要配置：
+
+OPENAI_API_KEY=your_api_key_here
+默认 embedding model 是：
+
+text-embedding-3-small
+默认 LLM enrichment model 是：
+
+gpt-4.1-mini
+Fallback 行为
+
+如果 embedding API 失败，并且 fallback_to_tfidf=True，函数会使用本地 TF-IDF fallback 做边界检测。
+如果没有 OPENAI_API_KEY，LLM enrichment 会跳过远程请求，保留本地生成的 viewpoint 和 summary。
