@@ -857,13 +857,13 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 .status-pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
   background: rgba(255,255,255,0.65);
   border: 1px solid rgba(255,255,255,0.9);
   backdrop-filter: blur(12px);
   border-radius: 999px;
-  font-size: 12.5px; font-weight: 500; color: #4b5563;
+  font-size: 15px; font-weight: 500; color: #4b5563;
 }
 .status-pill strong { color: #0d1117; font-weight: 700; }
 .status-pill--score strong { color: #2563eb; }
@@ -1009,15 +1009,15 @@ onUnmounted(() => {
 
 /* ── ⑦ Settings ── */
 .settings-row {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   background: rgba(255,255,255,0.55);
   border: 1px solid rgba(255,255,255,0.85);
   backdrop-filter: blur(12px);
-  border-radius: 16px; padding: 14px 20px;
+  border-radius: 16px; padding: 16px 24px;
 }
 .mode-select {
-  flex: 1; min-width: 160px;
-  padding: 8px 12px; font-size: 13px;
+  flex: 1; min-width: 180px;
+  padding: 10px 14px; font-size: 15px;
   color: #0d1117; background: rgba(255,255,255,0.7);
   border: 1px solid rgba(0,0,0,0.1); border-radius: 10px;
   appearance: none; cursor: pointer; font-family: inherit;
@@ -1026,26 +1026,26 @@ onUnmounted(() => {
 .mode-select:focus { outline: none; border-color: #93c5fd; }
 .mode-select:disabled { opacity: 0.6; cursor: not-allowed; }
 .toggle-row {
-  display: flex; align-items: center; gap: 8px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0;
 }
 .toggle-wrap { flex-shrink: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .toggle-track {
   display: flex; align-items: center;
-  width: 34px; height: 19px;
+  width: 40px; height: 22px;
   border-radius: 999px; background: #d1d5db;
   padding: 2px; cursor: pointer;
   transition: background 0.2s;
 }
 .toggle-track--on { background: #2563eb; }
 .toggle-thumb {
-  width: 15px; height: 15px;
+  width: 18px; height: 18px;
   border-radius: 50%; background: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   transition: transform 0.2s;
 }
-.toggle-track--on .toggle-thumb { transform: translateX(15px); }
-.toggle-label { font-size: 13px; font-weight: 500; color: #374151; }
+.toggle-track--on .toggle-thumb { transform: translateX(18px); }
+.toggle-label { font-size: 15px; font-weight: 500; color: #374151; }
 
 /* ── ⑧ History ── */
 .history-details {
@@ -1055,28 +1055,28 @@ onUnmounted(() => {
   border-radius: 14px; overflow: hidden;
 }
 .history-summary {
-  padding: 12px 18px;
-  font-size: 13px; font-weight: 600; color: #6b7280;
+  padding: 14px 22px;
+  font-size: 15px; font-weight: 600; color: #6b7280;
   cursor: pointer; list-style: none; user-select: none;
 }
 .history-summary:hover { color: #374151; }
 .history-list {
-  list-style: none; padding: 0 18px 12px; margin: 0;
-  display: flex; flex-direction: column; gap: 6px;
+  list-style: none; padding: 0 22px 14px; margin: 0;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.history-empty { font-size: 13px; color: #9ca3af; padding: 4px 0; }
+.history-empty { font-size: 14px; color: #9ca3af; padding: 4px 0; }
 .history-item {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 10px;
-  background: rgba(255,255,255,0.6); border-radius: 8px;
-  font-size: 12.5px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.6); border-radius: 10px;
+  font-size: 14px;
 }
 .history-time { color: #6b7280; }
 .history-stats { font-weight: 600; color: #374151; }
 
 /* ── Disclaimer ── */
 .disclaimer {
-  font-size: 11.5px; color: #9ca3af;
+  font-size: 13px; color: #9ca3af;
   text-align: center; margin: 0;
 }
 
