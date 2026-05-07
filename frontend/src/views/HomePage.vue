@@ -222,17 +222,27 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 <style scoped>
 /* ═══════════════════════════════════════════════════════
-   PAGE — one fixed gradient canvas for the whole scroll
+   PAGE — seamless gradient canvas, no fixed attachment
+   Use a tall linear base + radial blobs so there is NO
+   hard edge anywhere as the user scrolls.
    ═══════════════════════════════════════════════════════ */
 .page {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse 70% 55% at 5%  10%, rgba(147,167,255,0.45) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 60% at 95% 5%,  rgba(255,200,150,0.38) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 50% at 85% 65%, rgba(255,218,180,0.28) 0%, transparent 52%),
-    radial-gradient(ellipse 40% 40% at 15% 85%, rgba(147,167,255,0.22) 0%, transparent 52%),
+    /* top-left lavender */
+    radial-gradient(ellipse 80% 40% at 0%   0%,   rgba(147,167,255,0.50) 0%, transparent 55%),
+    /* top-right peach */
+    radial-gradient(ellipse 70% 35% at 100% 0%,   rgba(255,200,150,0.42) 0%, transparent 52%),
+    /* mid-left soft violet */
+    radial-gradient(ellipse 60% 30% at 0%   50%,  rgba(147,167,255,0.25) 0%, transparent 55%),
+    /* mid-right warm peach */
+    radial-gradient(ellipse 55% 28% at 100% 50%,  rgba(255,218,180,0.28) 0%, transparent 52%),
+    /* bottom-left lavender */
+    radial-gradient(ellipse 65% 30% at 0%   100%, rgba(147,167,255,0.30) 0%, transparent 55%),
+    /* bottom-right peach */
+    radial-gradient(ellipse 60% 28% at 100% 100%, rgba(255,200,150,0.30) 0%, transparent 52%),
+    /* base */
     #f4f5ff;
-  background-attachment: fixed;
   color: #0d1117;
 }
 
@@ -288,10 +298,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 /* ── Hero — transparent so page gradient shows ── */
 .hero {
   position: relative;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 160px 24px 100px;   /* top clears fixed navbar; bottom flows into features */
   background: transparent;
   overflow: hidden;
 }
@@ -386,7 +396,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
    FEATURES — transparent section, glass cards
    ═══════════════════════════════════════════════════════ */
 .section-features {
-  padding: 0 0 96px;
+  padding: 96px 0;
   /* no background, no border — seamless with page gradient */
 }
 .features-grid {
