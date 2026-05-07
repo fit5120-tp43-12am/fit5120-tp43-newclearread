@@ -288,10 +288,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 /* ── Hero — transparent so page gradient shows ── */
 .hero {
   position: relative;
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 160px 24px 100px;   /* top clears fixed navbar; bottom flows into features */
   background: transparent;
   overflow: hidden;
 }
@@ -386,7 +386,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
    FEATURES — transparent section, glass cards
    ═══════════════════════════════════════════════════════ */
 .section-features {
-  padding: 96px 0;
+  padding: 0 0 96px;
   /* no background, no border — seamless with page gradient */
 }
 .features-grid {
