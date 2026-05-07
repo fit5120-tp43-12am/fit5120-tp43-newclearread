@@ -188,7 +188,12 @@ function makeChip(label, isTarget, index, total) {
     vy: Math.sin(angle) * speed,
     spin:   (Math.random() - 0.5) * 0.9,
     wobble: Math.random() * Math.PI * 2,
-    hue: isTarget ? 'target' : pick(['blue', 'yellow', 'rose', 'plain']),
+    // Lv 1-2: target keeps its distinct teal colour (beginner scaffolding)
+    // Lv 3-4: all chips use random colours — must read to find the target
+    // Lv 5-6: all chips are plain white — maximum reading focus, zero colour cue
+    hue: G.level >= 5
+      ? 'plain'
+      : (isTarget && G.level <= 2 ? 'target' : pick(['blue', 'yellow', 'rose', 'plain'])),
   }
 }
 
@@ -293,7 +298,15 @@ function adaptDifficulty() {
     : Infinity
 
   if (successRate >= 0.82 && avgRt < 2500 && G.level < 6) {
-    G.level++; G.recent = []; ui.message += ' — Level up!'
+    G.level++
+    G.recent = []
+    if (G.level === 3) {
+      ui.message += ' — Level up! Colour hints removed — read carefully!'
+    } else if (G.level === 5) {
+      ui.message += ' — Level up! All circles are now the same colour. Pure reading!'
+    } else {
+      ui.message += ' — Level up!'
+    }
   } else if (successRate <= 0.45 && G.level > 1) {
     G.level--; G.recent = []; ui.message += ' — Slowing down.'
   }
