@@ -123,6 +123,15 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             <p>Change font size, spacing, and background colour. Find what works for you.</p>
           </div>
         </div>
+
+        <div class="features-cta">
+          <RouterLink to="/reading" class="btn-features-start">
+            Start Here
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </RouterLink>
+        </div>
       </div>
     </section>
 
@@ -185,48 +194,6 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             <div class="chip chip--distractor chip--blue">ch</div>
           </div>
           <p class="preview-caption">Tap the chip that matches the cue</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── How it works ── -->
-    <section class="section-steps">
-      <div class="container">
-        <p class="eyebrow">How it works</p>
-        <h2 class="section-title">Three steps</h2>
-
-        <div class="steps-row">
-          <div class="step">
-            <span class="step-num">1</span>
-            <div class="step-body">
-              <h3>Paste your text</h3>
-              <p>Paste any text or upload a file.</p>
-            </div>
-          </div>
-          <div class="step-arrow">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="#d1d5db" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="step">
-            <span class="step-num">2</span>
-            <div class="step-body">
-              <h3>Simplify</h3>
-              <p>Click Simplify. Get a plain English version and key points.</p>
-            </div>
-          </div>
-          <div class="step-arrow">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="#d1d5db" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="step">
-            <span class="step-num">3</span>
-            <div class="step-body">
-              <h3>Read or listen</h3>
-              <p>Read or listen at your own pace.</p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -459,46 +426,25 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-size: 14.5px; color: #6b7280;
   line-height: 1.7; margin: 0;
 }
-
-/* ── Steps ── */
-.section-steps {
-  padding: 96px 0;
-  background: #fafbff;
-  border-bottom: 1px solid #e5e7eb;
-}
-.steps-row {
+.features-cta {
+  margin-top: 40px;
   display: flex;
-  align-items: center;
-  gap: 0;
-  margin-top: 52px;
+  justify-content: center;
 }
-.step {
-  flex: 1;
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
+.btn-features-start {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 28px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 15px; font-weight: 600;
+  border-radius: 999px; text-decoration: none;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-.step-num {
-  width: 40px; height: 40px;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: #eef2ff;
-  color: #2563eb;
-  font-size: 15px; font-weight: 800;
-  border-radius: 12px;
-}
-.step-body h3 {
-  font-size: 16px; font-weight: 700;
-  margin: 0 0 8px; letter-spacing: -0.02em;
-}
-.step-body p {
-  font-size: 14px; color: #6b7280;
-  line-height: 1.65; margin: 0;
-}
-.step-arrow {
-  flex-shrink: 0;
-  padding: 0 28px;
-  margin-top: 10px;
+.btn-features-start:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37,99,235,0.35);
 }
 
 /* ── CTA ── */
@@ -680,11 +626,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
 
   .features-grid { grid-template-columns: 1fr; }
-  .steps-row  { flex-direction: column; gap: 24px; }
-  .step-arrow { display: none; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
   .container { padding: 0 20px; }
-  .section-features, .section-steps, .section-cta, .section-training { padding: 64px 0; }
+  .section-features, .section-cta, .section-training { padding: 64px 0; }
   .training-inner { grid-template-columns: 1fr; gap: 40px; }
   .training-visual { order: -1; }
   .chip-preview { grid-template-columns: repeat(3, 68px); grid-template-rows: repeat(2, 68px); }
