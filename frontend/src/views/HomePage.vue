@@ -435,7 +435,11 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 /* ── Footer ── */
 .footer {
-  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  background:
+    radial-gradient(ellipse 55% 120% at 15% 50%, rgba(147,167,255,0.35) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 100% at 85% 50%, rgba(255,200,150,0.3) 0%, transparent 60%),
+    #f0f1fa;
+  border-top: 1px solid rgba(99,120,255,0.12);
   padding: 48px 0;
 }
 .footer-inner {
@@ -452,10 +456,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .footer-logo {
   font-size: 16px; font-weight: 700;
-  color: #fff; letter-spacing: -0.3px;
+  color: #0d1117; letter-spacing: -0.3px;
 }
 .footer-tagline {
-  font-size: 13px; color: rgba(255,255,255,0.35);
+  font-size: 13px; color: #6b7280;
   margin: 0;
 }
 .footer-links {
@@ -463,13 +467,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .footer-link {
   font-size: 14px; font-weight: 500;
-  color: rgba(255,255,255,0.5);
+  color: #374151;
   text-decoration: none;
   transition: color 0.2s;
 }
-.footer-link:hover { color: #fff; }
+.footer-link:hover { color: #2563eb; }
 .footer-copy {
-  font-size: 13px; color: rgba(255,255,255,0.3);
+  font-size: 13px; color: #9ca3af;
   margin: 0;
 }
 
