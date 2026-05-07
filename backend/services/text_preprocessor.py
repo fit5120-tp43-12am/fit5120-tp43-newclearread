@@ -744,7 +744,7 @@ def validate_segments_detailed(
         raise ValueError("Segment word count does not match non-reference cleaned input word count.")
 
 
-def segment_long_text(
+def preprocess_text(
     text: str,
     model: str = DEFAULT_EMBEDDING_MODEL,
     target_words: int = 650,
@@ -1672,4 +1672,4 @@ if __name__ == "__main__":
         sample_text = f.read()
    
 
-    print(segment_long_text(sample_text, fallback_to_tfidf=True, debug=True))
+    print(preprocess_text(sample_text, fallback_to_tfidf=True, debug=True))
