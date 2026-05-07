@@ -1,0 +1,603 @@
+{
+  "source_dataset_path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted",
+  "used_source_files": [
+    "assignment_rubric_v1.jsonl",
+    "tech_doc_v1.jsonl",
+    "academic_book_v1.jsonl",
+    "academic_paper_v1.jsonl",
+    "public_service_v1.jsonl",
+    "medlineplus_v1.jsonl",
+    "gen_know_v1.jsonl"
+  ],
+  "stable_hash_method": "sha256(json.dumps(record, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()",
+  "word_count_regex": "[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*",
+  "word_count_regex_note": "Counts English alphanumeric tokens, including tokens with internal apostrophes or hyphens.",
+  "natural_length_buckets": {
+    "short": "<=400 user words",
+    "medium": "401-800 user words",
+    "long": ">=801 user words"
+  },
+  "total_record_count": 1452,
+  "domain_distribution": [
+    {
+      "domain": "assignment_rubric",
+      "count": 83,
+      "percent": 5.72
+    },
+    {
+      "domain": "tech_doc",
+      "count": 89,
+      "percent": 6.13
+    },
+    {
+      "domain": "academic_book",
+      "count": 233,
+      "percent": 16.05
+    },
+    {
+      "domain": "academic_paper",
+      "count": 486,
+      "percent": 33.47
+    },
+    {
+      "domain": "public_service",
+      "count": 198,
+      "percent": 13.64
+    },
+    {
+      "domain": "medlineplus",
+      "count": 230,
+      "percent": 15.84
+    },
+    {
+      "domain": "gen_know",
+      "count": 133,
+      "percent": 9.16
+    }
+  ],
+  "overall_natural_length_bucket_distribution": [
+    {
+      "bucket": "short",
+      "count": 241,
+      "percent": 16.6
+    },
+    {
+      "bucket": "medium",
+      "count": 1018,
+      "percent": 70.11
+    },
+    {
+      "bucket": "long",
+      "count": 193,
+      "percent": 13.29
+    }
+  ],
+  "per_domain_natural_length_bucket_distribution": {
+    "assignment_rubric": [
+      {
+        "bucket": "short",
+        "count": 0,
+        "percent": 0.0
+      },
+      {
+        "bucket": "medium",
+        "count": 15,
+        "percent": 18.07
+      },
+      {
+        "bucket": "long",
+        "count": 68,
+        "percent": 81.93
+      }
+    ],
+    "tech_doc": [
+      {
+        "bucket": "short",
+        "count": 11,
+        "percent": 12.36
+      },
+      {
+        "bucket": "medium",
+        "count": 69,
+        "percent": 77.53
+      },
+      {
+        "bucket": "long",
+        "count": 9,
+        "percent": 10.11
+      }
+    ],
+    "academic_book": [
+      {
+        "bucket": "short",
+        "count": 59,
+        "percent": 25.32
+      },
+      {
+        "bucket": "medium",
+        "count": 155,
+        "percent": 66.52
+      },
+      {
+        "bucket": "long",
+        "count": 19,
+        "percent": 8.15
+      }
+    ],
+    "academic_paper": [
+      {
+        "bucket": "short",
+        "count": 89,
+        "percent": 18.31
+      },
+      {
+        "bucket": "medium",
+        "count": 348,
+        "percent": 71.6
+      },
+      {
+        "bucket": "long",
+        "count": 49,
+        "percent": 10.08
+      }
+    ],
+    "public_service": [
+      {
+        "bucket": "short",
+        "count": 34,
+        "percent": 17.17
+      },
+      {
+        "bucket": "medium",
+        "count": 152,
+        "percent": 76.77
+      },
+      {
+        "bucket": "long",
+        "count": 12,
+        "percent": 6.06
+      }
+    ],
+    "medlineplus": [
+      {
+        "bucket": "short",
+        "count": 32,
+        "percent": 13.91
+      },
+      {
+        "bucket": "medium",
+        "count": 175,
+        "percent": 76.09
+      },
+      {
+        "bucket": "long",
+        "count": 23,
+        "percent": 10.0
+      }
+    ],
+    "gen_know": [
+      {
+        "bucket": "short",
+        "count": 16,
+        "percent": 12.03
+      },
+      {
+        "bucket": "medium",
+        "count": 104,
+        "percent": 78.2
+      },
+      {
+        "bucket": "long",
+        "count": 13,
+        "percent": 9.77
+      }
+    ]
+  },
+  "domain_x_natural_length_bucket_source_cross_tab": {
+    "assignment_rubric": {
+      "short": 0,
+      "medium": 15,
+      "long": 68,
+      "total": 83
+    },
+    "tech_doc": {
+      "short": 11,
+      "medium": 69,
+      "long": 9,
+      "total": 89
+    },
+    "academic_book": {
+      "short": 59,
+      "medium": 155,
+      "long": 19,
+      "total": 233
+    },
+    "academic_paper": {
+      "short": 89,
+      "medium": 348,
+      "long": 49,
+      "total": 486
+    },
+    "public_service": {
+      "short": 34,
+      "medium": 152,
+      "long": 12,
+      "total": 198
+    },
+    "medlineplus": {
+      "short": 32,
+      "medium": 175,
+      "long": 23,
+      "total": 230
+    },
+    "gen_know": {
+      "short": 16,
+      "medium": 104,
+      "long": 13,
+      "total": 133
+    }
+  },
+  "user_word_count_histogram_100": [
+    {
+      "bin": "<=300",
+      "count": 48,
+      "percent": 3.31
+    },
+    {
+      "bin": "301-400",
+      "count": 193,
+      "percent": 13.29
+    },
+    {
+      "bin": "401-500",
+      "count": 96,
+      "percent": 6.61
+    },
+    {
+      "bin": "501-600",
+      "count": 242,
+      "percent": 16.67
+    },
+    {
+      "bin": "601-700",
+      "count": 532,
+      "percent": 36.64
+    },
+    {
+      "bin": "701-800",
+      "count": 148,
+      "percent": 10.19
+    },
+    {
+      "bin": "801-900",
+      "count": 44,
+      "percent": 3.03
+    },
+    {
+      "bin": "901-1000",
+      "count": 83,
+      "percent": 5.72
+    },
+    {
+      "bin": "1001-1100",
+      "count": 49,
+      "percent": 3.37
+    },
+    {
+      "bin": "1101-1200",
+      "count": 16,
+      "percent": 1.1
+    },
+    {
+      "bin": ">1200",
+      "count": 1,
+      "percent": 0.07
+    }
+  ],
+  "overall_user_word_count_stats": {
+    "min": 221,
+    "p10": 358,
+    "p25": 511,
+    "p33": 562,
+    "p50": 622,
+    "p67": 661,
+    "p75": 698,
+    "p90": 905,
+    "p95": 989.9,
+    "p99": 1106.92,
+    "max": 1209,
+    "mean": 618.62
+  },
+  "per_domain_user_word_count_stats": {
+    "assignment_rubric": {
+      "min": 493,
+      "p10": 763.8,
+      "p25": 855,
+      "p33": 921.42,
+      "p50": 987,
+      "p67": 1050,
+      "p75": 1081.5,
+      "p90": 1146.2,
+      "p95": 1170.7,
+      "p99": 1198.34,
+      "max": 1209,
+      "mean": 964.81
+    },
+    "tech_doc": {
+      "min": 245,
+      "p10": 378,
+      "p25": 509,
+      "p33": 574.08,
+      "p50": 657,
+      "p67": 680.92,
+      "p75": 691,
+      "p90": 789.4,
+      "p95": 958.6,
+      "p99": 1055.48,
+      "max": 1103,
+      "mean": 625.56
+    },
+    "academic_book": {
+      "min": 253,
+      "p10": 344.2,
+      "p25": 386,
+      "p33": 518,
+      "p50": 570,
+      "p67": 629.88,
+      "p75": 695,
+      "p90": 706.8,
+      "p95": 874.4,
+      "p99": 996.36,
+      "max": 1002,
+      "mean": 560.65
+    },
+    "academic_paper": {
+      "min": 275,
+      "p10": 364,
+      "p25": 605.25,
+      "p33": 616,
+      "p50": 624,
+      "p67": 634,
+      "p75": 643,
+      "p90": 823,
+      "p95": 974.5,
+      "p99": 1035.15,
+      "max": 1117,
+      "mean": 614.87
+    },
+    "public_service": {
+      "min": 221,
+      "p10": 316.1,
+      "p25": 458.5,
+      "p33": 482.02,
+      "p50": 529,
+      "p67": 596.99,
+      "p75": 654.25,
+      "p90": 725.2,
+      "p95": 813.15,
+      "p99": 921.12,
+      "max": 993,
+      "mean": 541.02
+    },
+    "medlineplus": {
+      "min": 255,
+      "p10": 358.8,
+      "p25": 516.25,
+      "p33": 557.71,
+      "p50": 635,
+      "p67": 701.86,
+      "p75": 741.75,
+      "p90": 798,
+      "p95": 912.75,
+      "p99": 999.2,
+      "max": 1143,
+      "mean": 620.3
+    },
+    "gen_know": {
+      "min": 267,
+      "p10": 384.8,
+      "p25": 521,
+      "p33": 562.56,
+      "p50": 653,
+      "p67": 692.44,
+      "p75": 714,
+      "p90": 798.2,
+      "p95": 978.8,
+      "p99": 1029.68,
+      "max": 1071,
+      "mean": 625.83
+    }
+  },
+  "assistant_word_count_summary": {
+    "overall": {
+      "min": 64,
+      "p10": 82,
+      "p25": 89,
+      "p33": 92,
+      "p50": 98,
+      "p67": 104,
+      "p75": 106,
+      "p90": 114,
+      "p95": 119,
+      "p99": 132,
+      "max": 156,
+      "mean": 98.35
+    },
+    "by_domain": {
+      "assignment_rubric": {
+        "min": 80,
+        "p10": 90,
+        "p25": 98,
+        "p33": 102,
+        "p50": 105,
+        "p67": 109,
+        "p75": 112,
+        "p90": 116.8,
+        "p95": 123.9,
+        "p99": 135.26,
+        "max": 141,
+        "mean": 104.8
+      },
+      "tech_doc": {
+        "min": 69,
+        "p10": 76.8,
+        "p25": 82,
+        "p33": 84,
+        "p50": 88,
+        "p67": 95,
+        "p75": 99,
+        "p90": 103,
+        "p95": 106.6,
+        "p99": 115.24,
+        "max": 117,
+        "mean": 89.7
+      },
+      "academic_book": {
+        "min": 68,
+        "p10": 81,
+        "p25": 88,
+        "p33": 91,
+        "p50": 95,
+        "p67": 100,
+        "p75": 104,
+        "p90": 111.8,
+        "p95": 116,
+        "p99": 123.04,
+        "max": 129,
+        "mean": 95.66
+      },
+      "academic_paper": {
+        "min": 64,
+        "p10": 81,
+        "p25": 88,
+        "p33": 90,
+        "p50": 96,
+        "p67": 101,
+        "p75": 103,
+        "p90": 110.5,
+        "p95": 115.75,
+        "p99": 129.15,
+        "max": 135,
+        "mean": 95.83
+      },
+      "public_service": {
+        "min": 78,
+        "p10": 92,
+        "p25": 100,
+        "p33": 103,
+        "p50": 108,
+        "p67": 113,
+        "p75": 117,
+        "p90": 126,
+        "p95": 129.15,
+        "p99": 136.03,
+        "max": 137,
+        "mean": 108.52
+      },
+      "medlineplus": {
+        "min": 76,
+        "p10": 85,
+        "p25": 91,
+        "p33": 94.57,
+        "p50": 99,
+        "p67": 104,
+        "p75": 106,
+        "p90": 113,
+        "p95": 115.55,
+        "p99": 130.1,
+        "max": 156,
+        "mean": 99.03
+      },
+      "gen_know": {
+        "min": 69,
+        "p10": 83,
+        "p25": 91,
+        "p33": 93,
+        "p50": 98,
+        "p67": 102,
+        "p75": 105,
+        "p90": 110,
+        "p95": 114.2,
+        "p99": 120.68,
+        "max": 136,
+        "mean": 97.75
+      }
+    }
+  },
+  "role_order_validation": {
+    "expected_roles": [
+      "system",
+      "user",
+      "assistant"
+    ],
+    "valid_records": 1452,
+    "invalid_records": 0,
+    "errors": []
+  },
+  "source_file_counts": {
+    "assignment_rubric_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\assignment_rubric_v1.jsonl",
+      "line_count": 83,
+      "bytes": 780010,
+      "sha256": "fd8367dd2644f126c22aa19164c0a6dfcb364e7046c0e85b2e10f02c696827c1",
+      "used_for_split": true
+    },
+    "tech_doc_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\tech_doc_v1.jsonl",
+      "line_count": 89,
+      "bytes": 541469,
+      "sha256": "3377d24a4cfbd10d2cc5b5598dcab760c8bdb25f82d179434565dbbd24f1527d",
+      "used_for_split": true
+    },
+    "academic_book_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\academic_book_v1.jsonl",
+      "line_count": 233,
+      "bytes": 1392288,
+      "sha256": "afc607d744d164ba8a6872e77d6e7ab388c24e0ccdcaa27e0989b8d8c12c54da",
+      "used_for_split": true
+    },
+    "academic_paper_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\academic_paper_v1.jsonl",
+      "line_count": 486,
+      "bytes": 3211220,
+      "sha256": "495037cbadba288fc84f62d45ad93ce1af68cfab7d6826d88eb8e26f8649783f",
+      "used_for_split": true
+    },
+    "public_service_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\public_service_v1.jsonl",
+      "line_count": 198,
+      "bytes": 1132773,
+      "sha256": "fc4d4b6a7aff3180b15c106552127b920c6a171fde47b1c2e7df6f7e13234c0f",
+      "used_for_split": true
+    },
+    "medlineplus_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\medlineplus_v1.jsonl",
+      "line_count": 230,
+      "bytes": 1427160,
+      "sha256": "b973097a9f3389ee0b30c84f528d82ea7d685c7c40fd25b0ce74301a7b423a37",
+      "used_for_split": true
+    },
+    "gen_know_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\gen_know_v1.jsonl",
+      "line_count": 133,
+      "bytes": 847140,
+      "sha256": "1e13393d4e36d08bd5708060191467d13694d5d5af459d425b2ad5ea89532fdc",
+      "used_for_split": true
+    },
+    "all_v1.jsonl": {
+      "path": "ai/data_preparation/final_lora_data/outputs/final_dataset_v1_training_system_clean/accepted\\all_v1.jsonl",
+      "line_count": 1452,
+      "bytes": 9332060,
+      "sha256": "c82097c07054198a791297998786b18a3d202d78684fcef03dbe723659c0fea2",
+      "used_for_split": false
+    }
+  },
+  "known_fact_checks": {
+    "total_records_is_1452": true,
+    "medium_401_800_count": 1018,
+    "medium_401_800_percent": 70.11,
+    "median_user_word_count": 622,
+    "academic_paper_count": 486,
+    "academic_paper_percent": 33.47
+  }
+}
