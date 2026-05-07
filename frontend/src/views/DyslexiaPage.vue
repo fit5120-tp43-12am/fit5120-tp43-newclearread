@@ -709,10 +709,17 @@ const ctxt = computed(() => {
 </template>
 
 <style scoped>
-/* ── Page ── */
+/* ── Page — same unified gradient as HomePage ── */
 .page {
   min-height: 100vh;
-  background: #fff;
+  background:
+    radial-gradient(ellipse 80% 40% at 0%   0%,   rgba(147,167,255,0.50) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 35% at 100% 0%,   rgba(255,200,150,0.42) 0%, transparent 52%),
+    radial-gradient(ellipse 60% 30% at 0%   50%,  rgba(147,167,255,0.25) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 28% at 100% 50%,  rgba(255,218,180,0.28) 0%, transparent 52%),
+    radial-gradient(ellipse 65% 30% at 0%   100%, rgba(147,167,255,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 28% at 100% 100%, rgba(255,200,150,0.30) 0%, transparent 52%),
+    #f4f5ff;
   color: #0d1117;
 }
 
@@ -724,10 +731,10 @@ const ctxt = computed(() => {
   transition: background 0.3s, box-shadow 0.3s;
 }
 .navbar--scrolled {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  background: rgba(244,245,255,0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(99,120,255,0.1);
 }
 .nav-inner {
   max-width: 1160px;
@@ -801,11 +808,7 @@ const ctxt = computed(() => {
 .section-hero {
   position: relative;
   padding: 148px 0 96px;
-  background:
-    radial-gradient(ellipse 60% 80% at 10% 60%, rgba(147, 167, 255, 0.35) 0%, transparent 65%),
-    radial-gradient(ellipse 45% 60% at 90% 35%, rgba(199, 210, 254, 0.3) 0%, transparent 60%),
-    #f8f9ff;
-  border-bottom: 1px solid #e5e7eb;
+  background: transparent;
   overflow: hidden;
 }
 .hero-bg-blob {
@@ -996,8 +999,6 @@ const ctxt = computed(() => {
 /* ── ④ Signs ── */
 .section-signs {
   padding: 88px 0;
-  background: #fafbff;
-  border-bottom: 1px solid #e5e7eb;
 }
 .section-signs h2 {
   font-size: clamp(26px, 3vw, 38px);
@@ -1013,14 +1014,17 @@ const ctxt = computed(() => {
 }
 .sign-card {
   padding: 28px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(255,255,255,0.85);
   border-radius: 14px;
-  background: #fff;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(99,120,255,0.07);
   transition: box-shadow 0.2s, transform 0.2s;
 }
 .sign-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 12px 32px rgba(99,120,255,0.13);
 }
 .sign-card h3 {
   font-size: 15px;
@@ -1039,7 +1043,6 @@ const ctxt = computed(() => {
 /* ── ⑤ Impact ── */
 .section-impact {
   padding: 88px 0;
-  border-bottom: 1px solid #e5e7eb;
 }
 .impact-block {
   display: grid;
@@ -1167,8 +1170,6 @@ blockquote {
 /* ── ③ Data Viz ───────────────────────────────────────────────────────── */
 .section-viz {
   padding: 88px 0;
-  background: #fafbff;
-  border-bottom: 1px solid #e5e7eb;
 }
 .viz-h2 { font-size: clamp(26px, 3vw, 38px); font-weight: 800; letter-spacing: -0.03em; margin: 0 0 12px; line-height: 1.2; }
 
@@ -1187,7 +1188,9 @@ blockquote {
 }
 .viz-tab:hover { color: #374151; background: rgba(0,0,0,0.03); }
 .viz-tab.active {
-  color: #2563eb; background: #fff;
+  color: #2563eb;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(10px);
   border-bottom-color: #2563eb;
   box-shadow: 0 -2px 8px rgba(37,99,235,0.08);
 }
@@ -1195,10 +1198,12 @@ blockquote {
 
 /* Panel */
 .viz-panel {
-  background: #fff;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: 0 16px 16px 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+  border: 1px solid rgba(255,255,255,0.85);
+  box-shadow: 0 4px 24px rgba(99,120,255,0.08);
   padding: 32px 32px 28px;
   min-height: 380px;
 }
