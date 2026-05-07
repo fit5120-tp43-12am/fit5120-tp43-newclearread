@@ -593,14 +593,13 @@ onUnmounted(() => clearTimeout(hintTimer))
 ───────────────────────────────────────── */
 .a11y-hint {
   position: absolute;
-  top: 50%;
-  right: calc(100% + 10px);
-  transform: translateY(-50%);
+  top: calc(100% + 10px);
+  right: 0;
   display: flex;
   align-items: center;
   gap: 7px;
   white-space: nowrap;
-  padding: 8px 10px 8px 10px;
+  padding: 8px 10px;
   background: #fff;
   border: 1.5px solid #c7d7fe;
   border-radius: 10px;
@@ -611,16 +610,15 @@ onUnmounted(() => clearTimeout(hintTimer))
   z-index: 202;
   pointer-events: auto;
 }
-/* Arrow pointing right toward the button */
+/* Arrow pointing up toward the button */
 .a11y-hint::after {
   content: '';
   position: absolute;
-  right: -7px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: -7px;
+  right: 16px;
   border: 6px solid transparent;
-  border-right: none;
-  border-left-color: #c7d7fe;
+  border-top: none;
+  border-bottom-color: #c7d7fe;
 }
 .hint-close {
   display: flex; align-items: center; justify-content: center;
@@ -632,11 +630,11 @@ onUnmounted(() => clearTimeout(hintTimer))
 }
 .hint-close:hover { color: #2563eb; }
 
-/* Slide in from right, fade out */
+/* Slide down from button, fade out */
 .hint-enter-active { transition: opacity 0.3s ease, transform 0.3s ease; }
 .hint-leave-active { transition: opacity 0.25s ease, transform 0.2s ease; }
-.hint-enter-from   { opacity: 0; transform: translateY(-50%) translateX(10px); }
-.hint-leave-to     { opacity: 0; transform: translateY(-50%) translateX(6px); }
+.hint-enter-from   { opacity: 0; transform: translateY(-6px); }
+.hint-leave-to     { opacity: 0; transform: translateY(-4px); }
 
 /* ─────────────────────────────────────────
    Responsive — hide label on very small screens
