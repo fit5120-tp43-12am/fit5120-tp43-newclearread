@@ -535,9 +535,18 @@ function onResize() {
   G.chips.forEach(drawChip)
 }
 
+// ── Guide modal ───────────────────────────────────────────────────────────────
+const showGuide = ref(false)
+function openGuide()  {
+  if (G.running && !G.paused) pauseGame()
+  showGuide.value = true
+}
+function closeGuide() { showGuide.value = false }
+
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 function handleKey(e) {
   const key = e.key.toLowerCase()
+  if (key === 'escape') { closeGuide() }
   if (key === 'p' && G.running) { e.preventDefault(); G.paused ? resumeGame() : pauseGame() }
   if (key === 'r' && G.cueMode === 'audio') { e.preventDefault(); speakTarget() }
 }
@@ -698,7 +707,80 @@ onUnmounted(() => {
             @click="pauseGame"
           >⏸ Pause</button>
           <button class="btn-reset" @click="resetGame">Reset</button>
+          <button class="btn-guide" @click="openGuide" aria-label="How to play">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 11v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M8 9c0-2 3-2 3-4a3 3 0 1 0-6 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Guide
+          </button>
         </div>
+
+        <!-- ── Guide modal ── -->
+        <Transition name="guide-fade">
+          <div v-if="showGuide" class="guide-backdrop" @click.self="closeGuide">
+            <div class="guide-modal" role="dialog" aria-label="How to play">
+              <div class="guide-header">
+                <h2 class="guide-title">How to Play</h2>
+                <button class="guide-close" @click="closeGuide" aria-label="Close guide">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+
+              <ol class="guide-steps">
+                <li>
+                  <span class="guide-step-num">1</span>
+                  <div>
+                    <strong>Look at the target</strong>
+                    <p>A word or letter appears above the game area — that's what you need to find.</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="guide-step-num">2</span>
+                  <div>
+                    <strong>Find the matching circle</strong>
+                    <p>Tap the moving circle that shows the same word or letter. Watch out — the others look similar on purpose!</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="guide-step-num">3</span>
+                  <div>
+                    <strong>Beat the clock</strong>
+                    <p>Each round has a countdown timer. Tap before time runs out. The faster you are, the more points you earn.</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="guide-step-num">4</span>
+                  <div>
+                    <strong>Listen for audio cues</strong>
+                    <p>Some rounds play a spoken word instead of showing it. Tap <em>Replay</em> if you need to hear it again.</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="guide-step-num">5</span>
+                  <div>
+                    <strong>Difficulty adapts</strong>
+                    <p>The game gets harder as you improve, and easier if you're struggling — just keep playing!</p>
+                  </div>
+                </li>
+              </ol>
+
+              <div class="guide-tips">
+                <span class="guide-tips-label">Tips</span>
+                <ul>
+                  <li>🔊 Turn on <strong>Sound</strong> to also hear the target word</li>
+                  <li>🐢 Enable <strong>Slow</strong> for more time per round</li>
+                  <li>The game ends after <strong>{{ TOTAL_ROUNDS }} rounds</strong></li>
+                </ul>
+              </div>
+
+              <button class="guide-cta" @click="closeGuide">Got it — let's play!</button>
+            </div>
+          </div>
+        </Transition>
 
         <!-- ⑦ Settings row -->
         <div class="settings-row">
@@ -1006,6 +1088,106 @@ onUnmounted(() => {
   transition: color 0.15s, background 0.15s;
 }
 .btn-reset:hover { color: #ef4444; background: rgba(239,68,68,0.06); border-color: #fecaca; }
+
+/* ── Guide button ── */
+.btn-guide {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 13px 20px;
+  background: none; color: #6b7280;
+  font-size: 15px; font-weight: 500;
+  border-radius: 999px; border: 1px solid rgba(0,0,0,0.1); cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.btn-guide:hover {
+  color: #2563eb; background: #eef2ff; border-color: #bfdbfe;
+}
+
+/* ── Guide modal ── */
+.guide-backdrop {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(15,20,40,0.45);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.guide-modal {
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 520px; width: 100%;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+  display: flex; flex-direction: column; gap: 24px;
+  max-height: 88vh; overflow-y: auto;
+}
+.guide-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.guide-title {
+  font-size: 22px; font-weight: 800;
+  letter-spacing: -0.03em; color: #0d1117; margin: 0;
+}
+.guide-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: #f3f4f6; border: none; border-radius: 8px; cursor: pointer;
+  color: #6b7280; transition: background 0.15s, color 0.15s;
+}
+.guide-close:hover { background: #e5e7eb; color: #0d1117; }
+
+.guide-steps {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.guide-steps li {
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.guide-step-num {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  background: #eef2ff; color: #2563eb;
+  border-radius: 8px;
+  font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 1px;
+}
+.guide-steps li div { display: flex; flex-direction: column; gap: 3px; }
+.guide-steps strong { font-size: 15px; font-weight: 700; color: #0d1117; }
+.guide-steps p { font-size: 13.5px; color: #4b5563; line-height: 1.6; margin: 0; }
+
+.guide-tips {
+  background: #f8faff;
+  border: 1px solid #e0e7ff;
+  border-radius: 14px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.guide-tips-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #2563eb;
+}
+.guide-tips ul {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.guide-tips li {
+  font-size: 13.5px; color: #374151; line-height: 1.5;
+}
+
+.guide-cta {
+  width: 100%; padding: 14px;
+  background: #2563eb; color: #fff;
+  font-size: 15px; font-weight: 700;
+  border-radius: 12px; border: none; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.25);
+  transition: background 0.2s, transform 0.15s;
+}
+.guide-cta:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+/* Modal transition */
+.guide-fade-enter-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.guide-fade-leave-active { transition: opacity 0.18s ease, transform 0.15s ease; }
+.guide-fade-enter-from   { opacity: 0; transform: scale(0.96); }
+.guide-fade-leave-to     { opacity: 0; transform: scale(0.97); }
 
 /* ── ⑦ Settings ── */
 .settings-row {
