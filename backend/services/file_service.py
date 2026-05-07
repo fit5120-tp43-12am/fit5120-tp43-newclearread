@@ -4,8 +4,7 @@ import io
 import re
 from pathlib import Path
 
-
-MAX_EXTRACTED_TEXT_CHARS = 5000
+MAX_EXTRACTED_TEXT_CHARS = 50000
 
 # Extensions that can be decoded directly as text.
 TEXT_EXTENSIONS = {
@@ -23,6 +22,7 @@ SUPPORTED_EXTENSIONS = TEXT_EXTENSIONS | BINARY_EXTENSIONS
 
 
 def _normalize_text(text: str) -> str:
+    #
     # Clean whitespace so downstream processing works with a consistent text format.
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"[ \t]+", " ", text)
@@ -78,9 +78,7 @@ def _truncate_text(text: str) -> tuple[str, bool]:
 def extract_text_from_upload(filename: str, content_base64: str):
     suffix = Path(filename).suffix.lower()
     if suffix not in SUPPORTED_EXTENSIONS:
-        raise ValueError(
-            "Unsupported file type. Supported formats: TXT, PDF, DOCX."
-        )
+        raise ValueError("Unsupported file type. Supported formats: TXT, PDF, DOCX.")
 
     file_bytes = _decode_base64_content(content_base64)
 
