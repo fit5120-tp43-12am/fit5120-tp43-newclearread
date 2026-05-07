@@ -63,7 +63,8 @@ const CONFUSABLES = {
   thop: ['thin', 'then', 'shop'], prail: ['trail', 'plain', 'prail'],
 }
 
-const STORAGE_KEY = 'focus-reader-sessions'
+const STORAGE_KEY = 'focus-reader-v2-sessions'
+const TOTAL_ROUNDS = 16
 
 // ── Chip colour palette ───────────────────────────────────────────────────────
 // Target chips are always teal so the learner can distinguish colours if needed,
@@ -88,6 +89,9 @@ const ui = reactive({
   cueLabel:     'Ready',
   message:      'Press Start, then tap the circle that matches the word shown above.',
   timePct:      0,       // 0-100, drives the timer progress bar width
+  secondsLeft:  0,
+  roundNum:     0,
+  flashClass:   '',      // '' | 'flash-correct' | 'flash-wrong'
   score:        0,
   accuracy:     '--',
   reaction:     '--',
@@ -108,6 +112,8 @@ const G = {
   target: '', cueMode: 'visual',
   chips: [], recent: [], reactionTimes: [],
   animId: 0, lastFrame: 0,
+  flashAlpha: 0,
+  flashColor: null,
 }
 
 // ── Reactive flags that drive button visibility ───────────────────────────────
@@ -236,6 +242,27 @@ function syncUiStats() {
   ui.level    = G.level
 }
 
+// ── Audio feedback ────────────────────────────────────────────────────────────
+function playBeep(type) {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ac.createOscillator()
+    const gain = ac.createGain()
+    osc.connect(gain); gain.connect(ac.destination)
+    if (type === 'correct') {
+      osc.frequency.value = 880; osc.type = 'sine'
+      gain.gain.setValueAtTime(0.25, ac.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35)
+      osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.35)
+    } else {
+      osc.frequency.value = 200; osc.type = 'sawtooth'
+      gain.gain.setValueAtTime(0.18, ac.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.45)
+      osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.45)
+    }
+  } catch(e) { /* silently ignore if audio context unavailable */ }
+}
+
 // ── Speech synthesis ──────────────────────────────────────────────────────────
 function speakTarget() {
   if (!settings.sound || !('speechSynthesis' in window)) {
@@ -246,7 +273,7 @@ function speakTarget() {
   }
   window.speechSynthesis.cancel()
   const utt = new SpeechSynthesisUtterance(G.target)
-  utt.lang = 'en-US'; utt.rate = 0.82; utt.pitch = 1.05
+  utt.lang = 'en-US'; utt.rate = 0.68; utt.pitch = 1.05
   window.speechSynthesis.speak(utt)
 }
 
@@ -285,11 +312,17 @@ function resolveChoice(chip) {
     G.recent.push({ ok: true, rt })
     G.reactionTimes.push(rt)
     ui.message = `Great! You got "${chip.label}" in ${Math.round(rt)} ms.`
+    playBeep('correct')
+    G.flashColor = 'rgba(34,197,94,0.28)'; G.flashAlpha = 0.6
+    ui.flashClass = 'flash-correct'; setTimeout(() => { ui.flashClass = '' }, 500)
   } else {
     G.wrong++; G.streak = 0
     G.score = Math.max(0, G.score - 30)
     G.recent.push({ ok: false, rt })
     ui.message = `Not quite — "${chip.label}" looks similar but the answer was "${G.target}". Try again!`
+    playBeep('wrong')
+    G.flashColor = 'rgba(239,68,68,0.25)'; G.flashAlpha = 0.6
+    ui.flashClass = 'flash-wrong'; setTimeout(() => { ui.flashClass = '' }, 500)
   }
 
   G.recent = G.recent.slice(-6)
@@ -314,7 +347,7 @@ function missRound() {
 function nextRound() {
   if (!G.running || G.paused) return
   G.roundIndex++
-  if (G.roundIndex > 16) { finishSession(true); return }
+  if (G.roundIndex > TOTAL_ROUNDS) { finishSession(true); return }
 
   const pool = getPool()
   G.target   = pick(pool)
@@ -323,6 +356,7 @@ function nextRound() {
   G.roundDuration = Math.max(3800, 7200 - G.level * 520 + (settings.calm ? 1200 : 0))
   G.roundStartedAt = performance.now()
   G.roundActive    = true
+  ui.roundNum = G.roundIndex
 
   const count  = Math.min(11, 4 + G.level + Math.floor(G.roundIndex / 5))
   const labels = buildLabels(G.target, count + 1)
@@ -363,11 +397,22 @@ function loop(now) {
   if (G.roundActive) {
     const elapsed = now - G.roundStartedAt
     ui.timePct = Math.max(0, (1 - elapsed / G.roundDuration) * 100)
+    ui.secondsLeft = Math.ceil(Math.max(0, G.roundDuration - (now - G.roundStartedAt)) / 1000)
     if (elapsed >= G.roundDuration) missRound()
   }
 
   drawBackground()
   G.chips.forEach(drawChip)
+
+  if (G.flashAlpha > 0) {
+    ctx.save()
+    ctx.globalAlpha = G.flashAlpha
+    ctx.fillStyle = G.flashColor
+    ctx.fillRect(0, 0, canvasW(), canvasH())
+    ctx.restore()
+    G.flashAlpha = Math.max(0, G.flashAlpha - 0.06)
+  }
+
   G.animId = requestAnimationFrame(loop)
 }
 
@@ -407,6 +452,8 @@ function finishSession(completed) {
   ui.cueLabel     = completed ? 'Complete!' : 'Reset'
   ui.cueIsAudio   = false
   ui.timePct      = 0
+  ui.secondsLeft  = 0
+  ui.roundNum     = 0
   ui.showOverlay  = true
   ui.overlayTitle = completed ? 'Well done!' : 'Game Reset'
   ui.overlayBody  = completed
@@ -560,116 +607,71 @@ onUnmounted(() => {
       </ul>
     </div>
 
-    <!-- ── Page header ── -->
-    <section class="page-hero">
-      <div class="container">
-        <span class="eyebrow">Reading Practice</span>
-        <h1 class="page-title">Focus Reader</h1>
-        <p class="page-sub">
-          A short, fun exercise to help you tell apart letters and words that look or sound alike.
-          Great for anyone who finds reading tricky.
-        </p>
-        <!-- Keyboard shortcuts hint -->
-        <div class="kbd-hints">
-          <span class="kbd-hint"><kbd>P</kbd> Pause / Resume</span>
-          <span class="kbd-hint"><kbd>R</kbd> Hear the word again</span>
+    <!-- ── Game wrapper ── -->
+    <main class="game-main">
+      <div class="game-card">
+
+        <!-- ① Top status strip -->
+        <div class="status-strip">
+          <div class="status-pill">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M6.5 4v3l1.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Round <strong>{{ isRunning ? ui.roundNum : '—' }}</strong> / {{ TOTAL_ROUNDS }}
+          </div>
+          <div class="status-pill status-pill--score">
+            Score <strong>{{ ui.score }}</strong>
+          </div>
+          <div class="status-pill">
+            Level <strong>{{ ui.level }}</strong>/6
+          </div>
+          <div class="status-pill status-pill--accuracy" v-if="ui.accuracy !== '--'">
+            Accuracy <strong>{{ ui.accuracy }}</strong>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <!-- ── Game dashboard ── -->
-    <section class="game-section">
-      <div class="game-layout container">
-
-        <!-- Left panel: cue card + stats + controls -->
-        <aside class="game-panel">
-
-          <!-- Current target cue -->
-          <div class="cue-card">
-            <span class="panel-eyebrow">Current Target</span>
-            <div class="cue-display" :class="{ 'cue-display--audio': ui.cueIsAudio }">
-              {{ ui.cueLabel }}
-            </div>
-            <!-- Replay button only shown for audio-cue rounds -->
-            <button
-              v-if="ui.cueIsAudio"
-              class="btn-replay"
-              @click="speakTarget"
-              :disabled="!isRunning || isPaused"
-              aria-label="Replay audio cue"
-            >
-              ♪ Replay
-            </button>
+        <!-- ② Cue display -->
+        <div class="cue-area">
+          <p class="cue-eyebrow">Find this</p>
+          <div class="cue-word" :class="{ 'cue-word--audio': ui.cueIsAudio }">
+            {{ ui.cueLabel }}
           </div>
+          <button
+            v-if="ui.cueIsAudio && isRunning && !isPaused"
+            class="btn-replay"
+            @click="speakTarget"
+            aria-label="Replay audio cue"
+          >
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <path d="M2 3.5l9 3-9 3V3.5z" fill="currentColor"/>
+            </svg>
+            Replay
+          </button>
+        </div>
 
-          <!-- Status message (hit / miss / pause feedback) -->
-          <div class="message-box" role="status" aria-live="polite">
-            {{ ui.message }}
+        <!-- ③ Timer row -->
+        <div class="timer-row" v-if="isRunning && !isPaused">
+          <div class="timer-track" aria-label="Time remaining">
+            <div class="timer-fill" :style="{ width: ui.timePct + '%', background: timerColor }"></div>
           </div>
+          <span class="timer-seconds" :style="{ color: timerColor }">{{ ui.secondsLeft }}s</span>
+        </div>
 
-          <!-- Countdown timer bar -->
-          <div class="timer-wrap">
-            <span class="timer-label">Round time</span>
-            <div class="timer-track" aria-label="Remaining time">
-              <div
-                class="timer-fill"
-                :style="{ width: ui.timePct + '%', background: timerColor }"
-              ></div>
-            </div>
-          </div>
-
-          <!-- Stats grid — simple labels so they are easy to understand at a glance -->
-          <dl class="stats-grid">
-            <div class="stat-cell">
-              <dt>Score</dt><dd>{{ ui.score }}</dd>
-            </div>
-            <div class="stat-cell">
-              <dt>Correct</dt><dd>{{ ui.accuracy }}</dd>
-            </div>
-            <div class="stat-cell">
-              <dt>Speed</dt><dd>{{ ui.reaction }}</dd>
-            </div>
-            <div class="stat-cell">
-              <dt>Level</dt><dd>{{ ui.level }} / 6</dd>
-            </div>
-          </dl>
-
-          <!-- Game controls -->
-          <div class="controls">
-            <button
-              v-if="!isRunning || isPaused"
-              class="btn-primary"
-              @click="startGame"
-            >
-              {{ isPaused ? 'Resume' : (isRunning ? 'Restart' : 'Start') }}
-            </button>
-            <button
-              v-if="isRunning && !isPaused"
-              class="btn-secondary"
-              @click="pauseGame"
-            >
-              Pause
-            </button>
-            <button class="btn-ghost-sm" @click="resetGame">Reset</button>
-          </div>
-
-        </aside>
-
-        <!-- Canvas arena -->
-        <div class="arena-wrap">
+        <!-- ④ Canvas arena -->
+        <div class="arena-wrap" :class="ui.flashClass">
           <canvas
             ref="canvasEl"
             class="game-canvas"
             @pointerdown="handleCanvasPointer"
             aria-label="Game arena — tap the chip that matches the cue"
           ></canvas>
-          <!-- Overlay shown before game starts and after session ends -->
           <Transition name="overlay">
             <div v-if="ui.showOverlay" class="arena-overlay">
               <div class="overlay-icon" aria-hidden="true">
-                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                  <circle cx="20" cy="20" r="18" fill="#eef2ff" stroke="#2563eb" stroke-width="2"/>
-                  <path d="M14 20l4.5 4.5 7.5-8" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="20" fill="#eef2ff" stroke="#2563eb" stroke-width="2"/>
+                  <path d="M15 22l5 5 9-9" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
               <h2>{{ ui.overlayTitle }}</h2>
@@ -678,62 +680,72 @@ onUnmounted(() => {
           </Transition>
         </div>
 
-        <!-- Right panel: settings + history -->
-        <aside class="game-panel">
+        <!-- ⑤ Feedback message -->
+        <p class="feedback-msg" role="status" aria-live="polite">{{ ui.message }}</p>
 
-          <!-- Practice type selector — simplified labels avoid jargon -->
-          <div class="settings-block">
-            <span class="panel-eyebrow">Practice Type</span>
-            <select v-model="settings.mode" class="mode-select" :disabled="isRunning && !isPaused">
-              <option value="mixed">Mix it up — Letters, Sounds &amp; Words</option>
-              <option value="letters">Tricky Letters (b, d, p, q)</option>
-              <option value="chunks">Sound Groups (sh, ch, th)</option>
-              <option value="words">Short Words &amp; Made-up Words</option>
-            </select>
-          </div>
+        <!-- ⑥ Controls -->
+        <div class="controls-row">
+          <button
+            v-if="!isRunning || isPaused"
+            class="btn-start"
+            @click="startGame"
+          >
+            {{ isPaused ? '▶ Resume' : (isRunning ? '↺ Restart' : '▶ Start') }}
+          </button>
+          <button
+            v-if="isRunning && !isPaused"
+            class="btn-pause"
+            @click="pauseGame"
+          >⏸ Pause</button>
+          <button class="btn-reset" @click="resetGame">Reset</button>
+        </div>
 
-          <!-- Toggle switches for sound and speed -->
-          <div class="toggles-block">
-            <label class="toggle-row">
-              <span class="toggle-wrap">
-                <input type="checkbox" class="sr-only" v-model="settings.sound" />
-                <span class="toggle-track" :class="{ 'toggle-track--on': settings.sound }">
-                  <span class="toggle-thumb"></span>
-                </span>
+        <!-- ⑦ Settings row -->
+        <div class="settings-row">
+          <select v-model="settings.mode" class="mode-select" :disabled="isRunning && !isPaused">
+            <option value="mixed">Mix — Letters, Sounds &amp; Words</option>
+            <option value="letters">Tricky Letters (b, d, p, q)</option>
+            <option value="chunks">Sound Groups (sh, ch, th)</option>
+            <option value="words">Short Words &amp; Made-up Words</option>
+          </select>
+
+          <label class="toggle-row">
+            <span class="toggle-wrap">
+              <input type="checkbox" class="sr-only" v-model="settings.sound" />
+              <span class="toggle-track" :class="{ 'toggle-track--on': settings.sound }">
+                <span class="toggle-thumb"></span>
               </span>
-              <span class="toggle-label">Hear the Word</span>
-            </label>
-            <label class="toggle-row">
-              <span class="toggle-wrap">
-                <input type="checkbox" class="sr-only" v-model="settings.calm" />
-                <span class="toggle-track" :class="{ 'toggle-track--on': settings.calm }">
-                  <span class="toggle-thumb"></span>
-                </span>
+            </span>
+            <span class="toggle-label">🔊 Sound</span>
+          </label>
+
+          <label class="toggle-row">
+            <span class="toggle-wrap">
+              <input type="checkbox" class="sr-only" v-model="settings.calm" />
+              <span class="toggle-track" :class="{ 'toggle-track--on': settings.calm }">
+                <span class="toggle-thumb"></span>
               </span>
-              <span class="toggle-label">Slower Speed</span>
-            </label>
-          </div>
+            </span>
+            <span class="toggle-label">🐢 Slow</span>
+          </label>
+        </div>
 
-          <!-- Past game results stored in browser -->
-          <div class="history-block">
-            <span class="panel-eyebrow">Your History</span>
-            <ol class="history-list">
-              <li v-if="!ui.sessions.length" class="history-empty">No games played yet</li>
-              <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
-                <span class="history-time">{{ formatDate(s.date) }}</span>
-                <span class="history-stats">{{ s.accuracy }}% correct · {{ s.score }} pts · Level {{ s.level }}</span>
-              </li>
-            </ol>
-          </div>
+        <!-- ⑧ History (compact, collapsible) -->
+        <details class="history-details">
+          <summary class="history-summary">Your recent games</summary>
+          <ol class="history-list">
+            <li v-if="!ui.sessions.length" class="history-empty">No games yet</li>
+            <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
+              <span class="history-time">{{ formatDate(s.date) }}</span>
+              <span class="history-stats">{{ s.accuracy }}% · {{ s.score }} pts · Lv {{ s.level }}</span>
+            </li>
+          </ol>
+        </details>
 
-          <!-- Short note — plain language, not clinical -->
-          <p class="disclaimer">
-            This is a practice game, not a medical test. For extra support, talk to a reading specialist or teacher.
-          </p>
+        <p class="disclaimer">Practice game only — not a medical test.</p>
 
-        </aside>
       </div>
-    </section>
+    </main>
 
     <!-- ── Footer ── -->
     <footer class="footer">
@@ -756,24 +768,31 @@ onUnmounted(() => {
 
 
 <style scoped>
-/* ── Page shell ── */
+/* ── Page ── */
 .page {
   min-height: 100vh;
-  background: var(--color-bg, #f9f7f4);
+  background:
+    radial-gradient(ellipse 80% 40% at 0%   0%,   rgba(147,167,255,0.50) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 35% at 100% 0%,   rgba(255,200,150,0.42) 0%, transparent 52%),
+    radial-gradient(ellipse 60% 30% at 0%   50%,  rgba(147,167,255,0.25) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 28% at 100% 50%,  rgba(255,218,180,0.28) 0%, transparent 52%),
+    radial-gradient(ellipse 65% 30% at 0%   100%, rgba(147,167,255,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 28% at 100% 100%, rgba(255,200,150,0.30) 0%, transparent 52%),
+    #f4f5ff;
   color: #0d1117;
 }
 
-/* ── Navbar (mirrors HomePage) ── */
+/* ── Navbar ── */
 .navbar {
   position: fixed; top: 0; left: 0; right: 0;
   z-index: 100;
   transition: background 0.3s, box-shadow 0.3s;
 }
 .navbar--scrolled {
-  background: rgba(255,255,255,0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+  background: rgba(244,245,255,0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(99,120,255,0.1);
 }
 .nav-inner {
   max-width: 1160px; margin: 0 auto;
@@ -811,205 +830,129 @@ onUnmounted(() => {
   color: #0d1117; padding: 4px; margin-left: 12px;
   align-items: center; justify-content: center;
 }
-.mobile-nav {
-  display: none;
+.mobile-nav { display: none; }
+
+/* ── Main centred layout ── */
+.game-main {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 88px 20px 60px;
 }
 
-/* ── Page hero header ── */
-.page-hero {
-  padding: 120px 0 56px;
-  background: linear-gradient(160deg, #eef2ff 0%, #f9f7f4 60%);
-  border-bottom: 1px solid #e5e7eb;
-}
-.eyebrow {
-  font-size: 12px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: #2563eb; display: block; margin-bottom: 14px;
-}
-.page-title {
-  font-size: clamp(32px, 5vw, 52px);
-  font-weight: 800; letter-spacing: -0.04em;
-  margin: 0 0 16px;
-}
-.page-sub {
-  font-size: 16px; color: #4b5563;
-  line-height: 1.7; max-width: 600px; margin: 0 0 24px;
-}
-.kbd-hints {
-  display: flex; gap: 20px; flex-wrap: wrap;
-}
-.kbd-hint {
-  font-size: 13px; color: #6b7280;
-  display: flex; align-items: center; gap: 7px;
-}
-kbd {
-  display: inline-block;
-  padding: 2px 7px; font-size: 11px; font-weight: 700;
-  background: #fff; border: 1px solid #d1d5db;
-  border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  font-family: inherit;
+/* The single game card */
+.game-card {
+  width: 100%;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-/* ── Game section ── */
-.game-section {
-  padding: 24px 0 48px;
+/* ── ① Status strip ── */
+.status-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-/* Layout spans the full width. Canvas column (1fr) stretches to fill the row
-   height; both side panels scroll independently if their content overflows. */
-.game-layout {
-  display: grid;
-  grid-template-columns: 210px 1fr 210px;
-  gap: 16px;
-  align-items: stretch;   /* all three columns share the same row height */
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 28px;
-  /* Arena height = viewport minus navbar (64px) + page-hero (~220px) + section padding */
-  height: calc(100vh - 340px);
-  min-height: 500px;
+.status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.9);
+  backdrop-filter: blur(12px);
+  border-radius: 999px;
+  font-size: 12.5px; font-weight: 500; color: #4b5563;
 }
+.status-pill strong { color: #0d1117; font-weight: 700; }
+.status-pill--score strong { color: #2563eb; }
+.status-pill--accuracy strong { color: #16a34a; }
 
-/* ── Side panels ── */
-/* Panels scroll vertically if their content is taller than the arena height.
-   Gray text in panels uses #4b5563 minimum for sufficient contrast. */
-.game-panel {
-  display: flex; flex-direction: column; gap: 12px;
-  overflow-y: auto;
-  /* Thin scrollbar so it doesn't eat into the narrow panel width */
-  scrollbar-width: thin;
-  scrollbar-color: #e5e7eb transparent;
-}
-
-/* Cue card */
-.cue-card {
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 16px; padding: 20px;
+/* ── ② Cue area ── */
+.cue-area {
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.9);
+  backdrop-filter: blur(16px);
+  border-radius: 20px;
+  padding: 24px 32px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
-.panel-eyebrow {
-  display: block;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: #6b7280; margin-bottom: 10px;
+.cue-eyebrow {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #6b7280; margin: 0;
 }
-.cue-display {
-  font-size: 36px; font-weight: 900;
-  letter-spacing: -0.02em; color: #0d1117;
-  min-height: 52px; display: flex;
-  align-items: center; justify-content: center;
-  line-height: 1;
+.cue-word {
+  font-size: clamp(48px, 8vw, 80px);
+  font-weight: 900; letter-spacing: -0.03em;
+  color: #0d1117; line-height: 1;
 }
-.cue-display--audio {
-  font-size: 28px; color: #2563eb;
+.cue-word--audio {
+  font-size: 32px; color: #2563eb;
 }
 .btn-replay {
-  margin-top: 12px;
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 6px 14px; font-size: 13px; font-weight: 600;
+  padding: 6px 16px; font-size: 13px; font-weight: 600;
   color: #2563eb; background: #eef2ff;
   border: 1px solid #bfdbfe; border-radius: 999px; cursor: pointer;
   transition: background 0.15s;
 }
-.btn-replay:hover:not(:disabled) { background: #dbeafe; }
-.btn-replay:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-replay:hover { background: #dbeafe; }
 
-/* Message box */
-.message-box {
-  background: #f8fafc; border: 1px solid #e5e7eb;
-  border-radius: 12px; padding: 14px 16px;
-  font-size: 13px; color: #4b5563; line-height: 1.6;
-  min-height: 56px;
-}
-
-/* Timer bar */
-.timer-wrap {
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 12px; padding: 14px 16px;
-}
-.timer-label {
-  display: block; font-size: 11px; font-weight: 600;
-  color: #6b7280; text-transform: uppercase;
-  letter-spacing: 0.06em; margin-bottom: 8px;
+/* ── ③ Timer ── */
+.timer-row {
+  display: flex; align-items: center; gap: 10px;
 }
 .timer-track {
-  height: 8px; background: #f3f4f6;
+  flex: 1; height: 10px;
+  background: rgba(255,255,255,0.5);
   border-radius: 999px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.8);
 }
 .timer-fill {
   height: 100%; border-radius: 999px;
-  transition: width 0.1s linear, background 0.5s ease;
+  transition: width 0.1s linear, background 0.4s ease;
+}
+.timer-seconds {
+  font-size: 16px; font-weight: 800;
+  letter-spacing: -0.02em;
+  min-width: 32px; text-align: right;
+  transition: color 0.4s;
 }
 
-/* Stats */
-.stats-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; margin: 0;
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 16px; padding: 16px;
-}
-.stat-cell { display: flex; flex-direction: column; gap: 2px; }
-.stat-cell dt {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #6b7280;
-}
-.stat-cell dd {
-  font-size: 20px; font-weight: 800;
-  letter-spacing: -0.02em; color: #0d1117; margin: 0;
-}
-
-/* Controls */
-.controls {
-  display: flex; flex-direction: column; gap: 8px;
-}
-.btn-primary {
-  width: 100%; padding: 12px;
-  background: #2563eb; color: #fff;
-  font-size: 15px; font-weight: 700;
-  border-radius: 12px; border: none; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37,99,235,0.28);
-  transition: background 0.2s, transform 0.15s;
-}
-.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
-.btn-secondary {
-  width: 100%; padding: 11px;
-  background: #f3f4f6; color: #374151;
-  font-size: 14px; font-weight: 600;
-  border-radius: 12px; border: 1px solid #e5e7eb; cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-secondary:hover { background: #e8eaf0; }
-.btn-ghost-sm {
-  width: 100%; padding: 9px;
-  background: none; color: #6b7280;
-  font-size: 13px; font-weight: 500;
-  border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer;
-  transition: color 0.15s, background 0.15s;
-}
-.btn-ghost-sm:hover { color: #ef4444; background: #fef2f2; border-color: #fecaca; }
-
-/* ── Canvas arena ── */
-/* Fill the full column height (set by .game-layout height).
-   No aspect-ratio — the canvas stretches to whatever height is available. */
+/* ── ④ Arena ── */
 .arena-wrap {
   position: relative;
   border-radius: 20px; overflow: hidden;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  background: #edf6f4;
-  height: 100%;
+  border: 1px solid rgba(255,255,255,0.85);
+  box-shadow: 0 8px 32px rgba(99,120,255,0.1);
+  aspect-ratio: 16/9;
+  min-height: 320px;
+  transition: box-shadow 0.2s;
+}
+.arena-wrap.flash-correct {
+  box-shadow: 0 0 0 3px #22c55e, 0 8px 32px rgba(34,197,94,0.25);
+}
+.arena-wrap.flash-wrong {
+  box-shadow: 0 0 0 3px #ef4444, 0 8px 32px rgba(239,68,68,0.2);
 }
 .game-canvas {
   width: 100%; height: 100%;
   display: block; cursor: crosshair;
-  touch-action: none;   /* prevents scroll-jank on mobile during gameplay */
+  touch-action: none;
 }
 .arena-overlay {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   text-align: center; padding: 32px;
-  background: rgba(237,246,244,0.92);
-  backdrop-filter: blur(4px);
+  background: rgba(237,246,244,0.88);
+  backdrop-filter: blur(6px);
 }
 .overlay-icon { margin-bottom: 16px; }
 .arena-overlay h2 {
@@ -1017,139 +960,173 @@ kbd {
   letter-spacing: -0.02em; color: #0d1117; margin: 0 0 12px;
 }
 .arena-overlay p {
-  font-size: 14px; color: #4b5563;
-  line-height: 1.65; max-width: 340px; margin: 0;
+  font-size: 14.5px; color: #4b5563;
+  line-height: 1.65; max-width: 380px; margin: 0;
 }
-/* Fade in/out transition for the overlay */
 .overlay-enter-active { transition: opacity 0.25s ease; }
 .overlay-leave-active { transition: opacity 0.2s ease; }
 .overlay-enter-from, .overlay-leave-to { opacity: 0; }
 
-/* ── Right panel blocks ── */
-.settings-block, .toggles-block, .history-block {
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 16px; padding: 18px;
+/* ── ⑤ Feedback message ── */
+.feedback-msg {
+  min-height: 22px;
+  font-size: 14px; color: #4b5563;
+  text-align: center; margin: 0;
+  line-height: 1.5;
 }
 
+/* ── ⑥ Controls ── */
+.controls-row {
+  display: flex; gap: 10px; justify-content: center;
+}
+.btn-start {
+  padding: 13px 40px;
+  background: #2563eb; color: #fff;
+  font-size: 16px; font-weight: 700;
+  border-radius: 999px; border: none; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+  transition: background 0.2s, transform 0.15s;
+  letter-spacing: -0.01em;
+}
+.btn-start:hover { background: #1d4ed8; transform: translateY(-2px); }
+.btn-pause {
+  padding: 13px 24px;
+  background: rgba(255,255,255,0.7); color: #374151;
+  font-size: 15px; font-weight: 600;
+  border-radius: 999px; border: 1px solid rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px); cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-pause:hover { background: rgba(255,255,255,0.95); transform: translateY(-1px); }
+.btn-reset {
+  padding: 13px 20px;
+  background: none; color: #9ca3af;
+  font-size: 14px; font-weight: 500;
+  border-radius: 999px; border: 1px solid rgba(0,0,0,0.08); cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.btn-reset:hover { color: #ef4444; background: rgba(239,68,68,0.06); border-color: #fecaca; }
+
+/* ── ⑦ Settings ── */
+.settings-row {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 16px; padding: 14px 20px;
+}
 .mode-select {
-  width: 100%; margin-top: 10px;
-  padding: 9px 12px; font-size: 13px;
-  color: #0d1117; background: #f3f4f6;
-  border: 1.5px solid transparent; border-radius: 10px;
-  appearance: none; cursor: pointer;
-  font-family: inherit;
+  flex: 1; min-width: 160px;
+  padding: 8px 12px; font-size: 13px;
+  color: #0d1117; background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.1); border-radius: 10px;
+  appearance: none; cursor: pointer; font-family: inherit;
   transition: border-color 0.15s;
 }
-.mode-select:focus  { outline: none; border-color: #93c5fd; }
+.mode-select:focus { outline: none; border-color: #93c5fd; }
 .mode-select:disabled { opacity: 0.6; cursor: not-allowed; }
-
-/* Toggle switch rows */
-.toggles-block { display: flex; flex-direction: column; gap: 14px; }
 .toggle-row {
-  display: flex; align-items: center; gap: 12px;
-  cursor: pointer;
+  display: flex; align-items: center; gap: 8px; cursor: pointer; flex-shrink: 0;
 }
 .toggle-wrap { flex-shrink: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .toggle-track {
   display: flex; align-items: center;
-  width: 36px; height: 20px;
+  width: 34px; height: 19px;
   border-radius: 999px; background: #d1d5db;
   padding: 2px; cursor: pointer;
   transition: background 0.2s;
 }
 .toggle-track--on { background: #2563eb; }
 .toggle-thumb {
-  width: 16px; height: 16px;
+  width: 15px; height: 15px;
   border-radius: 50%; background: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   transition: transform 0.2s;
 }
-.toggle-track--on .toggle-thumb { transform: translateX(16px); }
+.toggle-track--on .toggle-thumb { transform: translateX(15px); }
 .toggle-label { font-size: 13px; font-weight: 500; color: #374151; }
 
-/* History */
+/* ── ⑧ History ── */
+.history-details {
+  background: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 14px; overflow: hidden;
+}
+.history-summary {
+  padding: 12px 18px;
+  font-size: 13px; font-weight: 600; color: #6b7280;
+  cursor: pointer; list-style: none; user-select: none;
+}
+.history-summary:hover { color: #374151; }
 .history-list {
-  list-style: none; padding: 0; margin: 10px 0 14px;
-  display: flex; flex-direction: column; gap: 8px;
+  list-style: none; padding: 0 18px 12px; margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
 }
-.history-empty { font-size: 13px; color: #6b7280; text-align: center; padding: 8px 0; }
+.history-empty { font-size: 13px; color: #9ca3af; padding: 4px 0; }
 .history-item {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: 10px 12px; background: #f8fafc;
-  border-radius: 10px; border: 1px solid #f3f4f6;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.6); border-radius: 8px;
+  font-size: 12.5px;
 }
-.history-time { font-size: 11px; color: #4b5563; font-weight: 500; }
-.history-stats { font-size: 13px; color: #374151; font-weight: 600; }
+.history-time { color: #6b7280; }
+.history-stats { font-weight: 600; color: #374151; }
 
+/* ── Disclaimer ── */
 .disclaimer {
-  font-size: 11.5px; color: #4b5563;
-  line-height: 1.6; margin: 0;
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 12px; padding: 14px;
+  font-size: 11.5px; color: #9ca3af;
+  text-align: center; margin: 0;
 }
 
 /* ── Footer ── */
-.footer { background: #0d1117; padding: 48px 0; }
+.footer {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  padding: 52px 0;
+}
 .footer-inner {
   display: flex; align-items: center;
   justify-content: space-between; flex-wrap: wrap; gap: 24px;
 }
 .footer-left { display: flex; flex-direction: column; gap: 4px; }
-.footer-logo  { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-.footer-tagline { font-size: 13px; color: rgba(255,255,255,0.35); margin: 0; }
+.footer-logo { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.footer-tagline { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0; }
 .footer-links { display: flex; gap: 28px; }
 .footer-link {
   font-size: 14px; font-weight: 500;
-  color: rgba(255,255,255,0.5); text-decoration: none;
+  color: rgba(255,255,255,0.6); text-decoration: none;
   transition: color 0.2s;
 }
 .footer-link:hover { color: #fff; }
-.footer-copy { font-size: 13px; color: rgba(255,255,255,0.3); margin: 0; }
+.footer-copy { font-size: 13px; color: rgba(255,255,255,0.35); margin: 0; }
 
-/* ── Shared utility ── */
 .container { max-width: 1160px; margin: 0 auto; padding: 0 36px; }
 
 /* ── Responsive ── */
-@media (max-width: 1100px) {
-  .game-layout {
-    grid-template-columns: 180px 1fr 180px;
-    padding: 0 16px;
-  }
-}
-
 @media (max-width: 768px) {
-  .nav-links     { display: none; }
+  .nav-links { display: none; }
   .nav-hamburger { display: flex; }
   .mobile-nav {
     display: block; position: fixed;
     top: 64px; left: 0; right: 0;
-    background: rgba(255,255,255,0.98);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid #e5e7eb;
+    background: rgba(244,245,255,0.96);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(99,120,255,0.1);
     z-index: 99;
   }
   .mobile-nav-links { list-style: none; margin: 0; padding: 0; }
   .mobile-nav-link {
     display: block; padding: 16px 28px;
     font-size: 16px; font-weight: 500; color: #374151;
-    text-decoration: none; border-bottom: 1px solid #f3f4f6;
+    text-decoration: none; border-bottom: 1px solid rgba(0,0,0,0.05);
     transition: background 0.15s;
   }
-  .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
-
-  /* Stack the three-column layout vertically on mobile */
-  .game-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    height: auto;         /* let content determine height when stacked */
-  }
-  /* Re-order: controls first, then canvas, then history */
-  .game-panel:first-child { order: 1; }
-  .arena-wrap             { order: 2; aspect-ratio: 4 / 3; height: auto; }
-  .game-panel:last-child  { order: 3; }
-
-  .page-hero { padding: 96px 0 40px; }
+  .mobile-nav-link:hover { background: rgba(255,255,255,0.6); color: #0d1117; }
+  .game-main { padding: 80px 12px 48px; }
+  .cue-area { padding: 18px 20px; }
+  .controls-row { flex-wrap: wrap; }
+  .btn-start { width: 100%; justify-content: center; }
   .container { padding: 0 20px; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
