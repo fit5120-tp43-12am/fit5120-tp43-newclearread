@@ -535,13 +535,54 @@ function onResize() {
   G.chips.forEach(drawChip)
 }
 
-// ── Guide modal ───────────────────────────────────────────────────────────────
-const showGuide = ref(false)
-function openGuide()  {
+// ── Guide modal (multi-step carousel) ────────────────────────────────────────
+const showGuide  = ref(false)
+const guideStep  = ref(0)
+const guideDir   = ref(1)   // 1 = forward, -1 = backward (drives slide direction)
+const TOTAL_GUIDE_STEPS = 5
+
+function openGuide() {
   if (G.running && !G.paused) pauseGame()
+  guideStep.value = 0
   showGuide.value = true
 }
 function closeGuide() { showGuide.value = false }
+function nextStep() {
+  if (guideStep.value < TOTAL_GUIDE_STEPS - 1) {
+    guideDir.value = 1; guideStep.value++
+  } else { closeGuide() }
+}
+function prevStep() {
+  if (guideStep.value > 0) { guideDir.value = -1; guideStep.value-- }
+}
+function goToStep(i) {
+  guideDir.value = i >= guideStep.value ? 1 : -1
+  guideStep.value = i
+}
+
+// ── Guide step content ────────────────────────────────────────────────────────
+const GUIDE_STEPS = [
+  {
+    title: 'Look at the target',
+    desc: "A word or letter appears at the top of the screen — that's your target. Read it carefully before you start looking.",
+  },
+  {
+    title: 'Find the matching circle',
+    desc: 'Tap the moving circle whose label matches the target. The distractors look similar on purpose — look closely!',
+  },
+  {
+    title: 'Beat the clock',
+    desc: 'Each round has a countdown timer. Tap before time runs out. The faster you respond, the more bonus points you earn.',
+  },
+  {
+    title: 'Listen for audio cues',
+    desc: "Some rounds play a spoken word instead of showing it. Press Replay if you need to hear it again, then find the circle.",
+  },
+  {
+    title: 'Difficulty adapts to you',
+    desc: 'Do well and the game adds more circles and speeds up. Struggle and it eases off. Just keep playing at your own pace!',
+  },
+]
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 function handleKey(e) {
@@ -730,54 +771,136 @@ onUnmounted(() => {
                 </button>
               </div>
 
-              <ol class="guide-steps">
-                <li>
-                  <span class="guide-step-num">1</span>
-                  <div>
-                    <strong>Look at the target</strong>
-                    <p>A word or letter appears above the game area — that's what you need to find.</p>
-                  </div>
-                </li>
-                <li>
-                  <span class="guide-step-num">2</span>
-                  <div>
-                    <strong>Find the matching circle</strong>
-                    <p>Tap the moving circle that shows the same word or letter. Watch out — the others look similar on purpose!</p>
-                  </div>
-                </li>
-                <li>
-                  <span class="guide-step-num">3</span>
-                  <div>
-                    <strong>Beat the clock</strong>
-                    <p>Each round has a countdown timer. Tap before time runs out. The faster you are, the more points you earn.</p>
-                  </div>
-                </li>
-                <li>
-                  <span class="guide-step-num">4</span>
-                  <div>
-                    <strong>Listen for audio cues</strong>
-                    <p>Some rounds play a spoken word instead of showing it. Tap <em>Replay</em> if you need to hear it again.</p>
-                  </div>
-                </li>
-                <li>
-                  <span class="guide-step-num">5</span>
-                  <div>
-                    <strong>Difficulty adapts</strong>
-                    <p>The game gets harder as you improve, and easier if you're struggling — just keep playing!</p>
-                  </div>
-                </li>
-              </ol>
+              <!-- ── Carousel ── -->
+              <div class="guide-carousel">
 
-              <div class="guide-tips">
-                <span class="guide-tips-label">Tips</span>
-                <ul>
-                  <li>🔊 Turn on <strong>Sound</strong> to also hear the target word</li>
-                  <li>🐢 Enable <strong>Slow</strong> for more time per round</li>
-                  <li>The game ends after <strong>{{ TOTAL_ROUNDS }} rounds</strong></li>
-                </ul>
+                <!-- Illustration slide -->
+                <div class="guide-illus-wrap">
+                  <Transition :name="guideDir === 1 ? 'guide-slide-fwd' : 'guide-slide-bwd'" mode="out-in">
+                    <div class="guide-illus" :key="'illus-' + guideStep">
+
+                      <!-- Step 0: Look at the target -->
+                      <svg v-if="guideStep===0" width="200" height="164" viewBox="0 0 200 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="98" r="60" fill="#eef2ff"/>
+                        <circle cx="100" cy="98" r="44" fill="white" stroke="#0f766e" stroke-width="3.5"/>
+                        <text x="100" y="122" text-anchor="middle" font-size="60" font-weight="900" fill="#0d1117" font-family="Arial, sans-serif">b</text>
+                        <rect x="48" y="8" width="104" height="28" rx="14" fill="#2563eb"/>
+                        <text x="100" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="white" font-family="Arial, sans-serif" letter-spacing="1.5">FIND THIS</text>
+                        <line x1="100" y1="36" x2="100" y2="50" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 2.5"/>
+                        <path d="M93 50l7 8 7-8" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+
+                      <!-- Step 1: Find the matching circle -->
+                      <svg v-else-if="guideStep===1" width="200" height="164" viewBox="0 0 200 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="12" y="12" width="176" height="140" rx="18" fill="#f0fdf4"/>
+                        <!-- Target chip (teal) -->
+                        <circle cx="78" cy="80" r="34" fill="white" stroke="#0f766e" stroke-width="4"/>
+                        <text x="78" y="91" text-anchor="middle" font-size="28" font-weight="900" fill="#0d1117" font-family="Arial, sans-serif">b</text>
+                        <!-- Checkmark badge -->
+                        <circle cx="102" cy="57" r="13" fill="#22c55e"/>
+                        <path d="M95 57l6 6 9-8" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Distractor 1 (blue) -->
+                        <circle cx="148" cy="62" r="24" fill="white" stroke="#2f6fbb" stroke-width="2.5"/>
+                        <text x="148" y="70" text-anchor="middle" font-size="18" font-weight="900" fill="#0d1117" font-family="Arial, sans-serif">d</text>
+                        <!-- Distractor 2 (yellow/rose) -->
+                        <circle cx="148" cy="118" r="22" fill="white" stroke="#c89a18" stroke-width="2.5"/>
+                        <text x="148" y="126" text-anchor="middle" font-size="16" font-weight="900" fill="#0d1117" font-family="Arial, sans-serif">p</text>
+                        <!-- Tap cursor -->
+                        <path d="M38 112c0-1.2 0.6-2.3 1.7-2.8l14-6c1.4-0.6 3 0.3 3 1.8v13c0 1.2-0.9 2.2-2 2.4l-3.5 0.6 2.5 5.4c0.5 1-0.1 2.2-1.2 2.6l-2.3 0.8c-1 0.4-2.2-0.2-2.6-1.2l-2.5-5.5-2.3 2.5c-0.8 0.9-2.3 0.4-2.3-0.8v-13.6z" fill="#374151"/>
+                      </svg>
+
+                      <!-- Step 2: Beat the clock -->
+                      <svg v-else-if="guideStep===2" width="200" height="164" viewBox="0 0 200 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="16" y="44" width="168" height="90" rx="18" fill="#fff7ed"/>
+                        <!-- Clock icon -->
+                        <circle cx="100" cy="32" r="22" fill="white" stroke="#f59e0b" stroke-width="2.5"/>
+                        <line x1="100" y1="18" x2="100" y2="32" stroke="#374151" stroke-width="2.2" stroke-linecap="round"/>
+                        <line x1="100" y1="32" x2="110" y2="38" stroke="#374151" stroke-width="2.2" stroke-linecap="round"/>
+                        <!-- Timer bar track -->
+                        <rect x="30" y="72" width="120" height="18" rx="9" fill="#fde8d4"/>
+                        <!-- Timer fill (20% — red, almost empty) -->
+                        <rect x="30" y="72" width="24" height="18" rx="9" fill="#ef4444"/>
+                        <!-- 2s countdown label -->
+                        <text x="165" y="85" text-anchor="middle" font-size="15" font-weight="800" fill="#ef4444" font-family="Arial, sans-serif">2s</text>
+                        <!-- Labels -->
+                        <text x="100" y="112" text-anchor="middle" font-size="13" font-weight="700" fill="#ef4444" font-family="Arial, sans-serif">HURRY!</text>
+                        <text x="100" y="130" text-anchor="middle" font-size="10.5" fill="#9ca3af" font-family="Arial, sans-serif">Faster = more points</text>
+                      </svg>
+
+                      <!-- Step 3: Listen for audio cues -->
+                      <svg v-else-if="guideStep===3" width="200" height="164" viewBox="0 0 200 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="82" cy="82" r="60" fill="#eff6ff"/>
+                        <!-- Speaker body -->
+                        <path d="M44 67 L44 97 L56 97 L74 114 L74 50 L56 67 Z" fill="#2563eb"/>
+                        <!-- Sound waves -->
+                        <path d="M82 64 Q98 82 82 100" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.7"/>
+                        <path d="M92 55 Q114 82 92 109" stroke="#2563eb" stroke-width="2.8" stroke-linecap="round" fill="none" opacity="0.45"/>
+                        <path d="M102 46 Q130 82 102 118" stroke="#2563eb" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.25"/>
+                        <!-- Musical note -->
+                        <text x="148" y="58" font-size="30" fill="#f59e0b" font-family="Arial, sans-serif">♪</text>
+                        <!-- Replay pill -->
+                        <rect x="112" y="100" width="68" height="26" rx="13" fill="#2563eb"/>
+                        <text x="146" y="117" text-anchor="middle" font-size="11" font-weight="700" fill="white" font-family="Arial, sans-serif">▶ Replay</text>
+                      </svg>
+
+                      <!-- Step 4: Difficulty adapts -->
+                      <svg v-else-if="guideStep===4" width="200" height="164" viewBox="0 0 200 164" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="12" y="14" width="176" height="136" rx="18" fill="#f0fdf4"/>
+                        <!-- "Lv 1" label + 3 small circles -->
+                        <text x="48" y="42" text-anchor="middle" font-size="10" font-weight="700" fill="#9ca3af" font-family="Arial, sans-serif">Lv 1</text>
+                        <circle cx="32" cy="64" r="11" fill="#d1d5db"/>
+                        <circle cx="56" cy="64" r="11" fill="#d1d5db"/>
+                        <circle cx="44" cy="88" r="11" fill="#d1d5db"/>
+                        <!-- Arrow right -->
+                        <path d="M76 76 L94 76" stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M90 70 L96 76 L90 82" stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- "Lv 3" label + 5 circles (faster/harder) -->
+                        <text x="148" y="42" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a" font-family="Arial, sans-serif">Lv 3</text>
+                        <circle cx="118" cy="60" r="10" fill="#86efac"/>
+                        <circle cx="136" cy="52" r="10" fill="#86efac"/>
+                        <circle cx="158" cy="60" r="10" fill="#86efac"/>
+                        <circle cx="122" cy="83" r="10" fill="#86efac"/>
+                        <circle cx="148" cy="80" r="10" fill="#86efac"/>
+                        <!-- Trend line -->
+                        <path d="M28 130 Q100 108 168 74" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="5 3"/>
+                        <text x="100" y="150" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="Arial, sans-serif">Adapts to your skill level</text>
+                      </svg>
+
+                    </div>
+                  </Transition>
+                </div>
+
+                <!-- Text slide -->
+                <Transition :name="guideDir === 1 ? 'guide-slide-fwd' : 'guide-slide-bwd'" mode="out-in">
+                  <div class="guide-text" :key="'text-' + guideStep">
+                    <p class="guide-step-counter">{{ guideStep + 1 }} / {{ TOTAL_GUIDE_STEPS }}</p>
+                    <h3 class="guide-step-title">{{ GUIDE_STEPS[guideStep].title }}</h3>
+                    <p class="guide-step-desc">{{ GUIDE_STEPS[guideStep].desc }}</p>
+                  </div>
+                </Transition>
+
+                <!-- Dot indicators -->
+                <div class="guide-dots">
+                  <button
+                    v-for="(_, i) in GUIDE_STEPS"
+                    :key="i"
+                    :class="['guide-dot', { 'guide-dot--active': guideStep === i }]"
+                    @click="goToStep(i)"
+                    :aria-label="`Go to step ${i + 1}`"
+                  />
+                </div>
+
+                <!-- Navigation -->
+                <div class="guide-nav">
+                  <button class="guide-nav-btn guide-nav-prev" @click="prevStep" :disabled="guideStep === 0">
+                    ← Back
+                  </button>
+                  <button class="guide-nav-btn guide-nav-next" @click="nextStep">
+                    {{ guideStep === TOTAL_GUIDE_STEPS - 1 ? "Let's play!" : 'Next →' }}
+                  </button>
+                </div>
+
               </div>
-
-              <button class="guide-cta" @click="closeGuide">Got it — let's play!</button>
             </div>
           </div>
         </Transition>
@@ -814,7 +937,17 @@ onUnmounted(() => {
 
         <!-- ⑧ History (compact, collapsible) -->
         <details class="history-details">
-          <summary class="history-summary">Your recent games</summary>
+          <summary class="history-summary">
+            <span class="history-summary-label">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path d="M2 4.5h11M2 7.5h7M2 10.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              Your recent games
+            </span>
+            <svg class="history-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
           <ol class="history-list">
             <li v-if="!ui.sessions.length" class="history-empty">No games yet</li>
             <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
@@ -1117,7 +1250,6 @@ onUnmounted(() => {
   max-width: 520px; width: 100%;
   box-shadow: 0 24px 64px rgba(0,0,0,0.18);
   display: flex; flex-direction: column; gap: 24px;
-  max-height: 88vh; overflow-y: auto;
 }
 .guide-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -1134,54 +1266,90 @@ onUnmounted(() => {
 }
 .guide-close:hover { background: #e5e7eb; color: #0d1117; }
 
-.guide-steps {
-  list-style: none; padding: 0; margin: 0;
-  display: flex; flex-direction: column; gap: 18px;
+/* ── Guide carousel ── */
+.guide-carousel {
+  display: flex; flex-direction: column; gap: 20px;
 }
-.guide-steps li {
-  display: flex; gap: 14px; align-items: flex-start;
-}
-.guide-step-num {
-  flex-shrink: 0;
-  width: 28px; height: 28px;
-  background: #eef2ff; color: #2563eb;
-  border-radius: 8px;
-  font-size: 13px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-  margin-top: 1px;
-}
-.guide-steps li div { display: flex; flex-direction: column; gap: 3px; }
-.guide-steps strong { font-size: 15px; font-weight: 700; color: #0d1117; }
-.guide-steps p { font-size: 13.5px; color: #4b5563; line-height: 1.6; margin: 0; }
 
-.guide-tips {
-  background: #f8faff;
-  border: 1px solid #e0e7ff;
-  border-radius: 14px; padding: 16px 18px;
-  display: flex; flex-direction: column; gap: 10px;
+/* Fixed-height illustration area so layout doesn't jump between slides */
+.guide-illus-wrap {
+  position: relative;
+  height: 172px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
-.guide-tips-label {
+.guide-illus {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%;
+}
+
+/* Text block */
+.guide-text {
+  text-align: center; padding: 0 8px;
+}
+.guide-step-counter {
   font-size: 11px; font-weight: 700;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: #2563eb;
+  color: #2563eb; margin: 0 0 6px;
 }
-.guide-tips ul {
-  list-style: none; padding: 0; margin: 0;
-  display: flex; flex-direction: column; gap: 7px;
+.guide-step-title {
+  font-size: 20px; font-weight: 800;
+  letter-spacing: -0.02em; color: #0d1117;
+  margin: 0 0 8px;
 }
-.guide-tips li {
-  font-size: 13.5px; color: #374151; line-height: 1.5;
+.guide-step-desc {
+  font-size: 14px; color: #4b5563;
+  line-height: 1.68; margin: 0;
 }
 
-.guide-cta {
-  width: 100%; padding: 14px;
-  background: #2563eb; color: #fff;
-  font-size: 15px; font-weight: 700;
-  border-radius: 12px; border: none; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37,99,235,0.25);
-  transition: background 0.2s, transform 0.15s;
+/* Dot indicators */
+.guide-dots {
+  display: flex; gap: 8px; justify-content: center;
 }
-.guide-cta:hover { background: #1d4ed8; transform: translateY(-1px); }
+.guide-dot {
+  height: 8px; width: 8px;
+  border-radius: 999px; background: #e5e7eb;
+  border: none; cursor: pointer; padding: 0;
+  transition: background 0.2s, width 0.25s;
+}
+.guide-dot--active {
+  background: #2563eb; width: 22px;
+}
+
+/* Nav buttons */
+.guide-nav {
+  display: flex; gap: 10px;
+}
+.guide-nav-btn {
+  padding: 13px 24px;
+  font-size: 15px; font-weight: 600;
+  border-radius: 12px; cursor: pointer;
+  transition: all 0.15s; font-family: inherit;
+}
+.guide-nav-prev {
+  background: #f3f4f6; color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+.guide-nav-prev:hover:not(:disabled) { background: #e5e7eb; }
+.guide-nav-prev:disabled { opacity: 0.32; cursor: not-allowed; }
+.guide-nav-next {
+  flex: 1;
+  background: #2563eb; color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.25);
+}
+.guide-nav-next:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+/* Carousel slide transitions — forward */
+.guide-slide-fwd-enter-active { transition: all 0.28s ease; }
+.guide-slide-fwd-leave-active { transition: all 0.22s ease; }
+.guide-slide-fwd-enter-from   { transform: translateX(48px); opacity: 0; }
+.guide-slide-fwd-leave-to     { transform: translateX(-48px); opacity: 0; }
+/* Carousel slide transitions — backward */
+.guide-slide-bwd-enter-active { transition: all 0.28s ease; }
+.guide-slide-bwd-leave-active { transition: all 0.22s ease; }
+.guide-slide-bwd-enter-from   { transform: translateX(-48px); opacity: 0; }
+.guide-slide-bwd-leave-to     { transform: translateX(48px); opacity: 0; }
 
 /* Modal transition */
 .guide-fade-enter-active { transition: opacity 0.2s ease, transform 0.2s ease; }
@@ -1199,11 +1367,14 @@ onUnmounted(() => {
 }
 .mode-select {
   flex: 1; min-width: 180px;
-  padding: 10px 14px; font-size: 15px;
+  padding: 10px 38px 10px 14px; font-size: 15px;
   color: #0d1117; background: rgba(255,255,255,0.7);
   border: 1px solid rgba(0,0,0,0.1); border-radius: 10px;
   appearance: none; cursor: pointer; font-family: inherit;
   transition: border-color 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
 }
 .mode-select:focus { outline: none; border-color: #93c5fd; }
 .mode-select:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -1240,8 +1411,26 @@ onUnmounted(() => {
   padding: 14px 22px;
   font-size: 15px; font-weight: 600; color: #6b7280;
   cursor: pointer; list-style: none; user-select: none;
+  display: flex; align-items: center; justify-content: space-between;
+  border-radius: 14px;
+  transition: color 0.2s, background 0.18s;
 }
-.history-summary:hover { color: #374151; }
+.history-summary:hover { color: #374151; background: rgba(255,255,255,0.5); }
+.history-summary-label {
+  display: flex; align-items: center; gap: 8px;
+}
+.history-chevron {
+  flex-shrink: 0;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.history-details[open] .history-chevron {
+  transform: rotate(180deg);
+}
+.history-details[open] .history-summary {
+  color: #374151;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px 14px 0 0;
+}
 .history-list {
   list-style: none; padding: 0 22px 14px; margin: 0;
   display: flex; flex-direction: column; gap: 8px;
