@@ -206,34 +206,84 @@ def process_reading_text(text: str) -> dict:
     }
 
 
+def _normalize_preprocess_result(preprocessing_result: dict) -> tuple[list[dict], bool, dict]:
+    if not isinstance(preprocessing_result, dict):
+        return [], False, {}
+
+    raw_segments = preprocessing_result.get("segments") or []
+    normalized_segments = []
+    for segment in raw_segments:
+        if not isinstance(segment, dict):
+            continue
+
+        cleaned_text = str(segment.get("cleaned_text") or segment.get("content") or "").strip()
+        if not cleaned_text:
+            continue
+
+        normalized_segments.append(
+            {
+                "segment_id": segment.get("segment_id") or len(normalized_segments) + 1,
+                "cleaned_text": cleaned_text,
+            }
+        )
+
+    metadata = preprocessing_result.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    # text_preprocessor currently returns segments/debug but no status/metadata.
+    debug_info = preprocessing_result.get("debug")
+    if isinstance(debug_info, dict):
+        split_reasons = debug_info.get("split_reasons") or []
+        if any(reason == "semantic_or_size_boundary" for reason in split_reasons):
+            metadata.setdefault("segmentation_mode", "sentence_range")
+        else:
+            metadata.setdefault(
+                "segmentation_mode",
+                "sentence_range" if len(normalized_segments) > 1 else "single_block",
+            )
+        metadata.setdefault("processing_notes", "derived_from_preprocessor_debug")
+    else:
+        metadata.setdefault(
+            "segmentation_mode",
+            "sentence_range" if len(normalized_segments) > 1 else "single_block",
+        )
+        metadata.setdefault("processing_notes", "normalized_from_preprocess_output")
+
+    metadata.setdefault("fallback_reason", "")
+
+    # Backward compatibility:
+    # - old shape: {"status":"success","segments":[...]}
+    # - new shape: {"segments":[...]}
+    status = preprocessing_result.get("status")
+    success = (status == "success") if status is not None else bool(normalized_segments)
+    return normalized_segments, success, metadata
+
+
 def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
     # Use semantic preprocessing first. If it fails, keep the page usable by treating
     # the whole input as a single block.
-    preprocessing_result = preprocess_text(text)
-    if preprocessing_result.get("status") == "success":
-        segments = preprocessing_result.get("segments") or []
-        metadata = preprocessing_result.get("metadata") or {}
+    try:
+        preprocessing_result = preprocess_text(text)
+    except Exception:
+        return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", {}
+
+    segments, success, metadata = _normalize_preprocess_result(preprocessing_result)
+    if success and segments:
         segmentation_mode = metadata.get("segmentation_mode")
         used_segmentation_fallback = segmentation_mode in {
             "local_fallback",
             "chunked_mixed_fallback",
         }
-        valid_segments = [
-            segment
-            for segment in segments
-            if isinstance(segment, dict) and str(segment.get("cleaned_text") or "").strip()
-        ]
-        if valid_segments:
-            if used_segmentation_fallback:
-                return (
-                    valid_segments,
-                    True,
-                    metadata.get("fallback_reason") or "local_segmentation_fallback",
-                    metadata,
-                )
-            return valid_segments, False, "", metadata
+        if used_segmentation_fallback:
+            return (
+                segments,
+                True,
+                metadata.get("fallback_reason") or "local_segmentation_fallback",
+                metadata,
+            )
+        return segments, False, "", metadata
 
-    metadata = preprocessing_result.get("metadata") or {}
     return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", metadata
 
 
