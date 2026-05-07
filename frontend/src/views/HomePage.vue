@@ -198,20 +198,6 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       </div>
     </section>
 
-    <!-- ── CTA ── -->
-    <section class="section-cta">
-      <div class="container">
-        <h2>Give it a try.</h2>
-        <p>It only takes a minute to get started.</p>
-        <RouterLink to="/reading" class="btn-cta">
-          Start Here
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </RouterLink>
-      </div>
-    </section>
-
     <!-- ── Footer ── -->
     <footer class="footer">
       <div class="container footer-inner">
@@ -447,35 +433,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   box-shadow: 0 12px 28px rgba(37,99,235,0.35);
 }
 
-/* ── CTA ── */
-.section-cta {
-  padding: 96px 0;
-  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
-  text-align: center;
-}
-.section-cta h2 {
-  font-size: clamp(26px, 4vw, 42px);
-  font-weight: 800; color: #fff;
-  letter-spacing: -0.04em; margin: 0 0 14px;
-}
-.section-cta p {
-  font-size: 16px; color: rgba(255,255,255,0.65);
-  margin: 0 0 36px;
-}
-.btn-cta {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 14px 32px;
-  background: #fff; color: #2563eb;
-  font-size: 15px; font-weight: 700;
-  border-radius: 999px; text-decoration: none;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.2);
-  transition: background 0.2s, transform 0.15s;
-}
-.btn-cta:hover { background: #eef2ff; transform: translateY(-2px); }
-
 /* ── Footer ── */
 .footer {
-  background: #0d1117;
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
   padding: 48px 0;
 }
 .footer-inner {
@@ -628,7 +588,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   .features-grid { grid-template-columns: 1fr; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
   .container { padding: 0 20px; }
-  .section-features, .section-cta, .section-training { padding: 64px 0; }
+  .section-features, .section-training { padding: 64px 0; }
   .training-inner { grid-template-columns: 1fr; gap: 40px; }
   .training-visual { order: -1; }
   .chip-preview { grid-template-columns: repeat(3, 68px); grid-template-rows: repeat(2, 68px); }
