@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAccessibility, applyToDom } from '../composables/useAccessibility.js'
 
 // Pull shared state and config from the singleton composable
@@ -8,11 +8,38 @@ const { settings, THEMES, FONT_FAMILIES, FONT_SIZES, LINE_HEIGHTS, resetSettings
 // Controls whether the settings panel is open or closed
 const panelOpen = ref(false)
 
-function togglePanel() { panelOpen.value = !panelOpen.value }
-function closePanel()  { panelOpen.value = false }
+// ── First-visit hint bubble ────────────────────────────────────────────────────
+// Show only once — tracked in localStorage so it never reappears after dismissal.
+const HINT_KEY = 'clearead-settings-hint-seen'
+const showHint = ref(false)
+let hintTimer = null
 
-// Apply saved settings to the DOM once the component is mounted
-onMounted(() => applyToDom())
+function dismissHint() {
+  showHint.value = false
+  localStorage.setItem(HINT_KEY, '1')
+  clearTimeout(hintTimer)
+}
+
+function togglePanel() {
+  dismissHint()                          // clicking the button counts as "seen"
+  panelOpen.value = !panelOpen.value
+}
+function closePanel() { panelOpen.value = false }
+
+onMounted(() => {
+  applyToDom()
+  // Only show hint if the user has never seen it before
+  if (!localStorage.getItem(HINT_KEY)) {
+    // Small delay so the page finishes loading first
+    hintTimer = setTimeout(() => {
+      showHint.value = true
+      // Auto-dismiss after 6 seconds
+      hintTimer = setTimeout(dismissHint, 6000)
+    }, 1500)
+  }
+})
+
+onUnmounted(() => clearTimeout(hintTimer))
 </script>
 
 
@@ -32,6 +59,22 @@ onMounted(() => applyToDom())
     -->
     <div class="a11y-overlay" aria-hidden="true"></div>
 
+    <!-- First-visit hint bubble — slides in from the right, auto-dismisses -->
+    <Transition name="hint">
+      <div v-if="showHint" class="a11y-hint" role="status">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+          <path d="M7 4v3.5M7 9.5v.5" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>Adjust text size &amp; display settings</span>
+        <button class="hint-close" @click="dismissHint" aria-label="Dismiss hint">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </Transition>
+
     <!-- Toggle button — always visible in the top-right corner -->
     <button
       class="a11y-toggle"
@@ -41,13 +84,14 @@ onMounted(() => applyToDom())
       aria-label="Accessibility settings"
       title="Accessibility settings"
     >
-      <!-- Accessibility icon (person with arms raised) -->
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="8" cy="3" r="1.6" fill="currentColor"/>
-        <path d="M4.5 6.5C5.5 6 6.5 5.8 8 5.8C9.5 5.8 10.5 6 11.5 6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        <path d="M8 5.8V10.5M8 10.5L5.5 13.5M8 10.5L10.5 13.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Settings icon (sliders) -->
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M2 4h10M2 7h10M2 10h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="5" cy="4" r="1.2" fill="white" stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="9" cy="7" r="1.2" fill="white" stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="5" cy="10" r="1.2" fill="white" stroke="currentColor" stroke-width="1.2"/>
       </svg>
-      <span class="a11y-toggle-label">Aa</span>
+      <span class="a11y-toggle-label">Settings</span>
     </button>
 
     <!-- Settings panel — drops down when toggle is clicked -->
@@ -542,6 +586,57 @@ onMounted(() => applyToDom())
   filter: invert(0.88) hue-rotate(190deg);
 }
 
+
+/* ─────────────────────────────────────────
+   First-visit hint bubble
+   Floats to the left of the toggle button.
+───────────────────────────────────────── */
+.a11y-hint {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  padding: 8px 10px 8px 10px;
+  background: #fff;
+  border: 1.5px solid #c7d7fe;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.13);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e40af;
+  z-index: 202;
+  pointer-events: auto;
+}
+/* Arrow pointing right toward the button */
+.a11y-hint::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right: none;
+  border-left-color: #c7d7fe;
+}
+.hint-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  background: none; border: none; cursor: pointer;
+  color: #93c5fd; border-radius: 4px;
+  padding: 0; flex-shrink: 0;
+  transition: color 0.15s;
+}
+.hint-close:hover { color: #2563eb; }
+
+/* Slide in from right, fade out */
+.hint-enter-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+.hint-leave-active { transition: opacity 0.25s ease, transform 0.2s ease; }
+.hint-enter-from   { opacity: 0; transform: translateY(-50%) translateX(10px); }
+.hint-leave-to     { opacity: 0; transform: translateY(-50%) translateX(6px); }
 
 /* ─────────────────────────────────────────
    Responsive — hide label on very small screens
