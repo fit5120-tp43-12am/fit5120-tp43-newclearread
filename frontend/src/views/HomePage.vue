@@ -137,7 +137,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
     <!-- ── Training game promo ── -->
     <section class="section-training">
-      <div class="container training-inner">
+      <div class="container">
+      <div class="training-panel">
+      <div class="training-inner">
         <!-- Left: text content -->
         <div class="training-text">
           <p class="eyebrow">New — Reading Training</p>
@@ -195,7 +197,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           </div>
           <p class="preview-caption">Tap the chip that matches the cue</p>
         </div>
-      </div>
+      </div><!-- training-inner -->
+      </div><!-- training-panel -->
+      </div><!-- container -->
     </section>
 
     <!-- ── Footer ── -->
@@ -217,10 +221,18 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </template>
 
 <style scoped>
-/* ── Page ── */
+/* ═══════════════════════════════════════════════════════
+   PAGE — one fixed gradient canvas for the whole scroll
+   ═══════════════════════════════════════════════════════ */
 .page {
   min-height: 100vh;
-  background: #fff;
+  background:
+    radial-gradient(ellipse 70% 55% at 5%  10%, rgba(147,167,255,0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 60% at 95% 5%,  rgba(255,200,150,0.38) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 85% 65%, rgba(255,218,180,0.28) 0%, transparent 52%),
+    radial-gradient(ellipse 40% 40% at 15% 85%, rgba(147,167,255,0.22) 0%, transparent 52%),
+    #f4f5ff;
+  background-attachment: fixed;
   color: #0d1117;
 }
 
@@ -232,10 +244,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   transition: background 0.3s, box-shadow 0.3s;
 }
 .navbar--scrolled {
-  background: rgba(255,255,255,0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+  background: rgba(244,245,255,0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(99,120,255,0.1);
 }
 .nav-inner {
   max-width: 1160px;
@@ -273,29 +285,26 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   border-radius: 50%; background: #2563eb;
 }
 
-/* ── Hero ── */
+/* ── Hero — transparent so page gradient shows ── */
 .hero {
   position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(ellipse 55% 80% at 15% 55%, rgba(147,167,255,0.45) 0%, transparent 65%),
-    radial-gradient(ellipse 45% 65% at 85% 40%, rgba(255,200,150,0.4) 0%, transparent 60%),
-    radial-gradient(ellipse 30% 40% at 50% 80%, rgba(255,220,180,0.25) 0%, transparent 55%),
-    #f8f9ff;
+  background: transparent;
   overflow: hidden;
 }
+/* subtle animated blobs add depth without blocking the fixed gradient */
 .blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
+  filter: blur(100px);
   pointer-events: none;
   z-index: 0;
 }
-.blob--blue  { width: 520px; height: 520px; background: rgba(99,120,255,0.18); top: -60px; left: -80px; }
-.blob--peach { width: 420px; height: 420px; background: rgba(255,165,100,0.15); bottom: -60px; right: -60px; }
+.blob--blue  { width: 500px; height: 500px; background: rgba(99,120,255,0.14); top: -80px; left: -100px; }
+.blob--peach { width: 400px; height: 400px; background: rgba(255,165,100,0.12); bottom: -80px; right: -80px; }
 
 .hero-content {
   position: relative;
@@ -307,12 +316,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .badge {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 6px 16px;
-  background: rgba(255,255,255,0.7);
-  border: 1px solid rgba(79,110,247,0.2);
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(79,110,247,0.18);
   border-radius: 999px;
   font-size: 13px; font-weight: 500; color: #374151;
   margin-bottom: 28px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .hero-title {
@@ -348,13 +357,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .btn-ghost {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 24px;
-  background: rgba(255,255,255,0.75); color: #374151;
+  background: rgba(255,255,255,0.65); color: #374151;
   font-size: 15px; font-weight: 600;
-  border-radius: 999px; border: 1px solid rgba(0,0,0,0.1);
-  text-decoration: none; backdrop-filter: blur(10px);
+  border-radius: 999px; border: 1px solid rgba(255,255,255,0.8);
+  text-decoration: none; backdrop-filter: blur(12px);
   transition: background 0.2s, transform 0.15s;
 }
-.btn-ghost:hover { background: rgba(255,255,255,0.95); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+.btn-ghost:hover { background: rgba(255,255,255,0.9); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
 
 /* ── Shared layout ── */
 .container {
@@ -372,32 +381,34 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-weight: 800; letter-spacing: -0.03em;
   margin: 0 0 14px; line-height: 1.2;
 }
-.section-sub {
-  font-size: 16px; color: #6b7280;
-  line-height: 1.65; margin: 0 0 52px;
-  max-width: 520px;
-}
 
-/* ── Features ── */
+/* ═══════════════════════════════════════════════════════
+   FEATURES — transparent section, glass cards
+   ═══════════════════════════════════════════════════════ */
 .section-features {
   padding: 96px 0;
-  border-bottom: 1px solid #e5e7eb;
+  /* no background, no border — seamless with page gradient */
 }
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 20px;
+  margin-top: 8px;
 }
+/* Glass card — lets gradient show through */
 .feature-card {
   padding: 32px 28px;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  background: #fff;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(99,120,255,0.07);
   transition: box-shadow 0.2s, transform 0.2s;
 }
 .feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.07);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 40px rgba(99,120,255,0.13);
 }
 .feature-num {
   font-size: 12px; font-weight: 700;
@@ -413,15 +424,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   line-height: 1.7; margin: 0;
 }
 .features-cta {
-  margin-top: 40px;
+  margin-top: 44px;
   display: flex;
   justify-content: center;
 }
 .btn-features-start {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 28px;
-  background: #2563eb;
-  color: #fff;
+  background: #2563eb; color: #fff;
   font-size: 15px; font-weight: 600;
   border-radius: 999px; text-decoration: none;
   box-shadow: 0 6px 20px rgba(37,99,235,0.3);
@@ -433,69 +443,21 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   box-shadow: 0 12px 28px rgba(37,99,235,0.35);
 }
 
-/* ── Footer ── */
-.footer {
-  background:
-    radial-gradient(ellipse 55% 120% at 15% 50%, rgba(147,167,255,0.35) 0%, transparent 65%),
-    radial-gradient(ellipse 45% 100% at 85% 50%, rgba(255,200,150,0.3) 0%, transparent 60%),
-    #f0f1fa;
-  border-top: 1px solid rgba(99,120,255,0.12);
-  padding: 48px 0;
-}
-.footer-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 24px;
-}
-.footer-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.footer-logo {
-  font-size: 16px; font-weight: 700;
-  color: #0d1117; letter-spacing: -0.3px;
-}
-.footer-tagline {
-  font-size: 13px; color: #6b7280;
-  margin: 0;
-}
-.footer-links {
-  display: flex; gap: 28px;
-}
-.footer-link {
-  font-size: 14px; font-weight: 500;
-  color: #374151;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-link:hover { color: #2563eb; }
-.footer-copy {
-  font-size: 13px; color: #9ca3af;
-  margin: 0;
-}
-
-/* ── Hamburger ── */
-.nav-hamburger {
-  display: none;
-  background: none; border: none; cursor: pointer;
-  color: #0d1117; padding: 4px; margin-left: 12px;
-  align-items: center; justify-content: center;
-}
-
-/* ── Mobile nav drawer ── */
-.mobile-nav {
-  display: none;
-}
-
-/* ── Responsive ── */
-/* ── Training promo section ── */
+/* ═══════════════════════════════════════════════════════
+   TRAINING — glass panel, no section divider
+   ═══════════════════════════════════════════════════════ */
 .section-training {
-  padding: 96px 0;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 80px 0 96px;
+}
+.training-panel {
+  /* Wider glass panel wrapping the whole training block */
+  background: rgba(255,255,255,0.52);
+  border: 1px solid rgba(255,255,255,0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 28px;
+  box-shadow: 0 8px 40px rgba(99,120,255,0.09);
+  padding: 56px 64px;
 }
 .training-inner {
   display: grid;
@@ -529,7 +491,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .btn-training:hover { opacity: 0.92; transform: translateY(-2px); }
 
-/* Decorative chip preview (right side of training promo) */
+/* Chip preview */
 .training-visual {
   display: flex; flex-direction: column;
   align-items: center; gap: 20px;
@@ -555,13 +517,67 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .chip--blue      { background: #2f6fbb; color: #fff; border: 2px solid #18395f; }
 .chip--yellow    { background: #f9d56e; color: #1f2937; border: 2px solid #8b6215; }
 .chip--rose      { background: #e76f73; color: #fff; border: 2px solid #82373a; }
-.chip--plain     { background: #fff; color: #20242a; border: 2px solid #aab6c1; }
+.chip--plain     { background: rgba(255,255,255,0.9); color: #20242a; border: 2px solid #aab6c1; }
 .chip--distractor { opacity: 0.88; }
 .preview-caption {
   font-size: 12.5px; color: #9ca3af;
   font-weight: 500; margin: 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   FOOTER — deep blue, clearly separated from page body
+   ═══════════════════════════════════════════════════════ */
+.footer {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  padding: 52px 0;
+}
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.footer-logo {
+  font-size: 16px; font-weight: 700;
+  color: #fff; letter-spacing: -0.3px;
+}
+.footer-tagline {
+  font-size: 13px; color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+.footer-links {
+  display: flex; gap: 28px;
+}
+.footer-link {
+  font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-link:hover { color: #fff; }
+.footer-copy {
+  font-size: 13px; color: rgba(255,255,255,0.35);
+  margin: 0;
+}
+
+/* ── Hamburger ── */
+.nav-hamburger {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  color: #0d1117; padding: 4px; margin-left: 12px;
+  align-items: center; justify-content: center;
+}
+
+/* ── Mobile nav drawer ── */
+.mobile-nav { display: none; }
+
+/* ── Responsive ── */
 @media (max-width: 1024px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -573,10 +589,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     display: block;
     position: fixed;
     top: 64px; left: 0; right: 0;
-    background: rgba(255,255,255,0.98);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border-bottom: 1px solid #e5e7eb;
+    background: rgba(244,245,255,0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(99,120,255,0.1);
     z-index: 99;
   }
   .mobile-nav-links { list-style: none; margin: 0; padding: 0; }
@@ -584,15 +600,16 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     display: block; padding: 16px 28px;
     font-size: 16px; font-weight: 500; color: #374151;
     text-decoration: none;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
     transition: background 0.15s;
   }
-  .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
+  .mobile-nav-link:hover { background: rgba(255,255,255,0.6); color: #0d1117; }
 
   .features-grid { grid-template-columns: 1fr; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
   .container { padding: 0 20px; }
   .section-features, .section-training { padding: 64px 0; }
+  .training-panel { padding: 36px 24px; border-radius: 20px; }
   .training-inner { grid-template-columns: 1fr; gap: 40px; }
   .training-visual { order: -1; }
   .chip-preview { grid-template-columns: repeat(3, 68px); grid-template-rows: repeat(2, 68px); }
