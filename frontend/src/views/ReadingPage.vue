@@ -29,16 +29,178 @@ const textareaRef = ref(null)     // ref to the textarea DOM element for auto-re
 // The page can be in one of three states at any time
 const mode = ref('idle')   // 'idle' | 'loading' | 'result'
 
-// Holds the processed result returned by the backend
-// Expected shape:
+// Holds the processed result returned by the backend.
+//
+// ── Expected shape (iteration3 updated API) ──────────────────────────────────
 // {
-//   blocks: [
-//     { id: 1, originalText: '...', summary: '...', keyPoints: ['...', '...'] },
+//   title: '...'                   (optional) article title shown as tree root node
+//   overallSummary: {              (NEW in iteration3 — backend must provide this)
+//     heading: '...',              large heading shown in Stage 1 card
+//     text:    '...'               paragraph text shown in Stage 1 card
+//   },
+//   blocks: [                      array of sections/paragraphs
+//     {
+//       id:           1,           section number
+//       title:        '...',       (NEW) section name shown as tree node label
+//       subtitle:     '...',       (NEW) one-line description shown under node label
+//       originalText: '...',       original text from the article (kept for backward compat)
+//       summary:      '...',       plain-English summary shown in the detail modal
+//       keyPoints:    ['...', '...'] bullet points shown in the detail modal
+//     },
 //     ...
 //   ],
 //   notice: '...' (optional)
 // }
+//
+// Backward-compatibility notes:
+//   - If overallSummary is missing, we fall back to the first block's summary.
+//   - If block.title is missing, we show "Section {id}" as the node label.
+// ─────────────────────────────────────────────────────────────────────────────
 const result = ref(null)
+
+
+// ── Overall summary (computed from backend response) ──────────────────────────
+// Backend should provide result.overallSummary directly (iteration3 API).
+// Falls back to the first block's data for compatibility with older responses.
+const overallSummary = computed(() => {
+  if (!result.value) return null
+  if (result.value.overallSummary) return result.value.overallSummary
+  const first = result.value.blocks?.[0]
+  return first
+    ? { heading: first.title || 'Summary', text: first.summary || '' }
+    : null
+})
+
+
+// ── Section detail modal ──────────────────────────────────────────────────────
+// activeSection holds the block the user clicked in the tree.
+// null = modal closed; a block object = modal open showing that section.
+const activeSection = ref(null)
+
+/** Opens the section detail modal for the given block. Stops TTS first. */
+function openSection(block) {
+  stopAudio()
+  activeSection.value = block
+}
+
+/** Closes the section detail modal and stops any playing TTS. */
+function closeSection() {
+  stopAudio()
+  activeSection.value = null
+}
+
+
+// ── Demo data ─────────────────────────────────────────────────────────────────
+// Sample data that matches the exact shape the backend will return.
+// Used by loadDemo() so the new UI can be previewed without a real API call.
+// When the backend is updated to return overallSummary + block titles,
+// the real data will flow through exactly the same code paths.
+const DEMO_RESULT = {
+  title: 'Clearead – Iteration 1 Analysis and Design Plan',
+  overallSummary: {
+    heading: 'Making academic reading easier for students with dyslexia.',
+    text: 'This report presents the analysis and design plan for Iteration 1 of Clearead. It aims to help Australian university students with dyslexia by turning dense academic texts into clearer, more structured, and more accessible formats.',
+  },
+  blocks: [
+    {
+      id: 1, title: 'Introduction', subtitle: 'Background and context',
+      originalText: 'Clearead was designed to help students with dyslexia navigate university-level reading.',
+      summary: 'Clearead was designed to help university students with dyslexia who struggle with dense academic texts. The project grew out of research showing that 1 in 5 Australians has dyslexia, yet most academic platforms offer no reading support.',
+      keyPoints: ['1 in 5 Australians are affected by dyslexia.', 'Academic platforms rarely offer reading accessibility tools.', 'Clearead aims to bridge this gap for university students.'],
+    },
+    {
+      id: 2, title: 'Problem Definition', subtitle: 'Understanding the challenge',
+      originalText: 'Dense academic text is a significant barrier for students with dyslexia.',
+      summary: 'Dense academic text is a significant barrier for students with dyslexia. Complex sentence structures, unfamiliar vocabulary, and lack of structure make it difficult to understand and engage with the content.',
+      keyPoints: ['Academic texts are written for a general audience, not students with dyslexia.', 'Long sentences and complex words increase cognitive load.', 'Students may spend more time reading but retain less.', 'There is a lack of accessible tools for university academic reading.'],
+    },
+    {
+      id: 3, title: 'Target Audience', subtitle: 'Who we are designing for',
+      originalText: 'The primary users are Australian university students aged 18 to 22.',
+      summary: 'The primary users are Australian university students aged 18 to 22 who have been diagnosed with dyslexia or experience reading difficulties.',
+      keyPoints: ['Age range: 18–22 years old.', 'Enrolled in Australian universities.', 'Diagnosed with dyslexia or experiencing reading difficulties.', 'Regular users of digital academic content.'],
+    },
+    {
+      id: 4, title: 'Design Goals', subtitle: 'What we aim to achieve',
+      originalText: 'Clearead aims to reduce cognitive load and improve reading comprehension.',
+      summary: 'Clearead aims to reduce cognitive load, improve reading comprehension, and provide a calm, structured reading experience that adapts to the needs of dyslexic users.',
+      keyPoints: ['Reduce cognitive load through chunked, summarised content.', 'Provide multiple reading modes: visual and audio.', 'Use dyslexia-friendly typography and colour schemes.', 'Enable users to control reading speed and text size.'],
+    },
+    {
+      id: 5, title: 'Approach & Solution', subtitle: 'How we will solve it',
+      originalText: 'The solution involves an AI-powered text processing pipeline.',
+      summary: 'The solution involves an AI-powered text processing pipeline that breaks long documents into manageable sections, generates plain-English summaries, and provides audio playback for each section.',
+      keyPoints: ['AI pipeline segments text into logical blocks.', 'Each block receives a plain-English summary.', 'Text-to-speech is available for every section.', 'Users can adjust font, size, and colour for accessibility.'],
+    },
+    {
+      id: 6, title: 'Evaluation Plan', subtitle: 'How we will test and improve',
+      originalText: 'The evaluation plan includes user testing with dyslexic university students.',
+      summary: 'The evaluation plan includes user testing with dyslexic university students, measuring reading comprehension scores, and gathering qualitative feedback on the usability of the tool.',
+      keyPoints: ['User testing with 5–8 participants with dyslexia.', 'Pre/post comprehension tests to measure improvement.', 'Qualitative interviews to gather usability feedback.', 'Iterative improvements based on test results.'],
+    },
+    {
+      id: 7, title: 'Risks & Considerations', subtitle: 'Potential risks and limitations',
+      originalText: 'Key risks include AI summarisation inaccuracies and browser compatibility issues.',
+      summary: 'Key risks include AI summarisation inaccuracies, browser compatibility issues with text-to-speech, and the challenge of designing for the broad spectrum of dyslexia experiences.',
+      keyPoints: ['AI may occasionally produce inaccurate summaries.', 'Text-to-speech support varies across browsers.', 'Dyslexia affects individuals differently — no one-size-fits-all solution.', 'Privacy considerations for uploaded document content.'],
+    },
+    {
+      id: 8, title: 'Next Steps', subtitle: 'What happens next',
+      originalText: 'The next iteration will focus on refining the AI summarisation model.',
+      summary: 'The next iteration will focus on refining the AI summarisation model, expanding accessibility settings, and conducting a second round of user testing with a larger participant group.',
+      keyPoints: ['Refine AI model based on evaluation feedback.', 'Add more accessibility customisation options.', 'Conduct second round of user testing.', 'Prepare for public beta release.'],
+    },
+  ],
+}
+
+/**
+ * Loads demo data so the redesigned UI can be previewed without a backend call.
+ * Mirrors the exact shape POST /api/process-text will return in iteration3.
+ */
+function loadDemo() {
+  stopAudio()
+  result.value      = DEMO_RESULT
+  mode.value        = 'result'
+  activeSection.value = null
+}
+
+
+// ── Overall Summary playback ──────────────────────────────────────────────────
+// We use block ID 0 as a virtual sentinel for the overall summary card.
+// Real block IDs from the backend start at 1, so 0 is safe.
+const OVERALL_SUMMARY_ID = 0
+
+/**
+ * Plays (or pauses / resumes) the overall summary using TTS.
+ * Reuses the same playback state machine as individual block playback.
+ */
+async function playOverallSummary() {
+  if (!overallSummary.value) return
+
+  // Build the text: heading + body paragraph joined as a sentence
+  const text = [overallSummary.value.heading, overallSummary.value.text]
+    .filter(Boolean).join('. ')
+
+  const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
+
+  // Toggle play/pause if already active
+  if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
+  if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
+
+  // Stop whatever is currently playing and start fresh
+  stopAudio()
+  activeBlockId.value   = OVERALL_SUMMARY_ID
+  activeBlockType.value = 'summary'
+  playbackState.value   = 'playing'
+
+  try {
+    await requestTTS(text)
+    if (activeBlockId.value === OVERALL_SUMMARY_ID) stopAudio()
+  } catch (err) {
+    console.error('[TTS] Overall summary playback error:', err)
+    stopAudio()
+  }
+}
 
 
 // Helper: count words in a string
@@ -609,6 +771,12 @@ onUnmounted(() => {
             <span>to submit quickly</span>
           </p>
 
+          <!-- Demo CTA: lets users preview the full UI without real content -->
+          <div class="demo-cta">
+            <span class="demo-cta-text">Want to see how it looks?</span>
+            <button class="btn-demo" @click="loadDemo">Try Demo →</button>
+          </div>
+
         </div>
 
 
@@ -641,7 +809,12 @@ onUnmounted(() => {
         </div>
 
 
-        <!-- ── STATE: result — two-column block display ── -->
+        <!-- ── STATE: result — 3-stage guided reading flow ── -->
+        <!--
+          Stage 1: Overall Summary Card  — green, centered, with TTS play button
+          Stage 2: Section Tree          — root node → trunk → clickable section cards
+          Stage 3: Section Detail Modal  — opens when a tree card is clicked
+        -->
         <div v-else-if="mode === 'result' && result" class="result-state">
 
           <!-- Top status bar: success notice + back button -->
@@ -661,289 +834,328 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <!--
-            ── Audio Control Toolbar ──────────────────────────────────────────
-            Always visible in result mode so users can configure voice/speed
-            before or during playback. Playback controls are disabled when idle.
-          -->
-          <div class="audio-toolbar">
+          <!-- ══════════════════════════════════════════════════════════════
+               STAGE 1 · Overall Summary
+               Fills the full viewport. Reader sees ONLY this section on load.
+               A bouncing arrow at the bottom prompts scrolling to Stage 2.
+          ══════════════════════════════════════════════════════════════ -->
+          <div class="stage-summary">
 
-            <!-- Left: status label — shows idle hint or now-playing info -->
-            <div class="at-info">
-              <div class="at-icon">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M2 5.5h2.5l3-3v11l-3-3H2V5.5z" fill="#2563eb"/>
-                  <path d="M11 4.5a5 5 0 0 1 0 7M13 2.5a8 8 0 0 1 0 11" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+            <!-- Small pill label at the top -->
+            <div class="stage-header">
+              <span class="stage-pill stage-pill--green">
+                <!-- Green dot -->
+                <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                  <circle cx="3.5" cy="3.5" r="3.5" fill="currentColor"/>
                 </svg>
-              </div>
-              <div>
-                <div class="at-title">Audio</div>
-                <div class="at-status">
-                  <template v-if="playbackState === 'idle'">Press Play on any block to listen</template>
-                  <template v-else>
-                    Block {{ activeBlockId }}
-                    · {{ activeBlockType === 'summary' ? 'Summary' : 'Original' }}
-                    <span v-if="playbackState === 'paused'" class="at-paused-tag">· Paused</span>
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <!-- Playback controls — disabled when nothing is playing -->
-            <div class="at-actions">
-              <button
-                class="at-btn"
-                :class="{ 'at-btn--primary': playbackState === 'playing' }"
-                :disabled="playbackState === 'idle'"
-                @click="playbackState === 'playing' ? pauseAudio() : resumeAudio()"
-              >
-                <svg v-if="playbackState === 'playing'" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                  <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                </svg>
-                <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="currentColor"/>
-                </svg>
-                {{ playbackState === 'playing' ? 'Pause' : 'Resume' }}
-              </button>
-
-              <button class="at-btn" :disabled="playbackState === 'idle'" @click="replayBlock">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M11 7A4 4 0 1 1 7 3M11 3v4H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Replay
-              </button>
-            </div>
-
-            <!-- Speed selector -->
-            <div class="at-control">
-              <label class="at-label">Speed</label>
-              <select v-model="playbackSpeed" class="at-select">
-                <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
-              </select>
-            </div>
-
-            <!-- Voice selector — applies to the next Play press -->
-            <div class="at-control">
-              <label class="at-label">Voice</label>
-              <select v-model="selectedVoice" class="at-select">
-                <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
-              </select>
-            </div>
-
-            <!-- Volume slider -->
-            <div class="at-control at-volume">
-              <label class="at-label">Volume</label>
-              <input
-                type="range"
-                v-model="volume"
-                min="0" max="100" step="1"
-                class="at-slider"
-                :aria-label="`Volume: ${volume}%`"
-              />
-              <span class="at-vol-num">{{ volume }}%</span>
-            </div>
-
-            <!-- Stop button — only enabled when playing or paused -->
-            <button
-              class="at-btn-stop"
-              :disabled="playbackState === 'idle'"
-              @click="stopAudio"
-              title="Stop playback"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
-              </svg>
-              Stop
-            </button>
-
-          </div>
-
-          <!--
-            Two-column layout.
-            Structure: one sticky header row + one grid row per block.
-            Left and right cards share the same row, so they always align in height.
-          -->
-          <!-- result-grid--orig-hidden collapses the left column to a 72px strip -->
-          <div :class="['result-grid', { 'result-grid--orig-hidden': !showOriginal }]">
-
-            <!-- ── Sticky column headers ── -->
-            <div class="result-grid-header">
-
-              <!-- Left header: acts as a toggle button to show/hide the original-text column -->
-              <button
-                class="col-header col-orig-toggle"
-                @click="showOriginal = !showOriginal"
-                :title="showOriginal ? 'Hide original text' : 'Show original text'"
-                :aria-label="showOriginal ? 'Hide original text' : 'Show original text'"
-              >
-                <!-- Expanded state: label + collapse-left chevron (no decorative icon) -->
-                <template v-if="showOriginal">
-                  Original Text
-                  <!-- Left-pointing chevron = "click to collapse" -->
-                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <path d="M8.5 2.5L4 6.5l4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </template>
-                <!-- Collapsed state: right-pointing chevron + rotated label -->
-                <template v-else>
-                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <path d="M4.5 2.5L9 6.5l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span class="col-orig-label-vert">Original</span>
-                </template>
-              </button>
-
-              <!-- Right column header — no decorative icon -->
-              <div class="col-header">
-                Summary &amp; Key Points
-              </div>
+                Overview
+              </span>
             </div>
 
             <!--
-              One row per block — left card (2fr) + right card (3fr) sit in the same grid row,
-              so align-items: stretch makes both cards equal height automatically.
+              Main card: white background with green left-accent border.
+              Play button is part of the card flow (below the body text),
+              not absolutely positioned, so it reads naturally.
             -->
-            <div
-              v-for="block in result.blocks"
-              :key="block.id"
-              class="block-row"
-            >
+            <div class="overall-card">
 
-              <!-- ── Left card: original text (collapsible) ── -->
-              <!--
-                When showOriginal is false this card is a narrow strip.
-                Clicking the strip sets showOriginal = true to reveal the full column.
-                When showOriginal is true the card behaves like the original layout.
-              -->
-              <div :class="['block-card', 'block-card--left', { 'block-card--active': activeBlockId === block.id }]">
+              <!-- Large document-level heading -->
+              <h2 class="overall-heading">{{ overallSummary?.heading }}</h2>
 
-                <!-- Collapsed strip — click to expand the original column -->
-                <div v-if="!showOriginal" class="orig-strip-hint" @click="showOriginal = true">
-                  <!-- Right-pointing expand icon -->
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M4.5 2L9 6l-4.5 4" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <!-- Rotated block label so it reads bottom-to-top in the strip -->
-                  <span class="orig-strip-label">B{{ block.id }}</span>
-                </div>
+              <!-- Supporting body paragraph -->
+              <p class="overall-body">{{ overallSummary?.text }}</p>
 
-                <!-- Expanded — full original-text card content -->
-                <template v-else>
+              <!-- Audio row: play/pause/resume + inline speed when active -->
+              <div class="overall-audio-row">
+                <button
+                  class="overall-play-btn"
+                  :class="{
+                    'overall-play-btn--playing': activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing',
+                    'overall-play-btn--paused':  activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused',
+                  }"
+                  :aria-label="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing' ? 'Pause overview' : 'Play overview'"
+                  @click="playOverallSummary"
+                >
+                  <!-- Waveform when playing -->
+                  <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    Pause
+                  </template>
+                  <!-- Resume when paused -->
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M3 1.5l9 5-9 5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Resume
+                  </template>
+                  <!-- Default: play icon -->
+                  <template v-else>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M3 1.5l9 5-9 5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Listen to Overview
+                  </template>
+                </button>
 
-                  <!-- Card header: block label (click to collapse) + play button -->
-                  <div class="block-card-header">
-                    <!-- Clicking the label collapses the original column back -->
-                    <button class="block-label block-label--collapse" @click="showOriginal = false" :title="`Block ${block.id} — click to hide original`">
-                      Block {{ block.id }}
-                      <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                        <path d="M6 1.5L3 4.5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                    </button>
-
-                    <!-- Play / Pause button for this specific block -->
-                    <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
-                      <!-- Animated waveform bars when this block is playing -->
-                      <span v-if="activeBlockId === block.id && playbackState === 'playing'" class="play-badge play-badge--playing">
-                        <span class="wave-bar"></span>
-                        <span class="wave-bar"></span>
-                        <span class="wave-bar"></span>
-                        Now Playing…
-                      </span>
-                      <!-- Paused state indicator -->
-                      <span v-else-if="activeBlockId === block.id && playbackState === 'paused'" class="play-badge play-badge--paused">
-                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                          <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                          <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                        </svg>
-                        Paused
-                      </span>
-                      <!-- Default: play icon + label -->
-                      <span v-else class="play-badge play-badge--idle">
-                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                          <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
-                        </svg>
-                        Play
-                      </span>
-                    </button>
-                  </div>
-
-                  <!-- Original text — clamped by default, expandable via Read more -->
-                  <p
-                    :ref="el => checkClamp(el, block.id)"
-                    :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
-                  >
-                    {{ block.originalText }}
-                  </p>
-
-                  <!-- Read more / Show less toggle — only when text actually overflows -->
-                  <button
-                    v-if="clampedBlocks[block.id] || isExpanded(block.id)"
-                    class="btn-toggle"
-                    @click="toggleBlock(block.id)"
-                  >
-                    {{ isExpanded(block.id) ? 'Show less ↑' : 'Read more ↓' }}
-                  </button>
-
-                </template>
-              </div>
-
-              <!-- ── Right card: summary + key points ── -->
-              <div :class="['block-card', 'block-card--right', { 'block-card--active': activeBlockId === block.id && activeBlockType === 'summary' }]">
-
-                <!-- Card header: block label + play button (plays summary + key points) -->
-                <div class="block-card-header">
-                  <div class="block-label">Block {{ block.id }}</div>
-
-                  <button class="btn-play" @click="playBlock(block.id, 'summary')" :aria-label="`Play summary of Block ${block.id}`">
-                    <span v-if="activeBlockId === block.id && activeBlockType === 'summary' && playbackState === 'playing'" class="play-badge play-badge--playing">
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      Now Playing…
-                    </span>
-                    <span v-else-if="activeBlockId === block.id && activeBlockType === 'summary' && playbackState === 'paused'" class="play-badge play-badge--paused">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                        <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                      </svg>
-                      Paused
-                    </span>
-                    <span v-else class="play-badge play-badge--idle">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
-                      </svg>
-                      Play
-                    </span>
-                  </button>
-                </div>
-
-                <div class="summary-section">
-                  <!-- Section label — no icon, plain text -->
-                  <div class="section-title">Summary</div>
-                  <p class="summary-text">
-                    {{ block.summary || 'Summary is not available.' }}
-                  </p>
-                </div>
-
-                <div class="keypoints-section">
-                  <!-- Section label — no icon, plain text -->
-                  <div class="section-title">Key Points</div>
-                  <p v-if="!block.keyPoints || block.keyPoints.length === 0" class="fallback-text">
-                    No key points available.
-                  </p>
-                  <ul v-else class="keypoints-list">
-                    <li v-for="(pt, i) in block.keyPoints" :key="i">{{ pt }}</li>
-                  </ul>
+                <!-- Speed selector: only visible when actively playing/paused -->
+                <div
+                  v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState !== 'idle'"
+                  class="overall-speed"
+                >
+                  <select v-model="playbackSpeed" class="overall-speed-select">
+                    <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                  </select>
+                  <button class="overall-stop-btn" @click="stopAudio">■ Stop</button>
                 </div>
               </div>
 
+            </div><!-- /overall-card -->
+
+            <!--
+              Scroll hint: visible at the bottom of the viewport section.
+              Bouncing arrow encourages the user to scroll down to the section tree.
+            -->
+            <div class="scroll-hint" aria-hidden="true">
+              <p class="scroll-hint-text">
+                <span class="scroll-hint-count">{{ result.blocks?.length || 0 }} sections</span>
+                &nbsp;·&nbsp; scroll to explore
+              </p>
+              <div class="scroll-hint-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <path d="M11 4v14M11 18l-5-5M11 18l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </div>
-          </div>
-        </div>
 
-      </div>
+          </div><!-- /stage-summary -->
+
+
+          <!-- ══════════════════════════════════════════════════════════════
+               STAGE 2 · Section Tree
+               Root node (document title) → vertical trunk →
+               horizontal crossbar → section cards in a grid.
+               Clicking a card opens the Stage 3 detail modal.
+          ══════════════════════════════════════════════════════════════ -->
+          <div class="stage-tree">
+
+            <!-- Stage label pill + count badge -->
+            <div class="stage-header">
+              <span class="stage-pill stage-pill--blue">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <rect x="1.5" y="1.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
+                  <path d="M4 5h4M4 7.5h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                Sections
+              </span>
+              <span class="stage-pill-count">{{ result.blocks?.length || 0 }} sections</span>
+            </div>
+
+            <!-- Root node: shows the document title (from backend result.title) -->
+            <div class="tree-root-node">
+              <!-- Document icon -->
+              <svg class="tree-root-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="2" y="1" width="14" height="16" rx="2" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+                <path d="M5 5.5h8M5 8.5h8M5 11.5h5" stroke="#3b82f6" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+              <span class="tree-root-title">{{ result.title || 'Document' }}</span>
+            </div>
+
+            <!-- Trunk: vertical line from root node down to the crossbar -->
+            <div class="tree-trunk"></div>
+
+            <!--
+              Section cards grid.
+              .tree-nodes::before creates the horizontal crossbar across the top.
+              .tree-node::before creates a short vertical branch from the crossbar
+              down into each card, giving the org-chart tree visual.
+              Clicking any card triggers openSection() to show the modal.
+            -->
+            <div class="tree-nodes">
+              <div
+                v-for="block in result.blocks"
+                :key="block.id"
+                class="tree-node"
+                role="button"
+                tabindex="0"
+                :aria-label="`Open section ${block.id}: ${block.title || ''}`"
+                @click="openSection(block)"
+                @keydown.enter.space.prevent="openSection(block)"
+              >
+                <!-- Section number circle badge -->
+                <div class="tree-node-num">{{ block.id }}</div>
+
+                <!-- Section title and subtitle -->
+                <div class="tree-node-content">
+                  <div class="tree-node-title">{{ block.title || `Section ${block.id}` }}</div>
+                  <div v-if="block.subtitle" class="tree-node-subtitle">{{ block.subtitle }}</div>
+                </div>
+
+                <!-- Right-arrow: visual cue that the card is clickable -->
+                <svg class="tree-node-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 7h8M7 3.5l3.5 3.5L7 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- /result-state -->
+
+      </div><!-- /reading-inner -->
     </main>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         STAGE 3 · Section Detail Modal
+         Opens when the user clicks a section card in the tree.
+         Contains: section title/subtitle, 2-column body (summary + key points),
+         and compact TTS audio controls.
+         Clicking the semi-transparent backdrop closes the modal.
+    ══════════════════════════════════════════════════════════════════════ -->
+    <Transition name="modal-fade">
+      <div
+        v-if="activeSection"
+        class="modal-backdrop"
+        role="dialog"
+        :aria-label="`Section ${activeSection.id} – ${activeSection.title || 'detail'}`"
+        @click.self="closeSection"
+      >
+        <div class="modal-panel">
+
+          <!-- ── Modal header ── -->
+          <div class="modal-header">
+
+            <!-- Circular section number badge -->
+            <div class="modal-section-num">{{ activeSection.id }}</div>
+
+            <!-- Title + subtitle -->
+            <div class="modal-title-group">
+              <h3 class="modal-title">{{ activeSection.title || `Section ${activeSection.id}` }}</h3>
+              <p v-if="activeSection.subtitle" class="modal-subtitle">{{ activeSection.subtitle }}</p>
+            </div>
+
+            <!-- Close button (×) -->
+            <button class="modal-close-btn" @click="closeSection" aria-label="Close section detail">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- ── Modal body: Summary (left) + Key Points (right) ── -->
+          <div class="modal-body">
+
+            <!-- Left column: plain-English paragraph summary -->
+            <div class="modal-col">
+              <div class="modal-col-label">Summary</div>
+              <p class="modal-summary-text">{{ activeSection.summary || 'Summary not available.' }}</p>
+            </div>
+
+            <!-- Thin vertical divider between the two columns -->
+            <div class="modal-divider" aria-hidden="true"></div>
+
+            <!-- Right column: bullet-point key ideas -->
+            <div class="modal-col">
+              <div class="modal-col-label">Key Points</div>
+              <p v-if="!activeSection.keyPoints?.length" class="modal-fallback">
+                No key points available.
+              </p>
+              <ul v-else class="modal-keypoints">
+                <li v-for="(pt, i) in activeSection.keyPoints" :key="i">{{ pt }}</li>
+              </ul>
+            </div>
+
+          </div><!-- /modal-body -->
+
+          <!-- ── Modal audio bar ── -->
+          <!-- Compact TTS controls scoped to this section only -->
+          <div class="modal-audio">
+
+            <!-- Playback status: waveform when active, speaker icon when idle -->
+            <div class="modal-audio-status">
+              <template v-if="activeBlockId === activeSection.id && playbackState !== 'idle'">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="modal-audio-label">
+                  {{ playbackState === 'playing' ? 'Playing…' : 'Paused' }}
+                </span>
+              </template>
+              <template v-else>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M1.5 4H4l3-2.5v9L4 8H1.5V4z" fill="#2563eb"/>
+                  <path d="M9 3.5a4 4 0 0 1 0 6" stroke="#2563eb" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                <span class="modal-audio-label">Audio</span>
+              </template>
+            </div>
+
+            <!-- Button group: Play/Pause/Resume · Stop · Speed -->
+            <div class="modal-audio-btns">
+
+              <!-- Play / Pause / Resume toggle -->
+              <button
+                class="modal-audio-btn modal-audio-btn--primary"
+                @click="
+                  activeBlockId === activeSection.id && playbackState === 'playing'
+                    ? pauseAudio()
+                    : activeBlockId === activeSection.id && playbackState === 'paused'
+                      ? resumeAudio()
+                      : playBlock(activeSection.id, 'summary')
+                "
+              >
+                <!-- Pause icon when playing -->
+                <template v-if="activeBlockId === activeSection.id && playbackState === 'playing'">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <rect x="2" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                    <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                  </svg>
+                  Pause
+                </template>
+                <!-- Play icon when paused -->
+                <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                  </svg>
+                  Resume
+                </template>
+                <!-- Default: play icon -->
+                <template v-else>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                  </svg>
+                  Play
+                </template>
+              </button>
+
+              <!-- Stop button — only active when this section is playing/paused -->
+              <button
+                class="modal-audio-btn"
+                :disabled="activeBlockId !== activeSection.id || playbackState === 'idle'"
+                @click="stopAudio"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+                </svg>
+                Stop
+              </button>
+
+              <!-- Speed selector -->
+              <div class="modal-audio-speed">
+                <label class="modal-audio-speed-label">Speed</label>
+                <select v-model="playbackSpeed" class="modal-speed-select">
+                  <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                </select>
+              </div>
+
+            </div><!-- /modal-audio-btns -->
+          </div><!-- /modal-audio -->
+
+        </div><!-- /modal-panel -->
+      </div><!-- /modal-backdrop -->
+    </Transition><!-- /modal-fade -->
 
 
     <!-- ── Full-page drag-and-drop overlay ── -->
@@ -1174,6 +1386,9 @@ onUnmounted(() => {
   flex: 1;
   padding: 32px 0 210px;
   overflow-y: auto;
+  /* Gentle proximity snap — Stage 1 fills the viewport, then Stage 2 snaps in */
+  scroll-snap-type: y proximity;
+  scroll-behavior: smooth;
 }
 
 /* Narrow width for idle/loading; full-width for results */
@@ -1184,7 +1399,7 @@ onUnmounted(() => {
   transition: max-width 0.3s ease;
 }
 .reading-inner--wide {
-  max-width: 1200px;  /* expand to full width when showing two-column result */
+  max-width: 1100px;  /* wider in result mode to give the 4-column tree room */
 }
 
 
@@ -1335,9 +1550,11 @@ kbd {
 
 
 /* ─────────────────────────────────────────
-   Result state
+   Result state — gap is now 0; each stage
+   manages its own spacing internally.
+   (Overridden again in the NEW STYLES block below.)
 ───────────────────────────────────────── */
-.result-state { display: flex; flex-direction: column; gap: 16px; }
+.result-state { display: flex; flex-direction: column; gap: 0; }
 
 /* Top bar: success badge + back-to-input button */
 .result-topbar {
@@ -2001,5 +2218,485 @@ kbd {
 
   .bar-hint  { display: none; }  /* hide hint row to save space */
   .drag-card { padding: 36px 28px; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ITERATION 3 — 3-stage guided reading flow
+   Premium, calm design for dyslexia-friendly reading.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────
+   Demo CTA banner in idle state
+───────────────────────────────────────── */
+.demo-cta {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 24px; padding: 14px 20px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid #bfdbfe; border-radius: 12px;
+  max-width: 520px; width: 100%;
+}
+.demo-cta-text { font-size: 13.5px; color: #4b5563; flex: 1; }
+.btn-demo {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; font-size: 13px; font-weight: 700; color: #2563eb;
+  background: #fff; border: 1.5px solid #bfdbfe; border-radius: 999px;
+  cursor: pointer; transition: all 0.18s; white-space: nowrap; font-family: inherit;
+}
+.btn-demo:hover {
+  background: #eff6ff; border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.14); transform: translateY(-1px);
+}
+
+
+/* ─────────────────────────────────────────
+   Result state — no gap; stages are full-page
+───────────────────────────────────────── */
+.result-state { display: flex; flex-direction: column; gap: 0; }
+
+
+/* ─────────────────────────────────────────
+   Stage pill labels (OVERVIEW / SECTIONS)
+───────────────────────────────────────── */
+.stage-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.stage-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px;
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border-radius: 999px;
+}
+.stage-pill--green { color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.stage-pill--blue  { color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; }
+.stage-pill-count  { font-size: 12px; color: #9ca3af; font-weight: 500; }
+
+
+/* ─────────────────────────────────────────
+   STAGE 1 — Overall Summary (full-page hero)
+   min-height fills the visible viewport so the
+   reader only sees this stage on first load.
+───────────────────────────────────────── */
+.stage-summary {
+  /* Fills viewport minus the navbar (64px) with comfortable padding */
+  min-height: calc(100svh - 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  max-width: 740px;
+  margin: 0 auto;
+  width: 100%;
+  /* Bottom padding clears the fixed bottom input bar */
+  padding: 48px 0 160px;
+  scroll-snap-align: start;
+}
+
+/*
+  Main card: white background, green left accent border.
+  No coloured fill — white feels cleaner and more premium.
+  Three layers of shadow for natural depth.
+*/
+.overall-card {
+  background: #ffffff;
+  border: 1px solid #e8f5e9;
+  border-left: 4px solid #22c55e;
+  border-radius: 20px;
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    0 20px 56px rgba(0, 0, 0, 0.05);
+}
+
+/* Large, impactful heading */
+.overall-heading {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0a0a0a;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* Comfortable body text */
+.overall-body {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #4b5563;
+  margin: 0;
+}
+
+/*
+  Audio control row: thin top separator, then play button + optional speed.
+  The play button is part of the card flow — below the body text —
+  so the reading hierarchy feels natural.
+*/
+.overall-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #f0fdf4;
+  flex-wrap: wrap;
+}
+
+/* Primary play/pause/resume button: filled green pill */
+.overall-play-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 24px;
+  font-size: 14px; font-weight: 700; color: #fff;
+  background: #16a34a;
+  border: none; border-radius: 999px;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.30);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+}
+.overall-play-btn:hover {
+  background: #15803d;
+  box-shadow: 0 6px 22px rgba(22, 163, 74, 0.38);
+  transform: translateY(-1px);
+}
+.overall-play-btn--playing { background: #15803d; }
+.overall-play-btn--paused {
+  background: #d97706;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.30);
+}
+.overall-play-btn--paused:hover { background: #b45309; }
+
+/* White waveform bars on the green button */
+.wave-bar--white {
+  display: inline-block;
+  width: 3px; height: 11px;
+  background: #fff; border-radius: 2px;
+  animation: wave 0.9s ease-in-out infinite;
+}
+.wave-bar--white:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar--white:nth-child(3) { animation-delay: 0.30s; }
+
+/* Speed selector + stop button (only when playing/paused) */
+.overall-speed { display: flex; align-items: center; gap: 8px; }
+.overall-speed-select {
+  padding: 6px 10px; font-size: 12.5px; font-weight: 600; color: #374151;
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
+  cursor: pointer; outline: none; font-family: inherit;
+}
+.overall-speed-select:focus { border-color: #86efac; }
+.overall-stop-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px; font-size: 12px; font-weight: 700;
+  color: #6b7280; background: #f3f4f6; border: none; border-radius: 8px;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.overall-stop-btn:hover { background: #e5e7eb; color: #374151; }
+
+
+/* ─────────────────────────────────────────
+   Scroll hint: bouncing arrow at the foot
+   of Stage 1 to encourage scrolling down.
+───────────────────────────────────────── */
+.scroll-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.55;
+}
+.scroll-hint-text {
+  font-size: 12px; color: #6b7280; margin: 0;
+  letter-spacing: 0.03em;
+}
+.scroll-hint-count { font-weight: 700; color: #374151; }
+.scroll-hint-icon {
+  color: #9ca3af;
+  animation: bounce-down 1.9s ease-in-out infinite;
+}
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(7px); }
+}
+
+
+/* ─────────────────────────────────────────
+   STAGE 2 — Section Tree
+   Starts below the fold; scrolls into view.
+───────────────────────────────────────── */
+.stage-tree {
+  padding: 60px 0 48px;
+  scroll-snap-align: start;
+}
+
+/* Root node: centered document-title card */
+.tree-root-node {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 24px;
+  background: #fff;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 14px;
+  font-size: 14.5px; font-weight: 700; color: #1e1b4b;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.10);
+  width: fit-content; margin: 0 auto; max-width: 90%;
+}
+.tree-root-icon { flex-shrink: 0; }
+.tree-root-title {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px;
+}
+
+/* Trunk: vertical connector from root to crossbar */
+.tree-trunk {
+  width: 2px; height: 36px;
+  background: linear-gradient(to bottom, #c7d2fe, #a5b4fc);
+  margin: 0 auto;
+}
+
+/*
+  Section card grid.
+  ::before = horizontal crossbar across the top.
+  .tree-node::before = short vertical branch per card.
+*/
+.tree-nodes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  position: relative;
+  padding-top: 36px;
+}
+/* Horizontal crossbar */
+.tree-nodes::before {
+  content: '';
+  position: absolute; top: 0;
+  left: 12.5%; right: 12.5%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #a5b4fc 25%, #818cf8 50%, #a5b4fc 75%, transparent);
+}
+/* Vertical branch per card */
+.tree-node::before {
+  content: '';
+  position: absolute; top: -36px; left: 50%; transform: translateX(-50%);
+  width: 2px; height: 36px;
+  background: linear-gradient(to bottom, #a5b4fc, #e0e7ff);
+}
+
+/* Individual section card */
+.tree-node {
+  position: relative;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 18px 18px 16px 20px;
+  background: #fff;
+  border: 1px solid #f0f0f2;
+  border-left: 3px solid #e0e7ff;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: border-left-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.tree-node:hover {
+  border-left-color: #6366f1;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.14);
+  transform: translateY(-3px);
+}
+.tree-node:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+
+/* Number badge: filled circle */
+.tree-node-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 800; color: #4338ca;
+  background: #eef2ff;
+  align-self: flex-start;
+}
+.tree-node-content { flex: 1; }
+.tree-node-title {
+  font-size: 13.5px; font-weight: 700; color: #0f172a;
+  line-height: 1.3; margin-bottom: 4px;
+}
+.tree-node-subtitle { font-size: 12px; color: #64748b; line-height: 1.45; }
+
+/* Right arrow: click hint */
+.tree-node-arrow {
+  color: #cbd5e1;
+  transition: color 0.15s, transform 0.15s;
+  align-self: flex-end; margin-top: auto;
+}
+.tree-node:hover .tree-node-arrow { color: #6366f1; transform: translateX(4px); }
+
+/* Responsive grid */
+@media (max-width: 1000px) {
+  .tree-nodes { grid-template-columns: repeat(3, 1fr); }
+  .tree-nodes::before { left: calc(100% / 6); right: calc(100% / 6); }
+}
+@media (max-width: 700px) {
+  .tree-nodes { grid-template-columns: repeat(2, 1fr); padding-top: 0; }
+  .tree-nodes::before, .tree-node::before { display: none; }
+  .tree-trunk { display: none; }
+  .tree-root-node { max-width: 100%; }
+  .tree-root-title { white-space: normal; max-width: 100%; }
+  .stage-tree { padding: 40px 0 32px; }
+}
+@media (max-width: 440px) {
+  .tree-nodes { grid-template-columns: 1fr; }
+}
+
+
+/* ─────────────────────────────────────────
+   STAGE 3 — Section Detail Modal
+   Full-screen backdrop + centred panel card.
+───────────────────────────────────────── */
+
+/* Dim backdrop with blur */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(8, 10, 18, 0.52);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+
+/* Panel card */
+.modal-panel {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.04),
+    0 24px 80px rgba(0, 0, 0, 0.24);
+  max-width: 880px; width: 100%;
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* Modal header */
+.modal-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+/* Circular section number */
+.modal-section-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
+  font-size: 17px; font-weight: 800; color: #4338ca;
+  background: #eef2ff; border: 2px solid #c7d2fe;
+}
+
+.modal-title-group { flex: 1; min-width: 0; }
+.modal-title {
+  font-size: 21px; font-weight: 800; color: #0f172a;
+  letter-spacing: -0.025em; margin: 0 0 5px; line-height: 1.3;
+}
+.modal-subtitle { font-size: 13.5px; color: #64748b; margin: 0; line-height: 1.45; }
+
+/* Close button */
+.modal-close-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: #f8fafc; border: none; border-radius: 999px;
+  color: #94a3b8; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.modal-close-btn:hover { background: #f1f5f9; color: #0f172a; }
+
+/* Modal body: 2-column */
+.modal-body {
+  display: flex; gap: 0;
+  flex: 1; overflow-y: auto;
+  padding: 28px 30px;
+}
+.modal-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+
+/* Column label */
+.modal-col-label {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;
+}
+
+/* Vertical divider */
+.modal-divider { width: 1px; background: #f1f5f9; margin: 0 26px; flex-shrink: 0; }
+
+/* Summary text */
+.modal-summary-text { font-size: 15px; line-height: 1.8; color: #1e293b; margin: 0; }
+
+/* Key points list */
+.modal-keypoints { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.modal-keypoints li {
+  font-size: 14px; line-height: 1.65; color: #334155;
+  padding-left: 16px; position: relative;
+}
+.modal-keypoints li::before { content: '●'; position: absolute; left: 0; color: #818cf8; font-size: 8px; top: 6px; }
+
+.modal-fallback { font-size: 13px; color: #94a3b8; font-style: italic; margin: 0; }
+
+/* Audio bar */
+.modal-audio {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 30px;
+  background: #fafafa; border-top: 1px solid #f1f5f9;
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.modal-audio-status {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: #64748b; font-weight: 600;
+  flex: 1; min-width: 80px;
+}
+.modal-audio-label { font-size: 12.5px; color: #64748b; }
+
+.modal-audio-btns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.modal-audio-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 16px;
+  font-size: 13px; font-weight: 700;
+  background: #fff; color: #374151;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.modal-audio-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+.modal-audio-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.modal-audio-btn--primary { background: #4f46e5; border-color: #4f46e5; color: #fff; box-shadow: 0 3px 10px rgba(79,70,229,0.28); }
+.modal-audio-btn--primary:hover:not(:disabled) { background: #4338ca; border-color: #4338ca; }
+
+.modal-audio-speed { display: flex; align-items: center; gap: 6px; }
+.modal-audio-speed-label { font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+.modal-speed-select {
+  padding: 5px 8px; font-size: 12px; font-weight: 600; color: #374151;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  cursor: pointer; outline: none; font-family: inherit;
+}
+.modal-speed-select:focus { border-color: #818cf8; }
+
+/* Mobile modal */
+@media (max-width: 680px) {
+  .modal-body { flex-direction: column; padding: 20px; }
+  .modal-divider { width: auto; height: 1px; margin: 16px 0; }
+  .modal-panel { border-radius: 18px; max-height: 93vh; }
+  .modal-header { padding: 20px 22px 16px; }
+  .modal-audio { padding: 14px 22px; }
+  .overall-card { padding: 24px 20px; }
+  .overall-heading { font-size: 22px; }
+  .stage-summary { padding: 32px 0 180px; }
+}
+
+
+/* ─────────────────────────────────────────
+   Modal fade + scale-in transition
+───────────────────────────────────────── */
+.modal-fade-enter-active { transition: opacity 0.22s ease; }
+.modal-fade-leave-active { transition: opacity 0.18s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+
+.modal-fade-enter-active .modal-panel {
+  animation: modal-pop 0.24s cubic-bezier(0.34, 1.38, 0.64, 1);
+}
+@keyframes modal-pop {
+  from { transform: scale(0.93) translateY(12px); }
+  to   { transform: scale(1) translateY(0); }
 }
 </style>
