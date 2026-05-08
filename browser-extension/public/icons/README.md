@@ -1,5 +1,12 @@
 # Icons
 
-This folder is reserved for Chrome extension icon assets.
+This folder contains the packaged Chrome extension icon assets.
 
-Phase 1 does not include final icon artwork yet. Add production-ready icon files before Chrome Web Store packaging.
+The current extension icon set includes:
+
+- `icon-16.png`: extension page favicon and small toolbar contexts.
+- `icon-32.png`: additional toolbar and high-density contexts.
+- `icon-48.png`: Chrome extensions management page.
+- `icon-128.png`: Chrome Web Store and install contexts.
+
+The validation script checks that all four files exist and match their declared PNG dimensions.

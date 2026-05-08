@@ -1,6 +1,6 @@
 # Chrome Web Store Checklist
 
-This checklist tracks review concerns for the Clearead extension. Phase 6 is not a claim of Chrome Web Store readiness.
+This checklist tracks review concerns for the Clearead extension. Phase 7 is not a claim of Chrome Web Store readiness.
 
 ## Permission Minimisation
 
@@ -16,6 +16,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 6 is not
 - [x] Does not request `tabs` or clipboard permissions.
 - [x] Does not register static content scripts.
 - [x] Validation rejects broad host permissions, wildcard host permissions, static content scripts, unexpected popup paths, and unexpected extension permissions.
+- [x] Validation checks the packaged icon files and declared PNG dimensions.
 - [ ] Re-check permissions before every new feature is added.
 - [ ] Confirm the final production backend host permission before any production store package if the backend origin changes.
 
@@ -65,7 +66,8 @@ This checklist tracks review concerns for the Clearead extension. Phase 6 is not
 - [x] Selected-word lookup is implemented as local glossary and fallback guidance only.
 - [x] Simplify remains disabled because no stable public simplify endpoint is exposed.
 - [x] Text-to-speech, file upload, remote dictionary service, automatic page scanning, and static content scripts are not claimed as implemented extension features.
-- [ ] Add final extension icons in required Chrome Web Store sizes.
+- [x] Add extension icons in 16, 32, 48, and 128 pixel sizes.
+- [ ] Complete final brand review for icon artwork before store submission.
 - [ ] Prepare accurate Chrome Web Store listing text.
 
 ## Packaging And Review

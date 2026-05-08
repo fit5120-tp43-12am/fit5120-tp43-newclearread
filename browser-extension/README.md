@@ -1,11 +1,12 @@
 # Clearead Browser Extension
 
-This folder contains the Manifest V3 Clearead Chrome extension. Phase 6 keeps the pasted-text summary workflow, user-triggered readable page tools, a local right-click dictionary flow for ordinary webpages, and a direct link back to the Clearead website.
+This folder contains the Manifest V3 Clearead Chrome extension. Phase 7 keeps the pasted-text summary workflow, user-triggered readable page tools, a local right-click dictionary flow for ordinary webpages, a direct link back to the Clearead website, and packaged extension icons.
 
 ## Current Workflow
 
 - Starts from a small toolbar popup, then opens as a Chrome side panel.
 - Lets the user open the full Clearead website at `https://clearead.azurewebsites.net/` from the popup or side panel.
+- Includes packaged extension icons for toolbar, extension management, and install contexts.
 - Lets the user paste text manually.
 - Shows live word and character counts.
 - Enforces the backend limit of 50,000 characters.
@@ -92,6 +93,8 @@ The extension does not request `<all_urls>`, `tabs`, clipboard permissions, broa
 
 The Clearead website link does not require a host permission. It opens `https://clearead.azurewebsites.net/` as a normal external webpage tab.
 
+The manifest declares local PNG icons at 16, 32, 48, and 128 pixels. These files are packaged with the extension and are not loaded from a remote URL.
+
 ## Data Flow
 
 Pasted text is not sent while the user types. When the user clicks Summary, the side panel sends this request body to the backend:
@@ -126,7 +129,7 @@ Clearead also distinguishes temporary `activeTab` access problems from browser-r
 - No remote dictionary service.
 - No automatic webpage scanning.
 - No registered static content scripts.
-- No final Chrome Web Store icon artwork.
+- No final Chrome Web Store listing text.
 
 ## Validation
 
@@ -136,6 +139,6 @@ Run this from the `browser-extension/` folder:
 npm run validate
 ```
 
-The validation script checks Manifest V3 setup, required local files, the side panel, background, the known popup activation file, page-tool file, absence of static content scripts, and that permissions stay narrow. It rejects broad host permissions such as `<all_urls>`, wildcard host permissions, unexpected popup paths, and unexpected extension permissions.
+The validation script checks Manifest V3 setup, required local files, local icon files and PNG dimensions, the side panel, background, the known popup activation file, page-tool file, absence of static content scripts, and that permissions stay narrow. It rejects broad host permissions such as `<all_urls>`, wildcard host permissions, unexpected popup paths, and unexpected extension permissions.
 
 This phase should not be described as Chrome Web Store ready.

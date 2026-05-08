@@ -2,7 +2,7 @@
 
 ## Main Folders
 
-- `manifest.json`: Chrome extension registration file. It declares Manifest V3, the toolbar popup, side panel, module background service worker, `sidePanel`, `activeTab`, `scripting`, `contextMenus`, `storage`, and the narrow deployed backend host permission.
+- `manifest.json`: Chrome extension registration file. It declares Manifest V3, packaged icons, the toolbar popup, side panel, module background service worker, `sidePanel`, `activeTab`, `scripting`, `contextMenus`, `storage`, and the narrow deployed backend host permission.
 - `src/background/`: background service worker code. It disables direct action-click side panel opening, handles popup side-panel open fallback requests, handles page-tool requests from the side panel, and owns the opt-in right-click dictionary context menu.
 - `src/sidepanel/`: plain HTML, CSS, and JavaScript for the pasted-text summary workflow, page-tool controls, right-click dictionary toggle and guidance, and the full website link.
 - `src/content/page-tools.js`: local packaged script that is programmatically injected into the active tab only after the user clicks a page-tool control or the Clearead dictionary context menu item.
@@ -11,17 +11,19 @@
 - `src/services/local-dictionary.js`: local glossary and fallback guidance for selected-word lookup. It does not make network requests.
 - `src/popup/`: small toolbar popup that activates Clearead for the current page before opening the side panel and also links to the full Clearead website.
 - `src/styles/`: reserved for shared styling.
-- `public/icons/`: reserved for extension icon assets.
+- `public/icons/`: packaged extension icon PNG assets for 16, 32, 48, and 128 pixel contexts.
 - `docs/`: project documentation for architecture, privacy, permissions, and store checks.
 - `scripts/`: local validation scripts for extension checks.
 
 ## Manifest V3 Pieces
 
-Phase 6 uses these Manifest V3 pieces:
+Phase 7 uses these Manifest V3 pieces:
 
 - `manifest_version: 3`: required for the current Chrome extension platform.
+- `icons`: points to local packaged PNG files at 16, 32, 48, and 128 pixels.
 - `action.default_title`: gives the toolbar action a clear title.
 - `action.default_popup`: points to the small activation popup.
+- `action.default_icon`: points the toolbar action to the same local packaged icon set.
 - `background.service_worker`: points to the extension service worker.
 - `background.type: "module"`: lets the service worker import the local dictionary helper.
 - `side_panel.default_path`: points Chrome to the side panel HTML file.

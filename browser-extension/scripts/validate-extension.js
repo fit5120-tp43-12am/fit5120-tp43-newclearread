@@ -16,6 +16,12 @@ const allowedHostPermissions = new Set([
   "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*",
 ]);
 const allowedPopupPath = "src/popup/popup.html";
+const requiredIconPaths = Object.freeze({
+  "16": "public/icons/icon-16.png",
+  "32": "public/icons/icon-32.png",
+  "48": "public/icons/icon-48.png",
+  "128": "public/icons/icon-128.png",
+});
 
 function requireValue(condition, message) {
   if (!condition) {
@@ -34,6 +40,47 @@ function isBroadHostPermission(pattern) {
   );
 }
 
+function getPngDimensions(filePath) {
+  const png = readFileSync(filePath);
+  const pngSignature = "89504e470d0a1a0a";
+
+  if (png.length < 24 || png.subarray(0, 8).toString("hex") !== pngSignature) {
+    return null;
+  }
+
+  return {
+    width: png.readUInt32BE(16),
+    height: png.readUInt32BE(20),
+  };
+}
+
+function requireIconSet(iconSet, label) {
+  requireValue(iconSet && typeof iconSet === "object", `${label} must be defined.`);
+
+  if (!iconSet || typeof iconSet !== "object") {
+    return;
+  }
+
+  for (const [size, expectedPath] of Object.entries(requiredIconPaths)) {
+    requireValue(
+      iconSet[size] === expectedPath,
+      `${label}.${size} must be ${expectedPath}.`
+    );
+
+    const iconPath = join(root, expectedPath);
+    if (!existsSync(iconPath)) {
+      requireValue(false, `${expectedPath} must exist.`);
+      continue;
+    }
+
+    const dimensions = getPngDimensions(iconPath);
+    requireValue(
+      dimensions?.width === Number(size) && dimensions?.height === Number(size),
+      `${expectedPath} must be a ${size}x${size} PNG.`
+    );
+  }
+}
+
 requireValue(manifest.manifest_version === 3, "manifest_version must be 3.");
 requireValue(manifest.name, "manifest.name is required.");
 requireValue(manifest.version, "manifest.version is required.");
@@ -49,6 +96,8 @@ requireValue(
   manifest.action?.default_popup === allowedPopupPath,
   `manifest.action.default_popup must be ${allowedPopupPath}.`
 );
+requireIconSet(manifest.icons, "manifest.icons");
+requireIconSet(manifest.action?.default_icon, "manifest.action.default_icon");
 requireValue(
   manifest.background?.service_worker,
   "manifest.background.service_worker is required for popup-triggered side panel behavior."
@@ -107,11 +156,11 @@ if (Array.isArray(manifest.host_permissions)) {
     );
     requireValue(
       allowedHostPermissions.has(permission),
-      `Only the deployed Clearead backend host permission is allowed in Phase 6: ${permission}.`
+      `Only the deployed Clearead backend host permission is allowed in Phase 7: ${permission}.`
     );
   }
 }
-requireValue(!manifest.content_scripts, "Phase 6 must not register static content scripts.");
+requireValue(!manifest.content_scripts, "Phase 7 must not register static content scripts.");
 
 if (manifest.side_panel?.default_path) {
   requireValue(
