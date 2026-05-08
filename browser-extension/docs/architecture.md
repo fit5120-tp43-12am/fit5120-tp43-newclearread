@@ -4,12 +4,12 @@
 
 - `manifest.json`: Chrome extension registration file. It declares Manifest V3, the toolbar popup, side panel, module background service worker, `sidePanel`, `activeTab`, `scripting`, `contextMenus`, `storage`, and the narrow deployed backend host permission.
 - `src/background/`: background service worker code. It disables direct action-click side panel opening, handles popup side-panel open fallback requests, handles page-tool requests from the side panel, and owns the opt-in right-click dictionary context menu.
-- `src/sidepanel/`: plain HTML, CSS, and JavaScript for the pasted-text summary workflow, page-tool controls, and right-click dictionary toggle and guidance.
+- `src/sidepanel/`: plain HTML, CSS, and JavaScript for the pasted-text summary workflow, page-tool controls, right-click dictionary toggle and guidance, and the full website link.
 - `src/content/page-tools.js`: local packaged script that is programmatically injected into the active tab only after the user clicks a page-tool control or the Clearead dictionary context menu item.
-- `src/shared/config.js`: shared extension constants, including `MAX_TEXT_CHARS`, the backend base URL, and endpoint paths.
+- `src/shared/config.js`: shared extension constants, including `MAX_TEXT_CHARS`, the backend base URL, website URL, and endpoint paths.
 - `src/services/backend-api.js`: backend API adapter for the summary request.
 - `src/services/local-dictionary.js`: local glossary and fallback guidance for selected-word lookup. It does not make network requests.
-- `src/popup/`: small toolbar popup that activates Clearead for the current page before opening the side panel.
+- `src/popup/`: small toolbar popup that activates Clearead for the current page before opening the side panel and also links to the full Clearead website.
 - `src/styles/`: reserved for shared styling.
 - `public/icons/`: reserved for extension icon assets.
 - `docs/`: project documentation for architecture, privacy, permissions, and store checks.
@@ -17,7 +17,7 @@
 
 ## Manifest V3 Pieces
 
-Phase 5 uses these Manifest V3 pieces:
+Phase 6 uses these Manifest V3 pieces:
 
 - `manifest_version: 3`: required for the current Chrome extension platform.
 - `action.default_title`: gives the toolbar action a clear title.
@@ -29,6 +29,8 @@ Phase 5 uses these Manifest V3 pieces:
 - `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend for Summary only.
 
 No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used in this phase.
+
+Opening `https://clearead.azurewebsites.net/` is a normal external link from extension UI. It does not require a website host permission and does not let the extension inspect that website tab.
 
 ## Summary Flow
 
@@ -45,6 +47,14 @@ No static `content_scripts`, `tabs`, clipboard permissions, broad host permissio
 11. Backend validation and network failures are shown in the side panel as error states.
 
 Text is not sent automatically while typing, and page content is not read automatically.
+
+## Website Link Flow
+
+1. The popup and side panel show an Open website link.
+2. The link target comes from `CLEAREAD_WEBSITE_URL` in `src/shared/config.js`.
+3. The current website URL is `https://clearead.azurewebsites.net/`, verified from the frontend Azure Web App workflow.
+4. The browser opens the website as a normal tab after the user clicks the link.
+5. The extension does not inject scripts into that tab unless the user separately activates Clearead on that page and clicks a page tool.
 
 ## Page Tools Flow
 
@@ -120,6 +130,14 @@ The response shape is defined by `TextResponse` in `backend/models/schemas.py`:
 ```
 
 After the extension request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. Any API keys or secrets for those services belong on the backend side and must not be stored in extension files. Selected-word lookup does not use this backend route. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
+
+## Website Origin
+
+The deployed frontend website origin is currently:
+
+- `https://clearead.azurewebsites.net/`
+
+This is separate from the deployed backend API origin. It is used only for user-clicked website links in the extension UI.
 
 ## Simplify Status
 

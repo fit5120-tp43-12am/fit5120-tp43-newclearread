@@ -1,10 +1,11 @@
 # Clearead Browser Extension
 
-This folder contains the Manifest V3 Clearead Chrome extension. Phase 5 keeps the pasted-text summary workflow, user-triggered readable page tools, and a local right-click dictionary flow for ordinary webpages.
+This folder contains the Manifest V3 Clearead Chrome extension. Phase 6 keeps the pasted-text summary workflow, user-triggered readable page tools, a local right-click dictionary flow for ordinary webpages, and a direct link back to the Clearead website.
 
 ## Current Workflow
 
 - Starts from a small toolbar popup, then opens as a Chrome side panel.
+- Lets the user open the full Clearead website at `https://clearead.azurewebsites.net/` from the popup or side panel.
 - Lets the user paste text manually.
 - Shows live word and character counts.
 - Enforces the backend limit of 50,000 characters.
@@ -26,6 +27,7 @@ This folder contains the Manifest V3 Clearead Chrome extension. Phase 5 keeps th
 5. Select this folder: `browser-extension/`.
 6. Click the Clearead extension action icon.
 7. In the popup, click Open Clearead for this page to open the side panel.
+8. In the popup or side panel, click Open website to confirm the full Clearead website opens in a normal tab.
 
 ## How To Test The Summary Flow
 
@@ -67,6 +69,14 @@ Developers may point a local-only test build at `http://localhost:8000`, but the
 11. Confirm Summary, Apply readable font, Reset page font, and Toggle reading ruler still work.
 12. Try a restricted page such as `chrome://extensions` and confirm Clearead does not offer or cannot run page tools on that page.
 
+## How To Test Website Links
+
+1. Reload the unpacked extension from `browser-extension/`.
+2. Click the Clearead toolbar icon.
+3. Click Open website in the popup and confirm `https://clearead.azurewebsites.net/` opens in a normal tab.
+4. Open the side panel and click Open website in the header.
+5. Confirm the website link does not request extra extension page permissions.
+
 ## Permissions
 
 The extension requests:
@@ -80,6 +90,8 @@ The extension requests:
 
 The extension does not request `<all_urls>`, `tabs`, clipboard permissions, broad host permissions, or static `content_scripts`.
 
+The Clearead website link does not require a host permission. It opens `https://clearead.azurewebsites.net/` as a normal external webpage tab.
+
 ## Data Flow
 
 Pasted text is not sent while the user types. When the user clicks Summary, the side panel sends this request body to the backend:
@@ -90,13 +102,15 @@ Pasted text is not sent while the user types. When the user clicks Summary, the 
 
 The website frontend and the extension are separate frontend clients for the same Clearead backend processing route. The backend response is displayed in the side panel. The extension itself does not save pasted text, call OpenAI or other third-party AI APIs, call analytics or dictionary services, include API keys, read webpage content automatically, or load remote executable code.
 
+The website entry point is separate from the backend API origin. `https://clearead.azurewebsites.net/` is opened only when the user clicks Open website. It is not used as a host permission and the extension does not inspect that website tab.
+
 Page tools do not send page content to the backend. The toolbar popup is an explicit activation step for the current page. After the user clicks Open Clearead for this page, the side panel opens. When the user then clicks a page-tool button, the service worker checks the active tab, rejects known restricted browser pages, and injects `src/content/page-tools.js` from the packaged extension into that active tab. The injected script adds or removes Clearead-owned style and overlay elements only. It does not collect page text, send page text, persist state, or run automatically on every page.
 
 Right-click dictionary lookup uses Chrome's selection context menu only after the user turns on Enable right-click dictionary in the side panel. The menu is off by default. The extension stores only that on/off flag in `chrome.storage.session`, which is memory-backed and cleared when the extension is disabled, reloaded, updated, or when the browser restarts. When enabled, the menu item appears only when the user has selected text on a normal `http` or `https` webpage. After the user clicks the Clearead menu item, the service worker uses only `info.selectionText`, trims and normalizes whitespace, limits it to 80 characters, and explains the term with `src/services/local-dictionary.js`. The service worker then injects the local packaged page-tool script if needed and asks it to render a small on-page popover. The selected text is processed locally, is not sent to the Clearead backend, is not stored, and no surrounding page content is read.
 
 After a summary request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. Any API keys or secrets for those services must stay on the backend side and must not be stored in the extension.
 
-The deployed backend origin is currently the Azure backend URL found in workflow config. The final production backend origin, user-facing privacy policy wording, and final Chrome Web Store data disclosure still need review before release.
+The deployed backend origin is currently the Azure backend URL found in workflow config. The website origin is currently `https://clearead.azurewebsites.net/`. The final production backend origin, website origin, user-facing privacy policy wording, and final Chrome Web Store data disclosure still need review before release.
 
 ## Unsupported Pages
 

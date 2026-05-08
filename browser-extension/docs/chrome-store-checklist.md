@@ -1,6 +1,6 @@
 # Chrome Web Store Checklist
 
-This checklist tracks review concerns for the Clearead extension. Phase 5 is not a claim of Chrome Web Store readiness.
+This checklist tracks review concerns for the Clearead extension. Phase 6 is not a claim of Chrome Web Store readiness.
 
 ## Permission Minimisation
 
@@ -10,6 +10,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 5 is not
 - [x] Uses the `contextMenus` permission for one opt-in selected-text right-click dictionary item.
 - [x] Uses the `storage` permission only for one `chrome.storage.session` boolean that tracks whether the user enabled the dictionary menu during the current browser session.
 - [x] Uses only `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*` as a narrow deployed backend host permission.
+- [x] Opens `https://clearead.azurewebsites.net/` as a user-clicked website link without adding it to `host_permissions`.
 - [x] Does not request `<all_urls>`.
 - [x] Does not request broad host permissions.
 - [x] Does not request `tabs` or clipboard permissions.
@@ -47,6 +48,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 5 is not
 - [x] No analytics are included.
 - [x] The extension itself does not perform AI processing or call OpenAI, third-party AI APIs, analytics services, or remote dictionary services.
 - [x] The website frontend and extension both use the shared Clearead backend processing route.
+- [x] Website links open only after user click and are not used for background data transfer.
 - [x] API keys and secrets for any server-side model services must stay on the backend side and must not be stored in the extension.
 - [x] The disabled Simplify action does not send data.
 - [ ] Create user-facing privacy policy before store submission.
@@ -75,6 +77,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 5 is not
 - [ ] Test a development build with an unavailable backend to verify the error state.
 - [ ] Test Apply readable font, Reset page font, and Toggle reading ruler on normal webpages.
 - [ ] Test right-click dictionary default-off behavior, side panel enablement, known and unknown selections, and disabling again on normal webpages.
+- [ ] Test Open website links from the popup and side panel.
 - [ ] Test restricted pages such as `chrome://extensions` for the message: "Chrome does not allow extensions to modify this page. Try a normal webpage."
 - [ ] Test the active-tab access recovery path on a normal webpage, where possible, for the message asking the user to open the target webpage, click the Clearead toolbar icon, and try again.
 - [ ] Run `npm run validate` before packaging.

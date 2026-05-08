@@ -6,6 +6,8 @@ The extension handles text that the user manually pastes into the Clearead side 
 
 The page tools can modify the currently active webpage after the user activates Clearead from the toolbar popup and clicks a side panel control. The dictionary context menu is off by default. After the user enables it in the side panel, it can read only the selected text supplied by Chrome after the user clicks the Clearead right-click menu item.
 
+The popup and side panel can open the full Clearead website at `https://clearead.azurewebsites.net/` when the user clicks Open website. This is a normal browser link, not a background data transfer.
+
 The extension does not collect browsing history, surrounding page content, analytics, account information, cookies, files, screenshots, or telemetry.
 
 ## Does Pasted Text Leave The Browser?
@@ -62,7 +64,11 @@ The extension sends pasted text only to the shared Clearead backend endpoint. Th
 
 After the request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. API keys and secrets for those services, if any, belong on the backend side and must not be stored in the extension.
 
-The deployed backend origin is currently the Azure backend URL found in workflow config. Before release, the final production backend origin, backend retention and logging behavior, user-facing privacy policy wording, and Chrome Web Store data disclosure still need review.
+The deployed backend origin is currently the Azure backend URL found in workflow config. The deployed website origin is currently `https://clearead.azurewebsites.net/`. Before release, the final production backend origin, website origin, backend retention and logging behavior, user-facing privacy policy wording, and Chrome Web Store data disclosure still need review.
+
+## Website Link
+
+Open website links in the popup and side panel point to `https://clearead.azurewebsites.net/`. The extension does not request host permission for this website because opening a user-clicked link does not require permission to read or change that website.
 
 ## Storage
 

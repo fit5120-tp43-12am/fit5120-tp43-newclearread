@@ -38,6 +38,19 @@ textarea:disabled {
   gap: 6px;
 }
 
+.app-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-title-group {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
 .eyebrow {
   margin: 0;
   color: #4f5f72;
@@ -182,7 +195,8 @@ h2 {
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.link-button {
   min-height: 36px;
   border-radius: 8px;
   cursor: pointer;
@@ -202,12 +216,43 @@ h2 {
   color: #243043;
 }
 
+.link-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c5cedd;
+  background: #ffffff;
+  color: #243043;
+  font-size: 0.84rem;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
 .primary-button:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
-.secondary-button:hover:not(:disabled) {
+.secondary-button:hover:not(:disabled),
+.link-button:hover {
   background: #eef2f7;
+}
+
+.link-button:focus-visible {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+  outline: none;
+}
+
+@media (max-width: 420px) {
+  .app-header-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .link-button {
+    align-self: flex-start;
+  }
 }
 
 .primary-button:disabled,

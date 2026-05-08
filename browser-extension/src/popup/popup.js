@@ -1,5 +1,8 @@
+import { CLEAREAD_WEBSITE_URL } from "../shared/config.js";
+
 const openButton = document.querySelector("#open-clearead");
 const statusMessage = document.querySelector("#popup-status");
+const openWebsiteLink = document.querySelector("#open-clearead-website");
 
 function setStatus(type, message) {
   statusMessage.className = `popup-status status-${type}`;
@@ -66,3 +69,4 @@ async function openClearead() {
 }
 
 openButton.addEventListener("click", openClearead);
+openWebsiteLink.href = CLEAREAD_WEBSITE_URL;

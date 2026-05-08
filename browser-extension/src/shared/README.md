@@ -1,5 +1,6 @@
 # Shared
 
-This folder is reserved for shared constants and helpers used by multiple extension areas.
+This folder contains shared constants and helpers used by multiple extension areas.
 
-Phase 1 keeps the implementation small, so no shared runtime code is needed yet.
+`config.js` owns the backend API origin, website URL, endpoint paths, text limits,
+and feature availability flags used by the side panel and popup.

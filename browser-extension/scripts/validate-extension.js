@@ -107,11 +107,11 @@ if (Array.isArray(manifest.host_permissions)) {
     );
     requireValue(
       allowedHostPermissions.has(permission),
-      `Only the deployed Clearead backend host permission is allowed in Phase 5: ${permission}.`
+      `Only the deployed Clearead backend host permission is allowed in Phase 6: ${permission}.`
     );
   }
 }
-requireValue(!manifest.content_scripts, "Phase 5 must not register static content scripts.");
+requireValue(!manifest.content_scripts, "Phase 6 must not register static content scripts.");
 
 if (manifest.side_panel?.default_path) {
   requireValue(

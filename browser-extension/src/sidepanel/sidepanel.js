@@ -1,4 +1,5 @@
 import {
+  CLEAREAD_WEBSITE_URL,
   MAX_TEXT_CHARS,
   SIMPLIFY_UNAVAILABLE_MESSAGE,
 } from "../shared/config.js";
@@ -20,6 +21,7 @@ const toggleReadingRulerButton = document.querySelector("#toggle-reading-ruler")
 const pageToolsStatus = document.querySelector("#page-tools-status");
 const enableDictionaryCheckbox = document.querySelector("#enable-dictionary");
 const dictionaryStatus = document.querySelector("#dictionary-status");
+const openWebsiteLink = document.querySelector("#open-clearead-website");
 
 let isLoading = false;
 let isPageToolLoading = false;
@@ -391,6 +393,7 @@ toggleReadingRulerButton.addEventListener("click", () => {
   runPageTool("toggle-reading-ruler", "Toggling the reading ruler on the active page...");
 });
 enableDictionaryCheckbox.addEventListener("change", updateDictionaryEnabledState);
+openWebsiteLink.href = CLEAREAD_WEBSITE_URL;
 
 updateCountsAndValidation();
 showEmptyResult();
