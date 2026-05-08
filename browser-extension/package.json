@@ -1,0 +1,10 @@
+{
+  "name": "clearead-browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Manifest V3 foundation for the Clearead Chrome extension.",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate-extension.js"
+  }
+}
