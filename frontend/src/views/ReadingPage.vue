@@ -913,57 +913,24 @@ onUnmounted(() => {
 
             </div><!-- /overall-card -->
 
-            <!--
-              Scroll hint: visible at the bottom of the viewport section.
-              Bouncing arrow encourages the user to scroll down to the section tree.
-            -->
-            <div class="scroll-hint" aria-hidden="true">
-              <p class="scroll-hint-text">
-                <span class="scroll-hint-count">{{ result.blocks?.length || 0 }} sections</span>
-                &nbsp;·&nbsp; scroll to explore
-              </p>
-              <div class="scroll-hint-icon">
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <path d="M11 4v14M11 18l-5-5M11 18l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-
           </div><!-- /stage-summary -->
 
 
           <!-- ══════════════════════════════════════════════════════════════
-               STAGE 2 · Section Tree
-               Root node (document title) → vertical trunk →
-               horizontal crossbar → section cards in a grid.
+               STAGE 2 · Section Grid
+               A bridge label connects the overview to the section cards.
                Clicking a card opens the Stage 3 detail modal.
           ══════════════════════════════════════════════════════════════ -->
           <div class="stage-tree">
 
-            <!-- Stage label pill + count badge -->
-            <div class="stage-header">
-              <span class="stage-pill stage-pill--blue">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <rect x="1.5" y="1.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
-                  <path d="M4 5h4M4 7.5h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                </svg>
-                Sections
+            <!-- Bridge: thin rule + "N Sections" label + thin rule -->
+            <div class="sections-bridge" aria-hidden="true">
+              <div class="sections-bridge-line"></div>
+              <span class="sections-bridge-label">
+                {{ result.blocks?.length || 0 }} Sections
               </span>
-              <span class="stage-pill-count">{{ result.blocks?.length || 0 }} sections</span>
+              <div class="sections-bridge-line"></div>
             </div>
-
-            <!-- Root node: shows the document title (from backend result.title) -->
-            <div class="tree-root-node">
-              <!-- Document icon -->
-              <svg class="tree-root-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <rect x="2" y="1" width="14" height="16" rx="2" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
-                <path d="M5 5.5h8M5 8.5h8M5 11.5h5" stroke="#3b82f6" stroke-width="1.2" stroke-linecap="round"/>
-              </svg>
-              <span class="tree-root-title">{{ result.title || 'Document' }}</span>
-            </div>
-
-            <!-- Short connector from root node to the sections container -->
-            <div class="tree-trunk"></div>
 
             <!--
               Sections container: a single bordered box that groups ALL cards.
@@ -1386,9 +1353,6 @@ onUnmounted(() => {
   flex: 1;
   padding: 32px 0 210px;
   overflow-y: auto;
-  /* Gentle proximity snap — Stage 1 fills the viewport, then Stage 2 snaps in */
-  scroll-snap-type: y proximity;
-  scroll-behavior: smooth;
 }
 /* In result mode the bottom bar is hidden — remove the bottom clearance */
 .reading-area--no-bar { padding-bottom: 40px; }
@@ -2274,23 +2238,17 @@ kbd {
 
 
 /* ─────────────────────────────────────────
-   STAGE 1 — Overall Summary (full-page hero)
-   min-height fills the visible viewport so the
-   reader only sees this stage on first load.
+   STAGE 1 — Overall Summary hero card
+   Natural height — flows directly into the section grid below.
 ───────────────────────────────────────── */
 .stage-summary {
-  /* Fills viewport minus the navbar (64px) with comfortable padding */
-  min-height: calc(100svh - 64px);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 28px;
+  gap: 0;
   max-width: 740px;
   margin: 0 auto;
   width: 100%;
-  /* Bottom padding: leave enough room for the scroll-hint arrow */
-  padding: 48px 0 60px;
-  scroll-snap-align: start;
+  padding: 48px 0 0;
 }
 
 /*
@@ -2396,68 +2354,43 @@ kbd {
 
 
 /* ─────────────────────────────────────────
-   Scroll hint: bouncing arrow at the foot
-   of Stage 1 to encourage scrolling down.
-───────────────────────────────────────── */
-.scroll-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  opacity: 0.55;
-}
-.scroll-hint-text {
-  font-size: 12px; color: #6b7280; margin: 0;
-  letter-spacing: 0.03em;
-}
-.scroll-hint-count { font-weight: 700; color: #374151; }
-.scroll-hint-icon {
-  color: #9ca3af;
-  animation: bounce-down 1.9s ease-in-out infinite;
-}
-@keyframes bounce-down {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(7px); }
-}
-
-
-/* ─────────────────────────────────────────
    STAGE 2 — Section Grid
-   Fills the same viewport height as Stage 1
-   so the tree content is centred on screen
-   when the user scrolls to this section.
+   Flows naturally below the overview card.
+   The bridge label visually connects the two.
 ───────────────────────────────────────── */
 .stage-tree {
-  min-height: calc(100svh - 64px);   /* match Stage 1 height */
   display: flex;
   flex-direction: column;
-  justify-content: center;           /* vertically centre all children */
   gap: 0;
-  padding: 0 0 40px;                 /* small bottom clearance only */
-  scroll-snap-align: start;
-}
-
-/* Root node: centered document-title card */
-.tree-root-node {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 24px;
-  background: #fff;
-  border: 1.5px solid #c7d2fe;
-  border-radius: 14px;
-  font-size: 14.5px; font-weight: 700; color: #1e1b4b;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
-  width: fit-content; margin: 0 auto; max-width: 90%;
-}
-.tree-root-icon { flex-shrink: 0; }
-.tree-root-title {
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px;
-}
-
-/* Short trunk: simple connector from root to the container box */
-.tree-trunk {
-  width: 2px; height: 20px;
-  background: #c7d2fe;
+  padding: 0 0 64px;
+  max-width: 1100px;
   margin: 0 auto;
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────
+   Bridge: "N Sections" label with horizontal
+   rules on each side, connecting overview ↔ grid
+───────────────────────────────────────── */
+.sections-bridge {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 36px 0 28px;
+}
+.sections-bridge-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e0e7ff 40%, #e0e7ff 60%, transparent);
+}
+.sections-bridge-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+  white-space: nowrap;
 }
 
 /*
@@ -2537,11 +2470,7 @@ kbd {
 }
 @media (max-width: 700px) {
   .tree-nodes { grid-template-columns: repeat(2, 1fr); }
-  .tree-trunk { display: none; }
-  .tree-root-node { max-width: 100%; }
-  .tree-root-title { white-space: normal; max-width: 100%; }
-  /* On mobile, auto height + flex-start is more natural than centred */
-  .stage-tree { min-height: auto; padding: 32px 0 40px; justify-content: flex-start; }
+  .stage-tree { padding: 0 0 40px; }
   .tree-container { padding: 14px; }
 }
 @media (max-width: 440px) {
@@ -2689,7 +2618,7 @@ kbd {
   .modal-audio { padding: 14px 22px; }
   .overall-card { padding: 24px 20px; }
   .overall-heading { font-size: 22px; }
-  .stage-summary { padding: 32px 0 60px; }
+  .stage-summary { padding: 28px 0 0; }
 }
 
 
