@@ -717,7 +717,7 @@ onUnmounted(() => {
 
 
     <!-- ── Main reading area ── -->
-    <main class="reading-area">
+    <main :class="['reading-area', { 'reading-area--no-bar': mode === 'result' }]">
       <div :class="['reading-inner', { 'reading-inner--wide': mode === 'result' }]">
 
         <!-- ── STATE: idle — welcome / how-to screen ── -->
@@ -1177,8 +1177,8 @@ onUnmounted(() => {
 
 
     <!-- ── Fixed bottom input bar ── -->
-    <!-- Always visible at the bottom; contains the textarea and action buttons -->
-    <div class="bottom-bar">
+    <!-- Hidden in result mode so the reading area has full focus -->
+    <div v-if="mode !== 'result'" class="bottom-bar">
       <div class="bottom-bar-inner">
 
         <!-- Feedback strip: shows loading / success / error messages -->
@@ -1390,6 +1390,8 @@ onUnmounted(() => {
   scroll-snap-type: y proximity;
   scroll-behavior: smooth;
 }
+/* In result mode the bottom bar is hidden — remove the bottom clearance */
+.reading-area--no-bar { padding-bottom: 40px; }
 
 /* Narrow width for idle/loading; full-width for results */
 .reading-inner {
@@ -2286,8 +2288,8 @@ kbd {
   max-width: 740px;
   margin: 0 auto;
   width: 100%;
-  /* Bottom padding clears the fixed bottom input bar */
-  padding: 48px 0 160px;
+  /* Bottom padding: the input bar is hidden in result mode, so use smaller clearance */
+  padding: 48px 0 80px;
   scroll-snap-align: start;
 }
 
@@ -2681,7 +2683,7 @@ kbd {
   .modal-audio { padding: 14px 22px; }
   .overall-card { padding: 24px 20px; }
   .overall-heading { font-size: 22px; }
-  .stage-summary { padding: 32px 0 180px; }
+  .stage-summary { padding: 32px 0 60px; }
 }
 
 
