@@ -5,11 +5,26 @@ const root = process.cwd();
 const manifestPath = join(root, "manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const errors = [];
+const allowedPermissions = new Set(["sidePanel"]);
+const allowedHostPermissions = new Set([
+  "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*",
+]);
 
 function requireValue(condition, message) {
   if (!condition) {
     errors.push(message);
   }
+}
+
+function isBroadHostPermission(pattern) {
+  return (
+    pattern === "<all_urls>" ||
+    pattern === "*://*/*" ||
+    pattern === "http://*/*" ||
+    pattern === "https://*/*" ||
+    pattern.includes("*://") ||
+    pattern.includes("://*.")
+  );
 }
 
 requireValue(manifest.manifest_version === 3, "manifest_version must be 3.");
@@ -24,14 +39,45 @@ requireValue(
   "manifest.background.service_worker is required for action-click side panel behavior."
 );
 requireValue(
-  Array.isArray(manifest.permissions) &&
-    manifest.permissions.length === 1 &&
-    manifest.permissions[0] === "sidePanel",
-  "Only the sidePanel permission should be requested in Phase 1."
+  Array.isArray(manifest.permissions),
+  "manifest.permissions must be an array."
 );
-requireValue(!manifest.host_permissions, "Phase 1 must not request host_permissions.");
-requireValue(!manifest.content_scripts, "Phase 1 must not register content scripts.");
-requireValue(!manifest.action?.default_popup, "Phase 1 must not register a popup.");
+if (Array.isArray(manifest.permissions)) {
+  for (const permission of manifest.permissions) {
+    requireValue(
+      allowedPermissions.has(permission),
+      `Unexpected extension permission requested: ${permission}.`
+    );
+  }
+  requireValue(
+    manifest.permissions.includes("sidePanel"),
+    "The sidePanel permission is required."
+  );
+}
+
+requireValue(
+  Array.isArray(manifest.host_permissions),
+  "manifest.host_permissions must be an array."
+);
+if (Array.isArray(manifest.host_permissions)) {
+  requireValue(
+    manifest.host_permissions.length === allowedHostPermissions.size,
+    "Only the deployed Clearead backend host permission should be requested."
+  );
+
+  for (const permission of manifest.host_permissions) {
+    requireValue(
+      !isBroadHostPermission(permission),
+      `Broad host permission is not allowed: ${permission}.`
+    );
+    requireValue(
+      allowedHostPermissions.has(permission),
+      `Only the deployed Clearead backend host permission is allowed in Phase 3: ${permission}.`
+    );
+  }
+}
+requireValue(!manifest.content_scripts, "Phase 3 must not register content scripts.");
+requireValue(!manifest.action?.default_popup, "Phase 3 must not register a popup.");
 
 if (manifest.side_panel?.default_path) {
   requireValue(
@@ -46,6 +92,15 @@ if (manifest.background?.service_worker) {
     "The configured background service worker must exist."
   );
 }
+
+requireValue(
+  existsSync(join(root, "src", "shared", "config.js")),
+  "The side panel backend config module must exist."
+);
+requireValue(
+  existsSync(join(root, "src", "services", "backend-api.js")),
+  "The side panel backend API service module must exist."
+);
 
 if (errors.length > 0) {
   console.error("Extension validation failed:");

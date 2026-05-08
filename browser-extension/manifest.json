@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clearead",
-  "description": "A local-first reading support foundation for the Clearead Chrome extension.",
+  "description": "A side panel reading support workflow for summarising pasted text with Clearead.",
   "version": "0.1.0",
   "minimum_chrome_version": "114",
   "action": {
@@ -15,5 +15,8 @@
   },
   "permissions": [
     "sidePanel"
+  ],
+  "host_permissions": [
+    "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"
   ]
 }

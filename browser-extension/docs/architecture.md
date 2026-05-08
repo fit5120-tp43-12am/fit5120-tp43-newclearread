@@ -2,63 +2,78 @@
 
 ## Main Folders
 
-- `manifest.json`: Chrome extension registration file. It declares the extension name, Manifest V3 version, side panel, background service worker, and permissions.
-- `src/background/`: background service worker code. In Phase 1 it only enables opening the side panel when the extension action is clicked.
-- `src/sidepanel/`: the current user interface. It contains plain HTML, CSS, and JavaScript for local pasted text placeholder behavior.
-- `src/content/`: reserved for future content scripts. No content scripts are registered in Phase 1.
-- `src/popup/`: reserved for a future popup if the product needs one. No popup is registered in Phase 1.
-- `src/shared/`: reserved for shared constants and helpers.
-- `src/services/`: reserved for future service adapters, such as AI, backend, or dictionary clients.
+- `manifest.json`: Chrome extension registration file. It declares Manifest V3, the side panel, background service worker, `sidePanel`, and the narrow deployed backend host permission.
+- `src/background/`: background service worker code. It enables opening the side panel when the extension action is clicked.
+- `src/sidepanel/`: plain HTML, CSS, and JavaScript for the pasted-text summary workflow.
+- `src/shared/config.js`: shared extension constants, including `MAX_TEXT_CHARS`, the backend base URL, and endpoint paths.
+- `src/services/backend-api.js`: backend API adapter for the summary request.
+- `src/content/`: reserved for future content scripts. No content scripts are registered.
+- `src/popup/`: reserved for a future popup if the product needs one. No popup is registered.
 - `src/styles/`: reserved for shared styling.
 - `public/icons/`: reserved for extension icon assets.
-- `docs/`: project documentation for architecture, privacy, permissions, and store readiness.
+- `docs/`: project documentation for architecture, privacy, permissions, and store checks.
 - `scripts/`: local validation scripts for extension checks.
 
 ## Manifest V3 Pieces
 
-Phase 1 uses these Manifest V3 pieces:
+Phase 3 uses these Manifest V3 pieces:
 
 - `manifest_version: 3`: required for the current Chrome extension platform.
 - `action.default_title`: gives the toolbar action a clear title.
 - `background.service_worker`: points to the extension service worker.
 - `side_panel.default_path`: points Chrome to the side panel HTML file.
-- `permissions: ["sidePanel"]`: allows use of the side panel API.
+- `permissions: ["sidePanel"]`: allows use of the Chrome side panel API.
+- `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend.
 
-No `host_permissions`, `content_scripts`, `default_popup`, or remote code are used in Phase 1.
+No `content_scripts`, `default_popup`, `tabs`, `scripting`, `storage`, `contextMenus`, clipboard permissions, or remote executable code are used in this phase.
 
 ## Current Side Panel Flow
 
 1. Chrome loads the extension from `manifest.json`.
 2. The background service worker calls `chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`.
 3. When the user clicks the Clearead extension action, Chrome opens `src/sidepanel/sidepanel.html`.
-4. The side panel loads local CSS and JavaScript.
-5. The user can paste text into the textarea.
-6. JavaScript counts words locally and shows a placeholder result message.
+4. The side panel loads local CSS and JavaScript modules.
+5. The user manually pastes text into the textarea.
+6. The side panel counts words and characters locally.
+7. Empty input and text over 50,000 characters are rejected before any backend request.
+8. When the user clicks Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` with `{ "text": string }`.
+9. The response is rendered as notice text, fallback status, summary blocks, key points, and collapsed original text.
+10. Backend validation and network failures are shown in the side panel as error states.
 
-The pasted text stays inside the side panel page in this foundation.
+Text is not sent automatically while typing, and page content is not read automatically.
 
-## Planned Future Flow
+The extension is another frontend client for the shared Clearead backend. The website frontend and extension both send user-submitted text to the same backend processing route. The extension calls only the Clearead backend endpoint for summary generation. It does not call OpenAI, third-party AI APIs, analytics services, or dictionary services directly.
 
-Future side panel text tools may:
+## Backend Contract
 
-- Let the user choose simplify, summary, or reading support modes.
-- Send user-approved text to a backend or AI service only after privacy and consent rules are implemented.
-- Display returned simplified or summarized text in the side panel.
+The deployed backend origin is currently `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net`, the Azure backend URL found in workflow config. The expected summary route is:
 
-Future readable font work may:
+- Method: `POST`
+- Path: `/api/process-text`
+- Request body: `{ "text": string }`
+- Backend limit: `MAX_TEXT_CHARS = 50000`
 
-- Use a content script only after a clear user action.
-- Apply readable font styles to selected pages or text areas.
-- Require narrower host permissions or `activeTab` depending on the chosen interaction model.
+The response shape is defined by `TextResponse` in `backend/models/schemas.py`:
 
-Future reading ruler work may:
+```text
+{
+  notice: string,
+  usedFallback: boolean,
+  fallbackReason: string,
+  segmentation: object,
+  blocks: [
+    {
+      id: number,
+      originalText: string,
+      summary: string,
+      keyPoints: string[]
+    }
+  ]
+}
+```
 
-- Use a content script to inject a visual ruler overlay into the current page.
-- Keep page modification temporary and user-controlled.
-- Avoid broad host access unless the final feature truly needs it.
+After the extension request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. Any API keys or secrets for those services belong on the backend side and must not be stored in extension files. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
 
-Future dictionary work may:
+## Simplify Status
 
-- Add a context menu or side panel lookup flow.
-- Use selected text only after user action.
-- Request the minimum permission needed for that selected-text workflow.
+The backend contains internal simplification logic in service code, but no stable public simplify route or clear extension-facing simplify contract is currently mounted. The extension therefore keeps Simplify disabled and documents it as a future feature instead of inventing a route.

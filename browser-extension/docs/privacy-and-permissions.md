@@ -2,44 +2,77 @@
 
 ## Current Data Collection
 
-Phase 1 does not collect personal data, browsing data, page content, analytics, or account information.
+The extension handles only text that the user manually pastes into the Clearead side panel.
 
-The only user-provided data handled by the current foundation is text that the user manually pastes into the Clearead side panel.
+It does not collect browsing history, page content, analytics, account information, cookies, files, screenshots, selected text from webpages, or telemetry.
 
 ## Does Pasted Text Leave The Browser?
 
-No. In Phase 1, pasted text is processed only by local JavaScript in the side panel page.
+Yes, but only after a clear user action.
 
-The current code counts words and shows a placeholder preview message. It does not send pasted text to a backend, AI service, dictionary service, analytics service, or third-party API.
+Pasted text is sent when the user clicks Summary. It is not sent automatically while the user types, and the extension does not read webpage content automatically.
 
-## Current Permission
+## Summary Request
+
+When Summary is clicked, the side panel sends:
+
+- Endpoint: `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text`
+- Request body: `{ "text": string }`
+- Text source: the text manually pasted into the side panel
+- Purpose: ask the Clearead backend to segment and summarize the pasted text
+
+The response displayed in the side panel may include:
+
+- `notice`
+- `usedFallback`
+- `fallbackReason`
+- `blocks[].summary`
+- `blocks[].keyPoints`
+- `blocks[].originalText`
+
+The original text is shown in a collapsed section so the generated summary remains readable.
+
+## Backend-Side Processing
+
+The extension sends pasted text only to the shared Clearead backend endpoint. The website frontend and extension both use the same backend processing route. The extension itself does not perform AI processing or call OpenAI, third-party AI APIs, analytics services, or dictionary services.
+
+After the request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. API keys and secrets for those services, if any, belong on the backend side and must not be stored in the extension.
+
+The deployed backend origin is currently the Azure backend URL found in workflow config. Before release, the final production backend origin, backend retention and logging behavior, user-facing privacy policy wording, and Chrome Web Store data disclosure still need review.
+
+## Storage
+
+The extension does not save pasted text. It does not use Chrome storage, localStorage, indexedDB, cookies, or a custom cache for the pasted content.
+
+## Secrets And Remote Code
+
+The extension does not include API keys, access tokens, secrets, analytics IDs, or private credentials.
+
+All side panel code is packaged locally with the extension. The extension does not load remote executable JavaScript, use `eval`, or inject scripts into webpages.
+
+## Current Permissions
 
 ### `sidePanel`
 
-Clearead requests `sidePanel` so it can use Chrome's side panel API.
+Clearead requests `sidePanel` so it can use Chrome's side panel API and open the reading support panel when the user clicks the extension action.
 
-This permission is needed because Phase 1 implements the extension as a side panel experience instead of a popup or injected webpage UI.
+### `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`
 
-The background service worker uses this permission to make the side panel open when the user clicks the extension action.
+Clearead requests this narrow host permission so the extension side panel can send user-submitted pasted text to the shared Clearead backend.
 
-## Permissions Not Requested Yet
+This permission is limited to the deployed backend origin currently used for the shared Clearead service. It is not a permission to read webpages.
 
-Clearead does not currently request:
+## Permissions Not Requested
 
-- `host_permissions`: not needed because Phase 1 does not read or change webpages.
-- `<all_urls>`: not needed and too broad for the current foundation.
-- `scripting`: not needed because no scripts are injected into webpages.
-- `tabs`: not needed because the extension does not inspect browser tabs.
-- `storage`: not needed because Phase 1 does not save user preferences or history.
-- `contextMenus`: not needed because dictionary lookup is not implemented.
+Clearead does not request:
 
-## Possible Future Permissions
+- `<all_urls>`
+- broad host permissions
+- `tabs`
+- `scripting`
+- `storage`
+- `contextMenus`
+- clipboard permissions
+- content scripts
 
-Future features may need extra permissions, but they should be added only when the feature is implemented and justified:
-
-- Readable font or reading ruler features may need `activeTab`, `scripting`, or narrow host permissions if they modify the current webpage.
-- Context menu dictionary lookup may need `contextMenus`.
-- Saved user preferences may need `storage`.
-- Backend or AI calls may need documented network endpoints, privacy policy updates, and user consent rules.
-
-Any future permission should be reviewed against the Chrome Web Store single-purpose and minimum-permission expectations before being added.
+These permissions should be added only if a future implemented feature has a clear need and matching documentation.

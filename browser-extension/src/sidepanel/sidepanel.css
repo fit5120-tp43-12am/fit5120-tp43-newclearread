@@ -1,7 +1,7 @@
 :root {
   color-scheme: light;
   font-family: Arial, Helvetica, sans-serif;
-  background: #f7f8fa;
+  background: #f5f7fb;
   color: #1d2433;
 }
 
@@ -12,7 +12,7 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: #f7f8fa;
+  background: #f5f7fb;
 }
 
 button,
@@ -20,22 +20,27 @@ textarea {
   font: inherit;
 }
 
+button:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
 .app-shell {
   display: flex;
   min-height: 100vh;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   padding: 18px;
 }
 
 .app-header {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .eyebrow {
   margin: 0;
-  color: #516070;
+  color: #4f5f72;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0;
@@ -44,12 +49,14 @@ textarea {
 
 h1,
 h2,
+h3,
+h4,
 p {
   margin: 0;
 }
 
 h1 {
-  color: #111827;
+  color: #101828;
   font-size: 1.5rem;
   line-height: 1.2;
 }
@@ -60,27 +67,54 @@ h2 {
   line-height: 1.3;
 }
 
+.header-note,
+.validation-message,
+.secondary-text,
+.empty-state {
+  color: #536173;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.workspace,
+.result-panel,
+.status-region {
+  border: 1px solid #d7dde8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
 .workspace,
 .result-panel {
   display: grid;
   gap: 12px;
-  border: 1px solid #d7dde8;
-  border-radius: 8px;
-  background: #ffffff;
   padding: 14px;
 }
 
 .section-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.count {
+.count-group {
+  display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.count {
   color: #5a6575;
-  font-size: 0.86rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.count-error {
+  color: #b42318;
+  font-weight: 700;
 }
 
 .input-label {
@@ -106,8 +140,18 @@ h2 {
   outline: none;
 }
 
+.text-input-error {
+  border-color: #d92d20;
+}
+
+.validation-error {
+  color: #b42318;
+  font-weight: 700;
+}
+
 .button-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
 }
@@ -133,15 +177,146 @@ h2 {
   color: #243043;
 }
 
-.primary-button:hover {
+.primary-button:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
-.secondary-button:hover {
+.secondary-button:hover:not(:disabled) {
   background: #eef2f7;
 }
 
-.result-message {
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.55;
+}
+
+.status-region {
   color: #344054;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+
+.status-neutral {
+  background: #ffffff;
+}
+
+.status-loading {
+  border-color: #9ec5fe;
+  background: #eff6ff;
+  color: #1849a9;
+}
+
+.status-success {
+  border-color: #abefc6;
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.status-error {
+  border-color: #fecdca;
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.coming-soon {
+  flex: 0 0 auto;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  color: #475467;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+.result-content {
+  display: grid;
+  gap: 12px;
+}
+
+.result-meta {
+  display: grid;
+  gap: 6px;
+  border-bottom: 1px solid #eaecf0;
+  padding-bottom: 10px;
+}
+
+.notice,
+.fallback {
+  color: #344054;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.fallback-active {
+  color: #92400e;
+  font-weight: 700;
+}
+
+.block-card {
+  display: grid;
+  gap: 9px;
+  border: 1px solid #dce3ee;
+  border-radius: 8px;
+  background: #fbfcff;
+  padding: 12px;
+}
+
+.block-label {
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.block-heading {
+  color: #101828;
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
+.summary-text,
+.original-text {
+  color: #243043;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.keypoints-heading {
+  color: #475467;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.keypoints-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.keypoints-list li {
+  color: #344054;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.original-details {
+  border-top: 1px solid #eaecf0;
+  color: #536173;
+  padding-top: 8px;
+}
+
+.original-details summary {
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.original-text {
+  color: #536173;
+  font-size: 0.86rem;
+  margin-top: 8px;
 }

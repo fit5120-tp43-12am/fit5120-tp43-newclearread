@@ -11,12 +11,16 @@
       <header class="app-header">
         <p class="eyebrow">Clearead extension</p>
         <h1>Reading support</h1>
+        <p class="header-note">Pasted text is sent only when you click Summary.</p>
       </header>
 
       <section class="workspace" aria-labelledby="paste-heading">
         <div class="section-heading">
           <h2 id="paste-heading">Paste text</h2>
-          <span id="text-count" class="count" aria-live="polite">0 words</span>
+          <div class="count-group" aria-live="polite">
+            <span id="word-count" class="count">0 words</span>
+            <span id="char-count" class="count">0 / 50,000 chars</span>
+          </div>
         </div>
 
         <label class="input-label" for="source-text">Text to review</label>
@@ -24,23 +28,49 @@
           id="source-text"
           class="text-input"
           rows="10"
-          placeholder="Paste a paragraph here to prepare it for future simplify and summary tools."
+          maxlength="52000"
+          placeholder="Paste text to summarize with Clearead."
         ></textarea>
+        <p id="validation-message" class="validation-message" aria-live="polite">
+          Paste up to 50,000 characters. Nothing is sent while you type.
+        </p>
 
         <div class="button-row">
           <button id="clear-text" class="secondary-button" type="button">Clear</button>
-          <button id="preview-text" class="primary-button" type="button">Preview</button>
+          <button
+            id="simplify-text"
+            class="secondary-button"
+            type="button"
+            disabled
+            title="No stable Clearead simplify endpoint is exposed yet."
+          >
+            Simplify
+          </button>
+          <button id="summary-text" class="primary-button" type="button">Summary</button>
         </div>
       </section>
 
+      <section
+        id="status-region"
+        class="status-region status-neutral"
+        role="status"
+        aria-live="polite"
+      >
+        Ready for pasted text.
+      </section>
+
       <section class="result-panel" aria-labelledby="result-heading">
-        <h2 id="result-heading">Placeholder result</h2>
-        <p id="result-message" class="result-message">
-          Paste text above to see the local placeholder state for future reading tools.
+        <div class="section-heading">
+          <h2 id="result-heading">Result</h2>
+          <span class="coming-soon">Simplify coming later</span>
+        </div>
+        <p id="result-empty" class="empty-state">
+          Summary results will appear here after the backend responds.
         </p>
+        <div id="result-content" class="result-content" hidden></div>
       </section>
     </main>
 
-    <script src="./sidepanel.js"></script>
+    <script type="module" src="./sidepanel.js"></script>
   </body>
 </html>
