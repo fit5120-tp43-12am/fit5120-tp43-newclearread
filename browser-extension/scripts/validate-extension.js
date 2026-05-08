@@ -5,10 +5,11 @@ const root = process.cwd();
 const manifestPath = join(root, "manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const errors = [];
-const allowedPermissions = new Set(["sidePanel"]);
+const allowedPermissions = new Set(["sidePanel", "activeTab", "scripting"]);
 const allowedHostPermissions = new Set([
   "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*",
 ]);
+const allowedPopupPath = "src/popup/popup.html";
 
 function requireValue(condition, message) {
   if (!condition) {
@@ -31,12 +32,20 @@ requireValue(manifest.manifest_version === 3, "manifest_version must be 3.");
 requireValue(manifest.name, "manifest.name is required.");
 requireValue(manifest.version, "manifest.version is required.");
 requireValue(
+  Number.parseInt(manifest.minimum_chrome_version, 10) >= 116,
+  "minimum_chrome_version must be 116 or newer because the popup uses chrome.sidePanel.open()."
+);
+requireValue(
   manifest.side_panel?.default_path,
   "manifest.side_panel.default_path is required."
 );
 requireValue(
+  manifest.action?.default_popup === allowedPopupPath,
+  `manifest.action.default_popup must be ${allowedPopupPath}.`
+);
+requireValue(
   manifest.background?.service_worker,
-  "manifest.background.service_worker is required for action-click side panel behavior."
+  "manifest.background.service_worker is required for popup-triggered side panel behavior."
 );
 requireValue(
   Array.isArray(manifest.permissions),
@@ -52,6 +61,14 @@ if (Array.isArray(manifest.permissions)) {
   requireValue(
     manifest.permissions.includes("sidePanel"),
     "The sidePanel permission is required."
+  );
+  requireValue(
+    manifest.permissions.includes("activeTab"),
+    "The activeTab permission is required for user-triggered page tools."
+  );
+  requireValue(
+    manifest.permissions.includes("scripting"),
+    "The scripting permission is required for programmatic page-tool injection."
   );
 }
 
@@ -72,17 +89,23 @@ if (Array.isArray(manifest.host_permissions)) {
     );
     requireValue(
       allowedHostPermissions.has(permission),
-      `Only the deployed Clearead backend host permission is allowed in Phase 3: ${permission}.`
+      `Only the deployed Clearead backend host permission is allowed in Phase 4: ${permission}.`
     );
   }
 }
-requireValue(!manifest.content_scripts, "Phase 3 must not register content scripts.");
-requireValue(!manifest.action?.default_popup, "Phase 3 must not register a popup.");
+requireValue(!manifest.content_scripts, "Phase 4 must not register static content scripts.");
 
 if (manifest.side_panel?.default_path) {
   requireValue(
     existsSync(join(root, manifest.side_panel.default_path)),
     "The configured side panel file must exist."
+  );
+}
+
+if (manifest.action?.default_popup) {
+  requireValue(
+    existsSync(join(root, manifest.action.default_popup)),
+    "The configured popup file must exist."
   );
 }
 
@@ -100,6 +123,14 @@ requireValue(
 requireValue(
   existsSync(join(root, "src", "services", "backend-api.js")),
   "The side panel backend API service module must exist."
+);
+requireValue(
+  existsSync(join(root, "src", "content", "page-tools.js")),
+  "The programmatically injected page tools content file must exist."
+);
+requireValue(
+  existsSync(join(root, "src", "popup", "popup.js")),
+  "The popup activation script must exist."
 );
 
 if (errors.length > 0) {

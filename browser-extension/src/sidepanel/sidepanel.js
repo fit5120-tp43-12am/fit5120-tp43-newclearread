@@ -14,8 +14,13 @@ const clearButton = document.querySelector("#clear-text");
 const statusRegion = document.querySelector("#status-region");
 const resultEmpty = document.querySelector("#result-empty");
 const resultContent = document.querySelector("#result-content");
+const applyReadableFontButton = document.querySelector("#apply-readable-font");
+const resetReadableFontButton = document.querySelector("#reset-readable-font");
+const toggleReadingRulerButton = document.querySelector("#toggle-reading-ruler");
+const pageToolsStatus = document.querySelector("#page-tools-status");
 
 let isLoading = false;
+let isPageToolLoading = false;
 
 function countWords(text) {
   const words = text.trim().match(/\S+/g);
@@ -32,12 +37,25 @@ function setStatus(type, message) {
   statusRegion.setAttribute("role", type === "error" ? "alert" : "status");
 }
 
+function setPageToolsStatus(type, message) {
+  pageToolsStatus.className = `page-tools-status status-${type}`;
+  pageToolsStatus.textContent = message;
+  pageToolsStatus.setAttribute("role", type === "error" ? "alert" : "status");
+}
+
 function setLoading(nextLoading) {
   isLoading = nextLoading;
   sourceText.disabled = nextLoading;
   clearButton.disabled = nextLoading;
   summaryButton.disabled = nextLoading || sourceText.value.length > MAX_TEXT_CHARS;
   summaryButton.textContent = nextLoading ? "Summarizing..." : "Summary";
+}
+
+function setPageToolLoading(nextLoading) {
+  isPageToolLoading = nextLoading;
+  applyReadableFontButton.disabled = nextLoading;
+  resetReadableFontButton.disabled = nextLoading;
+  toggleReadingRulerButton.disabled = nextLoading;
 }
 
 function updateCountsAndValidation() {
@@ -228,12 +246,66 @@ function clearText() {
   sourceText.focus();
 }
 
+function sendRuntimeMessage(message) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      const runtimeError = chrome.runtime.lastError;
+
+      if (runtimeError) {
+        reject(new Error(runtimeError.message));
+        return;
+      }
+
+      resolve(response);
+    });
+  });
+}
+
+async function runPageTool(action, loadingMessage) {
+  if (isPageToolLoading) {
+    return;
+  }
+
+  setPageToolLoading(true);
+  setPageToolsStatus("loading", loadingMessage);
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "clearead:page-tool",
+      action,
+    });
+
+    if (!response?.ok) {
+      throw new Error(response?.message || "Clearead page tools could not update this page.");
+    }
+
+    setPageToolsStatus("success", response.message || "Page tool applied.");
+  } catch (error) {
+    setPageToolsStatus(
+      "error",
+      error.message ||
+        "Clearead page tools could not run on this page. Try a normal webpage and reopen Clearead from the toolbar icon."
+    );
+  } finally {
+    setPageToolLoading(false);
+  }
+}
+
 sourceText.addEventListener("input", updateCountsAndValidation);
 summaryButton.addEventListener("click", summarizeText);
 simplifyButton.addEventListener("click", () => {
   setStatus("neutral", SIMPLIFY_UNAVAILABLE_MESSAGE);
 });
 clearButton.addEventListener("click", clearText);
+applyReadableFontButton.addEventListener("click", () => {
+  runPageTool("apply-readable-font", "Applying readable font to the active page...");
+});
+resetReadableFontButton.addEventListener("click", () => {
+  runPageTool("reset-readable-font", "Removing Clearead font styles from the active page...");
+});
+toggleReadingRulerButton.addEventListener("click", () => {
+  runPageTool("toggle-reading-ruler", "Toggling the reading ruler on the active page...");
+});
 
 updateCountsAndValidation();
 showEmptyResult();

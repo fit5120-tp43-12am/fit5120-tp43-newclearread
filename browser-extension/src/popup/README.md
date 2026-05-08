@@ -1,5 +1,7 @@
 # Popup
 
-This folder is reserved for a future browser action popup if the product needs one.
+This folder contains the small browser action popup used to activate Clearead for
+the current page before opening the side panel.
 
-Phase 1 uses the Chrome side panel instead, so no popup is registered in `manifest.json`.
+The popup does not collect or store data. Its button opens the side panel in
+response to the user's toolbar-click flow, then closes.

@@ -77,6 +77,7 @@ h2 {
 }
 
 .workspace,
+.page-tools,
 .result-panel,
 .status-region {
   border: 1px solid #d7dde8;
@@ -85,6 +86,7 @@ h2 {
 }
 
 .workspace,
+.page-tools,
 .result-panel {
   display: grid;
   gap: 12px;
@@ -156,6 +158,10 @@ h2 {
   gap: 8px;
 }
 
+.page-tool-actions {
+  justify-content: flex-start;
+}
+
 .primary-button,
 .secondary-button {
   min-height: 36px;
@@ -195,6 +201,14 @@ h2 {
   font-size: 0.9rem;
   line-height: 1.45;
   padding: 10px 12px;
+}
+
+.page-tools-status {
+  border-radius: 6px;
+  color: #344054;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  padding: 8px 10px;
 }
 
 .status-neutral {
