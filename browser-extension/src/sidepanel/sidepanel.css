@@ -1,6 +1,7 @@
 :root {
   color-scheme: light;
-  font-family: Inter, Arial, Helvetica, sans-serif;
+  --sidepanel-font-family: Inter, Arial, Helvetica, sans-serif;
+  font-family: var(--sidepanel-font-family);
   background: #f8f9fc;
   color: #0d1117;
 }
@@ -9,10 +10,33 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   background: #f8f9fc;
+  font-family: var(--sidepanel-font-family);
+}
+
+body.font-mode-verdana {
+  --sidepanel-font-family: Verdana, Geneva, sans-serif;
+}
+
+body.font-mode-opendyslexic {
+  --sidepanel-font-family: "OpenDyslexic", "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
+}
+
+body.font-mode-calibri {
+  --sidepanel-font-family: Calibri, "Gill Sans", "Trebuchet MS", sans-serif;
+}
+
+body.font-mode-verdana,
+body.font-mode-opendyslexic,
+body.font-mode-calibri {
+  letter-spacing: 0.01em;
 }
 
 button,
@@ -182,6 +206,103 @@ h2 {
   justify-content: flex-start;
 }
 
+.tool-group {
+  display: grid;
+  gap: 8px;
+}
+
+.tool-group + .tool-group {
+  border-top: 1px solid #eef1f6;
+  padding-top: 12px;
+}
+
+.tool-group-title {
+  color: #374151;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.tool-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tool-choice-button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid #e1e6ef;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #374151;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 0 12px;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.tool-choice-button:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #eef2f7;
+  color: #111827;
+}
+
+.tool-choice-button:focus-visible {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.tool-choice-button-active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.22);
+}
+
+.tool-choice-button-active:hover:not(:disabled) {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.selection-check {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tool-choice-button span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tool-choice-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 .dictionary-toggle {
   display: flex;
   align-items: center;
@@ -323,38 +444,9 @@ h2 {
   color: #b42318;
 }
 
-.coming-soon {
-  flex: 0 0 auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  color: #6b7280;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 8px;
-}
-
 .result-content {
   display: grid;
   gap: 12px;
-}
-
-.result-meta {
-  display: grid;
-  gap: 6px;
-  border-bottom: 1px solid #eaecf0;
-  padding-bottom: 10px;
-}
-
-.notice,
-.fallback {
-  color: #344054;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-.fallback-active {
-  color: #92400e;
-  font-weight: 700;
 }
 
 .block-card {
@@ -366,20 +458,13 @@ h2 {
   padding: 12px;
 }
 
-.block-label {
-  color: #2563eb;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
 .block-heading {
   color: #101828;
   font-size: 0.98rem;
   line-height: 1.35;
 }
 
-.summary-text,
-.original-text {
+.summary-text {
   color: #243043;
   font-size: 0.92rem;
   line-height: 1.55;
@@ -405,22 +490,4 @@ h2 {
   color: #344054;
   font-size: 0.9rem;
   line-height: 1.45;
-}
-
-.original-details {
-  border-top: 1px solid #eaecf0;
-  color: #536173;
-  padding-top: 8px;
-}
-
-.original-details summary {
-  cursor: pointer;
-  font-size: 0.84rem;
-  font-weight: 700;
-}
-
-.original-text {
-  color: #536173;
-  font-size: 0.86rem;
-  margin-top: 8px;
 }

@@ -11,12 +11,12 @@ This folder contains the Manifest V3 Clearead Chrome extension. Phase 7 keeps th
 - Shows live word and character counts.
 - Enforces the backend limit of 50,000 characters.
 - Sends text to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` only when the user clicks Summary.
-- Displays the returned notice, fallback status, summary blocks, key points, and collapsed original text.
+- Displays only returned summary text and key points in the result panel.
 - Shows clear loading, success, empty-input, over-limit, backend-unavailable, and backend-validation states.
 - Keeps Simplify visible but disabled because no stable public simplify endpoint is currently exposed by the backend.
-- Lets the user apply readable font styles to the active webpage after clicking Apply readable font.
-- Lets the user remove only Clearead-added readable font styles after clicking Reset page font.
-- Lets the user toggle a local reading ruler overlay on the active webpage after clicking Toggle reading ruler.
+- Lets the user choose Original, Verdana, OpenDyslexic, or Calibri page font styling from the side panel.
+- Applies wider line height, word spacing, and letter spacing with the chosen readable font.
+- Lets the user choose No ruler, Highlight, Lens, or Line guide reading ruler styles from the side panel. Lens is a local pointer-following magnifier that clones the current page DOM into a non-interactive overlay and enlarges the area under the pointer.
 - Lets the user opt in from the side panel, then select one word or a short phrase on a normal webpage, right-click it, and choose Explain with Clearead to show local guidance on the page.
 
 ## How To Load In Chrome
@@ -37,7 +37,7 @@ This folder contains the Manifest V3 Clearead Chrome extension. Phase 7 keeps th
 3. Click the Clearead toolbar icon, then click Open Clearead for this page.
 4. Paste text into the textarea.
 5. Click Summary.
-6. Confirm result blocks, summaries, key points, and collapsed original text render.
+6. Confirm the result appears above Page tools and renders only summaries and key points.
 7. Temporarily block network access or point a development build at an unavailable backend to confirm the side panel shows a useful backend-unavailable error.
 
 Developers may point a local-only test build at `http://localhost:8000`, but the normal demo path uses the deployed backend origin above.
@@ -48,10 +48,10 @@ Developers may point a local-only test build at `http://localhost:8000`, but the
 2. Open a normal webpage.
 3. Click the Clearead toolbar icon and confirm the popup opens instead of the side panel opening immediately.
 4. Click Open Clearead for this page and confirm the side panel opens.
-5. Click Apply readable font and confirm common text containers use a clearer local system font and modestly larger line height.
-6. Click Reset page font and confirm the Clearead-added font styles are removed.
-7. Click Toggle reading ruler and confirm the horizontal ruler appears and follows the pointer without blocking clicks.
-8. Click Toggle reading ruler again and confirm the ruler disappears.
+5. In Font, click Verdana, OpenDyslexic, and Calibri and confirm common text containers visibly change font and spacing.
+6. Click Original and confirm the Clearead-added font styles are removed.
+7. In Reading ruler, click Highlight, Lens, and Line guide and confirm each pointer-following ruler style appears without blocking clicks.
+8. Click No ruler and confirm the ruler disappears.
 9. Try a restricted page such as `chrome://extensions` and confirm Clearead says Chrome does not allow extensions to modify that page.
 10. If a normal webpage was opened before Clearead had current-tab access, confirm Clearead asks the user to open the target webpage, click the toolbar icon, and try the page tool again.
 
@@ -67,7 +67,7 @@ Developers may point a local-only test build at `http://localhost:8000`, but the
 8. Click it and confirm a local dictionary popover appears near the selection.
 9. Turn off Enable right-click dictionary.
 10. Select text and right-click again; confirm the Clearead dictionary item no longer appears.
-11. Confirm Summary, Apply readable font, Reset page font, and Toggle reading ruler still work.
+11. Confirm Summary, the font choices, No ruler, Highlight, local Lens magnification, Line guide, and the dictionary toggle still work.
 12. Try a restricted page such as `chrome://extensions` and confirm Clearead does not offer or cannot run page tools on that page.
 
 ## How To Test Website Links
@@ -103,13 +103,13 @@ Pasted text is not sent while the user types. When the user clicks Summary, the 
 { "text": "the pasted text" }
 ```
 
-The website frontend and the extension are separate frontend clients for the same Clearead backend processing route. The backend response is displayed in the side panel. The extension itself does not save pasted text, call OpenAI or other third-party AI APIs, call analytics or dictionary services, include API keys, read webpage content automatically, or load remote executable code.
+The website frontend and the extension are separate frontend clients for the same Clearead backend processing route. The side panel renders only the backend summary text and key points. The extension itself does not save pasted text, call OpenAI or other third-party AI APIs, call analytics or dictionary services, include API keys, read webpage content automatically, or load remote executable code.
 
 The website entry point is separate from the backend API origin. `https://clearead.azurewebsites.net/` is opened only when the user clicks Open website. It is not used as a host permission and the extension does not inspect that website tab.
 
-Page tools do not send page content to the backend. The toolbar popup is an explicit activation step for the current page. After the user clicks Open Clearead for this page, the side panel opens. When the user then clicks a page-tool button, the service worker checks the active tab, rejects known restricted browser pages, and injects `src/content/page-tools.js` from the packaged extension into that active tab. The injected script adds or removes Clearead-owned style and overlay elements only. It does not collect page text, send page text, persist state, or run automatically on every page.
+Page tools do not send page content to the backend. The toolbar popup is an explicit activation step for the current page. After the user clicks Open Clearead for this page, the side panel opens. The service worker can then query the active page to sync the side panel button state, and page-tool buttons can apply the selected tool. In both cases the service worker checks the active tab, rejects known restricted browser pages, and injects `src/content/page-tools.js` from the packaged extension only for that active tab when needed. The injected script adds or removes Clearead-owned style and overlay elements only. Lens mode clones the current page DOM locally inside the same tab for magnification, removes scripts and media sources from that clone, and keeps it non-interactive. Page tools do not send page text, persist page-tool state, or run automatically on every page.
 
-Right-click dictionary lookup uses Chrome's selection context menu only after the user turns on Enable right-click dictionary in the side panel. The menu is off by default. The extension stores only that on/off flag in `chrome.storage.session`, which is memory-backed and cleared when the extension is disabled, reloaded, updated, or when the browser restarts. When enabled, the menu item appears only when the user has selected text on a normal `http` or `https` webpage. After the user clicks the Clearead menu item, the service worker uses only `info.selectionText`, trims and normalizes whitespace, limits it to 80 characters, and explains the term with `src/services/local-dictionary.js`. The service worker then injects the local packaged page-tool script if needed and asks it to render a small on-page popover. The selected text is processed locally, is not sent to the Clearead backend, is not stored, and no surrounding page content is read.
+Right-click dictionary lookup uses Chrome's selection context menu only after the user turns on Enable right-click dictionary in the side panel. The menu is off by default. The extension stores only that on/off flag in `chrome.storage.session`, which is memory-backed and cleared when the extension is disabled, reloaded, updated, or when the browser restarts. When enabled, the menu item appears only when the user has selected text on a normal `http` or `https` webpage. After the user clicks the Clearead menu item, the service worker uses only `info.selectionText`, trims and normalizes whitespace, limits it to 80 characters, and explains the term with packaged local dictionary logic. The service worker then injects the local packaged page-tool script if needed and asks it to render a small on-page popover. The selected text is processed locally, is not sent to the Clearead backend, is not stored, and no surrounding page content is read.
 
 After a summary request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. Any API keys or secrets for those services must stay on the backend side and must not be stored in the extension.
 

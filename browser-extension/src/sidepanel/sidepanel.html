@@ -68,24 +68,105 @@
         class="status-region status-neutral"
         role="status"
         aria-live="polite"
-      >
-        Ready for pasted text.
+        hidden
+      ></section>
+
+      <section class="result-panel" aria-labelledby="result-heading" hidden>
+        <div class="section-heading">
+          <h2 id="result-heading">Result</h2>
+        </div>
+        <p id="result-empty" class="empty-state">
+          Summary results will appear here after the backend responds.
+        </p>
+        <div id="result-content" class="result-content" hidden></div>
       </section>
 
       <section class="page-tools" aria-labelledby="page-tools-heading">
         <div class="section-heading">
           <h2 id="page-tools-heading">Page tools</h2>
         </div>
-        <div class="button-row page-tool-actions">
-          <button id="apply-readable-font" class="secondary-button" type="button">
-            Apply readable font
-          </button>
-          <button id="reset-readable-font" class="secondary-button" type="button">
-            Reset page font
-          </button>
-          <button id="toggle-reading-ruler" class="secondary-button" type="button">
-            Toggle reading ruler
-          </button>
+        <div class="tool-group" aria-labelledby="font-tools-heading">
+          <h3 id="font-tools-heading" class="tool-group-title">Font</h3>
+          <div class="tool-choice-grid" role="group" aria-label="Page font">
+            <button
+              class="tool-choice-button tool-choice-button-active"
+              type="button"
+              data-font-mode="original"
+              aria-pressed="true"
+            >
+              <span>Original</span>
+              <span class="selection-check" aria-hidden="true">&#10003;</span>
+            </button>
+            <button
+              class="tool-choice-button"
+              type="button"
+              data-font-mode="verdana"
+              aria-pressed="false"
+            >
+              <span>Verdana</span>
+              <span class="selection-check" aria-hidden="true" hidden>&#10003;</span>
+            </button>
+            <button
+              class="tool-choice-button"
+              type="button"
+              data-font-mode="opendyslexic"
+              aria-pressed="false"
+            >
+              <span>OpenDyslexic</span>
+              <span class="selection-check" aria-hidden="true" hidden>&#10003;</span>
+            </button>
+            <button
+              class="tool-choice-button"
+              type="button"
+              data-font-mode="calibri"
+              aria-pressed="false"
+            >
+              <span>Calibri</span>
+              <span class="selection-check" aria-hidden="true" hidden>&#10003;</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="tool-group" aria-labelledby="ruler-tools-heading">
+          <h3 id="ruler-tools-heading" class="tool-group-title">Reading ruler</h3>
+          <div class="tool-choice-grid" role="group" aria-label="Reading ruler">
+            <button
+              class="tool-choice-button tool-choice-button-active"
+              type="button"
+              data-ruler-mode="none"
+              aria-pressed="true"
+            >
+              <span>No ruler</span>
+              <span class="selection-check" aria-hidden="true">&#10003;</span>
+            </button>
+            <button
+              class="tool-choice-button"
+              type="button"
+              data-ruler-mode="highlight"
+              aria-pressed="false"
+            >
+              <span>Highlight</span>
+              <span class="selection-check" aria-hidden="true" hidden>&#10003;</span>
+            </button>
+            <button
+              class="tool-choice-button"
+              type="button"
+              data-ruler-mode="lens"
+              aria-pressed="false"
+            >
+              <span>Lens</span>
+              <span class="selection-check" aria-hidden="true" hidden>&#10003;</span>
+            </button>
+            <button
+              class="tool-choice-button"
+              type="button"
+              data-ruler-mode="line"
+              aria-pressed="false"
+            >
+              <span>Line guide</span>
+              <span class="selection-check" aria-hidden="true" hidden>&#10003;</span>
+            </button>
+          </div>
         </div>
         <p
           id="page-tools-status"
@@ -113,17 +194,6 @@
         >
           Turn this on for this browser session, then select text on a webpage and right-click it.
         </p>
-      </section>
-
-      <section class="result-panel" aria-labelledby="result-heading">
-        <div class="section-heading">
-          <h2 id="result-heading">Result</h2>
-          <span class="coming-soon">Simplify coming later</span>
-        </div>
-        <p id="result-empty" class="empty-state">
-          Summary results will appear here after the backend responds.
-        </p>
-        <div id="result-content" class="result-content" hidden></div>
       </section>
     </main>
 

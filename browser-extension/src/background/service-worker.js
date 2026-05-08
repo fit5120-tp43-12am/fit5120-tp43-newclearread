@@ -1,4 +1,108 @@
-import { explainLocalTerm, normaliseLookupTerm } from "../services/local-dictionary.js";
+const MAX_LOOKUP_TERM_CHARS = 80;
+const LOCAL_DICTIONARY_GUIDANCE_NOTE =
+  "Local guidance only. This is not a full dictionary service.";
+const LOCAL_DICTIONARY_FALLBACK_MEANING =
+  "This looks like a word or phrase that may need context. Try reading the sentence around it and replacing it with a simpler phrase.";
+const LOCAL_DICTIONARY_GLOSSARY = new Map([
+  [
+    "dyslexia",
+    {
+      meaning:
+        "A learning difference that can make reading, spelling, and word recognition harder.",
+      parts: ["dys-: difficult", "lexia: words or reading"],
+    },
+  ],
+  [
+    "accessibility",
+    {
+      meaning:
+        "The practice of designing information, tools, and spaces so more people can use them.",
+      parts: ["access: ability to use or enter", "-ibility: condition or quality"],
+    },
+  ],
+  [
+    "cognition",
+    {
+      meaning:
+        "The mental process of learning, understanding, remembering, and using information.",
+      parts: ["cognit: know or learn", "-ion: action or process"],
+    },
+  ],
+  [
+    "cognitive",
+    {
+      meaning: "Related to thinking, learning, memory, attention, or understanding.",
+      parts: ["cognit: know or learn", "-ive: related to"],
+    },
+  ],
+  [
+    "comprehension",
+    {
+      meaning: "Understanding the meaning of what you read, hear, or see.",
+      parts: ["com-: together", "prehend: grasp", "-ion: action or process"],
+    },
+  ],
+  [
+    "intervention",
+    {
+      meaning:
+        "A planned action used to help improve a situation or support a person's needs.",
+      parts: ["inter-: between", "vene: come", "-tion: action or process"],
+    },
+  ],
+  [
+    "significant",
+    {
+      meaning: "Important enough to notice, measure, or affect the result.",
+      parts: ["sign: mark or meaning", "-ficant: making or causing"],
+    },
+  ],
+  [
+    "methodology",
+    {
+      meaning:
+        "The planned methods and rules used to study a question or complete research.",
+      parts: ["method: planned way", "-ology: study of"],
+    },
+  ],
+  [
+    "misinterpretation",
+    {
+      meaning: "An incorrect understanding of a word, message, result, or situation.",
+      parts: ["mis-: wrong", "interpret: explain meaning", "-ation: action or result"],
+    },
+  ],
+]);
+
+function normaliseLookupTerm(term) {
+  return String(term || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_LOOKUP_TERM_CHARS);
+}
+
+function explainLocalTerm(term) {
+  const normalizedTerm = normaliseLookupTerm(term);
+  const glossaryEntry = LOCAL_DICTIONARY_GLOSSARY.get(normalizedTerm.toLowerCase());
+
+  if (!normalizedTerm) {
+    return {
+      ok: false,
+      term: "",
+      message: "Select one word or a short phrase on the page, then try again.",
+      note: LOCAL_DICTIONARY_GUIDANCE_NOTE,
+    };
+  }
+
+  return {
+    ok: true,
+    term: normalizedTerm,
+    meaning: glossaryEntry?.meaning || LOCAL_DICTIONARY_FALLBACK_MEANING,
+    parts: glossaryEntry?.parts || [],
+    matchedLocalGlossary: Boolean(glossaryEntry),
+    note: LOCAL_DICTIONARY_GUIDANCE_NOTE,
+  };
+}
 
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: false })
@@ -7,7 +111,7 @@ chrome.sidePanel
   });
 
 const PAGE_TOOL_REQUEST_TYPE = "clearead:page-tool";
-const PAGE_TOOL_COMMAND_TYPE = "clearead:page-tool-command";
+const PAGE_TOOL_COMMAND_TYPE = "clearead:page-tool-command-v6";
 const OPEN_SIDE_PANEL_REQUEST_TYPE = "clearead:open-side-panel";
 const SET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:set-dictionary-enabled";
 const GET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:get-dictionary-enabled";
@@ -22,6 +126,9 @@ const ACTIVE_TAB_ACCESS_MESSAGE =
 const GENERIC_PAGE_TOOL_MESSAGE =
   "Clearead page tools could not run on this page. Try a normal webpage and reopen Clearead from the toolbar icon.";
 const PAGE_TOOL_ACTIONS = new Set([
+  "get-page-tool-state",
+  "set-readable-font",
+  "set-reading-ruler",
   "apply-readable-font",
   "reset-readable-font",
   "toggle-reading-ruler",
@@ -196,11 +303,28 @@ async function handlePageToolRequest(message) {
   }
 
   try {
+    if (message.action === "get-page-tool-state") {
+      try {
+        const existingResponse = await chrome.tabs.sendMessage(tab.id, {
+          type: PAGE_TOOL_COMMAND_TYPE,
+          action: message.action,
+        });
+
+        if (existingResponse?.ok) {
+          return existingResponse;
+        }
+      } catch {
+        // The page may not have the packaged script yet. Fall through to inject it.
+      }
+    }
+
     await injectPageTools(tab.id);
 
     const response = await chrome.tabs.sendMessage(tab.id, {
       type: PAGE_TOOL_COMMAND_TYPE,
       action: message.action,
+      fontMode: message.fontMode,
+      rulerMode: message.rulerMode,
     });
 
     if (!response?.ok) {

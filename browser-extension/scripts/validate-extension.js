@@ -103,10 +103,6 @@ requireValue(
   "manifest.background.service_worker is required for popup-triggered side panel behavior."
 );
 requireValue(
-  manifest.background?.type === "module",
-  "manifest.background.type must be module so the service worker can import local helpers."
-);
-requireValue(
   Array.isArray(manifest.permissions),
   "manifest.permissions must be an array."
 );
@@ -177,10 +173,25 @@ if (manifest.action?.default_popup) {
 }
 
 if (manifest.background?.service_worker) {
+  const backgroundServiceWorkerPath = join(root, manifest.background.service_worker);
+
   requireValue(
-    existsSync(join(root, manifest.background.service_worker)),
+    existsSync(backgroundServiceWorkerPath),
     "The configured background service worker must exist."
   );
+
+  if (existsSync(backgroundServiceWorkerPath)) {
+    const backgroundServiceWorkerSource = readFileSync(backgroundServiceWorkerPath, "utf8");
+
+    requireValue(
+      !/^\s*import\s/m.test(backgroundServiceWorkerSource),
+      "The background service worker must stay classic and avoid static import statements."
+    );
+    requireValue(
+      !/^\s*export\s/m.test(backgroundServiceWorkerSource),
+      "The background service worker must stay classic and avoid export statements."
+    );
+  }
 }
 
 requireValue(

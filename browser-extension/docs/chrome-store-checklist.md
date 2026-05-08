@@ -23,7 +23,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 ## Remote Code
 
 - [x] Uses local HTML, CSS, and JavaScript only.
-- [x] Uses JavaScript modules and page-tool code packaged with the extension.
+- [x] Uses only JavaScript and page-tool code packaged with the extension.
 - [x] Injects only local packaged code into the active tab after a user clicks a page-tool control.
 - [x] Does not load scripts from a CDN.
 - [x] Does not use `eval` or dynamic remote executable code.
@@ -35,8 +35,9 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [x] Pasted text is sent only after the user clicks Summary.
 - [x] Pasted text is sent to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text`.
 - [x] Text is not sent automatically while typing.
-- [x] Webpage content is not read automatically.
+- [x] Webpage content is not read automatically. Page tools run only after user activation.
 - [x] Page tools do not send webpage content to the backend.
+- [x] Lens magnification uses a local non-interactive page clone only inside the current tab and removes scripts/media sources from the clone.
 - [x] Page tools run only after the user activates Clearead from the toolbar popup and clicks a side panel page-tool control.
 - [x] Right-click dictionary is off by default and appears only after the user enables it in the side panel.
 - [x] Selected-word lookup reads only Chrome-provided selected text after the user clicks the Clearead right-click menu item.
@@ -77,7 +78,8 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [ ] Test popup button opens the side panel and closes the popup.
 - [ ] Test Summary against the deployed backend.
 - [ ] Test a development build with an unavailable backend to verify the error state.
-- [ ] Test Apply readable font, Reset page font, and Toggle reading ruler on normal webpages.
+- [ ] Test Original, Verdana, OpenDyslexic, Calibri, No ruler, Highlight, local Lens magnification, and Line guide on normal webpages.
+- [ ] Test that closing and reopening the side panel syncs Font and Reading ruler button state with the actual active page.
 - [ ] Test right-click dictionary default-off behavior, side panel enablement, known and unknown selections, and disabling again on normal webpages.
 - [ ] Test Open website links from the popup and side panel.
 - [ ] Test restricted pages such as `chrome://extensions` for the message: "Chrome does not allow extensions to modify this page. Try a normal webpage."

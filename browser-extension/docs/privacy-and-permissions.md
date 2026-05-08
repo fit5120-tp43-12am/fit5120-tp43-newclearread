@@ -8,7 +8,7 @@ The page tools can modify the currently active webpage after the user activates 
 
 The popup and side panel can open the full Clearead website at `https://clearead.azurewebsites.net/` when the user clicks Open website. This is a normal browser link, not a background data transfer.
 
-The extension does not collect browsing history, surrounding page content, analytics, account information, cookies, files, screenshots, or telemetry.
+The extension does not collect browsing history, analytics, account information, cookies, files, screenshots, or telemetry. Page tools may inspect or clone the active page DOM locally inside the current tab only to apply visible reading support tools. That page content is not sent to the Clearead backend, not sent to third parties, and not stored.
 
 ## Does Pasted Text Leave The Browser?
 
@@ -25,16 +25,12 @@ When Summary is clicked, the side panel sends:
 - Text source: the text manually pasted into the side panel
 - Purpose: ask the Clearead backend to segment and summarize the pasted text
 
-The response displayed in the side panel may include:
+The side panel displays only:
 
-- `notice`
-- `usedFallback`
-- `fallbackReason`
 - `blocks[].summary`
 - `blocks[].keyPoints`
-- `blocks[].originalText`
 
-The original text is shown in a collapsed section so the generated summary remains readable.
+The backend response can include extra fields such as notice, fallback status, and original text, but those extra fields are not rendered in the result panel.
 
 ## Selected-Word Lookup
 
@@ -42,17 +38,17 @@ The right-click dictionary menu is off by default. The side panel includes an En
 
 When the enabled user right-clicks a webpage selection and clicks the Clearead dictionary menu item, Chrome passes the selected text to the service worker as `info.selectionText`. The service worker normalizes whitespace, trims it, and caps it at 80 characters.
 
-The selected text is then explained locally by `src/services/local-dictionary.js`. The helper uses a small built-in glossary for demo words and a conservative fallback for unknown words. The service worker injects the local packaged page-tool script only when needed so it can render the dictionary popover on the clicked page.
+The selected text is then explained locally by packaged dictionary logic. It uses a small built-in glossary for demo words and a conservative fallback for unknown words. The service worker injects the local packaged page-tool script only when needed so it can render the dictionary popover on the clicked page.
 
 Selected text is not sent to the Clearead backend, not sent to any third party, not stored, and not used to read surrounding page content. No lookup runs automatically while the user selects text. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, which keeps the menu stable while the browser session is active and is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
 
 ## Page Tools
 
-Page tools run only after the user opens the toolbar popup, clicks Open Clearead for this page, and then clicks a side panel page-tool control.
+Page tools run only after the user opens the toolbar popup and clicks Open Clearead for this page. The side panel may query the active page to sync button state, and user clicks on page-tool controls can apply or remove visible tools.
 
-For Apply readable font, Reset page font, and Toggle reading ruler, the extension service worker queries the active tab, rejects known restricted browser pages, and uses `chrome.scripting.executeScript` to inject the local packaged file `src/content/page-tools.js` into the active tab. The script adds or removes Clearead-owned style and overlay elements.
+For the Font chooser and Reading ruler chooser, the extension service worker queries the active tab, rejects known restricted browser pages, and uses `chrome.scripting.executeScript` to inject the local packaged file `src/content/page-tools.js` into the active tab. The script adds or removes Clearead-owned style and overlay elements.
 
-Readable font and reading ruler tools do not call the backend, do not send page content anywhere, do not read selected text, do not persist settings, and do not run automatically on every page. The reading ruler is local to the current page and disappears when toggled off or when the page reloads.
+Readable font and reading ruler tools do not call the backend, do not send page content anywhere, do not read selected text, do not persist settings, and do not run automatically on every page. The reading ruler is local to the current page and disappears when toggled off or when the page reloads. Lens mode clones the current page DOM into a local, non-interactive overlay in the same tab, removes scripts and media sources from that clone, and enlarges the area under the pointer. The cloned content stays in the current page DOM only, is not stored, and is not sent anywhere.
 
 Unsupported pages are expected. Chrome blocks extension scripting on `chrome://`, `edge://`, `about:`, Chrome Web Store pages, extension pages, some PDF viewers, and other restricted contexts. The side panel shows a friendly unsupported-page error for these cases where possible.
 
@@ -72,7 +68,7 @@ Open website links in the popup and side panel point to `https://clearead.azurew
 
 ## Storage
 
-The extension does not save pasted text or selected text. It uses `chrome.storage.session` only for one right-click dictionary enabled boolean. It does not use `chrome.storage.local`, `chrome.storage.sync`, localStorage, indexedDB, cookies, or a custom cache for pasted content, selected text, or page-tool state.
+The extension does not save pasted text or selected text. It uses `chrome.storage.session` only for one right-click dictionary enabled boolean. It does not use `chrome.storage.local`, `chrome.storage.sync`, localStorage, indexedDB, cookies, or a custom cache for pasted content, selected text, or page-tool state. Page-tool button state is synchronized by querying the current active page, not by storing page content or preferences.
 
 ## Secrets And Remote Code
 
@@ -92,7 +88,7 @@ Clearead requests `activeTab` so a user action can grant temporary access to the
 
 ### `scripting`
 
-Clearead requests `scripting` so it can programmatically inject the local packaged page-tool script into the active tab only after the user clicks a page-tool button.
+Clearead requests `scripting` so it can programmatically inject the local packaged page-tool script into the active tab only after the user opens Clearead for the page and uses or syncs page tools.
 
 ### `contextMenus`
 

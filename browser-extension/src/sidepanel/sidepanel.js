@@ -13,19 +13,27 @@ const summaryButton = document.querySelector("#summary-text");
 const simplifyButton = document.querySelector("#simplify-text");
 const clearButton = document.querySelector("#clear-text");
 const statusRegion = document.querySelector("#status-region");
+const resultPanel = document.querySelector(".result-panel");
 const resultEmpty = document.querySelector("#result-empty");
 const resultContent = document.querySelector("#result-content");
-const applyReadableFontButton = document.querySelector("#apply-readable-font");
-const resetReadableFontButton = document.querySelector("#reset-readable-font");
-const toggleReadingRulerButton = document.querySelector("#toggle-reading-ruler");
+const fontModeButtons = Array.from(document.querySelectorAll("[data-font-mode]"));
+const rulerModeButtons = Array.from(document.querySelectorAll("[data-ruler-mode]"));
 const pageToolsStatus = document.querySelector("#page-tools-status");
 const enableDictionaryCheckbox = document.querySelector("#enable-dictionary");
 const dictionaryStatus = document.querySelector("#dictionary-status");
 const openWebsiteLink = document.querySelector("#open-clearead-website");
+const SIDE_PANEL_FONT_CLASSES = [
+  "font-mode-original",
+  "font-mode-verdana",
+  "font-mode-opendyslexic",
+  "font-mode-calibri",
+];
 
 let isLoading = false;
 let isPageToolLoading = false;
 let isDictionaryToggleLoading = false;
+let activeFontMode = "original";
+let activeRulerMode = "none";
 
 function countWords(text) {
   const words = text.trim().match(/\S+/g);
@@ -36,7 +44,14 @@ function formatNumber(value) {
   return new Intl.NumberFormat("en").format(value);
 }
 
+function hideStatus() {
+  statusRegion.hidden = true;
+  statusRegion.textContent = "";
+  statusRegion.setAttribute("role", "status");
+}
+
 function setStatus(type, message) {
+  statusRegion.hidden = false;
   statusRegion.className = `status-region status-${type}`;
   statusRegion.textContent = message;
   statusRegion.setAttribute("role", type === "error" ? "alert" : "status");
@@ -54,6 +69,30 @@ function setDictionaryStatus(type, message) {
   dictionaryStatus.setAttribute("role", type === "error" ? "alert" : "status");
 }
 
+function setChoiceButtonState(buttons, dataKey, activeValue) {
+  buttons.forEach((button) => {
+    const isActive = button.dataset[dataKey] === activeValue;
+    button.classList.toggle("tool-choice-button-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+
+    const check = button.querySelector(".selection-check");
+    if (check) {
+      check.hidden = !isActive;
+    }
+  });
+}
+
+function updatePageToolButtonStates() {
+  setChoiceButtonState(fontModeButtons, "fontMode", activeFontMode);
+  setChoiceButtonState(rulerModeButtons, "rulerMode", activeRulerMode);
+}
+
+function applySidePanelFontMode(fontMode) {
+  activeFontMode = fontMode;
+  document.body.classList.remove(...SIDE_PANEL_FONT_CLASSES);
+  document.body.classList.add(`font-mode-${fontMode}`);
+}
+
 function setLoading(nextLoading) {
   isLoading = nextLoading;
   sourceText.disabled = nextLoading;
@@ -64,9 +103,12 @@ function setLoading(nextLoading) {
 
 function setPageToolLoading(nextLoading) {
   isPageToolLoading = nextLoading;
-  applyReadableFontButton.disabled = nextLoading;
-  resetReadableFontButton.disabled = nextLoading;
-  toggleReadingRulerButton.disabled = nextLoading;
+  fontModeButtons.forEach((button) => {
+    button.disabled = nextLoading;
+  });
+  rulerModeButtons.forEach((button) => {
+    button.disabled = nextLoading;
+  });
 }
 
 function setDictionaryToggleLoading(nextLoading) {
@@ -99,6 +141,10 @@ function updateCountsAndValidation() {
   if (!isLoading) {
     summaryButton.disabled = overLimit;
   }
+
+  if (!isLoading && !text.trim() && statusRegion.textContent) {
+    hideStatus();
+  }
 }
 
 function clearElement(element) {
@@ -117,35 +163,23 @@ function appendTextElement(parent, tagName, className, text) {
 
 function showEmptyResult(message = "Summary results will appear here after the backend responds.") {
   clearElement(resultContent);
+  resultPanel.hidden = false;
   resultContent.hidden = true;
   resultEmpty.hidden = false;
   resultEmpty.textContent = message;
 }
 
+function hideResult() {
+  clearElement(resultContent);
+  resultPanel.hidden = true;
+  resultContent.hidden = true;
+  resultEmpty.hidden = false;
+  resultEmpty.textContent = "Summary results will appear here after the backend responds.";
+}
+
 function renderSummaryResult(data) {
   clearElement(resultContent);
-
-  const meta = document.createElement("div");
-  meta.className = "result-meta";
-
-  if (data.notice) {
-    appendTextElement(meta, "p", "notice", data.notice);
-  }
-
-  if (typeof data.usedFallback === "boolean") {
-    appendTextElement(
-      meta,
-      "p",
-      data.usedFallback ? "fallback fallback-active" : "fallback",
-      data.usedFallback
-        ? `Fallback used: yes${data.fallbackReason ? ` (${data.fallbackReason})` : ""}`
-        : "Fallback used: no"
-    );
-  }
-
-  if (meta.childElementCount > 0) {
-    resultContent.appendChild(meta);
-  }
+  resultPanel.hidden = false;
 
   const blocks = Array.isArray(data.blocks) ? data.blocks : [];
 
@@ -163,7 +197,6 @@ function renderSummaryResult(data) {
     card.className = "block-card";
 
     const blockNumber = block.id ?? index + 1;
-    appendTextElement(card, "p", "block-label", `Block ${blockNumber}`);
     appendTextElement(card, "h3", "block-heading", "Summary");
     appendTextElement(
       card,
@@ -185,18 +218,6 @@ function renderSummaryResult(data) {
       card.appendChild(list);
     } else {
       appendTextElement(card, "p", "secondary-text", "No key points returned.");
-    }
-
-    if (block.originalText) {
-      const details = document.createElement("details");
-      details.className = "original-details";
-
-      const summary = document.createElement("summary");
-      summary.textContent = "Original text";
-      details.appendChild(summary);
-
-      appendTextElement(details, "p", "original-text", block.originalText);
-      card.appendChild(details);
     }
 
     resultContent.appendChild(card);
@@ -233,7 +254,7 @@ async function summarizeText() {
 
   const text = validateTextForSummary();
   if (!text) {
-    showEmptyResult();
+    hideResult();
     return;
   }
 
@@ -257,8 +278,8 @@ async function summarizeText() {
 function clearText() {
   sourceText.value = "";
   updateCountsAndValidation();
-  showEmptyResult();
-  setStatus("neutral", "Ready for pasted text.");
+  hideResult();
+  hideStatus();
   sourceText.focus();
 }
 
@@ -277,9 +298,9 @@ function sendRuntimeMessage(message) {
   });
 }
 
-async function runPageTool(action, loadingMessage) {
+async function runPageTool(action, loadingMessage, payload = {}) {
   if (isPageToolLoading) {
-    return;
+    return null;
   }
 
   setPageToolLoading(true);
@@ -289,6 +310,7 @@ async function runPageTool(action, loadingMessage) {
     const response = await sendRuntimeMessage({
       type: "clearead:page-tool",
       action,
+      ...payload,
     });
 
     if (!response?.ok) {
@@ -296,11 +318,75 @@ async function runPageTool(action, loadingMessage) {
     }
 
     setPageToolsStatus("success", response.message || "Page tool applied.");
+    return response;
   } catch (error) {
     setPageToolsStatus(
       "error",
       error.message ||
         "Clearead page tools could not run on this page. Try a normal webpage and reopen Clearead from the toolbar icon."
+    );
+    return null;
+  } finally {
+    setPageToolLoading(false);
+  }
+}
+
+async function setReadableFontMode(fontMode) {
+  const response = await runPageTool(
+    "set-readable-font",
+    fontMode === "original"
+      ? "Restoring the original page font..."
+      : "Applying readable font settings to the active page...",
+    { fontMode }
+  );
+
+  if (response?.ok) {
+    applySidePanelFontMode(response.fontMode || fontMode);
+    updatePageToolButtonStates();
+  }
+}
+
+async function setReadingRulerMode(rulerMode) {
+  const response = await runPageTool(
+    "set-reading-ruler",
+    rulerMode === "none"
+      ? "Turning off the reading ruler..."
+      : "Applying the reading ruler to the active page...",
+    { rulerMode }
+  );
+
+  if (response?.ok) {
+    activeRulerMode = response.rulerMode || rulerMode;
+    updatePageToolButtonStates();
+  }
+}
+
+async function syncPageToolState() {
+  if (isPageToolLoading) {
+    return;
+  }
+
+  setPageToolLoading(true);
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "clearead:page-tool",
+      action: "get-page-tool-state",
+    });
+
+    if (!response?.ok) {
+      throw new Error(response?.message || "Clearead could not read the current page tools.");
+    }
+
+    applySidePanelFontMode(response.fontMode || "original");
+    activeRulerMode = response.rulerMode || "none";
+    updatePageToolButtonStates();
+    setPageToolsStatus("success", response.message || "Page tools synced with the current page.");
+  } catch (error) {
+    setPageToolsStatus(
+      "error",
+      error.message ||
+        "Clearead could not read current page tools. Open the target webpage from the toolbar icon, then try again."
     );
   } finally {
     setPageToolLoading(false);
@@ -383,18 +469,23 @@ simplifyButton.addEventListener("click", () => {
   setStatus("neutral", SIMPLIFY_UNAVAILABLE_MESSAGE);
 });
 clearButton.addEventListener("click", clearText);
-applyReadableFontButton.addEventListener("click", () => {
-  runPageTool("apply-readable-font", "Applying readable font to the active page...");
+fontModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setReadableFontMode(button.dataset.fontMode);
+  });
 });
-resetReadableFontButton.addEventListener("click", () => {
-  runPageTool("reset-readable-font", "Removing Clearead font styles from the active page...");
-});
-toggleReadingRulerButton.addEventListener("click", () => {
-  runPageTool("toggle-reading-ruler", "Toggling the reading ruler on the active page...");
+rulerModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setReadingRulerMode(button.dataset.rulerMode);
+  });
 });
 enableDictionaryCheckbox.addEventListener("change", updateDictionaryEnabledState);
 openWebsiteLink.href = CLEAREAD_WEBSITE_URL;
 
 updateCountsAndValidation();
-showEmptyResult();
+hideResult();
+hideStatus();
+applySidePanelFontMode(activeFontMode);
+updatePageToolButtonStates();
+syncPageToolState();
 loadDictionaryEnabledState();
