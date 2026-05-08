@@ -9,7 +9,8 @@
     "default_popup": "src/popup/popup.html"
   },
   "background": {
-    "service_worker": "src/background/service-worker.js"
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
   },
   "side_panel": {
     "default_path": "src/sidepanel/sidepanel.html"
@@ -17,7 +18,9 @@
   "permissions": [
     "sidePanel",
     "activeTab",
-    "scripting"
+    "scripting",
+    "contextMenus",
+    "storage"
   ],
   "host_permissions": [
     "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"

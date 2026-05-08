@@ -78,6 +78,7 @@ h2 {
 
 .workspace,
 .page-tools,
+.dictionary-panel,
 .result-panel,
 .status-region {
   border: 1px solid #d7dde8;
@@ -87,6 +88,7 @@ h2 {
 
 .workspace,
 .page-tools,
+.dictionary-panel,
 .result-panel {
   display: grid;
   gap: 12px;
@@ -162,6 +164,23 @@ h2 {
   justify-content: flex-start;
 }
 
+.dictionary-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #243043;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.dictionary-toggle input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: #2563eb;
+}
+
 .primary-button,
 .secondary-button {
   min-height: 36px;
@@ -204,6 +223,14 @@ h2 {
 }
 
 .page-tools-status {
+  border-radius: 6px;
+  color: #344054;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  padding: 8px 10px;
+}
+
+.dictionary-status {
   border-radius: 6px;
   color: #344054;
   font-size: 0.86rem;

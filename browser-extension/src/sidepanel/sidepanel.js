@@ -18,9 +18,12 @@ const applyReadableFontButton = document.querySelector("#apply-readable-font");
 const resetReadableFontButton = document.querySelector("#reset-readable-font");
 const toggleReadingRulerButton = document.querySelector("#toggle-reading-ruler");
 const pageToolsStatus = document.querySelector("#page-tools-status");
+const enableDictionaryCheckbox = document.querySelector("#enable-dictionary");
+const dictionaryStatus = document.querySelector("#dictionary-status");
 
 let isLoading = false;
 let isPageToolLoading = false;
+let isDictionaryToggleLoading = false;
 
 function countWords(text) {
   const words = text.trim().match(/\S+/g);
@@ -43,6 +46,12 @@ function setPageToolsStatus(type, message) {
   pageToolsStatus.setAttribute("role", type === "error" ? "alert" : "status");
 }
 
+function setDictionaryStatus(type, message) {
+  dictionaryStatus.className = `dictionary-status status-${type}`;
+  dictionaryStatus.textContent = message;
+  dictionaryStatus.setAttribute("role", type === "error" ? "alert" : "status");
+}
+
 function setLoading(nextLoading) {
   isLoading = nextLoading;
   sourceText.disabled = nextLoading;
@@ -56,6 +65,11 @@ function setPageToolLoading(nextLoading) {
   applyReadableFontButton.disabled = nextLoading;
   resetReadableFontButton.disabled = nextLoading;
   toggleReadingRulerButton.disabled = nextLoading;
+}
+
+function setDictionaryToggleLoading(nextLoading) {
+  isDictionaryToggleLoading = nextLoading;
+  enableDictionaryCheckbox.disabled = nextLoading;
 }
 
 function updateCountsAndValidation() {
@@ -291,6 +305,76 @@ async function runPageTool(action, loadingMessage) {
   }
 }
 
+async function loadDictionaryEnabledState() {
+  setDictionaryToggleLoading(true);
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "clearead:get-dictionary-enabled",
+    });
+
+    if (!response?.ok) {
+      throw new Error(response?.message || "Clearead could not read the dictionary setting.");
+    }
+
+    enableDictionaryCheckbox.checked = Boolean(response.enabled);
+    setDictionaryStatus(
+      response.enabled ? "success" : "neutral",
+      response.enabled
+        ? "Right-click dictionary is on for selected text on normal webpages."
+        : "Turn this on for this browser session, then select text on a webpage and right-click it."
+    );
+  } catch (error) {
+    enableDictionaryCheckbox.checked = false;
+    setDictionaryStatus(
+      "error",
+      error.message || "Clearead could not read the dictionary setting."
+    );
+  } finally {
+    setDictionaryToggleLoading(false);
+  }
+}
+
+async function updateDictionaryEnabledState() {
+  if (isDictionaryToggleLoading) {
+    return;
+  }
+
+  const nextEnabled = enableDictionaryCheckbox.checked;
+  setDictionaryToggleLoading(true);
+  setDictionaryStatus(
+    "loading",
+    nextEnabled ? "Turning on right-click dictionary..." : "Turning off right-click dictionary..."
+  );
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "clearead:set-dictionary-enabled",
+      enabled: nextEnabled,
+    });
+
+    if (!response?.ok) {
+      throw new Error(response?.message || "Clearead could not update the dictionary menu.");
+    }
+
+    enableDictionaryCheckbox.checked = Boolean(response.enabled);
+    setDictionaryStatus(
+      response.enabled ? "success" : "neutral",
+      response.enabled
+        ? "Right-click dictionary is on for selected text on normal webpages."
+        : "Turn this on for this browser session, then select text on a webpage and right-click it."
+    );
+  } catch (error) {
+    enableDictionaryCheckbox.checked = !nextEnabled;
+    setDictionaryStatus(
+      "error",
+      error.message || "Clearead could not update the dictionary menu."
+    );
+  } finally {
+    setDictionaryToggleLoading(false);
+  }
+}
+
 sourceText.addEventListener("input", updateCountsAndValidation);
 summaryButton.addEventListener("click", summarizeText);
 simplifyButton.addEventListener("click", () => {
@@ -306,6 +390,8 @@ resetReadableFontButton.addEventListener("click", () => {
 toggleReadingRulerButton.addEventListener("click", () => {
   runPageTool("toggle-reading-ruler", "Toggling the reading ruler on the active page...");
 });
+enableDictionaryCheckbox.addEventListener("change", updateDictionaryEnabledState);
 
 updateCountsAndValidation();
 showEmptyResult();
+loadDictionaryEnabledState();

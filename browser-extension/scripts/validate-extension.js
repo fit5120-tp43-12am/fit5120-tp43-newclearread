@@ -5,7 +5,13 @@ const root = process.cwd();
 const manifestPath = join(root, "manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const errors = [];
-const allowedPermissions = new Set(["sidePanel", "activeTab", "scripting"]);
+const allowedPermissions = new Set([
+  "sidePanel",
+  "activeTab",
+  "scripting",
+  "contextMenus",
+  "storage",
+]);
 const allowedHostPermissions = new Set([
   "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*",
 ]);
@@ -48,6 +54,10 @@ requireValue(
   "manifest.background.service_worker is required for popup-triggered side panel behavior."
 );
 requireValue(
+  manifest.background?.type === "module",
+  "manifest.background.type must be module so the service worker can import local helpers."
+);
+requireValue(
   Array.isArray(manifest.permissions),
   "manifest.permissions must be an array."
 );
@@ -70,6 +80,14 @@ if (Array.isArray(manifest.permissions)) {
     manifest.permissions.includes("scripting"),
     "The scripting permission is required for programmatic page-tool injection."
   );
+  requireValue(
+    manifest.permissions.includes("contextMenus"),
+    "The contextMenus permission is required for the right-click dictionary flow."
+  );
+  requireValue(
+    manifest.permissions.includes("storage"),
+    "The storage permission is required for session-only right-click dictionary enablement."
+  );
 }
 
 requireValue(
@@ -89,11 +107,11 @@ if (Array.isArray(manifest.host_permissions)) {
     );
     requireValue(
       allowedHostPermissions.has(permission),
-      `Only the deployed Clearead backend host permission is allowed in Phase 4: ${permission}.`
+      `Only the deployed Clearead backend host permission is allowed in Phase 5: ${permission}.`
     );
   }
 }
-requireValue(!manifest.content_scripts, "Phase 4 must not register static content scripts.");
+requireValue(!manifest.content_scripts, "Phase 5 must not register static content scripts.");
 
 if (manifest.side_panel?.default_path) {
   requireValue(
@@ -123,6 +141,10 @@ requireValue(
 requireValue(
   existsSync(join(root, "src", "services", "backend-api.js")),
   "The side panel backend API service module must exist."
+);
+requireValue(
+  existsSync(join(root, "src", "services", "local-dictionary.js")),
+  "The local selected-word dictionary service module must exist."
 );
 requireValue(
   existsSync(join(root, "src", "content", "page-tools.js")),

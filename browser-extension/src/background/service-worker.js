@@ -1,3 +1,5 @@
+import { explainLocalTerm, normaliseLookupTerm } from "../services/local-dictionary.js";
+
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: false })
   .catch((error) => {
@@ -7,7 +9,12 @@ chrome.sidePanel
 const PAGE_TOOL_REQUEST_TYPE = "clearead:page-tool";
 const PAGE_TOOL_COMMAND_TYPE = "clearead:page-tool-command";
 const OPEN_SIDE_PANEL_REQUEST_TYPE = "clearead:open-side-panel";
+const SET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:set-dictionary-enabled";
+const GET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:get-dictionary-enabled";
 const PAGE_TOOL_SCRIPT = "src/content/page-tools.js";
+const DICTIONARY_CONTEXT_MENU_ID = "clearead-explain-selection";
+const DICTIONARY_ENABLED_STORAGE_KEY = "cleareadDictionaryEnabled";
+const NORMAL_PAGE_URL_PATTERNS = ["http://*/*", "https://*/*"];
 const BROWSER_RESTRICTED_PAGE_MESSAGE =
   "Chrome does not allow extensions to modify this page. Try a normal webpage.";
 const ACTIVE_TAB_ACCESS_MESSAGE =
@@ -19,6 +26,82 @@ const PAGE_TOOL_ACTIONS = new Set([
   "reset-readable-font",
   "toggle-reading-ruler",
 ]);
+
+let isDictionaryEnabled = false;
+
+async function readDictionaryEnabled() {
+  const storedValues = await chrome.storage.session.get(DICTIONARY_ENABLED_STORAGE_KEY);
+  return Boolean(storedValues[DICTIONARY_ENABLED_STORAGE_KEY]);
+}
+
+async function writeDictionaryEnabled(enabled) {
+  await chrome.storage.session.set({
+    [DICTIONARY_ENABLED_STORAGE_KEY]: Boolean(enabled),
+  });
+}
+
+function removeDictionaryContextMenu() {
+  return new Promise((resolve) => {
+    chrome.contextMenus.remove(DICTIONARY_CONTEXT_MENU_ID, () => {
+      chrome.runtime.lastError;
+      resolve();
+    });
+  });
+}
+
+async function registerDictionaryContextMenu() {
+  await removeDictionaryContextMenu();
+
+  return new Promise((resolve, reject) => {
+    chrome.contextMenus.create({
+      id: DICTIONARY_CONTEXT_MENU_ID,
+      title: 'Explain "%s" with Clearead',
+      contexts: ["selection"],
+      documentUrlPatterns: NORMAL_PAGE_URL_PATTERNS,
+    }, () => {
+      const runtimeError = chrome.runtime.lastError;
+
+      if (runtimeError) {
+        reject(new Error(runtimeError.message));
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
+async function setDictionaryEnabled(nextEnabled) {
+  const enabled = Boolean(nextEnabled);
+
+  if (enabled) {
+    await registerDictionaryContextMenu();
+    await writeDictionaryEnabled(true);
+  } else {
+    await removeDictionaryContextMenu();
+    await writeDictionaryEnabled(false);
+  }
+
+  isDictionaryEnabled = enabled;
+
+  return {
+    ok: true,
+    enabled: isDictionaryEnabled,
+  };
+}
+
+async function syncDictionaryContextMenuFromSession() {
+  const enabled = await readDictionaryEnabled();
+
+  if (enabled) {
+    await registerDictionaryContextMenu();
+  } else {
+    await removeDictionaryContextMenu();
+  }
+
+  isDictionaryEnabled = enabled;
+  return enabled;
+}
 
 function isBrowserRestrictedPageUrl(url) {
   if (!url) {
@@ -94,6 +177,13 @@ async function getActiveTab() {
   return tab;
 }
 
+async function injectPageTools(tabId) {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: [PAGE_TOOL_SCRIPT],
+  });
+}
+
 async function handlePageToolRequest(message) {
   if (!PAGE_TOOL_ACTIONS.has(message.action)) {
     throw new Error("Clearead does not recognise that page tool action.");
@@ -106,10 +196,7 @@ async function handlePageToolRequest(message) {
   }
 
   try {
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: [PAGE_TOOL_SCRIPT],
-    });
+    await injectPageTools(tab.id);
 
     const response = await chrome.tabs.sendMessage(tab.id, {
       type: PAGE_TOOL_COMMAND_TYPE,
@@ -121,6 +208,35 @@ async function handlePageToolRequest(message) {
     }
 
     return response;
+  } catch (error) {
+    throw new Error(normalisePageToolError(error, tab.url));
+  }
+}
+
+async function showDictionaryPopover(tab, selectedText) {
+  if (!tab?.id) {
+    throw new Error("Clearead could not identify the tab for dictionary lookup.");
+  }
+
+  if (isBrowserRestrictedPageUrl(tab.url)) {
+    throw new Error(BROWSER_RESTRICTED_PAGE_MESSAGE);
+  }
+
+  const term = normaliseLookupTerm(selectedText);
+  const explanation = explainLocalTerm(term);
+
+  try {
+    await injectPageTools(tab.id);
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      type: PAGE_TOOL_COMMAND_TYPE,
+      action: "show-dictionary-popover",
+      explanation,
+    });
+
+    if (!response?.ok) {
+      throw new Error(response?.message || "Clearead could not show the dictionary popover.");
+    }
   } catch (error) {
     throw new Error(normalisePageToolError(error, tab.url));
   }
@@ -145,6 +261,39 @@ async function handleOpenSidePanelRequest(message) {
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === GET_DICTIONARY_ENABLED_REQUEST_TYPE) {
+    syncDictionaryContextMenuFromSession()
+      .then((enabled) => {
+        sendResponse({
+          ok: true,
+          enabled,
+        });
+      })
+      .catch((error) => {
+        sendResponse({
+          ok: false,
+          enabled: false,
+          message: error.message || "Clearead could not read the dictionary setting.",
+        });
+      });
+
+    return true;
+  }
+
+  if (message?.type === SET_DICTIONARY_ENABLED_REQUEST_TYPE) {
+    setDictionaryEnabled(message.enabled)
+      .then((response) => sendResponse(response))
+      .catch((error) => {
+        sendResponse({
+          ok: false,
+          enabled: isDictionaryEnabled,
+          message: error.message || "Clearead could not update the dictionary menu.",
+        });
+      });
+
+    return true;
+  }
+
   if (message?.type === OPEN_SIDE_PANEL_REQUEST_TYPE) {
     handleOpenSidePanelRequest(message)
       .then((response) => sendResponse(response))
@@ -172,4 +321,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     });
 
   return true;
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  setDictionaryEnabled(false).catch((error) => {
+    console.error("Clearead could not reset the dictionary context menu.", error);
+  });
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  syncDictionaryContextMenuFromSession().catch((error) => {
+    console.error("Clearead could not sync the dictionary context menu on startup.", error);
+  });
+});
+
+async function handleDictionaryContextMenuClick(info, tab) {
+  if (info.menuItemId !== DICTIONARY_CONTEXT_MENU_ID) {
+    return;
+  }
+
+  const enabled = await readDictionaryEnabled();
+  isDictionaryEnabled = enabled;
+
+  if (!enabled) {
+    await removeDictionaryContextMenu();
+    return;
+  }
+
+  await showDictionaryPopover(tab, info.selectionText);
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  handleDictionaryContextMenuClick(info, tab).catch((error) => {
+    console.error("Clearead could not show the dictionary popover.", error);
+  });
+});
+
+syncDictionaryContextMenuFromSession().catch((error) => {
+  console.error("Clearead could not sync the dictionary context menu.", error);
 });
