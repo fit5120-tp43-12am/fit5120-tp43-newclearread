@@ -2423,13 +2423,17 @@ kbd {
 
 /* ─────────────────────────────────────────
    STAGE 2 — Section Grid
-   Scrolls into view after Stage 1.
-   All sections sit inside a single container
-   box so they read as clear parallel siblings.
+   Fills the same viewport height as Stage 1
+   so the tree content is centred on screen
+   when the user scrolls to this section.
 ───────────────────────────────────────── */
 .stage-tree {
-  /* Tighter top gap — close the visual distance from Stage 1 */
-  padding: 24px 0 48px;
+  min-height: calc(100svh - 64px);   /* match Stage 1 height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;           /* vertically centre all children */
+  gap: 0;
+  padding: 0 0 40px;                 /* small bottom clearance only */
   scroll-snap-align: start;
 }
 
@@ -2536,7 +2540,8 @@ kbd {
   .tree-trunk { display: none; }
   .tree-root-node { max-width: 100%; }
   .tree-root-title { white-space: normal; max-width: 100%; }
-  .stage-tree { padding: 16px 0 32px; }
+  /* On mobile, auto height + flex-start is more natural than centred */
+  .stage-tree { min-height: auto; padding: 32px 0 40px; justify-content: flex-start; }
   .tree-container { padding: 14px; }
 }
 @media (max-width: 440px) {
