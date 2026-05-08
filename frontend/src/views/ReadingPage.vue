@@ -962,16 +962,15 @@ onUnmounted(() => {
               <span class="tree-root-title">{{ result.title || 'Document' }}</span>
             </div>
 
-            <!-- Trunk: vertical line from root node down to the crossbar -->
+            <!-- Short connector from root node to the sections container -->
             <div class="tree-trunk"></div>
 
             <!--
-              Section cards grid.
-              .tree-nodes::before creates the horizontal crossbar across the top.
-              .tree-node::before creates a short vertical branch from the crossbar
-              down into each card, giving the org-chart tree visual.
-              Clicking any card triggers openSection() to show the modal.
+              Sections container: a single bordered box that groups ALL cards.
+              This makes clear that every card is a parallel sibling — no hierarchy implied.
+              Inside, cards are laid out in a simple grid with no branch lines.
             -->
+            <div class="tree-container">
             <div class="tree-nodes">
               <div
                 v-for="block in result.blocks"
@@ -997,9 +996,10 @@ onUnmounted(() => {
                   <path d="M3 7h8M7 3.5l3.5 3.5L7 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
-            </div>
+            </div><!-- /tree-nodes -->
+            </div><!-- /tree-container -->
 
-          </div>
+          </div><!-- /stage-tree -->
 
         </div><!-- /result-state -->
 
@@ -2288,8 +2288,8 @@ kbd {
   max-width: 740px;
   margin: 0 auto;
   width: 100%;
-  /* Bottom padding: the input bar is hidden in result mode, so use smaller clearance */
-  padding: 48px 0 80px;
+  /* Bottom padding: leave enough room for the scroll-hint arrow */
+  padding: 48px 0 60px;
   scroll-snap-align: start;
 }
 
@@ -2422,11 +2422,14 @@ kbd {
 
 
 /* ─────────────────────────────────────────
-   STAGE 2 — Section Tree
-   Starts below the fold; scrolls into view.
+   STAGE 2 — Section Grid
+   Scrolls into view after Stage 1.
+   All sections sit inside a single container
+   box so they read as clear parallel siblings.
 ───────────────────────────────────────── */
 .stage-tree {
-  padding: 60px 0 48px;
+  /* Tighter top gap — close the visual distance from Stage 1 */
+  padding: 24px 0 48px;
   scroll-snap-align: start;
 }
 
@@ -2438,7 +2441,7 @@ kbd {
   border: 1.5px solid #c7d2fe;
   border-radius: 14px;
   font-size: 14.5px; font-weight: 700; color: #1e1b4b;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.10);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
   width: fit-content; margin: 0 auto; max-width: 90%;
 }
 .tree-root-icon { flex-shrink: 0; }
@@ -2446,62 +2449,61 @@ kbd {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px;
 }
 
-/* Trunk: vertical connector from root to crossbar */
+/* Short trunk: simple connector from root to the container box */
 .tree-trunk {
-  width: 2px; height: 36px;
-  background: linear-gradient(to bottom, #c7d2fe, #a5b4fc);
+  width: 2px; height: 20px;
+  background: #c7d2fe;
   margin: 0 auto;
 }
 
 /*
-  Section card grid.
-  ::before = horizontal crossbar across the top.
-  .tree-node::before = short vertical branch per card.
+  Container box — wraps ALL section cards in one visual unit.
+  This makes it unmistakably clear that every card is a peer,
+  NOT a child of another card.
+  A soft background + border draws the eye to the group as a whole.
 */
+.tree-container {
+  border: 1.5px solid #e0e7ff;
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(160deg, #fafbff 0%, #f5f4ff 100%);
+  box-shadow: 0 2px 16px rgba(99, 102, 241, 0.06);
+}
+
+/* Grid of section cards inside the container */
 .tree-nodes {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  position: relative;
-  padding-top: 36px;
+  gap: 12px;
+  /* No position: relative or padding-top needed — branch lines are gone */
 }
-/* Horizontal crossbar */
-.tree-nodes::before {
-  content: '';
-  position: absolute; top: 0;
-  left: 12.5%; right: 12.5%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #a5b4fc 25%, #818cf8 50%, #a5b4fc 75%, transparent);
-}
-/* Vertical branch per card */
-.tree-node::before {
-  content: '';
-  position: absolute; top: -36px; left: 50%; transform: translateX(-50%);
-  width: 2px; height: 36px;
-  background: linear-gradient(to bottom, #a5b4fc, #e0e7ff);
-}
+
+/* No crossbar pseudo-element */
+.tree-nodes::before { display: none; }
 
 /* Individual section card */
 .tree-node {
-  position: relative;
   display: flex; flex-direction: column; gap: 10px;
   padding: 18px 18px 16px 20px;
   background: #fff;
-  border: 1px solid #f0f0f2;
+  border: 1px solid #eef0f8;
   border-left: 3px solid #e0e7ff;
-  border-radius: 16px;
+  border-radius: 14px;
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   transition: border-left-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 .tree-node:hover {
   border-left-color: #6366f1;
-  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.14);
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.13);
   transform: translateY(-3px);
 }
 .tree-node:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
 
-/* Number badge: filled circle */
+/* No branch-line pseudo-element per card */
+.tree-node::before { display: none; }
+
+/* Number badge */
 .tree-node-num {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; flex-shrink: 0;
@@ -2528,15 +2530,14 @@ kbd {
 /* Responsive grid */
 @media (max-width: 1000px) {
   .tree-nodes { grid-template-columns: repeat(3, 1fr); }
-  .tree-nodes::before { left: calc(100% / 6); right: calc(100% / 6); }
 }
 @media (max-width: 700px) {
-  .tree-nodes { grid-template-columns: repeat(2, 1fr); padding-top: 0; }
-  .tree-nodes::before, .tree-node::before { display: none; }
+  .tree-nodes { grid-template-columns: repeat(2, 1fr); }
   .tree-trunk { display: none; }
   .tree-root-node { max-width: 100%; }
   .tree-root-title { white-space: normal; max-width: 100%; }
-  .stage-tree { padding: 40px 0 32px; }
+  .stage-tree { padding: 16px 0 32px; }
+  .tree-container { padding: 14px; }
 }
 @media (max-width: 440px) {
   .tree-nodes { grid-template-columns: 1fr; }
