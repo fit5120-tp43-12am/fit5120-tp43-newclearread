@@ -2,6 +2,9 @@
 
 This folder contains the packaged Chrome extension icon assets.
 
+The current icons are derived from the Clearead logo mark and match the website
+blue palette (`#2563eb`) used in the main navigation and hero actions.
+
 The current extension icon set includes:
 
 - `icon-16.png`: extension page favicon and small toolbar contexts.

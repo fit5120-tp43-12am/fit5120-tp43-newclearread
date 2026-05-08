@@ -1,27 +1,46 @@
 :root {
   color-scheme: light;
-  font-family: Arial, Verdana, Tahoma, sans-serif;
-  color: #1f2933;
-  background: #ffffff;
+  font-family: Inter, Arial, Verdana, Tahoma, sans-serif;
+  color: #0d1117;
+  background: #f4f5ff;
 }
 
 body {
-  width: 280px;
+  width: 300px;
   margin: 0;
+  background:
+    radial-gradient(ellipse 110% 80% at 0% 0%, rgba(147, 167, 255, 0.42) 0%, transparent 58%),
+    radial-gradient(ellipse 100% 70% at 100% 100%, rgba(255, 218, 180, 0.34) 0%, transparent 55%),
+    #f4f5ff;
 }
 
 .popup-shell {
   box-sizing: border-box;
   display: grid;
-  gap: 12px;
-  padding: 16px;
+  gap: 14px;
+  padding: 18px;
+}
+
+.popup-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.popup-logo {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  filter: drop-shadow(0 6px 14px rgba(37, 99, 235, 0.2));
 }
 
 h1 {
   margin: 0;
-  color: #123c69;
+  color: #0d1117;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0;
   line-height: 1.2;
 }
 
@@ -33,64 +52,79 @@ h1 {
 }
 
 .popup-note {
-  color: #334e68;
+  color: #4b5563;
 }
 
 .popup-status {
-  color: #52616b;
+  color: #6b7280;
 }
 
 .popup-status.status-error {
-  color: #9f1d20;
+  color: #b91c1c;
+}
+
+.popup-status.status-loading {
+  color: #1d4ed8;
 }
 
 .primary-button {
-  min-height: 42px;
+  min-height: 44px;
   border: 0;
-  border-radius: 6px;
-  padding: 10px 12px;
-  background: #1f7a8c;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: #2563eb;
   color: #ffffff;
   cursor: pointer;
   font: inherit;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 700;
   line-height: 1.25;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
-.primary-button:hover {
-  background: #196778;
+.primary-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.34);
+  transform: translateY(-1px);
 }
 
 .primary-button:focus-visible {
-  outline: 3px solid #9bd7e5;
+  outline: 3px solid rgba(37, 99, 235, 0.18);
   outline-offset: 2px;
 }
 
 .primary-button:disabled {
-  background: #8aa4ad;
+  background: #9db9f5;
+  box-shadow: none;
   cursor: wait;
+  transform: none;
 }
 
 .secondary-link {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #bcccdc;
-  border-radius: 6px;
-  color: #243b53;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #374151;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.25;
   text-decoration: none;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
 .secondary-link:hover {
-  background: #f0f4f8;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
 }
 
 .secondary-link:focus-visible {
-  outline: 3px solid #9bd7e5;
+  outline: 3px solid rgba(37, 99, 235, 0.18);
   outline-offset: 2px;
 }
