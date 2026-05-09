@@ -60,6 +60,11 @@ async function openClearead() {
 
   try {
     const tab = await getActiveTab();
+    await sendRuntimeMessage({
+      type: "clearead:mark-page-activation",
+      tabId: tab.id,
+      windowId: tab.windowId,
+    }).catch(() => null);
     await openSidePanelForTab(tab);
     window.close();
   } catch (error) {

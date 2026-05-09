@@ -55,6 +55,40 @@ h1 {
   color: #4b5563;
 }
 
+.website-callout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  padding: 12px;
+}
+
+.website-callout-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.website-callout-kicker,
+.website-callout-title {
+  margin: 0;
+  line-height: 1.25;
+}
+
+.website-callout-kicker {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.website-callout-title {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .popup-status {
   color: #6b7280;
 }

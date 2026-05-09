@@ -4,6 +4,7 @@ import {
   SIMPLIFY_UNAVAILABLE_MESSAGE,
 } from "../shared/config.js";
 import { requestSummary } from "../services/backend-api.js";
+import { explainLocalTerm, normaliseLookupTerm } from "../services/local-dictionary.js";
 
 const sourceText = document.querySelector("#source-text");
 const wordCount = document.querySelector("#word-count");
@@ -19,8 +20,11 @@ const resultContent = document.querySelector("#result-content");
 const fontModeButtons = Array.from(document.querySelectorAll("[data-font-mode]"));
 const rulerModeButtons = Array.from(document.querySelectorAll("[data-ruler-mode]"));
 const pageToolsStatus = document.querySelector("#page-tools-status");
-const enableDictionaryCheckbox = document.querySelector("#enable-dictionary");
+const dictionaryToggleButton = document.querySelector("#dictionary-toggle");
+const dictionaryTermInput = document.querySelector("#dictionary-term");
+const dictionaryExplainButton = document.querySelector("#dictionary-explain");
 const dictionaryStatus = document.querySelector("#dictionary-status");
+const dictionaryResult = document.querySelector("#dictionary-result");
 const openWebsiteLink = document.querySelector("#open-clearead-website");
 const SIDE_PANEL_FONT_CLASSES = [
   "font-mode-original",
@@ -34,6 +38,7 @@ let isPageToolLoading = false;
 let isDictionaryToggleLoading = false;
 let activeFontMode = "original";
 let activeRulerMode = "none";
+let isDictionaryEnabled = false;
 
 function countWords(text) {
   const words = text.trim().match(/\S+/g);
@@ -87,6 +92,17 @@ function updatePageToolButtonStates() {
   setChoiceButtonState(rulerModeButtons, "rulerMode", activeRulerMode);
 }
 
+function updateDictionaryButtonState(enabled) {
+  isDictionaryEnabled = Boolean(enabled);
+  dictionaryToggleButton.classList.toggle("tool-choice-button-active", isDictionaryEnabled);
+  dictionaryToggleButton.setAttribute("aria-pressed", String(isDictionaryEnabled));
+
+  const check = dictionaryToggleButton.querySelector(".selection-check");
+  if (check) {
+    check.hidden = !isDictionaryEnabled;
+  }
+}
+
 function applySidePanelFontMode(fontMode) {
   activeFontMode = fontMode;
   document.body.classList.remove(...SIDE_PANEL_FONT_CLASSES);
@@ -113,7 +129,7 @@ function setPageToolLoading(nextLoading) {
 
 function setDictionaryToggleLoading(nextLoading) {
   isDictionaryToggleLoading = nextLoading;
-  enableDictionaryCheckbox.disabled = nextLoading;
+  dictionaryToggleButton.disabled = nextLoading;
 }
 
 function updateCountsAndValidation() {
@@ -133,8 +149,7 @@ function updateCountsAndValidation() {
     )} characters over the 50,000 character backend limit.`;
     validationMessage.className = "validation-message validation-error";
   } else {
-    validationMessage.textContent =
-      "Paste up to 50,000 characters. Nothing is sent while you type.";
+    validationMessage.textContent = "Up to 50,000 characters.";
     validationMessage.className = "validation-message";
   }
 
@@ -159,6 +174,127 @@ function appendTextElement(parent, tagName, className, text) {
   element.textContent = text;
   parent.appendChild(element);
   return element;
+}
+
+function getDictionaryPartTheme(type) {
+  const normalizedType = String(type || "").toLowerCase();
+
+  if (normalizedType.includes("prefix")) {
+    return {
+      background: "#fee2e2",
+      color: "#9f1239",
+    };
+  }
+
+  if (normalizedType.includes("root")) {
+    return {
+      background: "#dbeafe",
+      color: "#1d4ed8",
+    };
+  }
+
+  if (normalizedType.includes("suffix")) {
+    return {
+      background: "#dcfce7",
+      color: "#15803d",
+    };
+  }
+
+  return {
+    background: "#e2e8f0",
+    color: "#334155",
+  };
+}
+
+function speakDictionaryTerm(term) {
+  const speech = window.speechSynthesis;
+
+  if (!speech || !term) {
+    return;
+  }
+
+  speech.cancel();
+  const utterance = new SpeechSynthesisUtterance(term);
+  utterance.rate = 0.86;
+  utterance.pitch = 1;
+  speech.speak(utterance);
+}
+
+function appendDictionarySection(parent, heading, bodyText) {
+  const section = document.createElement("section");
+  section.className = "dictionary-card-section";
+  appendTextElement(section, "h4", "dictionary-section-title", heading);
+
+  if (bodyText) {
+    appendTextElement(section, "p", "dictionary-section-body", bodyText);
+  }
+
+  parent.appendChild(section);
+  return section;
+}
+
+function appendDictionaryWordParts(parent, wordParts) {
+  const section = appendDictionarySection(parent, "Word parts");
+  const table = document.createElement("div");
+  table.className = "dictionary-parts-table";
+
+  wordParts.forEach((wordPart) => {
+    const theme = getDictionaryPartTheme(wordPart.type);
+    const row = document.createElement("div");
+    row.className = "dictionary-part-row";
+
+    const partLabel = appendTextElement(row, "span", "dictionary-part", wordPart.part);
+    partLabel.style.background = theme.background;
+
+    appendTextElement(row, "span", "dictionary-part-meaning", wordPart.meaning);
+
+    const typeBadge = appendTextElement(row, "span", "dictionary-part-type", wordPart.type);
+    typeBadge.style.background = theme.background;
+    typeBadge.style.color = theme.color;
+
+    table.appendChild(row);
+  });
+
+  section.appendChild(table);
+}
+
+function renderDictionaryCard(explanation) {
+  clearElement(dictionaryResult);
+
+  const card = document.createElement("article");
+  card.className = "dictionary-card";
+
+  const header = document.createElement("div");
+  header.className = "dictionary-card-header";
+  appendTextElement(header, "h3", "dictionary-term", explanation.term || "Selected word");
+
+  const speakButton = document.createElement("button");
+  speakButton.type = "button";
+  speakButton.className = "dictionary-speak-button";
+  speakButton.setAttribute("aria-label", `Hear ${explanation.term || "selected word"}`);
+  speakButton.innerHTML = "&#128266;";
+  speakButton.addEventListener("click", () => {
+    speakDictionaryTerm(explanation.term || "");
+  });
+  header.appendChild(speakButton);
+  card.appendChild(header);
+
+  appendDictionarySection(card, "Simple meaning", explanation.simpleMeaning || "demo demo demo");
+  appendDictionaryWordParts(card, Array.isArray(explanation.wordParts) ? explanation.wordParts : []);
+
+  const divider = document.createElement("div");
+  divider.className = "dictionary-divider";
+  card.appendChild(divider);
+
+  appendDictionarySection(card, "Meaning from parts", explanation.meaningFromParts || "demo demo demo");
+
+  dictionaryResult.appendChild(card);
+  dictionaryResult.hidden = false;
+}
+
+function hideDictionaryResult() {
+  clearElement(dictionaryResult);
+  dictionaryResult.hidden = true;
 }
 
 function showEmptyResult(message = "Summary results will appear here after the backend responds.") {
@@ -192,11 +328,10 @@ function renderSummaryResult(data) {
     );
   }
 
-  blocks.forEach((block, index) => {
+  blocks.forEach((block) => {
     const card = document.createElement("article");
     card.className = "block-card";
 
-    const blockNumber = block.id ?? index + 1;
     appendTextElement(card, "h3", "block-heading", "Summary");
     appendTextElement(
       card,
@@ -204,21 +339,6 @@ function renderSummaryResult(data) {
       "summary-text",
       block.summary || "No summary was returned for this block."
     );
-
-    const keyPoints = Array.isArray(block.keyPoints) ? block.keyPoints.filter(Boolean) : [];
-    const keyPointHeading = appendTextElement(card, "h4", "keypoints-heading", "Key points");
-    keyPointHeading.setAttribute("aria-label", `Key points for block ${blockNumber}`);
-
-    if (keyPoints.length > 0) {
-      const list = document.createElement("ul");
-      list.className = "keypoints-list";
-      keyPoints.forEach((point) => {
-        appendTextElement(list, "li", "", point);
-      });
-      card.appendChild(list);
-    } else {
-      appendTextElement(card, "p", "secondary-text", "No key points returned.");
-    }
 
     resultContent.appendChild(card);
   });
@@ -378,15 +498,27 @@ async function syncPageToolState() {
       throw new Error(response?.message || "Clearead could not read the current page tools.");
     }
 
+    if (response.syncUnavailable) {
+      setPageToolsStatus(
+        "neutral",
+        response.message ||
+          "Click the Clearead toolbar icon on the target webpage to connect page tools."
+      );
+      return;
+    }
+
     applySidePanelFontMode(response.fontMode || "original");
     activeRulerMode = response.rulerMode || "none";
     updatePageToolButtonStates();
-    setPageToolsStatus("success", response.message || "Page tools synced with the current page.");
+    setPageToolsStatus(
+      activeFontMode === "original" && activeRulerMode === "none" ? "neutral" : "success",
+      response.message || "Page tools synced with the current page."
+    );
   } catch (error) {
     setPageToolsStatus(
-      "error",
+      "neutral",
       error.message ||
-        "Clearead could not read current page tools. Open the target webpage from the toolbar icon, then try again."
+        "Page tools ready. Use the toolbar popup on the target webpage if a tool needs access."
     );
   } finally {
     setPageToolLoading(false);
@@ -405,15 +537,13 @@ async function loadDictionaryEnabledState() {
       throw new Error(response?.message || "Clearead could not read the dictionary setting.");
     }
 
-    enableDictionaryCheckbox.checked = Boolean(response.enabled);
+    updateDictionaryButtonState(response.enabled);
     setDictionaryStatus(
       response.enabled ? "success" : "neutral",
-      response.enabled
-        ? "Right-click dictionary is on for selected text on normal webpages."
-        : "Turn this on for this browser session, then select text on a webpage and right-click it."
+      response.enabled ? "On for selected text on webpages." : "Off for webpage right-clicks."
     );
   } catch (error) {
-    enableDictionaryCheckbox.checked = false;
+    updateDictionaryButtonState(false);
     setDictionaryStatus(
       "error",
       error.message || "Clearead could not read the dictionary setting."
@@ -428,7 +558,8 @@ async function updateDictionaryEnabledState() {
     return;
   }
 
-  const nextEnabled = enableDictionaryCheckbox.checked;
+  const previousEnabled = isDictionaryEnabled;
+  const nextEnabled = !previousEnabled;
   setDictionaryToggleLoading(true);
   setDictionaryStatus(
     "loading",
@@ -445,15 +576,13 @@ async function updateDictionaryEnabledState() {
       throw new Error(response?.message || "Clearead could not update the dictionary menu.");
     }
 
-    enableDictionaryCheckbox.checked = Boolean(response.enabled);
+    updateDictionaryButtonState(response.enabled);
     setDictionaryStatus(
       response.enabled ? "success" : "neutral",
-      response.enabled
-        ? "Right-click dictionary is on for selected text on normal webpages."
-        : "Turn this on for this browser session, then select text on a webpage and right-click it."
+      response.enabled ? "On for selected text on webpages." : "Off for webpage right-clicks."
     );
   } catch (error) {
-    enableDictionaryCheckbox.checked = !nextEnabled;
+    updateDictionaryButtonState(previousEnabled);
     setDictionaryStatus(
       "error",
       error.message || "Clearead could not update the dictionary menu."
@@ -461,6 +590,42 @@ async function updateDictionaryEnabledState() {
   } finally {
     setDictionaryToggleLoading(false);
   }
+}
+
+function normalizeDictionaryTermInput() {
+  const normalizedTerm = normaliseLookupTerm(dictionaryTermInput.value);
+
+  if (dictionaryTermInput.value !== normalizedTerm) {
+    dictionaryTermInput.value = normalizedTerm;
+  }
+}
+
+function explainDictionaryTerm() {
+  const term = normaliseLookupTerm(dictionaryTermInput.value);
+
+  if (!term) {
+    hideDictionaryResult();
+    setDictionaryStatus("error", "Paste one word or short phrase before clicking Explain.");
+    dictionaryTermInput.focus();
+    return;
+  }
+
+  dictionaryTermInput.value = term;
+  const explanation = explainLocalTerm(term);
+
+  if (!explanation.ok) {
+    hideDictionaryResult();
+    setDictionaryStatus("error", explanation.message || "Clearead could not explain this word.");
+    return;
+  }
+
+  renderDictionaryCard(explanation);
+  setDictionaryStatus(
+    "success",
+    explanation.source === "demo-placeholder"
+      ? "Demo dictionary explanation shown below."
+      : "Dictionary explanation shown below."
+  );
 }
 
 sourceText.addEventListener("input", updateCountsAndValidation);
@@ -479,7 +644,15 @@ rulerModeButtons.forEach((button) => {
     setReadingRulerMode(button.dataset.rulerMode);
   });
 });
-enableDictionaryCheckbox.addEventListener("change", updateDictionaryEnabledState);
+dictionaryToggleButton.addEventListener("click", updateDictionaryEnabledState);
+dictionaryTermInput.addEventListener("input", normalizeDictionaryTermInput);
+dictionaryTermInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    explainDictionaryTerm();
+  }
+});
+dictionaryExplainButton.addEventListener("click", explainDictionaryTerm);
 openWebsiteLink.href = CLEAREAD_WEBSITE_URL;
 
 updateCountsAndValidation();
@@ -487,5 +660,7 @@ hideResult();
 hideStatus();
 applySidePanelFontMode(activeFontMode);
 updatePageToolButtonStates();
+updateDictionaryButtonState(false);
+hideDictionaryResult();
 syncPageToolState();
 loadDictionaryEnabledState();

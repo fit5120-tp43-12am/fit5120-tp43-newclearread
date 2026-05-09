@@ -1,11 +1,12 @@
 (() => {
   const NAMESPACE = "CleareadPageTools";
-  const VERSION = "0.7.0";
-  const MESSAGE_TYPE = "clearead:page-tool-command-v6";
+  const VERSION = "0.7.4";
+  const MESSAGE_TYPE = "clearead:page-tool-command-v7";
   const STYLE_ID = "clearead-readable-style";
   const RULER_ID = "clearead-reading-ruler-v2";
   const LEGACY_RULER_IDS = Object.freeze(["clearead-reading-ruler"]);
   const DICTIONARY_POPOVER_ID = "clearead-dictionary-popover";
+  const DICTIONARY_TAIL_ID = "clearead-dictionary-tail";
   const LENS_SOURCE_ATTRIBUTE = "data-clearead-lens-source";
   const LENS_ZOOM = 1.45;
   const FONT_MODES = Object.freeze({
@@ -53,6 +54,9 @@
 
   let rulerMoveHandler = null;
   let rulerScrollHandler = null;
+  let dictionaryOutsideClickHandler = null;
+  let dictionaryKeydownHandler = null;
+  let dictionaryRepositionHandler = null;
   let activeFontMode = "original";
   let activeRulerMode = "none";
   let lastPointerX = Math.round(window.innerWidth / 2);
@@ -176,7 +180,12 @@
   }
 
   function isCleareadOwnedElement(element) {
-    const ownedSelector = [`#${RULER_ID}`, ...LEGACY_RULER_IDS.map((id) => `#${id}`), `#${DICTIONARY_POPOVER_ID}`].join(", ");
+    const ownedSelector = [
+      `#${RULER_ID}`,
+      ...LEGACY_RULER_IDS.map((id) => `#${id}`),
+      `#${DICTIONARY_POPOVER_ID}`,
+      `#${DICTIONARY_TAIL_ID}`,
+    ].join(", ");
     return Boolean(element?.closest?.(ownedSelector));
   }
 
@@ -197,7 +206,7 @@
   }
 
   function cleanLensClone(clone) {
-    [RULER_ID, ...LEGACY_RULER_IDS, DICTIONARY_POPOVER_ID].forEach((id) => {
+    [RULER_ID, ...LEGACY_RULER_IDS, DICTIONARY_POPOVER_ID, DICTIONARY_TAIL_ID].forEach((id) => {
       clone.querySelectorAll(`#${id}`).forEach((element) => element.remove());
     });
 
@@ -352,11 +361,11 @@
 
     if (rulerMode === "highlight") {
       Object.assign(ruler.style, {
-        background:
-          "linear-gradient(180deg, rgba(219, 234, 254, 0.12), rgba(96, 165, 250, 0.22), rgba(219, 234, 254, 0.12))",
-        borderTop: "1px solid rgba(37, 99, 235, 0.32)",
-        borderBottom: "1px solid rgba(37, 99, 235, 0.32)",
-        boxShadow: "0 0 0 9999px rgba(15, 23, 42, 0.13)",
+        background: "transparent",
+        borderTop: "1px solid rgba(37, 99, 235, 0.42)",
+        borderBottom: "1px solid rgba(37, 99, 235, 0.42)",
+        boxShadow:
+          "0 -14px 20px -16px rgba(37, 99, 235, 0.6), 0 14px 20px -16px rgba(37, 99, 235, 0.6), 0 0 0 9999px rgba(15, 23, 42, 0.18)",
       });
     }
 
@@ -377,11 +386,11 @@
 
     if (rulerMode === "line") {
       Object.assign(ruler.style, {
-        background:
-          "linear-gradient(180deg, rgba(219, 234, 254, 0.1), rgba(147, 197, 253, 0.2), rgba(219, 234, 254, 0.1))",
-        borderTop: "1px solid rgba(37, 99, 235, 0.28)",
-        borderBottom: "1px solid rgba(37, 99, 235, 0.28)",
-        boxShadow: "0 0 0 9999px rgba(15, 23, 42, 0.13)",
+        background: "transparent",
+        borderTop: "1px solid rgba(37, 99, 235, 0.38)",
+        borderBottom: "1px solid rgba(37, 99, 235, 0.38)",
+        boxShadow:
+          "0 -14px 20px -16px rgba(37, 99, 235, 0.55), 0 14px 20px -16px rgba(37, 99, 235, 0.55), 0 0 0 9999px rgba(15, 23, 42, 0.18)",
       });
 
       const centerLine = document.createElement("div");
@@ -513,21 +522,122 @@
     }
 
     const range = selection.getRangeAt(0);
-    const rects = range.getClientRects();
-    return rects[0] || range.getBoundingClientRect();
+    const rects = Array.from(range.getClientRects());
+    const visibleRect = rects.find((rect) => rect.width > 0 && rect.height > 0);
+    const fallbackRect = range.getBoundingClientRect();
+    return visibleRect || (fallbackRect.width > 0 && fallbackRect.height > 0 ? fallbackRect : null);
+  }
+
+  function clampNumber(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function removeDictionaryPopover() {
+    globalThis.speechSynthesis?.cancel?.();
+    document.getElementById(DICTIONARY_POPOVER_ID)?.remove();
+    document.getElementById(DICTIONARY_TAIL_ID)?.remove();
+
+    if (dictionaryOutsideClickHandler) {
+      document.removeEventListener("pointerdown", dictionaryOutsideClickHandler, true);
+      dictionaryOutsideClickHandler = null;
+    }
+
+    if (dictionaryKeydownHandler) {
+      document.removeEventListener("keydown", dictionaryKeydownHandler, true);
+      dictionaryKeydownHandler = null;
+    }
+
+    if (dictionaryRepositionHandler) {
+      globalThis.removeEventListener("scroll", dictionaryRepositionHandler, true);
+      globalThis.removeEventListener("resize", dictionaryRepositionHandler, true);
+      dictionaryRepositionHandler = null;
+    }
   }
 
   function placeDictionaryPopover(popover) {
     const rect = getSelectionAnchorRect();
-    const fallbackLeft = Math.min(24, Math.max(12, window.innerWidth - 340));
-    const fallbackTop = Math.min(96, Math.max(12, window.innerHeight - 260));
-    const preferredLeft = rect ? rect.left : fallbackLeft;
-    const preferredTop = rect ? rect.bottom + 10 : fallbackTop;
-    const maxLeft = Math.max(12, window.innerWidth - 340);
-    const maxTop = Math.max(12, window.innerHeight - 260);
+    const margin = 12;
+    const gap = 16;
+    const popoverRect = popover.getBoundingClientRect();
+    const popoverWidth = Math.min(popoverRect.width || 360, window.innerWidth - margin * 2);
+    const popoverHeight = Math.min(popoverRect.height || 460, window.innerHeight - margin * 2);
+    const fallbackLeft = Math.max(margin, Math.round((window.innerWidth - popoverWidth) / 2));
+    const fallbackTop = Math.max(margin, Math.round((window.innerHeight - popoverHeight) / 2));
+    let nextLeft = fallbackLeft;
+    let nextTop = fallbackTop;
 
-    popover.style.left = `${Math.round(Math.min(Math.max(12, preferredLeft), maxLeft))}px`;
-    popover.style.top = `${Math.round(Math.min(Math.max(12, preferredTop), maxTop))}px`;
+    if (rect) {
+      const anchorCenterX = rect.left + rect.width / 2;
+      const anchorCenterY = rect.top + rect.height / 2;
+      const fitsRight = rect.right + gap + popoverWidth <= window.innerWidth - margin;
+      const fitsLeft = rect.left - gap - popoverWidth >= margin;
+      const fitsBelow = rect.bottom + gap + popoverHeight <= window.innerHeight - margin;
+
+      if (fitsRight || (!fitsLeft && rect.left < window.innerWidth / 2)) {
+        nextLeft = rect.right + gap;
+        nextTop = anchorCenterY - popoverHeight / 2;
+      } else if (fitsLeft) {
+        nextLeft = rect.left - gap - popoverWidth;
+        nextTop = anchorCenterY - popoverHeight / 2;
+      } else if (fitsBelow) {
+        nextLeft = anchorCenterX - popoverWidth / 2;
+        nextTop = rect.bottom + gap;
+      } else {
+        nextLeft = anchorCenterX - popoverWidth / 2;
+        nextTop = rect.top - gap - popoverHeight;
+      }
+    }
+
+    popover.style.left = `${Math.round(clampNumber(nextLeft, margin, window.innerWidth - popoverWidth - margin))}px`;
+    popover.style.top = `${Math.round(clampNumber(nextTop, margin, window.innerHeight - popoverHeight - margin))}px`;
+    positionDictionaryTail(popover, rect);
+  }
+
+  function positionDictionaryTail(popover, anchorRect) {
+    document.getElementById(DICTIONARY_TAIL_ID)?.remove();
+
+    if (!anchorRect) {
+      return;
+    }
+
+    const cardRect = popover.getBoundingClientRect();
+    const anchorX = anchorRect.left + anchorRect.width / 2;
+    const anchorY = anchorRect.top + anchorRect.height / 2;
+    const size = 18;
+    const inset = 26;
+    let left = cardRect.left - size / 2;
+    let top = clampNumber(anchorY, cardRect.top + inset, cardRect.bottom - inset) - size / 2;
+
+    if (anchorX > cardRect.right) {
+      left = cardRect.right - size / 2;
+      top = clampNumber(anchorY, cardRect.top + inset, cardRect.bottom - inset) - size / 2;
+    } else if (anchorY < cardRect.top) {
+      left = clampNumber(anchorX, cardRect.left + inset, cardRect.right - inset) - size / 2;
+      top = cardRect.top - size / 2;
+    } else if (anchorY > cardRect.bottom) {
+      left = clampNumber(anchorX, cardRect.left + inset, cardRect.right - inset) - size / 2;
+      top = cardRect.bottom - size / 2;
+    }
+
+    const tail = document.createElement("div");
+    tail.id = DICTIONARY_TAIL_ID;
+    tail.setAttribute("aria-hidden", "true");
+    Object.assign(tail.style, {
+      position: "fixed",
+      left: `${Math.round(left)}px`,
+      top: `${Math.round(top)}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      pointerEvents: "none",
+      zIndex: "2147483646",
+      border: "1px solid #e4e9f2",
+      borderRadius: "5px 2px 5px 2px",
+      background: "#ffffff",
+      boxShadow: "0 10px 22px rgba(15, 23, 42, 0.08)",
+      transform: "rotate(45deg)",
+    });
+
+    requirePageContainer().appendChild(tail);
   }
 
   function appendPopoverText(parent, tagName, className, text) {
@@ -538,12 +648,202 @@
     return element;
   }
 
-  function showDictionaryPopover(explanation) {
-    const existingPopover = document.getElementById(DICTIONARY_POPOVER_ID);
+  function getDictionaryPartTheme(type) {
+    const normalizedType = String(type || "").toLowerCase();
 
-    if (existingPopover) {
-      existingPopover.remove();
+    if (normalizedType.includes("prefix")) {
+      return {
+        background: "#fee2e2",
+        color: "#9f1239",
+      };
     }
+
+    if (normalizedType.includes("root")) {
+      return {
+        background: "#dbeafe",
+        color: "#1d4ed8",
+      };
+    }
+
+    if (normalizedType.includes("suffix")) {
+      return {
+        background: "#dcfce7",
+        color: "#15803d",
+      };
+    }
+
+    return {
+      background: "#e2e8f0",
+      color: "#334155",
+    };
+  }
+
+  function normalizeDictionaryWordParts(explanation) {
+    if (Array.isArray(explanation?.wordParts) && explanation.wordParts.length > 0) {
+      return explanation.wordParts.map((part) => {
+        return {
+          part: part?.part || "demo",
+          meaning: part?.meaning || "demo demo demo",
+          type: part?.type || "Part",
+        };
+      });
+    }
+
+    if (Array.isArray(explanation?.parts) && explanation.parts.length > 0) {
+      return explanation.parts.map((part) => {
+        const [wordPart, ...meaningParts] = String(part).split(":");
+
+        return {
+          part: wordPart.trim() || "demo",
+          meaning: meaningParts.join(":").trim() || "demo demo demo",
+          type: "Part",
+        };
+      });
+    }
+
+    return [
+      {
+        part: "demo",
+        meaning: "demo demo demo",
+        type: "Prefix",
+      },
+      {
+        part: "demo",
+        meaning: "demo demo demo",
+        type: "Root",
+      },
+      {
+        part: "demo",
+        meaning: "demo demo demo",
+        type: "Suffix",
+      },
+    ];
+  }
+
+  function appendDictionarySection(parent, heading, bodyText) {
+    const section = document.createElement("section");
+    Object.assign(section.style, {
+      display: "grid",
+      gap: "10px",
+    });
+
+    const title = appendPopoverText(section, "h3", "clearead-dictionary-section-title", heading);
+    Object.assign(title.style, {
+      margin: "0",
+      color: "#667085",
+      fontSize: "13px",
+      fontWeight: "800",
+      lineHeight: "1.25",
+    });
+
+    if (bodyText) {
+      const body = appendPopoverText(section, "p", "clearead-dictionary-section-body", bodyText);
+      Object.assign(body.style, {
+        margin: "0",
+        color: "#172033",
+        fontSize: "15px",
+        lineHeight: "1.45",
+      });
+    }
+
+    parent.appendChild(section);
+    return section;
+  }
+
+  function appendDictionaryWordParts(parent, wordParts) {
+    const section = appendDictionarySection(parent, "Word parts");
+    const table = document.createElement("div");
+    Object.assign(table.style, {
+      display: "grid",
+      overflow: "hidden",
+      border: "1px solid #e4e9f2",
+      borderRadius: "12px",
+      background: "#ffffff",
+    });
+
+    wordParts.forEach((wordPart, index) => {
+      const theme = getDictionaryPartTheme(wordPart.type);
+      const row = document.createElement("div");
+      Object.assign(row.style, {
+        display: "grid",
+        gridTemplateColumns: "68px minmax(0, 1fr) 52px",
+        alignItems: "center",
+        gap: "8px",
+        minHeight: "38px",
+        padding: "6px 8px",
+        borderTop: index === 0 ? "0" : "1px solid #e4e9f2",
+      });
+
+      const partLabel = appendPopoverText(row, "span", "clearead-dictionary-part", wordPart.part);
+      Object.assign(partLabel.style, {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "28px",
+        borderRadius: "7px",
+        background: theme.background,
+        color: "#172033",
+        fontSize: "12px",
+        fontWeight: "800",
+        lineHeight: "1.2",
+        overflowWrap: "anywhere",
+      });
+
+      const meaning = appendPopoverText(
+        row,
+        "span",
+        "clearead-dictionary-part-meaning",
+        wordPart.meaning
+      );
+      Object.assign(meaning.style, {
+        color: "#172033",
+        fontSize: "13px",
+        lineHeight: "1.35",
+        overflowWrap: "anywhere",
+      });
+
+      const typeBadge = appendPopoverText(
+        row,
+        "span",
+        "clearead-dictionary-part-type",
+        wordPart.type
+      );
+      Object.assign(typeBadge.style, {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "24px",
+        borderRadius: "7px",
+        background: theme.background,
+        color: theme.color,
+        fontSize: "11px",
+        fontWeight: "800",
+        lineHeight: "1.2",
+        overflowWrap: "anywhere",
+      });
+
+      table.appendChild(row);
+    });
+
+    section.appendChild(table);
+  }
+
+  function speakDictionaryTerm(term) {
+    const speech = globalThis.speechSynthesis;
+
+    if (!speech || !term) {
+      return;
+    }
+
+    speech.cancel();
+    const utterance = new SpeechSynthesisUtterance(term);
+    utterance.rate = 0.86;
+    utterance.pitch = 1;
+    speech.speak(utterance);
+  }
+
+  function showDictionaryPopover(explanation) {
+    removeDictionaryPopover();
 
     const popover = document.createElement("aside");
     popover.id = DICTIONARY_POPOVER_ID;
@@ -551,54 +851,92 @@
     popover.setAttribute("aria-label", "Clearead dictionary");
     Object.assign(popover.style, {
       position: "fixed",
-      width: "min(320px, calc(100vw - 24px))",
-      maxHeight: "min(260px, calc(100vh - 24px))",
+      top: "12px",
+      left: "12px",
+      width: "min(360px, calc(100vw - 24px))",
+      maxHeight: "min(460px, calc(100vh - 24px))",
       overflow: "auto",
       zIndex: "2147483647",
-      border: "1px solid #cbd5e1",
-      borderRadius: "8px",
+      border: "1px solid #e4e9f2",
+      borderRadius: "14px",
       background: "#ffffff",
-      boxShadow: "0 18px 42px rgba(15, 23, 42, 0.22)",
+      boxShadow: "0 14px 34px rgba(15, 23, 42, 0.15)",
       color: "#172033",
-      fontFamily: "Arial, Verdana, Tahoma, sans-serif",
+      fontFamily: "Arial, Verdana, Calibri, sans-serif",
       lineHeight: "1.45",
-      padding: "12px",
+      padding: "18px 18px 20px",
+      visibility: "hidden",
     });
 
     const header = document.createElement("div");
     Object.assign(header.style, {
       display: "flex",
-      alignItems: "flex-start",
-      justifyContent: "space-between",
-      gap: "10px",
-      marginBottom: "8px",
+      alignItems: "center",
+      gap: "8px",
+      marginBottom: "14px",
     });
 
-    const label = appendPopoverText(header, "p", "clearead-dictionary-label", "Clearead");
-    Object.assign(label.style, {
+    const term = appendPopoverText(
+      header,
+      "h2",
+      "clearead-dictionary-term",
+      explanation?.term || "Selected word"
+    );
+    Object.assign(term.style, {
       margin: "0",
-      color: "#2563eb",
-      fontSize: "12px",
-      fontWeight: "700",
+      flex: "1 1 auto",
+      minWidth: "0",
+      color: "#101828",
+      fontSize: "21px",
+      fontWeight: "850",
+      lineHeight: "1.15",
       letterSpacing: "0",
+      overflowWrap: "anywhere",
     });
+
+    const speakerButton = document.createElement("button");
+    speakerButton.type = "button";
+    speakerButton.setAttribute("aria-label", `Hear ${explanation?.term || "selected word"}`);
+    speakerButton.innerHTML = "&#128266;";
+    Object.assign(speakerButton.style, {
+      display: explanation?.ok ? "inline-flex" : "none",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "34px",
+      height: "34px",
+      flex: "0 0 auto",
+      border: "1px solid #e4e9f2",
+      borderRadius: "999px",
+      background: "#ffffff",
+      boxShadow: "0 8px 20px rgba(37, 99, 235, 0.12)",
+      color: "#2563eb",
+      cursor: "pointer",
+      font: "700 16px/1 Arial, Verdana, sans-serif",
+    });
+    speakerButton.addEventListener("click", () => {
+      speakDictionaryTerm(explanation?.term || "");
+    });
+    header.appendChild(term);
+    header.appendChild(speakerButton);
 
     const closeButton = document.createElement("button");
     closeButton.type = "button";
     closeButton.setAttribute("aria-label", "Close Clearead dictionary");
     closeButton.textContent = "x";
     Object.assign(closeButton.style, {
-      width: "28px",
-      height: "28px",
+      width: "32px",
+      height: "32px",
       flex: "0 0 auto",
-      border: "1px solid #d0d7e2",
-      borderRadius: "6px",
-      background: "#ffffff",
-      color: "#243043",
+      border: "0",
+      borderRadius: "999px",
+      background: "transparent",
+      color: "#98a2b3",
       cursor: "pointer",
-      font: "700 18px/1 Arial, Verdana, Tahoma, sans-serif",
+      font: "400 25px/1 Arial, Verdana, sans-serif",
     });
-    closeButton.addEventListener("click", () => popover.remove());
+    closeButton.addEventListener("click", () => {
+      removeDictionaryPopover();
+    });
     header.appendChild(closeButton);
     popover.appendChild(header);
 
@@ -610,70 +948,75 @@
         explanation?.message || "Select one word or a short phrase on the page, then try again."
       );
     } else {
-      const term = appendPopoverText(
-        popover,
-        "h2",
-        "clearead-dictionary-term",
-        explanation.term
-      );
-      Object.assign(term.style, {
-        margin: "0 0 8px",
-        color: "#101828",
-        fontSize: "17px",
-        lineHeight: "1.3",
-        overflowWrap: "anywhere",
+      const content = document.createElement("div");
+      Object.assign(content.style, {
+        display: "grid",
+        gap: "14px",
       });
 
-      const meaning = appendPopoverText(
-        popover,
-        "p",
-        "clearead-dictionary-meaning",
-        explanation.meaning
+      appendDictionarySection(
+        content,
+        "Simple meaning",
+        explanation.simpleMeaning || explanation.meaning || "demo demo demo"
       );
-      Object.assign(meaning.style, {
-        margin: "0 0 8px",
-        color: "#243043",
-        fontSize: "14px",
+      appendDictionaryWordParts(content, normalizeDictionaryWordParts(explanation));
+
+      const divider = document.createElement("div");
+      Object.assign(divider.style, {
+        height: "1px",
+        background: "#e4e9f2",
       });
+      content.appendChild(divider);
 
-      if (Array.isArray(explanation.parts) && explanation.parts.length > 0) {
-        const partsList = document.createElement("ul");
-        Object.assign(partsList.style, {
-          display: "grid",
-          gap: "4px",
-          margin: "0 0 8px",
-          paddingLeft: "18px",
-          color: "#4f5f72",
-          fontSize: "13px",
-        });
-
-        explanation.parts.forEach((part) => {
-          appendPopoverText(partsList, "li", "", part);
-        });
-        popover.appendChild(partsList);
-      }
+      appendDictionarySection(
+        content,
+        "Meaning from parts",
+        explanation.meaningFromParts || "demo demo demo"
+      );
+      popover.appendChild(content);
     }
-
-    const note = appendPopoverText(
-      popover,
-      "p",
-      "clearead-dictionary-note",
-      explanation?.note || "Local guidance only. This is not a full dictionary service."
-    );
-    Object.assign(note.style, {
-      margin: "8px 0 0",
-      color: "#607086",
-      fontSize: "12px",
-    });
 
     requirePageContainer().appendChild(popover);
     placeDictionaryPopover(popover);
+    popover.style.visibility = "visible";
+
+    dictionaryOutsideClickHandler = (event) => {
+      if (event.target?.closest?.(`#${DICTIONARY_POPOVER_ID}`)) {
+        return;
+      }
+
+      removeDictionaryPopover();
+    };
+    document.addEventListener("pointerdown", dictionaryOutsideClickHandler, true);
+
+    dictionaryKeydownHandler = (event) => {
+      if (event.key === "Escape") {
+        removeDictionaryPopover();
+      }
+    };
+    document.addEventListener("keydown", dictionaryKeydownHandler, true);
+
+    dictionaryRepositionHandler = () => {
+      const currentPopover = document.getElementById(DICTIONARY_POPOVER_ID);
+
+      if (currentPopover) {
+        placeDictionaryPopover(currentPopover);
+      }
+    };
+    globalThis.addEventListener("scroll", dictionaryRepositionHandler, {
+      capture: true,
+      passive: true,
+    });
+    globalThis.addEventListener("resize", dictionaryRepositionHandler, {
+      capture: true,
+      passive: true,
+    });
 
     return {
       ok: true,
-      message: explanation?.matchedLocalGlossary
-        ? "Local glossary meaning shown."
-        : "Local fallback guidance shown.",
+      message: explanation?.source === "demo-placeholder"
+        ? "Demo dictionary card shown."
+        : "Dictionary card shown.",
     };
   }
 
@@ -734,6 +1077,7 @@
     version: VERSION,
     destroy() {
       chrome.runtime.onMessage.removeListener(handleCleareadPageToolMessage);
+      removeDictionaryPopover();
     },
     applyReadableFont,
     resetReadableFont,

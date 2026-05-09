@@ -49,7 +49,7 @@ Pasted summary text:
 - Nothing is sent while the user types.
 - Text is sent only after the user clicks Summary.
 - The request goes to `POST /api/process-text` on the deployed Clearead backend.
-- The side panel renders only summary and key points.
+- The side panel renders only summary text.
 - Extra backend fields such as original text or fallback details are not displayed.
 - The extension itself does not call OpenAI, third-party AI services, analytics, or remote dictionary services.
 
@@ -72,10 +72,14 @@ Page tools:
 Right-click dictionary:
 
 - The menu is off by default.
-- The user must enable it in the side panel before the context menu item appears.
+- The user must enable the Right-click lookup button in the side panel before the context menu item appears.
 - It appears only for selected text on normal `http` and `https` webpages.
 - Chrome provides `info.selectionText` only after the user clicks the Clearead menu item.
 - The selected text is normalized, capped at 80 characters, and processed locally.
+- The current response uses local demo placeholder fields: Simple meaning, Word parts, and Meaning from parts.
+- The current dictionary card has no Save action and does not store selected terms.
+- The one-line side panel dictionary word input builds a local demo response only after Explain or Enter; the pasted word is not sent to the backend or stored in the current build.
+- A future backend dictionary function must be documented before any selected text is sent to the backend.
 - Selected text is not sent to the backend and is not stored.
 - `chrome.storage.session` stores only whether the menu is enabled in the current browser session.
 
@@ -91,7 +95,7 @@ Website link:
 - Phase 3 connected the side panel Summary flow to the deployed Clearead backend after endpoint verification.
 - Phase 4 added readable page tools with `activeTab` and `scripting`, no broad host permissions, and clearer restricted-page errors.
 - Phase 4c restored a popup activation step so page tools follow explicit user activation.
-- Phase 5 added dictionary lookup, then changed it to right-click use, then added a side-panel opt-in toggle.
+- Phase 5 added dictionary lookup, then changed it to right-click use, then added a side-panel opt-in control.
 - Phase 5 follow-up used `chrome.storage.session` for the dictionary enabled boolean because Manifest V3 service workers can sleep.
 - Phase 6 added normal website links without adding website host permissions.
 - Phase 7 added packaged PNG icons and validation for icon dimensions.
@@ -114,4 +118,3 @@ Website link:
 - Any new network request must document endpoint, trigger, request body, response fields used, and data purpose.
 - Any new storage use must document key, value, lifetime, and why session-only storage is not enough.
 - Any page-content feature must state whether it reads, clones, stores, or sends page content.
-- Worker chats must not edit `.codex-local/clearead-extension-memory.md`; only Central Brain may update it.

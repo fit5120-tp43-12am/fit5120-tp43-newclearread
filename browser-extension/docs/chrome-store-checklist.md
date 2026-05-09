@@ -38,12 +38,12 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [x] Webpage content is not read automatically. Page tools run only after user activation.
 - [x] Page tools do not send webpage content to the backend.
 - [x] Lens magnification uses a local non-interactive page clone only inside the current tab and removes scripts/media sources from the clone.
-- [x] Page tools run only after the user activates Clearead from the toolbar popup and clicks a side panel page-tool control.
-- [x] Right-click dictionary is off by default and appears only after the user enables it in the side panel.
+- [x] Page tools run only after the user activates Clearead from the toolbar popup and opens the side panel for that page or clicks a side panel page-tool control.
+- [x] Right-click dictionary is off by default and appears only after the user enables it with the side panel Right-click lookup button.
 - [x] Selected-word lookup reads only Chrome-provided selected text after the user clicks the Clearead right-click menu item.
 - [x] Selected-word lookup is processed locally and is not sent to the Clearead backend.
 - [x] Selected-word lookup is not stored.
-- [x] Dictionary toggle state is stored only as a `chrome.storage.session` boolean and does not include selected text.
+- [x] Right-click lookup button state is stored only as a `chrome.storage.session` boolean and does not include selected text.
 - [x] No surrounding page content is read for selected-word lookup.
 - [x] Pasted text is not saved by the extension.
 - [x] Page-tool state is not persisted across page reloads.
@@ -54,7 +54,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [x] API keys and secrets for any server-side model services must stay on the backend side and must not be stored in the extension.
 - [x] The disabled Simplify action does not send data.
 - [ ] Create user-facing privacy policy before store submission.
-- [ ] Confirm and disclose any Clearead-configured backend summarisation or model services used to generate summaries and key points.
+- [ ] Confirm and disclose any Clearead-configured backend summarisation or model services used to generate summaries.
 - [ ] Confirm final production backend origin before store submission.
 - [ ] Confirm production backend retention and logging behavior before store submission.
 - [ ] Prepare final Chrome Web Store privacy and data-use disclosures before submission.
@@ -64,9 +64,9 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [x] Summary is implemented against the existing Clearead backend endpoint.
 - [x] Readable font support is implemented for user-triggered active-page use.
 - [x] Reading ruler support is implemented for user-triggered active-page use.
-- [x] Selected-word lookup is implemented as local glossary and fallback guidance only.
+- [x] Selected-word lookup is implemented as local demo placeholder data only until a backend dictionary function exists.
 - [x] Simplify remains disabled because no stable public simplify endpoint is exposed.
-- [x] Text-to-speech, file upload, remote dictionary service, automatic page scanning, and static content scripts are not claimed as implemented extension features.
+- [x] General text-to-speech, file upload, remote dictionary service, automatic page scanning, and static content scripts are not claimed as implemented extension features.
 - [x] Add extension icons in 16, 32, 48, and 128 pixel sizes.
 - [ ] Complete final brand review for icon artwork before store submission.
 - [ ] Prepare accurate Chrome Web Store listing text.
@@ -80,7 +80,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [ ] Test a development build with an unavailable backend to verify the error state.
 - [ ] Test Original, Verdana, OpenDyslexic, Calibri, No ruler, Highlight, local Lens magnification, and Line guide on normal webpages.
 - [ ] Test that closing and reopening the side panel syncs Font and Reading ruler button state with the actual active page.
-- [ ] Test right-click dictionary default-off behavior, side panel enablement, known and unknown selections, and disabling again on normal webpages.
+- [ ] Test right-click dictionary default-off behavior, side panel Right-click lookup button state, one-line word input Explain flow, demo dictionary card fields, pronunciation button, no Save action, and disabling again on normal webpages.
 - [ ] Test Open website links from the popup and side panel.
 - [ ] Test restricted pages such as `chrome://extensions` for the message: "Chrome does not allow extensions to modify this page. Try a normal webpage."
 - [ ] Test the active-tab access recovery path on a normal webpage, where possible, for the message asking the user to open the target webpage, click the Clearead toolbar icon, and try again.

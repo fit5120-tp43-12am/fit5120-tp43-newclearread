@@ -56,7 +56,7 @@ Summary workflow:
 
 - Tested pasted text summary against deployed Azure backend.
 - Confirmed Summary complete status.
-- Confirmed result displays summary and key points.
+- Confirmed result displays summary text only.
 - Confirmed pasted text is sent only after Summary click.
 - Later UI change confirmed the status strip and Result panel are hidden before Summary is used.
 
@@ -77,9 +77,15 @@ Readable page tools:
 Dictionary:
 
 - Confirmed right-click dictionary is default-off.
-- Confirmed enabling the side panel checkbox creates the selected-text context menu item.
+- Confirmed enabling the side panel Right-click lookup button creates the selected-text context menu item.
 - Confirmed disabling removes the context menu item.
+- Confirm Right-click lookup button state is loaded from the real background/session state, and failed updates do not leave the button falsely active.
+- Confirm the one-line dictionary word input accepts pasted words or short phrases, normalizes whitespace, and shows a local demo dictionary card after Explain or Enter.
+- Confirm the side panel dictionary Explain flow does not send the pasted word to the backend or store it.
 - Confirmed selected text is processed locally and capped.
+- Recent dictionary UI target: selected text opens a large card with Simple meaning, Word parts, Meaning from parts, pronunciation, and close controls.
+- Confirm that the dictionary card does not include a Save action.
+- Confirm dictionary card stays compact, uses a speech-bubble tail near the selected word, supports two or more word-part rows, and closes when clicking outside the card.
 
 Icons and branding:
 
@@ -101,6 +107,9 @@ Side panel state sync:
 - Close and reopen the side panel.
 - Confirm the selected Reading ruler button matches the actual page ruler.
 - Click No ruler and confirm the overlay disappears and the button state changes.
+- Confirm Highlight and Line guide keep the whole ruler rectangle transparent, use blue top/bottom borders with blue glow fading outward, and dim the page outside the ruler slightly.
+- Reload the extension while a page tool is visible, then reopen Clearead from the toolbar popup and confirm state sync recovers from the existing page DOM.
+- Open the side panel without a current page connection and confirm it asks for toolbar popup reconnection instead of showing a false synced state.
 
 Lens regression:
 
@@ -139,7 +148,4 @@ Chrome Store readiness regression:
 
 ## Test Evidence Locations
 
-- Worker reports and review notes live under `.codex-local/worker-reports/`.
-- Central Brain memory lives at `.codex-local/clearead-extension-memory.md`.
-- Local coordination files under `.codex-local/` must not be committed.
 - Extension source, docs, and validation scripts live under `browser-extension/`.

@@ -4,11 +4,11 @@
 
 - `manifest.json`: Chrome extension registration file. It declares Manifest V3, packaged icons, the toolbar popup, side panel, background service worker, `sidePanel`, `activeTab`, `scripting`, `contextMenus`, `storage`, and the narrow deployed backend host permission.
 - `src/background/`: background service worker code. It disables direct action-click side panel opening, handles popup side-panel open fallback requests, handles page-tool requests from the side panel, and owns the opt-in right-click dictionary context menu.
-- `src/sidepanel/`: plain HTML, CSS, and JavaScript for the pasted-text summary workflow, page-tool controls, right-click dictionary toggle and guidance, and the full website link.
+- `src/sidepanel/`: plain HTML, CSS, and JavaScript for the pasted-text summary workflow, page-tool controls, right-click dictionary button, one-line dictionary word input, and the full website link.
 - `src/content/page-tools.js`: local packaged script that is programmatically injected into the active tab only after the user clicks a page-tool control or the Clearead dictionary context menu item.
 - `src/shared/config.js`: shared extension constants, including `MAX_TEXT_CHARS`, the backend base URL, website URL, and endpoint paths.
 - `src/services/backend-api.js`: backend API adapter for the summary request.
-- `src/services/local-dictionary.js`: local glossary and fallback guidance reference for selected-word lookup. The runtime lookup logic is packaged locally and does not make network requests.
+- `src/services/local-dictionary.js`: local demo placeholder response reference for selected-word lookup. The runtime lookup logic is packaged locally and does not make network requests.
 - `src/popup/`: small toolbar popup that activates Clearead for the current page before opening the side panel and also links to the full Clearead website.
 - `src/styles/`: reserved for shared styling.
 - `public/icons/`: packaged extension icon PNG assets for 16, 32, 48, and 128 pixel contexts.
@@ -26,7 +26,7 @@ Phase 7 uses these Manifest V3 pieces:
 - `action.default_icon`: points the toolbar action to the same local packaged icon set.
 - `background.service_worker`: points to the extension service worker. It is kept as a classic worker so Chrome reloads do not depend on service-worker module parsing.
 - `side_panel.default_path`: points Chrome to the side panel HTML file.
-- `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and a session-only boolean for the dictionary toggle.
+- `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and a session-only boolean for the Right-click lookup button state.
 - `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend for Summary only.
 
 No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used in this phase.
@@ -44,7 +44,7 @@ Opening `https://clearead.azurewebsites.net/` is a normal external link from ext
 7. The side panel counts words and characters locally.
 8. Empty input and text over 50,000 characters are rejected before any backend request.
 9. When the user clicks Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` with `{ "text": string }`.
-10. The result panel renders only summary text and key points above the Page tools section.
+10. The result panel renders only summary text above the Page tools section.
 11. Backend validation and network failures are shown in the side panel as error states.
 
 Text is not sent automatically while typing, and page content is not read automatically.
@@ -74,19 +74,19 @@ The page-tool script is not registered in `manifest.json` as a static content sc
 ## Right-Click Dictionary Flow
 
 1. The right-click dictionary menu is off by default.
-2. The user opens the side panel and turns on Enable right-click dictionary.
+2. The user opens the side panel and turns on the Right-click lookup button.
 3. `src/sidepanel/sidepanel.js` sends `clearead:set-dictionary-enabled` to `src/background/service-worker.js`.
 4. The service worker stores only the enabled boolean in `chrome.storage.session` and creates the selected-text context menu item for normal `http` and `https` webpages.
 5. The user selects one word or a short phrase on a normal webpage.
 6. The user right-clicks the selection and clicks Explain with Clearead.
-7. The service worker reads only `info.selectionText`, normalizes whitespace, caps it at 80 characters, and explains it with packaged local dictionary logic.
-8. The helper returns a built-in glossary meaning for demo terms or conservative fallback guidance for unknown words.
+7. The service worker reads only `info.selectionText`, normalizes whitespace, caps it at 80 characters, and builds the current local demo dictionary response.
+8. The helper returns the future backend-shaped fields `simpleMeaning`, `wordParts`, and `meaningFromParts`, currently filled with placeholder demo content.
 9. The service worker injects `src/content/page-tools.js` into the clicked tab if needed.
 10. The service worker sends a `show-dictionary-popover` command with the local explanation.
-11. The content script renders a small Clearead-owned popover near the current selection, or in a safe viewport position if no selection rectangle is available.
-12. When the user turns the side panel toggle off, the service worker removes the Clearead context menu item.
+11. The content script renders a Clearead-owned dictionary card near the current selection, or in a safe viewport position if no selection rectangle is available.
+12. When the user turns the side panel Right-click lookup button off, the service worker removes the Clearead context menu item.
 
-Selected text is processed locally in the extension only after the user clicks the Clearead menu item. It is not sent to the Clearead backend, not stored, and not expanded into surrounding page content. The context menu is limited with `documentUrlPatterns` for normal webpages and is not backed by static content scripts or broad host permissions. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep but is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
+Selected text is processed locally in the extension only after the user clicks the Clearead menu item. It is not sent to the Clearead backend, not stored, and not expanded into surrounding page content. The side panel word input is one line; clicking Explain or pressing Enter builds the same local demo dictionary response card inside the panel without sending or storing the word. The current card includes a local pronunciation button and no Save action. The context menu is limited with `documentUrlPatterns` for normal webpages and is not backed by static content scripts or broad host permissions. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep but is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
 
 ## Page Tool Behaviors
 
@@ -129,6 +129,8 @@ The response shape is defined by `TextResponse` in `backend/models/schemas.py`:
   ]
 }
 ```
+
+The extension currently displays only `blocks[].summary` from this response in the side panel Result section. It does not render `keyPoints`, `originalText`, fallback details, or segmentation data.
 
 After the extension request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. Any API keys or secrets for those services belong on the backend side and must not be stored in extension files. Selected-word lookup does not use this backend route. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
 

@@ -28,19 +28,18 @@ When Summary is clicked, the side panel sends:
 The side panel displays only:
 
 - `blocks[].summary`
-- `blocks[].keyPoints`
 
-The backend response can include extra fields such as notice, fallback status, and original text, but those extra fields are not rendered in the result panel.
+The backend response can include extra fields such as key points, notice, fallback status, and original text, but those extra fields are not rendered in the result panel.
 
 ## Selected-Word Lookup
 
-The right-click dictionary menu is off by default. The side panel includes an Enable right-click dictionary checkbox. When the user turns it on, the service worker creates the selected-text menu item for normal `http` and `https` webpages. When the user turns it off, the service worker removes that menu item.
+The right-click dictionary menu is off by default. The side panel includes a Right-click lookup button that turns blue with a check only when the background service worker confirms the menu is enabled. When the user turns it on, the service worker creates the selected-text menu item for normal `http` and `https` webpages. When the user turns it off, the service worker removes that menu item.
 
 When the enabled user right-clicks a webpage selection and clicks the Clearead dictionary menu item, Chrome passes the selected text to the service worker as `info.selectionText`. The service worker normalizes whitespace, trims it, and caps it at 80 characters.
 
-The selected text is then explained locally by packaged dictionary logic. It uses a small built-in glossary for demo words and a conservative fallback for unknown words. The service worker injects the local packaged page-tool script only when needed so it can render the dictionary popover on the clicked page.
+The selected text is then used locally to build a demo dictionary response with Simple meaning, Word parts, and Meaning from parts fields. These fields currently contain placeholder demo content until a stable backend dictionary function exists. The service worker injects the local packaged page-tool script only when needed so it can render the dictionary card on the clicked page.
 
-Selected text is not sent to the Clearead backend, not sent to any third party, not stored, and not used to read surrounding page content. No lookup runs automatically while the user selects text. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, which keeps the menu stable while the browser session is active and is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
+Selected text is not sent to the Clearead backend, not sent to any third party, not stored, and not used to read surrounding page content. No lookup runs automatically while the user selects text. The side panel also has a one-line word input; when the user clicks Explain or presses Enter, the current build uses that word locally to build the same demo dictionary response shape. The pasted word is not sent to the backend and is not stored. The dictionary card has a local pronunciation button and no Save action. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, which keeps the menu stable while the browser session is active and is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
 
 ## Page Tools
 
@@ -92,7 +91,7 @@ Clearead requests `scripting` so it can programmatically inject the local packag
 
 ### `contextMenus`
 
-Clearead requests `contextMenus` so it can add one opt-in selected-text right-click menu item: Explain with Clearead. The item is created only after the user enables the side panel Dictionary toggle, and it is limited to selection context on normal `http` and `https` webpages. Selected text is read only when the user clicks that Clearead menu item.
+Clearead requests `contextMenus` so it can add one opt-in selected-text right-click menu item: Explain with Clearead. The item is created only after the user enables the side panel Right-click lookup button, and it is limited to selection context on normal `http` and `https` webpages. Selected text is read only when the user clicks that Clearead menu item.
 
 ### `storage`
 

@@ -1,78 +1,5 @@
 const MAX_LOOKUP_TERM_CHARS = 80;
-const LOCAL_DICTIONARY_GUIDANCE_NOTE =
-  "Local guidance only. This is not a full dictionary service.";
-const LOCAL_DICTIONARY_FALLBACK_MEANING =
-  "This looks like a word or phrase that may need context. Try reading the sentence around it and replacing it with a simpler phrase.";
-const LOCAL_DICTIONARY_GLOSSARY = new Map([
-  [
-    "dyslexia",
-    {
-      meaning:
-        "A learning difference that can make reading, spelling, and word recognition harder.",
-      parts: ["dys-: difficult", "lexia: words or reading"],
-    },
-  ],
-  [
-    "accessibility",
-    {
-      meaning:
-        "The practice of designing information, tools, and spaces so more people can use them.",
-      parts: ["access: ability to use or enter", "-ibility: condition or quality"],
-    },
-  ],
-  [
-    "cognition",
-    {
-      meaning:
-        "The mental process of learning, understanding, remembering, and using information.",
-      parts: ["cognit: know or learn", "-ion: action or process"],
-    },
-  ],
-  [
-    "cognitive",
-    {
-      meaning: "Related to thinking, learning, memory, attention, or understanding.",
-      parts: ["cognit: know or learn", "-ive: related to"],
-    },
-  ],
-  [
-    "comprehension",
-    {
-      meaning: "Understanding the meaning of what you read, hear, or see.",
-      parts: ["com-: together", "prehend: grasp", "-ion: action or process"],
-    },
-  ],
-  [
-    "intervention",
-    {
-      meaning:
-        "A planned action used to help improve a situation or support a person's needs.",
-      parts: ["inter-: between", "vene: come", "-tion: action or process"],
-    },
-  ],
-  [
-    "significant",
-    {
-      meaning: "Important enough to notice, measure, or affect the result.",
-      parts: ["sign: mark or meaning", "-ficant: making or causing"],
-    },
-  ],
-  [
-    "methodology",
-    {
-      meaning:
-        "The planned methods and rules used to study a question or complete research.",
-      parts: ["method: planned way", "-ology: study of"],
-    },
-  ],
-  [
-    "misinterpretation",
-    {
-      meaning: "An incorrect understanding of a word, message, result, or situation.",
-      parts: ["mis-: wrong", "interpret: explain meaning", "-ation: action or result"],
-    },
-  ],
-]);
+const DICTIONARY_DEMO_TEXT = "demo demo demo";
 
 function normaliseLookupTerm(term) {
   return String(term || "")
@@ -81,26 +8,44 @@ function normaliseLookupTerm(term) {
     .slice(0, MAX_LOOKUP_TERM_CHARS);
 }
 
+function createDemoWordParts() {
+  return [
+    {
+      part: "demo",
+      meaning: DICTIONARY_DEMO_TEXT,
+      type: "Prefix",
+    },
+    {
+      part: "demo",
+      meaning: DICTIONARY_DEMO_TEXT,
+      type: "Root",
+    },
+    {
+      part: "demo",
+      meaning: DICTIONARY_DEMO_TEXT,
+      type: "Suffix",
+    },
+  ];
+}
+
 function explainLocalTerm(term) {
   const normalizedTerm = normaliseLookupTerm(term);
-  const glossaryEntry = LOCAL_DICTIONARY_GLOSSARY.get(normalizedTerm.toLowerCase());
 
   if (!normalizedTerm) {
     return {
       ok: false,
       term: "",
       message: "Select one word or a short phrase on the page, then try again.",
-      note: LOCAL_DICTIONARY_GUIDANCE_NOTE,
     };
   }
 
   return {
     ok: true,
     term: normalizedTerm,
-    meaning: glossaryEntry?.meaning || LOCAL_DICTIONARY_FALLBACK_MEANING,
-    parts: glossaryEntry?.parts || [],
-    matchedLocalGlossary: Boolean(glossaryEntry),
-    note: LOCAL_DICTIONARY_GUIDANCE_NOTE,
+    simpleMeaning: DICTIONARY_DEMO_TEXT,
+    wordParts: createDemoWordParts(),
+    meaningFromParts: DICTIONARY_DEMO_TEXT,
+    source: "demo-placeholder",
   };
 }
 
@@ -111,8 +56,9 @@ chrome.sidePanel
   });
 
 const PAGE_TOOL_REQUEST_TYPE = "clearead:page-tool";
-const PAGE_TOOL_COMMAND_TYPE = "clearead:page-tool-command-v6";
+const PAGE_TOOL_COMMAND_TYPE = "clearead:page-tool-command-v7";
 const OPEN_SIDE_PANEL_REQUEST_TYPE = "clearead:open-side-panel";
+const MARK_PAGE_ACTIVATION_REQUEST_TYPE = "clearead:mark-page-activation";
 const SET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:set-dictionary-enabled";
 const GET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:get-dictionary-enabled";
 const PAGE_TOOL_SCRIPT = "src/content/page-tools.js";
@@ -125,6 +71,9 @@ const ACTIVE_TAB_ACCESS_MESSAGE =
   "Clearead needs access to the current tab before page tools can run. Open the target webpage, click the Clearead toolbar icon, then try the page tool again.";
 const GENERIC_PAGE_TOOL_MESSAGE =
   "Clearead page tools could not run on this page. Try a normal webpage and reopen Clearead from the toolbar icon.";
+const PAGE_TOOL_RECONNECT_MESSAGE =
+  "Page tools are not connected to this page yet. Click the Clearead toolbar icon on the target webpage and open Clearead for this page.";
+const RECENT_PAGE_ACTIVATION_MS = 120000;
 const PAGE_TOOL_ACTIONS = new Set([
   "get-page-tool-state",
   "set-readable-font",
@@ -135,6 +84,46 @@ const PAGE_TOOL_ACTIONS = new Set([
 ]);
 
 let isDictionaryEnabled = false;
+let lastPageToolActivation = {
+  tabId: null,
+  windowId: null,
+  activatedAt: 0,
+};
+
+function markPageToolActivation(message) {
+  if (!Number.isInteger(message?.tabId)) {
+    return {
+      ok: false,
+      message: "Clearead could not identify the current tab for page tools.",
+    };
+  }
+
+  lastPageToolActivation = {
+    tabId: message.tabId,
+    windowId: Number.isInteger(message.windowId) ? message.windowId : null,
+    activatedAt: Date.now(),
+  };
+
+  return {
+    ok: true,
+  };
+}
+
+function hasRecentPageToolActivation(tab) {
+  if (!tab?.id || lastPageToolActivation.tabId !== tab.id) {
+    return false;
+  }
+
+  if (
+    Number.isInteger(lastPageToolActivation.windowId) &&
+    Number.isInteger(tab.windowId) &&
+    lastPageToolActivation.windowId !== tab.windowId
+  ) {
+    return false;
+  }
+
+  return Date.now() - lastPageToolActivation.activatedAt <= RECENT_PAGE_ACTIVATION_MS;
+}
 
 async function readDictionaryEnabled() {
   const storedValues = await chrome.storage.session.get(DICTIONARY_ENABLED_STORAGE_KEY);
@@ -314,8 +303,31 @@ async function handlePageToolRequest(message) {
           return existingResponse;
         }
       } catch {
-        // The page may not have the packaged script yet. Fall through to inject it.
+        // Startup state sync should not request fresh activeTab access.
       }
+
+      if (hasRecentPageToolActivation(tab)) {
+        await injectPageTools(tab.id);
+
+        const injectedResponse = await chrome.tabs.sendMessage(tab.id, {
+          type: PAGE_TOOL_COMMAND_TYPE,
+          action: message.action,
+        });
+
+        if (injectedResponse?.ok) {
+          return injectedResponse;
+        }
+
+        throw new Error(
+          injectedResponse?.message || "Clearead page tools could not read this page."
+        );
+      }
+
+      return {
+        ok: true,
+        syncUnavailable: true,
+        message: PAGE_TOOL_RECONNECT_MESSAGE,
+      };
     }
 
     await injectPageTools(tab.id);
@@ -367,6 +379,8 @@ async function showDictionaryPopover(tab, selectedText) {
 }
 
 async function handleOpenSidePanelRequest(message) {
+  markPageToolActivation(message);
+
   const openOptions = {};
 
   if (Number.isInteger(message.tabId)) {
@@ -385,6 +399,11 @@ async function handleOpenSidePanelRequest(message) {
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === MARK_PAGE_ACTIVATION_REQUEST_TYPE) {
+    sendResponse(markPageToolActivation(message));
+    return false;
+  }
+
   if (message?.type === GET_DICTIONARY_ENABLED_REQUEST_TYPE) {
     syncDictionaryContextMenuFromSession()
       .then((enabled) => {
