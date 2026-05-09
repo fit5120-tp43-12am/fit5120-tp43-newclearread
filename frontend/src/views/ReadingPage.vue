@@ -873,97 +873,71 @@ onUnmounted(() => {
               <!-- Audio bar: always visible, consistent with section modal controls -->
               <div class="overall-audio-row">
 
-                <!-- Status indicator -->
-                <div class="overall-audio-status">
+                <!-- Primary play/pause/resume pill button -->
+                <button class="overall-play-pill" @click="playOverallSummary">
+                  <!-- Playing: waveform bars + Pause -->
                   <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
-                    <span class="wave-bar wave-bar--green"></span>
-                    <span class="wave-bar wave-bar--green"></span>
-                    <span class="wave-bar wave-bar--green"></span>
-                    <span class="overall-audio-label">Playing…</span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    Pause
                   </template>
+                  <!-- Paused: resume -->
                   <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <rect x="2" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
-                      <rect x="8" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
                     </svg>
-                    <span class="overall-audio-label" style="color:#f59e0b">Paused</span>
+                    Resume
                   </template>
+                  <!-- Idle: play -->
                   <template v-else>
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <path d="M1.5 4H4l3-2.5v9L4 8H1.5V4z" fill="#16a34a"/>
-                      <path d="M9 3.5a4 4 0 0 1 0 6" stroke="#16a34a" stroke-width="1.2" stroke-linecap="round"/>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
                     </svg>
-                    <span class="overall-audio-label">Audio</span>
+                    Listen to Overview
                   </template>
-                </div>
+                </button>
 
-                <div class="overall-audio-sep"></div>
-
-                <!-- Playback buttons -->
-                <div class="overall-audio-btns">
-
-                  <!-- Play / Pause / Resume -->
-                  <button class="overall-audio-btn overall-audio-btn--primary" @click="playOverallSummary">
-                    <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <rect x="2" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
-                        <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
-                      </svg>
-                      Pause
-                    </template>
-                    <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
-                      </svg>
-                      Resume
-                    </template>
-                    <template v-else>
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
-                      </svg>
-                      Listen to Overview
-                    </template>
-                  </button>
+                <!-- Icon-only secondary controls -->
+                <div class="overall-icon-btns">
 
                   <!-- Stop -->
                   <button
-                    class="overall-audio-btn"
+                    class="overall-icon-btn"
                     :disabled="activeBlockId !== OVERALL_SUMMARY_ID || playbackState === 'idle'"
+                    title="Stop"
                     @click="stopAudio"
                   >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2.5" y="2.5" width="9" height="9" rx="2" fill="currentColor"/>
                     </svg>
-                    Stop
                   </button>
 
-                  <!-- Restart from beginning -->
-                  <button class="overall-audio-btn" title="Restart from beginning" @click="stopAudio(); playOverallSummary()">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                      <path d="M2 9V6h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <!-- Restart -->
+                  <button
+                    class="overall-icon-btn"
+                    title="Restart from beginning"
+                    @click="stopAudio(); playOverallSummary()"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2.5 7a4.5 4.5 0 1 1 1 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                      <path d="M2.5 10.5V7H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    Restart
                   </button>
 
                 </div>
 
+                <!-- Thin separator -->
                 <div class="overall-audio-sep"></div>
 
-                <!-- Settings: Voice + Speed -->
+                <!-- Voice + Speed selects -->
                 <div class="overall-audio-settings">
-                  <div class="overall-audio-ctrl">
-                    <label class="overall-audio-ctrl-label">Voice</label>
-                    <select v-model="selectedVoice" class="overall-audio-select">
-                      <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
-                    </select>
-                  </div>
-                  <div class="overall-audio-ctrl">
-                    <label class="overall-audio-ctrl-label">Speed</label>
-                    <select v-model="playbackSpeed" class="overall-audio-select">
-                      <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
-                    </select>
-                  </div>
+                  <select v-model="selectedVoice" class="overall-audio-select" title="Voice">
+                    <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                  </select>
+                  <select v-model="playbackSpeed" class="overall-audio-select overall-audio-select--narrow" title="Speed">
+                    <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                  </select>
                 </div>
 
               </div>
@@ -2412,92 +2386,88 @@ kbd {
   The play button is part of the card flow — below the body text —
   so the reading hierarchy feels natural.
 */
-/* ── Overview card audio bar — mirrors the modal audio bar style ── */
+/* ── Overview card audio bar ── */
 .overall-audio-row {
   display: flex;
   align-items: center;
-  gap: 0;
-  padding-top: 18px;
+  gap: 10px;
+  padding-top: 20px;
   border-top: 1px solid #f0fdf4;
   flex-wrap: wrap;
-  row-gap: 10px;
 }
 
-/* Status indicator */
-.overall-audio-status {
-  display: flex; align-items: center; gap: 7px;
-  font-size: 12px; font-weight: 600; color: #64748b;
-  min-width: 90px;
-}
-.overall-audio-label { font-size: 12px; color: #64748b; }
-
-/* Separator */
-.overall-audio-sep {
-  width: 1px; height: 20px;
-  background: #d1fae5;
-  flex-shrink: 0;
-  margin: 0 14px;
-}
-
-/* Button group */
-.overall-audio-btns { display: flex; align-items: center; gap: 6px; }
-
-/* Base button style */
-.overall-audio-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 16px;
-  font-size: 13px; font-weight: 700;
-  background: #fff; color: #374151;
-  border: 1px solid #d1fae5; border-radius: 10px;
+/* Primary pill: Play / Pause / Resume */
+.overall-play-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px;
+  font-size: 14px; font-weight: 700; color: #fff;
+  background: #16a34a;
+  border: none; border-radius: 999px;
   cursor: pointer; font-family: inherit;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.32);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
   white-space: nowrap;
 }
-.overall-audio-btn:hover:not(:disabled) {
-  background: #f0fdf4; border-color: #86efac; color: #15803d;
+.overall-play-pill:hover {
+  background: #15803d;
+  box-shadow: 0 6px 22px rgba(22, 163, 74, 0.42);
   transform: translateY(-1px);
 }
-.overall-audio-btn:active:not(:disabled) { transform: translateY(0); }
-.overall-audio-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.overall-play-pill:active { transform: translateY(0); }
 
-/* Primary play button — green filled */
-.overall-audio-btn--primary {
-  background: #16a34a; border-color: #16a34a; color: #fff;
-  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28);
+/* Icon-only Stop + Restart buttons grouped together */
+.overall-icon-btns {
+  display: flex; align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
 }
-.overall-audio-btn--primary:hover:not(:disabled) {
-  background: #15803d; border-color: #15803d;
-  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.38);
+.overall-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: none; border: none;
+  color: #94a3b8; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.overall-icon-btn:not(:last-child) { border-right: 1px solid #e2e8f0; }
+.overall-icon-btn:hover:not(:disabled) { background: #f0fdf4; color: #16a34a; }
+.overall-icon-btn:active:not(:disabled) { background: #dcfce7; }
+.overall-icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Thin vertical separator */
+.overall-audio-sep {
+  width: 1px; height: 22px;
+  background: #e2e8f0; flex-shrink: 0;
 }
 
-/* Settings group */
+/* Voice + Speed selects pushed to the right */
 .overall-audio-settings {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 8px;
   margin-left: auto;
 }
-.overall-audio-ctrl { display: flex; align-items: center; gap: 6px; }
-.overall-audio-ctrl-label {
-  font-size: 10.5px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.07em; color: #86efac;
-  white-space: nowrap;
-}
 .overall-audio-select {
-  padding: 5px 10px; font-size: 12px; font-weight: 600; color: #374151;
-  background: #fff; border: 1px solid #d1fae5; border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12.5px; font-weight: 600; color: #374151;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0; border-radius: 10px;
   cursor: pointer; outline: none; font-family: inherit;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: auto;
 }
-.overall-audio-select:focus { border-color: #4ade80; }
+.overall-audio-select:hover { background: #f0fdf4; border-color: #86efac; }
+.overall-audio-select:focus { border-color: #4ade80; background: #fff; }
+.overall-audio-select--narrow { width: 72px; }
 
-/* Green waveform bars (used in overall summary status) */
-.wave-bar--green {
+/* White waveform bars on the green pill */
+.wave-bar--white {
   display: inline-block;
   width: 3px; height: 11px;
-  background: #16a34a; border-radius: 2px;
+  background: #fff; border-radius: 2px;
   animation: wave 0.9s ease-in-out infinite;
 }
-.wave-bar--green:nth-child(2) { animation-delay: 0.15s; }
-.wave-bar--green:nth-child(3) { animation-delay: 0.30s; }
+.wave-bar--white:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar--white:nth-child(3) { animation-delay: 0.30s; }
 
 
 /* ─────────────────────────────────────────
