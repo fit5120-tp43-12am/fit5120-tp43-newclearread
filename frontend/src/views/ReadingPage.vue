@@ -77,10 +77,15 @@ const overallSummary = computed(() => {
 // null = modal closed; a block object = modal open showing that section.
 const activeSection = ref(null)
 
+// Whether the original-text left column is expanded (true) or collapsed (false).
+// Resets to expanded each time the modal opens.
+const modalShowOriginal = ref(true)
+
 /** Opens the section detail modal for the given block. Stops TTS first. */
 function openSection(block) {
   stopAudio()
   activeSection.value = block
+  modalShowOriginal.value = true   // always start expanded
 }
 
 /** Closes the section detail modal and stops any playing TTS. */
@@ -1011,27 +1016,58 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <!-- ── Modal body: Summary (left) + Key Points (right) ── -->
-          <div class="modal-body">
+          <!-- ── Modal body: Original text (left, collapsible) | Summary + Key Points (right) ── -->
+          <div :class="['modal-body', { 'modal-body--orig-hidden': !modalShowOriginal }]">
 
-            <!-- Left column: plain-English paragraph summary -->
-            <div class="modal-col">
-              <div class="modal-col-label">Summary</div>
-              <p class="modal-summary-text">{{ activeSection.summary || 'Summary not available.' }}</p>
+            <!-- Left column: original text, collapsible -->
+            <div class="modal-orig-col">
+
+              <!-- Toggle button — collapses / expands the original text panel -->
+              <button
+                class="modal-orig-toggle"
+                :title="modalShowOriginal ? 'Collapse original text' : 'Show original text'"
+                @click="modalShowOriginal = !modalShowOriginal"
+              >
+                <!-- Chevron: down when expanded, right when collapsed -->
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path
+                    :d="modalShowOriginal ? 'M2 4.5l4.5 4.5 4.5-4.5' : 'M4.5 2l4.5 4.5-4.5 4.5'"
+                    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  />
+                </svg>
+                <span class="modal-orig-toggle-label">Original Text</span>
+              </button>
+
+              <!-- Original text content: hidden when collapsed -->
+              <p v-if="modalShowOriginal" class="modal-orig-text">
+                {{ activeSection.originalText || 'Original text not available.' }}
+              </p>
+
             </div>
 
-            <!-- Thin vertical divider between the two columns -->
+            <!-- Thin vertical divider -->
             <div class="modal-divider" aria-hidden="true"></div>
 
-            <!-- Right column: bullet-point key ideas -->
+            <!-- Right column: Summary and Key Points stacked -->
             <div class="modal-col">
-              <div class="modal-col-label">Key Points</div>
-              <p v-if="!activeSection.keyPoints?.length" class="modal-fallback">
-                No key points available.
-              </p>
-              <ul v-else class="modal-keypoints">
-                <li v-for="(pt, i) in activeSection.keyPoints" :key="i">{{ pt }}</li>
-              </ul>
+
+              <!-- Summary section -->
+              <div class="modal-right-section">
+                <div class="modal-col-label">Summary</div>
+                <p class="modal-summary-text">{{ activeSection.summary || 'Summary not available.' }}</p>
+              </div>
+
+              <!-- Key Points section -->
+              <div class="modal-right-section">
+                <div class="modal-col-label">Key Points</div>
+                <p v-if="!activeSection.keyPoints?.length" class="modal-fallback">
+                  No key points available.
+                </p>
+                <ul v-else class="modal-keypoints">
+                  <li v-for="(pt, i) in activeSection.keyPoints" :key="i">{{ pt }}</li>
+                </ul>
+              </div>
+
             </div>
 
           </div><!-- /modal-body -->
@@ -2540,22 +2576,99 @@ kbd {
 }
 .modal-close-btn:hover { background: #f1f5f9; color: #0f172a; }
 
-/* Modal body: 2-column */
+/* Modal body: 3-column grid — original (collapsible) | divider | summary+keypoints */
 .modal-body {
-  display: flex; gap: 0;
-  flex: 1; overflow-y: auto;
-  padding: 28px 30px;
+  display: grid;
+  grid-template-columns: 2fr auto 3fr;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  transition: grid-template-columns 0.25s ease;
 }
-.modal-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
 
-/* Column label */
+/* Collapsed state: original column shrinks to a readable strip */
+.modal-body--orig-hidden {
+  grid-template-columns: 110px auto 1fr;
+}
+
+/* ── Left column: original text ── */
+.modal-orig-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 22px 28px 30px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Toggle button */
+.modal-orig-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  color: #94a3b8;
+  transition: color 0.15s;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+.modal-orig-toggle:hover { color: #64748b; }
+
+.modal-orig-toggle-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* Collapsed mode: rotate label vertically */
+.modal-body--orig-hidden .modal-orig-toggle {
+  flex-direction: column;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin: 0 auto;
+  gap: 6px;
+}
+.modal-body--orig-hidden .modal-orig-toggle svg {
+  transform: rotate(90deg);
+}
+
+/* Original text body */
+.modal-orig-text {
+  font-size: 14px;
+  line-height: 1.78;
+  color: #475569;
+  margin: 0;
+}
+
+/* ── Right column: Summary + Key Points ── */
+.modal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 30px 28px 0;
+  min-width: 0;
+}
+
+/* Sub-section group */
+.modal-right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Column label (ORIGINAL TEXT / SUMMARY / KEY POINTS) */
 .modal-col-label {
   font-size: 10.5px; font-weight: 700;
   letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;
 }
 
 /* Vertical divider */
-.modal-divider { width: 1px; background: #f1f5f9; margin: 0 26px; flex-shrink: 0; }
+.modal-divider { width: 1px; background: #f1f5f9; margin: 28px 24px; flex-shrink: 0; }
 
 /* Summary text */
 .modal-summary-text { font-size: 15px; line-height: 1.8; color: #1e293b; margin: 0; }
@@ -2611,8 +2724,22 @@ kbd {
 
 /* Mobile modal */
 @media (max-width: 680px) {
-  .modal-body { flex-direction: column; padding: 20px; }
-  .modal-divider { width: auto; height: 1px; margin: 16px 0; }
+  /* Stack columns vertically on small screens */
+  .modal-body,
+  .modal-body--orig-hidden {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .modal-orig-col { padding: 20px 20px 0; }
+  .modal-col { padding: 0 20px 20px; }
+  .modal-divider { width: auto; height: 1px; margin: 16px 20px; }
+  /* Undo the vertical-rotate toggle on mobile */
+  .modal-body--orig-hidden .modal-orig-toggle {
+    writing-mode: initial;
+    transform: none;
+    flex-direction: row;
+  }
+  .modal-body--orig-hidden .modal-orig-toggle svg { transform: none; }
   .modal-panel { border-radius: 18px; max-height: 93vh; }
   .modal-header { padding: 20px 22px 16px; }
   .modal-audio { padding: 14px 22px; }
