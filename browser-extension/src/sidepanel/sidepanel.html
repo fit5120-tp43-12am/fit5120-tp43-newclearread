@@ -15,7 +15,7 @@
             <h1>Reading support</h1>
           </div>
         </div>
-        <p class="header-note">Pasted text is sent only when you click Summary.</p>
+        <p class="header-note">Pasted text is sent only when you click Simplify or Summary.</p>
         <div class="website-callout" aria-label="Clearead website">
           <div class="website-callout-copy">
             <p class="website-callout-kicker">More features</p>
@@ -48,7 +48,7 @@
           class="text-input"
           rows="7"
           maxlength="52000"
-          placeholder="Paste text to summarize with Clearead."
+          placeholder="Paste text to process with Clearead."
         ></textarea>
         <p id="validation-message" class="validation-message" aria-live="polite">
           Up to 50,000 characters.
@@ -60,8 +60,6 @@
             id="simplify-text"
             class="secondary-button"
             type="button"
-            disabled
-            title="No stable Clearead simplify endpoint is exposed yet."
           >
             Simplify
           </button>
@@ -82,7 +80,7 @@
           <h2 id="result-heading">Result</h2>
         </div>
         <p id="result-empty" class="empty-state">
-          Summary results will appear here after the backend responds.
+          Results will appear here after the backend responds.
         </p>
         <div id="result-content" class="result-content" hidden></div>
       </section>

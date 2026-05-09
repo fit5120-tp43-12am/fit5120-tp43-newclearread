@@ -27,13 +27,13 @@ Phase 7 uses these Manifest V3 pieces:
 - `background.service_worker`: points to the extension service worker. It is kept as a classic worker so Chrome reloads do not depend on service-worker module parsing.
 - `side_panel.default_path`: points Chrome to the side panel HTML file.
 - `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and a session-only boolean for the Right-click lookup button state.
-- `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend for Summary only.
+- `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend for Simplify and Summary.
 
 No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used in this phase.
 
 Opening `https://clearead.azurewebsites.net/` is a normal external link from extension UI. It does not require a website host permission and does not let the extension inspect that website tab.
 
-## Summary Flow
+## Text Processing Flow
 
 1. Chrome loads the extension from `manifest.json`.
 2. The background service worker calls `chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false })`.
@@ -43,8 +43,8 @@ Opening `https://clearead.azurewebsites.net/` is a normal external link from ext
 6. The user manually pastes text into the textarea.
 7. The side panel counts words and characters locally.
 8. Empty input and text over 50,000 characters are rejected before any backend request.
-9. When the user clicks Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` with `{ "text": string }`.
-10. The result panel renders only summary text above the Page tools section.
+9. When the user clicks Simplify or Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` with `{ "text": string }`.
+10. The result panel renders only the returned plain-English processed text above the Page tools section.
 11. Backend validation and network failures are shown in the side panel as error states.
 
 Text is not sent automatically while typing, and page content is not read automatically.
@@ -144,4 +144,4 @@ This is separate from the deployed backend API origin. It is used only for user-
 
 ## Simplify Status
 
-The backend contains internal simplification logic in service code, but no stable public simplify route or clear extension-facing simplify contract is currently mounted. The extension therefore keeps Simplify disabled and documents it as a future feature instead of inventing a route.
+Simplify and Summary use the deployed Clearead reading processing route: `POST /api/process-text`. Both actions send `{ "text": string }` to the shared backend. The side panel renders the returned `blocks[].summary` text as `Simplified text` for Simplify and as `Summary` for Summary.

@@ -47,7 +47,7 @@ Pasted summary text:
 
 - The user manually pastes text into the side panel.
 - Nothing is sent while the user types.
-- Text is sent only after the user clicks Summary.
+- Text is sent only after the user clicks Simplify or Summary.
 - The request goes to `POST /api/process-text` on the deployed Clearead backend.
 - The side panel renders only summary text.
 - Extra backend fields such as original text or fallback details are not displayed.
@@ -92,7 +92,7 @@ Website link:
 ## Development Timeline Notes
 
 - Phase 1 created the Manifest V3 foundation with minimum permissions and compliance docs.
-- Phase 3 connected the side panel Summary flow to the deployed Clearead backend after endpoint verification.
+- Phase 3 connected the side panel text processing flow to the deployed Clearead backend after endpoint verification.
 - Phase 4 added readable page tools with `activeTab` and `scripting`, no broad host permissions, and clearer restricted-page errors.
 - Phase 4c restored a popup activation step so page tools follow explicit user activation.
 - Phase 5 added dictionary lookup, then changed it to right-click use, then added a side-panel opt-in control.

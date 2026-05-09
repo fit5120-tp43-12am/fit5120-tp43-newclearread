@@ -50,7 +50,7 @@ function getErrorDetail(data) {
   return "";
 }
 
-export async function requestSummary(text) {
+export async function requestTextProcessing(text) {
   let response;
 
   try {

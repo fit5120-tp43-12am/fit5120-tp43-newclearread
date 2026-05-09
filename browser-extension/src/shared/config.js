@@ -8,8 +8,3 @@ export const CLEAREAD_WEBSITE_URL = "https://clearead.azurewebsites.net/";
 export const API_ENDPOINTS = Object.freeze({
   processText: "/api/process-text",
 });
-
-export const SIMPLIFY_ENDPOINT_AVAILABLE = false;
-
-export const SIMPLIFY_UNAVAILABLE_MESSAGE =
-  "Simplify is coming later. No stable Clearead simplify endpoint is currently exposed.";
