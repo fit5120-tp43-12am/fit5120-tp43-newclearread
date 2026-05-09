@@ -64,7 +64,8 @@ Output (one JSON object per word):
     { "text": "mis", "display": "mis-", "type": "Prefix",
       "meaning": ["badly", "wrongly", "astray"] },
     { "text": "interpretation", "display": "interpretation", "type": "Root",
-      "meaning": null }
+      "meaning": null,
+      "explanation": "an explanation of something that is not immediately obvious" }
   ],
   "found": true
 }
@@ -124,5 +125,6 @@ Run your script from this directory (the repo root) so `import src.morpheme_anal
 | `parts[].display` | Hyphenated display form (`-` after prefixes, `-` before suffixes) |
 | `parts[].type` | `Prefix` / `Root` / `Suffix` |
 | `parts[].meaning` | Up to 3 dictionary glosses for the segment; may be `null` |
+| `parts[].explanation` | For `Root` only: WordsAPI gloss (same source as `simple_meaning`); omitted when lookup fails |
 | `parts[].matched` | The actual key matched in the dictionary (only when it differs from `text`) |
 | `found` | `true` when segmentation succeeded; the field is omitted in the "not found" short form |

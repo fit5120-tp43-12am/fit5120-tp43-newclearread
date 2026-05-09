@@ -3,7 +3,8 @@ Morpheme analyzer: ONNX inference + ``MorphemeSegmenter`` class + CLI.
 
 Wraps the trained BiLSTM boundary tagger (loaded from ONNX), the rule-based
 prefix/root/suffix classifier, and the morpheme meaning dictionary. Optionally
-calls WordsAPI to fetch a whole-word ``simple_meaning``.
+calls WordsAPI to fetch a whole-word ``simple_meaning``, and for each
+``Root`` segment optionally ``explanation`` (WordsAPI ``results[0].definition``).
 
 CLI usage::
 
@@ -16,6 +17,8 @@ Output JSON:
         "parts": [
             {"text": "mis", "display": "mis-", "type": "Prefix",
              "meaning": ["wrong", "badly"], "matched": "..."},
+            {"text": "act", "display": "act", "type": "Root",
+             "meaning": null, "explanation": "something done (usually as opposed to something said)"},
             ...
         ],
         "found": true
@@ -199,6 +202,7 @@ class MorphemeSegmenter:
             2. Segment with the BiLSTM tagger (ONNX Runtime).
             3. Tag each piece as Prefix / Root / Suffix.
             4. Look up each piece in the morpheme dictionary.
+            5. For each Root segment, optionally attach ``explanation`` from WordsAPI.
 
         If the model cannot segment the word into a meaningful morphological
         structure (single piece AND no dictionary hit), only ``word`` and
@@ -232,6 +236,10 @@ class MorphemeSegmenter:
             }
             if info and info.get("matched") and info["matched"] != seg_text.lower():
                 part["matched"] = info["matched"]
+            if type_label == "Root":
+                explanation = fetch_word_definition(seg_text)
+                if explanation:
+                    part["explanation"] = explanation
             parts.append(part)
 
         not_found = len(parts) <= 1 and not any_meaning_hit
