@@ -1019,34 +1019,31 @@ onUnmounted(() => {
           <!-- ── Modal body: Original text (left, collapsible) | Summary + Key Points (right) ── -->
           <div :class="['modal-body', { 'modal-body--orig-hidden': !modalShowOriginal }]">
 
-            <!-- Left column: original text, collapsible -->
-            <div class="modal-orig-col">
-
-              <!-- Toggle button — collapses / expands the original text panel -->
-              <button
-                class="modal-orig-toggle"
-                :title="modalShowOriginal ? 'Collapse original text' : 'Show original text'"
-                @click="modalShowOriginal = !modalShowOriginal"
-              >
-                <!-- Chevron: down when expanded, right when collapsed -->
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <!-- Left column: original text -->
+            <!-- Clicking the column always toggles expand/collapse -->
+            <div
+              :class="['modal-orig-col', { 'modal-orig-col--collapsed': !modalShowOriginal }]"
+              @click="modalShowOriginal = !modalShowOriginal"
+            >
+              <!-- Label block — acts as the visual toggle indicator -->
+              <div class="modal-orig-label">
+                <span>Original Text</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path
-                    :d="modalShowOriginal ? 'M2 4.5l4.5 4.5 4.5-4.5' : 'M4.5 2l4.5 4.5-4.5 4.5'"
+                    :d="modalShowOriginal ? 'M2 4l4 4 4-4' : 'M4 2l4 4-4 4'"
                     stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
                   />
                 </svg>
-                <span class="modal-orig-toggle-label">Original Text</span>
-              </button>
+              </div>
 
-              <!-- Original text content: hidden when collapsed -->
+              <!-- Original text body — only when expanded -->
               <p v-if="modalShowOriginal" class="modal-orig-text">
                 {{ activeSection.originalText || 'Original text not available.' }}
               </p>
-
             </div>
 
-            <!-- Thin vertical divider -->
-            <div class="modal-divider" aria-hidden="true"></div>
+            <!-- Plain divider -->
+            <div class="modal-divider"></div>
 
             <!-- Right column: Summary and Key Points stacked -->
             <div class="modal-col">
@@ -2527,7 +2524,7 @@ kbd {
   -webkit-backdrop-filter: blur(8px);
   z-index: 300;
   display: flex; align-items: center; justify-content: center;
-  padding: 24px;
+  padding: 16px;
 }
 
 /* Panel card */
@@ -2537,8 +2534,8 @@ kbd {
   box-shadow:
     0 0 0 1px rgba(0,0,0,0.04),
     0 24px 80px rgba(0, 0, 0, 0.24);
-  max-width: 880px; width: 100%;
-  max-height: 88vh;
+  max-width: 1100px; width: 100%;
+  max-height: 96vh;
   display: flex; flex-direction: column;
   overflow: hidden;
 }
@@ -2599,42 +2596,49 @@ kbd {
   padding: 28px 22px 28px 30px;
   min-width: 0;
   overflow: hidden;
+  cursor: pointer;
+  transition: background 0.18s ease;
+  user-select: none;
+}
+.modal-orig-col:hover { background: #f8fafc; }
+.modal-orig-col:active { background: #f0f4ff; }
+
+/* Collapsed state */
+.modal-orig-col--collapsed {
+  align-items: center;
+  justify-content: center;
+  padding: 28px 8px;
+  background: #f8fafc;
+}
+.modal-orig-col--collapsed:hover {
+  background: #eef2ff;
+}
+.modal-orig-col--collapsed:active {
+  background: #e0e7ff;
+  transform: scale(0.97);
 }
 
-/* Toggle button */
-.modal-orig-toggle {
+/* Label row — shows text + chevron icon */
+.modal-orig-label {
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  padding: 0;
-  color: #94a3b8;
-  transition: color 0.15s;
-  white-space: nowrap;
-  align-self: flex-start;
-}
-.modal-orig-toggle:hover { color: #64748b; }
-
-.modal-orig-toggle-label {
+  gap: 5px;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
+  color: #94a3b8;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
+.modal-orig-col:hover .modal-orig-label { color: #64748b; }
 
-/* Collapsed mode: rotate label vertically */
-.modal-body--orig-hidden .modal-orig-toggle {
-  flex-direction: column;
+/* Collapsed: rotate the whole label block vertically */
+.modal-orig-col--collapsed .modal-orig-label {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  margin: 0 auto;
+  flex-direction: column-reverse;
   gap: 6px;
-}
-.modal-body--orig-hidden .modal-orig-toggle svg {
-  transform: rotate(90deg);
 }
 
 /* Original text body */
@@ -2642,6 +2646,15 @@ kbd {
   font-size: 14px;
   line-height: 1.78;
   color: #475569;
+  margin: 0;
+  cursor: text;
+}
+
+/* Plain vertical divider */
+.modal-divider {
+  width: 1px;
+  background: #e2e8f0;
+  flex-shrink: 0;
   margin: 0;
 }
 
@@ -2731,15 +2744,10 @@ kbd {
     grid-template-rows: auto auto auto;
   }
   .modal-orig-col { padding: 20px 20px 0; }
+  .modal-orig-col--collapsed { padding: 12px 20px; align-items: flex-start; }
+  .modal-orig-col--collapsed .modal-orig-label { writing-mode: initial; transform: none; flex-direction: row; }
   .modal-col { padding: 0 20px 20px; }
-  .modal-divider { width: auto; height: 1px; margin: 16px 20px; }
-  /* Undo the vertical-rotate toggle on mobile */
-  .modal-body--orig-hidden .modal-orig-toggle {
-    writing-mode: initial;
-    transform: none;
-    flex-direction: row;
-  }
-  .modal-body--orig-hidden .modal-orig-toggle svg { transform: none; }
+  .modal-divider { width: auto; height: 1px; }
   .modal-panel { border-radius: 18px; max-height: 93vh; }
   .modal-header { padding: 20px 22px 16px; }
   .modal-audio { padding: 14px 22px; }
