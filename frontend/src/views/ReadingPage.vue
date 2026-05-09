@@ -1070,32 +1070,38 @@ onUnmounted(() => {
           </div><!-- /modal-body -->
 
           <!-- ── Modal audio bar ── -->
-          <!-- Compact TTS controls scoped to this section only -->
           <div class="modal-audio">
 
-            <!-- Playback status: waveform when active, speaker icon when idle -->
+            <!-- Status indicator -->
             <div class="modal-audio-status">
-              <template v-if="activeBlockId === activeSection.id && playbackState !== 'idle'">
+              <template v-if="activeBlockId === activeSection.id && playbackState === 'playing'">
                 <span class="wave-bar"></span>
                 <span class="wave-bar"></span>
                 <span class="wave-bar"></span>
-                <span class="modal-audio-label">
-                  {{ playbackState === 'playing' ? 'Playing…' : 'Paused' }}
-                </span>
+                <span class="modal-audio-label">Playing…</span>
+              </template>
+              <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <rect x="2" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
+                  <rect x="8" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
+                </svg>
+                <span class="modal-audio-label" style="color:#f59e0b">Paused</span>
               </template>
               <template v-else>
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M1.5 4H4l3-2.5v9L4 8H1.5V4z" fill="#2563eb"/>
-                  <path d="M9 3.5a4 4 0 0 1 0 6" stroke="#2563eb" stroke-width="1.2" stroke-linecap="round"/>
+                  <path d="M1.5 4H4l3-2.5v9L4 8H1.5V4z" fill="#4f46e5"/>
+                  <path d="M9 3.5a4 4 0 0 1 0 6" stroke="#4f46e5" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
                 <span class="modal-audio-label">Audio</span>
               </template>
             </div>
 
-            <!-- Button group: Play/Pause/Resume · Stop · Speed -->
+            <div class="modal-audio-sep"></div>
+
+            <!-- Playback buttons: Play/Pause · Stop · Restart -->
             <div class="modal-audio-btns">
 
-              <!-- Play / Pause / Resume toggle -->
+              <!-- Play / Pause / Resume -->
               <button
                 class="modal-audio-btn modal-audio-btn--primary"
                 @click="
@@ -1106,7 +1112,6 @@ onUnmounted(() => {
                       : playBlock(activeSection.id, 'summary')
                 "
               >
-                <!-- Pause icon when playing -->
                 <template v-if="activeBlockId === activeSection.id && playbackState === 'playing'">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <rect x="2" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
@@ -1114,14 +1119,12 @@ onUnmounted(() => {
                   </svg>
                   Pause
                 </template>
-                <!-- Play icon when paused -->
                 <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
                   </svg>
                   Resume
                 </template>
-                <!-- Default: play icon -->
                 <template v-else>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
@@ -1130,11 +1133,12 @@ onUnmounted(() => {
                 </template>
               </button>
 
-              <!-- Stop button — only active when this section is playing/paused -->
+              <!-- Stop -->
               <button
                 class="modal-audio-btn"
                 :disabled="activeBlockId !== activeSection.id || playbackState === 'idle'"
                 @click="stopAudio"
+                title="Stop"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
@@ -1142,15 +1146,44 @@ onUnmounted(() => {
                 Stop
               </button>
 
+              <!-- Restart from beginning -->
+              <button
+                class="modal-audio-btn"
+                title="Restart from beginning"
+                @click="playBlock(activeSection.id, 'summary')"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M2 9V6h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Restart
+              </button>
+
+            </div>
+
+            <div class="modal-audio-sep"></div>
+
+            <!-- Settings: Voice + Speed -->
+            <div class="modal-audio-settings">
+
+              <!-- Voice selector -->
+              <div class="modal-audio-ctrl">
+                <label class="modal-audio-ctrl-label">Voice</label>
+                <select v-model="selectedVoice" class="modal-audio-select">
+                  <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                </select>
+              </div>
+
               <!-- Speed selector -->
-              <div class="modal-audio-speed">
-                <label class="modal-audio-speed-label">Speed</label>
-                <select v-model="playbackSpeed" class="modal-speed-select">
+              <div class="modal-audio-ctrl">
+                <label class="modal-audio-ctrl-label">Speed</label>
+                <select v-model="playbackSpeed" class="modal-audio-select">
                   <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
                 </select>
               </div>
 
-            </div><!-- /modal-audio-btns -->
+            </div>
+
           </div><!-- /modal-audio -->
 
         </div><!-- /modal-panel -->
@@ -2696,44 +2729,90 @@ kbd {
 
 .modal-fallback { font-size: 13px; color: #94a3b8; font-style: italic; margin: 0; }
 
-/* Audio bar */
+/* ── Audio bar ── */
 .modal-audio {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 30px;
-  background: #fafafa; border-top: 1px solid #f1f5f9;
-  flex-shrink: 0; flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 24px;
+  background: #fafafa;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  row-gap: 10px;
 }
+
+/* Status: waveform / paused / idle icon + label */
 .modal-audio-status {
   display: flex; align-items: center; gap: 7px;
-  font-size: 12.5px; color: #64748b; font-weight: 600;
-  flex: 1; min-width: 80px;
+  font-size: 12px; color: #64748b; font-weight: 600;
+  min-width: 90px;
 }
-.modal-audio-label { font-size: 12.5px; color: #64748b; }
+.modal-audio-label { font-size: 12px; color: #64748b; }
 
-.modal-audio-btns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Thin vertical separator between groups */
+.modal-audio-sep {
+  width: 1px; height: 22px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0 16px;
+}
 
+/* Playback button group */
+.modal-audio-btns {
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* Individual control button */
 .modal-audio-btn {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 7px 16px;
-  font-size: 13px; font-weight: 700;
+  padding: 7px 14px;
+  font-size: 12.5px; font-weight: 700;
   background: #fff; color: #374151;
   border: 1px solid #e2e8f0; border-radius: 10px;
   cursor: pointer; font-family: inherit;
-  transition: all 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  white-space: nowrap;
 }
-.modal-audio-btn:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
-.modal-audio-btn:disabled { opacity: 0.38; cursor: not-allowed; }
-.modal-audio-btn--primary { background: #4f46e5; border-color: #4f46e5; color: #fff; box-shadow: 0 3px 10px rgba(79,70,229,0.28); }
-.modal-audio-btn--primary:hover:not(:disabled) { background: #4338ca; border-color: #4338ca; }
+.modal-audio-btn:hover:not(:disabled) {
+  background: #f1f5f9; border-color: #cbd5e1; color: #0f172a;
+  transform: translateY(-1px);
+}
+.modal-audio-btn:active:not(:disabled) { transform: translateY(0); }
+.modal-audio-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.modal-audio-speed { display: flex; align-items: center; gap: 6px; }
-.modal-audio-speed-label { font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
-.modal-speed-select {
-  padding: 5px 8px; font-size: 12px; font-weight: 600; color: #374151;
+/* Primary play button */
+.modal-audio-btn--primary {
+  background: #4f46e5; border-color: #4f46e5; color: #fff;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.28);
+}
+.modal-audio-btn--primary:hover:not(:disabled) {
+  background: #4338ca; border-color: #4338ca;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.38);
+}
+
+/* Settings group: Voice + Speed */
+.modal-audio-settings {
+  display: flex; align-items: center; gap: 12px;
+  margin-left: auto;
+}
+
+/* Individual labeled control (Voice / Speed) */
+.modal-audio-ctrl {
+  display: flex; align-items: center; gap: 6px;
+}
+.modal-audio-ctrl-label {
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em; color: #94a3b8;
+  white-space: nowrap;
+}
+.modal-audio-select {
+  padding: 5px 10px; font-size: 12px; font-weight: 600; color: #374151;
   background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
   cursor: pointer; outline: none; font-family: inherit;
+  transition: border-color 0.15s;
 }
-.modal-speed-select:focus { border-color: #818cf8; }
+.modal-audio-select:focus { border-color: #818cf8; }
 
 /* Mobile modal */
 @media (max-width: 680px) {
