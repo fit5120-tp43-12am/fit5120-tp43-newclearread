@@ -14,16 +14,16 @@ The extension does not collect browsing history, analytics, account information,
 
 Yes, but only after a clear user action.
 
-Pasted text is sent when the user clicks Simplify or Summary. It is not sent automatically while the user types, and the extension does not read webpage content automatically.
+Pasted text is sent when the user clicks Summary. It is not sent automatically while the user types, and the extension does not read webpage content automatically.
 
-## Text Processing Request
+## Summary Request
 
-When Simplify or Summary is clicked, the side panel sends:
+When Summary is clicked, the side panel sends:
 
 - Endpoint: `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text`
 - Request body: `{ "text": string }`
 - Text source: the text manually pasted into the side panel
-- Purpose: ask the Clearead backend to segment and process the pasted text into plain-English reading support output
+- Purpose: ask the Clearead backend to segment and summarize the pasted text into plain-English reading support output
 
 The side panel displays only:
 
@@ -99,7 +99,7 @@ Clearead requests `storage` so it can use `chrome.storage.session` for one boole
 
 ### `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`
 
-Clearead requests this narrow host permission so the extension side panel can send user-submitted pasted text to the shared Clearead backend for Simplify and Summary.
+Clearead requests this narrow host permission so the extension side panel can send user-submitted pasted text to the shared Clearead backend for Summary.
 
 This permission is limited to the deployed backend origin currently used for the shared Clearead service. It is not a permission to read webpages.
 

@@ -32,7 +32,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 
 ## Privacy And Data Flow
 
-- [x] Pasted text is sent only after the user clicks Simplify or Summary.
+- [x] Pasted text is sent only after the user clicks Summary.
 - [x] Pasted text is sent to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text`.
 - [x] Text is not sent automatically while typing.
 - [x] Webpage content is not read automatically. Page tools run only after user activation.
@@ -52,7 +52,6 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [x] The website frontend and extension both use the shared Clearead backend processing route.
 - [x] Website links open only after user click and are not used for background data transfer.
 - [x] API keys and secrets for any server-side model services must stay on the backend side and must not be stored in the extension.
-- [x] Simplify uses the same explicit user-clicked backend processing route as Summary.
 - [ ] Create user-facing privacy policy before store submission.
 - [ ] Confirm and disclose any Clearead-configured backend summarisation or model services used to generate summaries.
 - [ ] Confirm final production backend origin before store submission.
@@ -61,11 +60,11 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 
 ## Feature Accuracy
 
-- [x] Simplify and Summary are implemented against the existing Clearead backend endpoint.
+- [x] Summary is implemented against the existing Clearead backend endpoint.
 - [x] Readable font support is implemented for user-triggered active-page use.
 - [x] Reading ruler support is implemented for user-triggered active-page use.
 - [x] Selected-word lookup is implemented as local demo placeholder data only until a backend dictionary function exists.
-- [x] Simplify uses the shared `/api/process-text` route and renders the returned plain-English processed text.
+- [x] Summary uses the shared `/api/process-text` route and renders the returned summary text.
 - [x] General text-to-speech, file upload, remote dictionary service, automatic page scanning, and static content scripts are not claimed as implemented extension features.
 - [x] Add extension icons in 16, 32, 48, and 128 pixel sizes.
 - [ ] Complete final brand review for icon artwork before store submission.
@@ -76,7 +75,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [ ] Test loading as an unpacked extension in Chrome.
 - [ ] Test extension action click opens the popup instead of the side panel.
 - [ ] Test popup button opens the side panel and closes the popup.
-- [ ] Test Simplify and Summary against the deployed backend.
+- [ ] Test Summary against the deployed backend.
 - [ ] Test a development build with an unavailable backend to verify the error state.
 - [ ] Test Original, Verdana, OpenDyslexic, Calibri, No ruler, Highlight, local Lens magnification, and Line guide on normal webpages.
 - [ ] Test that closing and reopening the side panel syncs Font and Reading ruler button state with the actual active page.

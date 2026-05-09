@@ -56,10 +56,9 @@ Text processing workflow:
 
 - Tested pasted text summary against deployed Azure backend.
 - Confirmed Summary complete status.
-- Confirmed Simplify uses the same deployed backend processing route and returns a simplified text result.
 - Confirmed result displays summary text only.
-- Confirmed pasted text is sent only after Simplify or Summary click.
-- Later UI change confirmed the status strip and Result panel are hidden before text processing is used.
+- Confirmed pasted text is sent only after Summary click.
+- Later UI change confirmed the status strip and Result panel are hidden before Summary is used.
 
 Popup activation and page access:
 
@@ -136,7 +135,7 @@ Chrome Store readiness regression:
 - Confirm no remote executable code.
 - Confirm no static content scripts.
 - Confirm no text, selected text, or page content is stored.
-- Confirm pasted text network calls only go to the deployed Clearead backend after Simplify or Summary click.
+- Confirm pasted text network calls only go to the deployed Clearead backend after Summary click.
 
 ## Known Current Gaps
 

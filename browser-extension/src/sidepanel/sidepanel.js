@@ -2,7 +2,7 @@ import {
   CLEAREAD_WEBSITE_URL,
   MAX_TEXT_CHARS,
 } from "../shared/config.js";
-import { requestTextProcessing } from "../services/backend-api.js";
+import { requestSummary } from "../services/backend-api.js";
 import { explainLocalTerm, normaliseLookupTerm } from "../services/local-dictionary.js";
 
 const sourceText = document.querySelector("#source-text");
@@ -10,7 +10,6 @@ const wordCount = document.querySelector("#word-count");
 const charCount = document.querySelector("#char-count");
 const validationMessage = document.querySelector("#validation-message");
 const summaryButton = document.querySelector("#summary-text");
-const simplifyButton = document.querySelector("#simplify-text");
 const clearButton = document.querySelector("#clear-text");
 const statusRegion = document.querySelector("#status-region");
 const resultPanel = document.querySelector(".result-panel");
@@ -112,9 +111,7 @@ function setLoading(nextLoading) {
   isLoading = nextLoading;
   sourceText.disabled = nextLoading;
   clearButton.disabled = nextLoading;
-  simplifyButton.disabled = nextLoading || sourceText.value.length > MAX_TEXT_CHARS;
   summaryButton.disabled = nextLoading || sourceText.value.length > MAX_TEXT_CHARS;
-  simplifyButton.textContent = nextLoading ? "Processing..." : "Simplify";
   summaryButton.textContent = nextLoading ? "Summarizing..." : "Summary";
 }
 
@@ -155,7 +152,6 @@ function updateCountsAndValidation() {
   }
 
   if (!isLoading) {
-    simplifyButton.disabled = overLimit;
     summaryButton.disabled = overLimit;
   }
 
@@ -315,19 +311,18 @@ function hideResult() {
   resultEmpty.textContent = "Results will appear here after the backend responds.";
 }
 
-function renderProcessingResult(data, action = "summary") {
+function renderSummaryResult(data) {
   clearElement(resultContent);
   resultPanel.hidden = false;
 
   const blocks = Array.isArray(data.blocks) ? data.blocks : [];
-  const isSimplify = action === "simplify";
 
   if (blocks.length === 0) {
     appendTextElement(
       resultContent,
       "p",
       "empty-state",
-      "The backend responded, but did not return any processed text blocks."
+      "The backend responded, but did not return any summary blocks."
     );
   }
 
@@ -335,15 +330,12 @@ function renderProcessingResult(data, action = "summary") {
     const card = document.createElement("article");
     card.className = "block-card";
 
-    appendTextElement(card, "h3", "block-heading", isSimplify ? "Simplified text" : "Summary");
+    appendTextElement(card, "h3", "block-heading", "Summary");
     appendTextElement(
       card,
       "p",
       "summary-text",
-      block.summary ||
-        (isSimplify
-          ? "No simplified text was returned for this block."
-          : "No summary was returned for this block.")
+      block.summary || "No summary was returned for this block."
     );
 
     resultContent.appendChild(card);
@@ -353,17 +345,12 @@ function renderProcessingResult(data, action = "summary") {
   resultContent.hidden = false;
 }
 
-function validateTextForProcessing(action = "summary") {
+function validateTextForSummary() {
   const text = sourceText.value.trim();
 
   if (!text) {
-    setStatus(
-      "error",
-      action === "simplify"
-        ? "Paste text before requesting simplification."
-        : "Paste text before requesting a summary."
-    );
-    validationMessage.textContent = "Text is required before Clearead can process it.";
+    setStatus("error", "Paste text before requesting a summary.");
+    validationMessage.textContent = "Text is required before Clearead can summarize it.";
     validationMessage.className = "validation-message validation-error";
     sourceText.focus();
     return null;
@@ -378,12 +365,12 @@ function validateTextForProcessing(action = "summary") {
   return text;
 }
 
-async function processText(action = "summary") {
+async function summarizeText() {
   if (isLoading) {
     return;
   }
 
-  const text = validateTextForProcessing(action);
+  const text = validateTextForSummary();
   if (!text) {
     hideResult();
     return;
@@ -391,28 +378,15 @@ async function processText(action = "summary") {
 
   setLoading(true);
   showEmptyResult("Waiting for the Clearead backend response...");
-  setStatus(
-    "loading",
-    action === "simplify"
-      ? "Sending pasted text to the Clearead backend for simplification..."
-      : "Sending pasted text to the Clearead backend for summary..."
-  );
+  setStatus("loading", "Sending pasted text to the Clearead backend for summary...");
 
   try {
-    const data = await requestTextProcessing(text);
-    renderProcessingResult(data, action);
-    setStatus("success", action === "simplify" ? "Simplify complete." : "Summary complete.");
+    const data = await requestSummary(text);
+    renderSummaryResult(data);
+    setStatus("success", "Summary complete.");
   } catch (error) {
-    showEmptyResult(
-      action === "simplify" ? "No simplified text is available yet." : "No summary is available yet."
-    );
-    setStatus(
-      "error",
-      error.message ||
-        (action === "simplify"
-          ? "Clearead could not simplify this text."
-          : "Clearead could not summarize this text.")
-    );
+    showEmptyResult("No summary is available yet.");
+    setStatus("error", error.message || "Clearead could not summarize this text.");
   } finally {
     setLoading(false);
     updateCountsAndValidation();
@@ -653,12 +627,7 @@ function explainDictionaryTerm() {
 }
 
 sourceText.addEventListener("input", updateCountsAndValidation);
-summaryButton.addEventListener("click", () => {
-  processText("summary");
-});
-simplifyButton.addEventListener("click", () => {
-  processText("simplify");
-});
+summaryButton.addEventListener("click", summarizeText);
 clearButton.addEventListener("click", clearText);
 fontModeButtons.forEach((button) => {
   button.addEventListener("click", () => {
