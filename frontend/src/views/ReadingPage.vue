@@ -662,6 +662,15 @@ onUnmounted(() => {
 })
 
 
+// ── Dictionary hint (dismissible, persisted to localStorage) ─────────────────
+const DICT_HINT_KEY = 'clearead-dict-hint-dismissed'
+const dictHintVisible = ref(localStorage.getItem(DICT_HINT_KEY) !== 'true')
+
+function dismissDictHint() {
+  dictHintVisible.value = false
+  localStorage.setItem(DICT_HINT_KEY, 'true')
+}
+
 // ── Dictionary popup ──────────────────────────────────────────────────────────
 //
 // Double-clicking any word inside a .dict-zone element looks up the word.
@@ -1121,6 +1130,26 @@ function closeDictPopup() {
               </svg>
             </button>
           </div>
+
+          <!-- ── Dictionary hint bar — shown once, dismissed permanently ── -->
+          <Transition name="hint-slide">
+            <div v-if="dictHintVisible" class="dict-hint-bar">
+              <!-- Book icon -->
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" class="dict-hint-icon">
+                <rect x="2" y="1.5" width="11" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                <path d="M5 5h5M5 7.5h5M5 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M2 1.5h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <span class="dict-hint-text">
+                <strong>Dictionary:</strong> double-click any word in the text to look it up instantly.
+              </span>
+              <button class="dict-hint-close" @click="dismissDictHint" aria-label="Dismiss hint">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </Transition>
 
           <!-- ── Modal body: Original text (left, collapsible) | Summary + Key Points (right) ── -->
           <div :class="['modal-body', { 'modal-body--orig-hidden': !modalShowOriginal }]">
@@ -2822,6 +2851,59 @@ kbd {
   transition: background 0.15s, color 0.15s;
 }
 .modal-close-btn:hover { background: #f1f5f9; color: #0f172a; }
+
+/* ── Dictionary usage hint bar ──
+   Shown once inside the modal, just below the header.
+   Dismissed permanently via localStorage.                */
+.dict-hint-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px 9px 24px;
+  background: #eef2ff;
+  border-bottom: 1px solid #c7d2fe;
+  flex-shrink: 0;
+}
+.dict-hint-icon {
+  flex-shrink: 0;
+  color: #6366f1;
+}
+.dict-hint-text {
+  flex: 1;
+  font-size: 12.5px;
+  color: #4338ca;
+  line-height: 1.5;
+}
+.dict-hint-text strong {
+  font-weight: 800;
+  color: #4338ca;
+}
+.dict-hint-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: #818cf8;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.dict-hint-close:hover {
+  background: #c7d2fe;
+  color: #3730a3;
+}
+
+/* Slide-down enter / slide-up leave */
+.hint-slide-enter-active { transition: max-height 0.28s ease, opacity 0.22s ease; overflow: hidden; }
+.hint-slide-leave-active { transition: max-height 0.22s ease, opacity 0.18s ease; overflow: hidden; }
+.hint-slide-enter-from   { max-height: 0; opacity: 0; }
+.hint-slide-enter-to     { max-height: 80px; opacity: 1; }
+.hint-slide-leave-from   { max-height: 80px; opacity: 1; }
+.hint-slide-leave-to     { max-height: 0; opacity: 0; }
 
 /* Modal body: 3-column grid — original (collapsible) | divider | summary+keypoints */
 .modal-body {
