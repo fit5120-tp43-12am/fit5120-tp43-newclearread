@@ -82,19 +82,30 @@ def process_reading_text(text: str) -> dict:
             ),
         }
 
-    overall_summary_start = time.perf_counter()
-    overall_summary = generate_overall_summary(source_text)
-    overall_summary_seconds = time.perf_counter() - overall_summary_start
+    # The whole-document overview and semantic segmentation both depend only on
+    # the source text, so run them together instead of making the user wait twice.
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        overall_summary_future = executor.submit(
+            _timed_call,
+            generate_overall_summary,
+            source_text,
+        )
+        preprocess_future = executor.submit(
+            _timed_call,
+            _build_segments,
+            source_text,
+        )
 
-    # The preprocessor cleans the text and splits it into semantic reading segments.
-    preprocess_start = time.perf_counter()
-    (
-        segments,
-        preprocessing_used_fallback,
-        preprocessing_reason,
-        segmentation_metadata,
-    ) = _build_segments(source_text)
-    preprocess_seconds = time.perf_counter() - preprocess_start
+        overall_summary, overall_summary_seconds = overall_summary_future.result()
+        (
+            (
+                segments,
+                preprocessing_used_fallback,
+                preprocessing_reason,
+                segmentation_metadata,
+            ),
+            preprocess_seconds,
+        ) = preprocess_future.result()
 
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
