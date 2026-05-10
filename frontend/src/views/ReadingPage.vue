@@ -2877,11 +2877,11 @@ kbd {
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #4b5563;
+  color: #4f46e5;
   white-space: nowrap;
   flex-shrink: 0;
 }
-.modal-orig-col:hover .modal-orig-label { color: #111827; }
+.modal-orig-col:hover .modal-orig-label { color: #3730a3; }
 
 /* Collapsed: rotate the whole label block vertically */
 .modal-orig-col--collapsed .modal-orig-label {
@@ -2927,7 +2927,7 @@ kbd {
 /* Column label (ORIGINAL TEXT / SUMMARY / KEY POINTS) */
 .modal-col-label {
   font-size: 10.5px; font-weight: 700;
-  letter-spacing: 0.09em; text-transform: uppercase; color: #4b5563;
+  letter-spacing: 0.09em; text-transform: uppercase; color: #4f46e5;
 }
 
 /* Vertical divider */
