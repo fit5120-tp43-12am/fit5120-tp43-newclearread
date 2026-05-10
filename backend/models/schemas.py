@@ -35,6 +35,22 @@ class TextBlock(BaseModel):
     keyPoints: List[str]
 
 
+# Compact processing metrics exposed for debugging in the browser network response.
+class TextProcessingStats(BaseModel):
+    # Time spent cleaning, splitting sentences, and building reading blocks.
+    preprocessSeconds: float
+    # Time spent calling the team summary model.
+    modelSeconds: float
+    # Number of blocks returned to the frontend.
+    blockCount: int
+    # Number of blocks sent to the team summary model.
+    modelBlockCount: int
+    # Number of blocks handled by fallback summarisation.
+    fallbackBlockCount: int
+    # Word count for each returned block, in block order.
+    blockWordCounts: List[int]
+
+
 # Response returned after splitting and summarising reading text.
 class TextResponse(BaseModel):
     # Message displayed in the green result banner.
@@ -47,4 +63,6 @@ class TextResponse(BaseModel):
     segmentation: Dict[str, Any]
     # Block list consumed directly by ReadingPage.vue.
     blocks: List[TextBlock]
+    # Compact timing and block-count data for browser Network response debugging.
+    processingStats: TextProcessingStats
 
