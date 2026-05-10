@@ -35,10 +35,8 @@ def _env_int(name: str, default: int) -> int:
 def process_reading_text(text: str) -> dict:
     # This is the main service used by the Reading Support page.
     # It converts one raw article into the block-based response expected by the frontend.
-    total_start = time.perf_counter()
     preprocess_seconds = 0.0
     team_model_seconds = 0.0
-    fallback_seconds = 0.0
     timing_enabled = _env_bool("CLEARREAD_READING_TIMING_LOGS", False)
 
     source_text = (text or "").strip()
@@ -46,19 +44,12 @@ def process_reading_text(text: str) -> dict:
         # Empty input is handled here so the API can return a consistent response shape.
         _log_reading_timing(
             timing_enabled,
-            total_start,
             preprocess_seconds,
             team_model_seconds,
-            fallback_seconds,
             block_count=0,
             model_block_count=0,
             fallback_block_count=0,
-            segmentation_info=_build_segmentation_info(
-                {},
-                True,
-                "empty_text",
-                0,
-            ),
+            block_word_counts=[],
         )
         return {
             "notice": "No text was provided.",
@@ -71,6 +62,14 @@ def process_reading_text(text: str) -> dict:
                 0,
             ),
             "blocks": [],
+            "processingStats": _build_processing_stats(
+                preprocess_seconds,
+                team_model_seconds,
+                block_count=0,
+                model_block_count=0,
+                fallback_block_count=0,
+                block_word_counts=[],
+            ),
         }
 
     # The preprocessor cleans the text and splits it into semantic reading segments.
@@ -136,9 +135,7 @@ def process_reading_text(text: str) -> dict:
         else:
             fallback_blocks.append(block)
 
-    fallback_start = time.perf_counter()
     fallback_results_by_id = _summarise_fallback_blocks(fallback_blocks)
-    fallback_seconds = time.perf_counter() - fallback_start
 
     blocks = []
     for block in prepared_blocks:
@@ -172,24 +169,18 @@ def process_reading_text(text: str) -> dict:
             }
         )
 
+    block_word_counts = [
+        _count_words(block.get("originalText") or "") for block in blocks
+    ]
+
     _log_reading_timing(
         timing_enabled,
-        total_start,
         preprocess_seconds,
         team_model_seconds,
-        fallback_seconds,
         block_count=len(blocks),
         model_block_count=len(model_blocks),
         fallback_block_count=len(fallback_blocks),
-        segmentation_info=_build_segmentation_info(
-            segmentation_metadata,
-            preprocessing_used_fallback,
-            preprocessing_reason,
-            len(blocks),
-        ),
-        block_word_counts=[
-            _count_words(block.get("originalText") or "") for block in blocks
-        ],
+        block_word_counts=block_word_counts,
     )
 
     return {
@@ -203,6 +194,14 @@ def process_reading_text(text: str) -> dict:
             len(blocks),
         ),
         "blocks": blocks,
+        "processingStats": _build_processing_stats(
+            preprocess_seconds,
+            team_model_seconds,
+            block_count=len(blocks),
+            model_block_count=len(model_blocks),
+            fallback_block_count=len(fallback_blocks),
+            block_word_counts=block_word_counts,
+        ),
     }
 
 
@@ -339,47 +338,45 @@ def _has_valid_model_summary(model_result: dict | None) -> bool:
 
 def _log_reading_timing(
     enabled: bool,
-    total_start: float,
     preprocess_seconds: float,
     team_model_seconds: float,
-    fallback_seconds: float,
     block_count: int,
     model_block_count: int,
     fallback_block_count: int,
-    segmentation_info: dict | None = None,
     block_word_counts: list[int] | None = None,
 ) -> None:
     if not enabled:
         return
 
-    total_seconds = time.perf_counter() - total_start
-    segmentation_info = segmentation_info or {}
     block_word_counts = block_word_counts or []
     print(
         "[reading pipeline] "
         f"preprocess={preprocess_seconds:.2f}s "
         f"team_model={team_model_seconds:.2f}s "
-        f"fallback={fallback_seconds:.2f}s "
-        f"total={total_seconds:.2f}s "
         f"blocks={block_count} "
         f"model_blocks={model_block_count} "
         f"fallback_blocks={fallback_block_count} "
-        f"segmentation_source={segmentation_info.get('source') or 'unknown'} "
-        f"segmentation_mode={segmentation_info.get('mode') or 'unknown'} "
-        f"segmentation_reason={segmentation_info.get('reason') or 'unknown'} "
-        f"segmentation_detail={_format_log_value(segmentation_info.get('detail'))}",
         f"block_words={block_word_counts}",
         flush=True,
     )
 
 
-def _format_log_value(value: object, max_length: int = 300) -> str:
-    text = re.sub(r"\s+", " ", str(value or "")).strip()
-    if not text:
-        return "none"
-    if len(text) <= max_length:
-        return text
-    return f"{text[:max_length].rstrip()}..."
+def _build_processing_stats(
+    preprocess_seconds: float,
+    team_model_seconds: float,
+    block_count: int,
+    model_block_count: int,
+    fallback_block_count: int,
+    block_word_counts: list[int],
+) -> dict:
+    return {
+        "preprocessSeconds": round(preprocess_seconds, 2),
+        "modelSeconds": round(team_model_seconds, 2),
+        "blockCount": block_count,
+        "modelBlockCount": model_block_count,
+        "fallbackBlockCount": fallback_block_count,
+        "blockWordCounts": block_word_counts,
+    }
 
 
 def _count_words(text: str) -> int:
