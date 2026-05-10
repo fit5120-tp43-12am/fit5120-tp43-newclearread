@@ -22,6 +22,51 @@ const requiredIconPaths = Object.freeze({
   "48": "public/icons/icon-48.png",
   "128": "public/icons/icon-128.png",
 });
+const sourceFilesToScan = Object.freeze([
+  "src/background/service-worker.js",
+  "src/content/page-tools.js",
+  "src/popup/popup.html",
+  "src/popup/popup.js",
+  "src/services/backend-api.js",
+  "src/services/local-dictionary.js",
+  "src/shared/config.js",
+  "src/sidepanel/sidepanel.html",
+  "src/sidepanel/sidepanel.js",
+]);
+const forbiddenSourcePatterns = Object.freeze([
+  {
+    pattern: /\b(?:innerHTML|outerHTML|insertAdjacentHTML)\b/,
+    message: "Avoid HTML string injection APIs in extension source.",
+  },
+  {
+    pattern: /\beval\s*\(/,
+    message: "eval() is not allowed in extension source.",
+  },
+  {
+    pattern: /\bnew\s+Function\b/,
+    message: "new Function() is not allowed in extension source.",
+  },
+  {
+    pattern: /\blocalStorage\b/,
+    message: "localStorage must not be used for extension data.",
+  },
+  {
+    pattern: /\bchrome\.storage\.(?:local|sync)\b/,
+    message: "Only chrome.storage.session is allowed for current extension state.",
+  },
+  {
+    pattern: /<script[^>]+src=["']https?:\/\//i,
+    message: "Remote script tags are not allowed.",
+  },
+  {
+    pattern: /https?:\/\/[^\s"'<>]+\.js\b/i,
+    message: "Remote JavaScript URLs are not allowed.",
+  },
+  {
+    pattern: /\b(?:api[_-]?key|access[_-]?token|secret|password)\b/i,
+    message: "Credential-like names must not appear in packaged extension source.",
+  },
+]);
 
 function requireValue(condition, message) {
   if (!condition) {
@@ -78,6 +123,22 @@ function requireIconSet(iconSet, label) {
       dimensions?.width === Number(size) && dimensions?.height === Number(size),
       `${expectedPath} must be a ${size}x${size} PNG.`
     );
+  }
+}
+
+function validateSourceFile(filePath) {
+  const absolutePath = join(root, filePath);
+
+  requireValue(existsSync(absolutePath), `${filePath} must exist.`);
+
+  if (!existsSync(absolutePath)) {
+    return;
+  }
+
+  const source = readFileSync(absolutePath, "utf8");
+
+  for (const { pattern, message } of forbiddenSourcePatterns) {
+    requireValue(!pattern.test(source), `${filePath}: ${message}`);
   }
 }
 
@@ -152,11 +213,11 @@ if (Array.isArray(manifest.host_permissions)) {
     );
     requireValue(
       allowedHostPermissions.has(permission),
-      `Only the deployed Clearead backend host permission is allowed in Phase 7: ${permission}.`
+      `Only the deployed Clearead backend host permission is allowed: ${permission}.`
     );
   }
 }
-requireValue(!manifest.content_scripts, "Phase 7 must not register static content scripts.");
+requireValue(!manifest.content_scripts, "Static content scripts must not be registered.");
 
 if (manifest.side_panel?.default_path) {
   requireValue(
@@ -214,6 +275,10 @@ requireValue(
   existsSync(join(root, "src", "popup", "popup.js")),
   "The popup activation script must exist."
 );
+
+for (const sourceFile of sourceFilesToScan) {
+  validateSourceFile(sourceFile);
+}
 
 if (errors.length > 0) {
   console.error("Extension validation failed:");

@@ -20,7 +20,7 @@ async function readJsonResponse(response) {
   try {
     return JSON.parse(bodyText);
   } catch (error) {
-    throw new BackendApiError("The Clearead backend returned an unreadable response.", {
+    throw new BackendApiError("Summary returned an unreadable response.", {
       status: response.status,
       cause: error,
     });
@@ -63,7 +63,7 @@ export async function requestSummary(text) {
     });
   } catch (error) {
     throw new BackendApiError(
-      `The Clearead backend is unavailable at ${BACKEND_API_BASE_URL}. Check your connection and try again.`,
+      "Summary is unavailable. Check your connection and try again.",
       { cause: error }
     );
   }
@@ -74,8 +74,8 @@ export async function requestSummary(text) {
     const detail = getErrorDetail(data);
     const message =
       response.status === 400
-        ? `Backend validation error: ${detail || "The submitted text was not accepted."}`
-        : detail || `The Clearead backend returned HTTP ${response.status}.`;
+        ? detail || "This text was not accepted. Try shorter text."
+        : detail || "Summary is unavailable. Try again later.";
 
     throw new BackendApiError(message, {
       status: response.status,

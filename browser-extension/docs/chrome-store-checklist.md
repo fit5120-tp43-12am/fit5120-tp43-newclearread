@@ -1,6 +1,6 @@
 # Chrome Web Store Checklist
 
-This checklist tracks review concerns for the Clearead extension. Phase 7 is not a claim of Chrome Web Store readiness.
+This checklist tracks review concerns for the Clearead extension. It is a development checklist, not a final Chrome Web Store readiness claim.
 
 ## Permission Minimisation
 
@@ -15,7 +15,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [x] Does not request broad host permissions.
 - [x] Does not request `tabs` or clipboard permissions.
 - [x] Does not register static content scripts.
-- [x] Validation rejects broad host permissions, wildcard host permissions, static content scripts, unexpected popup paths, and unexpected extension permissions.
+- [x] Validation rejects broad host permissions, wildcard host permissions, static content scripts, unexpected popup paths, unexpected extension permissions, and common unsafe source patterns.
 - [x] Validation checks the packaged icon files and declared PNG dimensions.
 - [ ] Re-check permissions before every new feature is added.
 - [ ] Confirm the final production backend host permission before any production store package if the backend origin changes.
@@ -37,7 +37,7 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [x] Text is not sent automatically while typing.
 - [x] Webpage content is not read automatically. Page tools run only after user activation.
 - [x] Page tools do not send webpage content to the backend.
-- [x] Lens magnification uses a local non-interactive page clone only inside the current tab and removes scripts/media sources from the clone.
+- [x] Lens magnification uses a local non-interactive page clone only inside the current tab, refreshes it after ordinary webpage DOM changes, removes scripts, inline event handlers, form actions, and embedded media sources from the clone, and turns itself off with a concise message if the page changes too rapidly.
 - [x] Page tools run only after the user activates Clearead from the toolbar popup and opens the side panel for that page or clicks a side panel page-tool control.
 - [x] Right-click dictionary is off by default and appears only after the user enables it with the side panel Right-click lookup button.
 - [x] Selected-word lookup reads only Chrome-provided selected text after the user clicks the Clearead right-click menu item.
@@ -78,11 +78,15 @@ This checklist tracks review concerns for the Clearead extension. Phase 7 is not
 - [ ] Test Summary against the deployed backend.
 - [ ] Test a development build with an unavailable backend to verify the error state.
 - [ ] Test Original, Verdana, OpenDyslexic, Calibri, No ruler, Highlight, local Lens magnification, and Line guide on normal webpages.
+- [ ] Test that the Reading ruler section says: "Best on text pages. If Lens looks blank, try Highlight or Line guide."
+- [ ] Test that selecting Lens keeps the current Font/Ruler state visible and shows a separate Lens tip below it.
+- [ ] Test Lens on one complex media-heavy webpage and confirm it either remains usable or says: "Lens stopped on this dynamic page. Try Highlight or Line guide."
 - [ ] Test that closing and reopening the side panel syncs Font and Reading ruler button state with the actual active page.
 - [ ] Test right-click dictionary default-off behavior, side panel Right-click lookup button state, one-line word input Explain flow, demo dictionary card fields, pronunciation button, no Save action, and disabling again on normal webpages.
 - [ ] Test Open website links from the popup and side panel.
-- [ ] Test restricted pages such as `chrome://extensions` for the message: "Chrome does not allow extensions to modify this page. Try a normal webpage."
-- [ ] Test the active-tab access recovery path on a normal webpage, where possible, for the message asking the user to open the target webpage, click the Clearead toolbar icon, and try again.
+- [ ] Test restricted pages such as `chrome://extensions` for the message: "Chrome blocks tools on this page. Try another webpage."
+- [ ] Test direct PDF, DOCX, DOC, or TXT file URLs for the message: "File pages may not support page tools. Click Open website to upload the file."
+- [ ] Test the active-tab access recovery path on a normal webpage, where possible, for the message: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
 - [ ] Run `npm run validate` before packaging.
 - [ ] Confirm `manifest.json` includes only implemented features.
 - [ ] Package only required production files.

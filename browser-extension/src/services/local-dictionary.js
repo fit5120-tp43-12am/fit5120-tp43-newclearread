@@ -35,7 +35,7 @@ export function explainLocalTerm(term) {
     return {
       ok: false,
       term: "",
-      message: "Select one word or a short phrase on the page, then try again.",
+      message: "Select one word or short phrase first.",
     };
   }
 

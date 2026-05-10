@@ -29,7 +29,7 @@ async function getActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   if (!tab?.id) {
-    throw new Error("Clearead could not find the current tab.");
+    throw new Error("No active page found.");
   }
 
   return tab;
@@ -48,7 +48,7 @@ async function openSidePanelForTab(tab) {
 
     if (!response?.ok) {
       throw new Error(
-        response?.message || error.message || "Clearead could not open the side panel."
+        response?.message || error.message || "Side panel did not open."
       );
     }
   }
@@ -56,7 +56,7 @@ async function openSidePanelForTab(tab) {
 
 async function openClearead() {
   openButton.disabled = true;
-  setStatus("loading", "Opening Clearead...");
+  setStatus("loading", "Opening...");
 
   try {
     const tab = await getActiveTab();
@@ -69,7 +69,7 @@ async function openClearead() {
     window.close();
   } catch (error) {
     openButton.disabled = false;
-    setStatus("error", error.message || "Clearead could not open the side panel.");
+    setStatus("error", error.message || "Side panel did not open.");
   }
 }
 

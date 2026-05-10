@@ -47,11 +47,13 @@ Page tools run only after the user opens the toolbar popup and clicks Open Clear
 
 For the Font chooser and Reading ruler chooser, the extension service worker queries the active tab, rejects known restricted browser pages, and uses `chrome.scripting.executeScript` to inject the local packaged file `src/content/page-tools.js` into the active tab. The script adds or removes Clearead-owned style and overlay elements.
 
-Readable font and reading ruler tools do not call the backend, do not send page content anywhere, do not read selected text, do not persist settings, and do not run automatically on every page. The reading ruler is local to the current page and disappears when toggled off or when the page reloads. Lens mode clones the current page DOM into a local, non-interactive overlay in the same tab, removes scripts and media sources from that clone, and enlarges the area under the pointer. The cloned content stays in the current page DOM only, is not stored, and is not sent anywhere.
+Readable font and reading ruler tools do not call the backend, do not send page content anywhere, do not read selected text, do not persist settings, and do not run automatically on every page. The reading ruler is local to the current page and disappears when toggled off or when the page reloads. Lens mode clones the current page DOM into a local, non-interactive overlay in the same tab, refreshes that clone after ordinary webpage DOM changes such as dropdown menus, removes scripts, inline event handlers, form actions, and embedded media sources from that clone, and enlarges the area under the pointer. Lens is intended for text pages. If a dynamic page changes too rapidly, Lens stops and shows: "Lens stopped on this dynamic page. Try Highlight or Line guide." The cloned content stays in the current page DOM only, is not stored, and is not sent anywhere.
 
 Unsupported pages are expected. Chrome blocks extension scripting on `chrome://`, `edge://`, `about:`, Chrome Web Store pages, extension pages, some PDF viewers, and other restricted contexts. The side panel shows a friendly unsupported-page error for these cases where possible.
 
-If a normal webpage fails because Clearead does not currently have temporary `activeTab` access, the side panel shows a separate message asking the user to open the target webpage, click the Clearead toolbar icon, and try the page tool again. This keeps the explanation accurate without adding broader permissions.
+For direct PDF, DOCX, DOC, or TXT file URLs, the side panel guides the user to the full Clearead website upload flow. The extension still does not read or upload the file automatically; the user must click Open website and upload the file there.
+
+If a normal webpage fails because Clearead does not currently have temporary `activeTab` access, the side panel shows: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page." This keeps the explanation accurate without adding broader permissions.
 
 ## Backend-Side Processing
 

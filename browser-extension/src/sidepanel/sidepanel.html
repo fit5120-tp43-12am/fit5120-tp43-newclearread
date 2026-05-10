@@ -15,7 +15,7 @@
             <h1>Reading support</h1>
           </div>
         </div>
-        <p class="header-note">Pasted text is sent only when you click Summary.</p>
+        <p class="header-note">Text is sent only when you click Summary.</p>
         <div class="website-callout" aria-label="Clearead website">
           <div class="website-callout-copy">
             <p class="website-callout-kicker">More features</p>
@@ -73,7 +73,7 @@
           <h2 id="result-heading">Result</h2>
         </div>
         <p id="result-empty" class="empty-state">
-          Results will appear here after the backend responds.
+          Summary will appear here.
         </p>
         <div id="result-content" class="result-content" hidden></div>
       </section>
@@ -126,6 +126,9 @@
 
         <div class="tool-group" aria-labelledby="ruler-tools-heading">
           <h3 id="ruler-tools-heading" class="tool-group-title">Reading ruler</h3>
+          <p class="tool-help">
+            Best on text pages. If Lens looks blank, try Highlight or Line guide.
+          </p>
           <div class="tool-choice-grid" role="group" aria-label="Reading ruler">
             <button
               class="tool-choice-button tool-choice-button-active"
@@ -171,7 +174,10 @@
           role="status"
           aria-live="polite"
         >
-          Page tools ready.
+          Font: Original. Ruler: No ruler.
+        </p>
+        <p id="lens-hint" class="page-tools-hint" hidden>
+          Lens tip: if it looks blank, try Highlight or Line guide.
         </p>
       </section>
 
@@ -199,7 +205,7 @@
             role="status"
             aria-live="polite"
           >
-            Off for webpage right-clicks.
+            Off for right-clicks.
           </p>
         </div>
         <div class="tool-group" aria-labelledby="dictionary-word-heading">
@@ -213,7 +219,7 @@
               maxlength="80"
               autocomplete="off"
               spellcheck="false"
-              placeholder="Paste one word or short phrase."
+              placeholder="Paste word or phrase."
             >
             <button id="dictionary-explain" class="primary-button" type="button">Explain</button>
           </div>

@@ -1,6 +1,6 @@
 (() => {
   const NAMESPACE = "CleareadPageTools";
-  const VERSION = "0.7.4";
+  const VERSION = "0.7.7";
   const MESSAGE_TYPE = "clearead:page-tool-command-v7";
   const STYLE_ID = "clearead-readable-style";
   const RULER_ID = "clearead-reading-ruler-v2";
@@ -9,6 +9,23 @@
   const DICTIONARY_TAIL_ID = "clearead-dictionary-tail";
   const LENS_SOURCE_ATTRIBUTE = "data-clearead-lens-source";
   const LENS_ZOOM = 1.45;
+  const LENS_EMBEDDED_RESOURCE_SELECTOR =
+    "iframe, video, audio, canvas, object, embed, source, track";
+  const LENS_EMBEDDED_RESOURCE_ATTRIBUTES = Object.freeze([
+    "src",
+    "srcdoc",
+    "srcset",
+    "poster",
+    "data",
+    "code",
+    "archive",
+  ]);
+  const LENS_CLONE_REFRESH_THROTTLE_MS = 260;
+  const LENS_SCROLL_MUTATION_GRACE_MS = 900;
+  const LENS_MUTATION_SAFETY_WINDOW_MS = 2500;
+  const LENS_MUTATION_SAFETY_LIMIT = 120;
+  const LENS_SAFETY_MESSAGE =
+    "Lens stopped on this dynamic page. Try Highlight or Line guide.";
   const FONT_MODES = Object.freeze({
     original: {
       label: "Original",
@@ -33,15 +50,15 @@
       height: 0,
     },
     highlight: {
-      label: "Highlight ruler",
+      label: "Highlight",
       height: 50,
     },
     lens: {
-      label: "Lens ruler",
+      label: "Lens",
       height: 124,
     },
     line: {
-      label: "Line guide ruler",
+      label: "Line guide",
       height: 56,
     },
   });
@@ -54,6 +71,16 @@
 
   let rulerMoveHandler = null;
   let rulerScrollHandler = null;
+  let lensMutationObserver = null;
+  let lensRefreshFrame = 0;
+  let lensRefreshTimer = null;
+  let lensCloneDirty = false;
+  let lastLensCloneRefreshAt = 0;
+  let lastLensScrollAt = 0;
+  let lensMutationWindowStartedAt = 0;
+  let lensMutationCountInWindow = 0;
+  let lastPageToolNotice = "";
+  let lastPageToolNoticeType = "neutral";
   let dictionaryOutsideClickHandler = null;
   let dictionaryKeydownHandler = null;
   let dictionaryRepositionHandler = null;
@@ -69,7 +96,7 @@
   function requirePageContainer() {
     const container = getContainer();
     if (!container) {
-      throw new Error("Clearead page tools cannot find a page container to update.");
+      throw new Error("Page tools are not available here.");
     }
     return container;
   }
@@ -91,7 +118,7 @@
       return {
         ok: true,
         fontMode: "original",
-        message: "Original page font restored.",
+        message: "Original font restored.",
       };
     }
 
@@ -167,16 +194,8 @@
     return {
       ok: true,
       fontMode: normalisedMode,
-      message: `${fontConfig.label} font applied with wider reading spacing.`,
+      message: `${fontConfig.label} applied.`,
     };
-  }
-
-  function applyReadableFont(fontMode = "verdana") {
-    return setReadableFont(fontMode);
-  }
-
-  function resetReadableFont() {
-    return setReadableFont("original");
   }
 
   function isCleareadOwnedElement(element) {
@@ -187,6 +206,171 @@
       `#${DICTIONARY_TAIL_ID}`,
     ].join(", ");
     return Boolean(element?.closest?.(ownedSelector));
+  }
+
+  function isCleareadOwnedNode(node) {
+    if (node?.nodeType !== Node.ELEMENT_NODE) {
+      return false;
+    }
+
+    return isCleareadOwnedElement(node);
+  }
+
+  function mutationTouchesPageContent(mutation) {
+    if (isCleareadOwnedElement(mutation.target)) {
+      return false;
+    }
+
+    if (mutation.type === "childList") {
+      const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
+
+      if (
+        changedNodes.length > 0 &&
+        changedNodes.every((node) => {
+          return node.nodeType !== Node.ELEMENT_NODE || isCleareadOwnedNode(node);
+        })
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function markLensCloneDirty(mutations) {
+    if (activeRulerMode !== "lens") {
+      return;
+    }
+
+    const pageMutations = mutations.filter(mutationTouchesPageContent);
+
+    if (pageMutations.length === 0) {
+      return;
+    }
+
+    const structuralMutationWeight = getLensStructuralMutationWeight(pageMutations);
+
+    const mutationLooksScrollDriven =
+      getNow() - lastLensScrollAt <= LENS_SCROLL_MUTATION_GRACE_MS;
+
+    if (
+      structuralMutationWeight > 0 &&
+      !mutationLooksScrollDriven &&
+      shouldTurnOffLensForRapidPageChanges(structuralMutationWeight)
+    ) {
+      setPageToolNotice("error", LENS_SAFETY_MESSAGE);
+      disableReadingRuler();
+      return;
+    }
+
+    lensCloneDirty = true;
+    scheduleLensCloneRefresh();
+  }
+
+  function getNow() {
+    return globalThis.performance?.now?.() || Date.now();
+  }
+
+  function resetLensSafetyCounter() {
+    lensMutationWindowStartedAt = 0;
+    lensMutationCountInWindow = 0;
+  }
+
+  function getLensStructuralMutationWeight(mutations) {
+    return mutations.reduce((weight, mutation) => {
+      if (mutation.type !== "childList") {
+        return weight;
+      }
+
+      const changedElements = [...mutation.addedNodes, ...mutation.removedNodes].filter((node) => {
+        return node.nodeType === Node.ELEMENT_NODE && !isCleareadOwnedNode(node);
+      });
+
+      return weight + changedElements.length;
+    }, 0);
+  }
+
+  function shouldTurnOffLensForRapidPageChanges(mutationCount) {
+    const now = getNow();
+
+    if (
+      !lensMutationWindowStartedAt ||
+      now - lensMutationWindowStartedAt > LENS_MUTATION_SAFETY_WINDOW_MS
+    ) {
+      lensMutationWindowStartedAt = now;
+      lensMutationCountInWindow = 0;
+    }
+
+    lensMutationCountInWindow += mutationCount;
+    return lensMutationCountInWindow > LENS_MUTATION_SAFETY_LIMIT;
+  }
+
+  function setPageToolNotice(type, message) {
+    lastPageToolNoticeType = type;
+    lastPageToolNotice = message;
+  }
+
+  function scheduleLensCloneRefresh() {
+    if (lensRefreshFrame || lensRefreshTimer) {
+      return;
+    }
+
+    lensRefreshFrame = globalThis.requestAnimationFrame(() => {
+      lensRefreshFrame = 0;
+      setRulerPosition(lastPointerX, lastPointerY);
+
+      if (lensCloneDirty) {
+        const refreshDelay = Math.max(
+          0,
+          LENS_CLONE_REFRESH_THROTTLE_MS - (getNow() - lastLensCloneRefreshAt)
+        );
+
+        lensRefreshTimer = globalThis.setTimeout(() => {
+          lensRefreshTimer = null;
+          setRulerPosition(lastPointerX, lastPointerY);
+        }, refreshDelay);
+      }
+    });
+  }
+
+  function stopLensMutationObserver() {
+    if (lensMutationObserver) {
+      lensMutationObserver.disconnect();
+      lensMutationObserver = null;
+    }
+
+    if (lensRefreshFrame) {
+      globalThis.cancelAnimationFrame(lensRefreshFrame);
+      lensRefreshFrame = 0;
+    }
+
+    if (lensRefreshTimer) {
+      globalThis.clearTimeout(lensRefreshTimer);
+      lensRefreshTimer = null;
+    }
+
+    lensCloneDirty = false;
+    lastLensCloneRefreshAt = 0;
+    resetLensSafetyCounter();
+  }
+
+  function startLensMutationObserver() {
+    stopLensMutationObserver();
+
+    const container = getContainer();
+
+    if (!container || !globalThis.MutationObserver) {
+      return;
+    }
+
+    resetLensSafetyCounter();
+    lensMutationObserver = new MutationObserver(markLensCloneDirty);
+    lensMutationObserver.observe(container, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
   }
 
   function getDocumentWidth() {
@@ -211,9 +395,25 @@
     });
 
     clone.querySelectorAll("script").forEach((element) => element.remove());
-    clone.querySelectorAll("iframe, video, audio, canvas, object, embed").forEach((element) => {
-      element.removeAttribute("src");
-      element.removeAttribute("srcdoc");
+
+    clone.querySelectorAll("*").forEach((element) => {
+      Array.from(element.attributes).forEach((attribute) => {
+        const attributeName = attribute.name.toLowerCase();
+
+        if (attributeName.startsWith("on") || attributeName === "autofocus") {
+          element.removeAttribute(attribute.name);
+        }
+      });
+    });
+
+    clone.querySelectorAll("form").forEach((element) => {
+      element.removeAttribute("action");
+    });
+
+    clone.querySelectorAll(LENS_EMBEDDED_RESOURCE_SELECTOR).forEach((element) => {
+      LENS_EMBEDDED_RESOURCE_ATTRIBUTES.forEach((attributeName) => {
+        element.removeAttribute(attributeName);
+      });
       element.setAttribute("aria-hidden", "true");
       Object.assign(element.style, {
         background: "rgba(226, 232, 240, 0.9)",
@@ -222,12 +422,12 @@
   }
 
   function createLensPageClone() {
-    const clone = document.createElement("div");
+    const clone = document.body
+      ? document.body.cloneNode(true)
+      : document.createElement("div");
     const bodyStyle = document.body ? globalThis.getComputedStyle(document.body) : null;
 
     clone.setAttribute("aria-hidden", "true");
-    clone.className = document.body?.className || "";
-    clone.innerHTML = document.body?.innerHTML || "";
 
     Object.assign(clone.style, {
       position: "absolute",
@@ -275,11 +475,26 @@
     return viewport;
   }
 
+  function refreshLensCloneSource(source) {
+    source.replaceChildren(createLensPageClone());
+    lensCloneDirty = false;
+    lastLensCloneRefreshAt = getNow();
+  }
+
   function updateLensCloneSource(ruler, clientX, clientY) {
     const source = ruler.querySelector(`[${LENS_SOURCE_ATTRIBUTE}]`);
 
     if (!source) {
       return;
+    }
+
+    const now = getNow();
+
+    if (
+      lensCloneDirty &&
+      now - lastLensCloneRefreshAt >= LENS_CLONE_REFRESH_THROTTLE_MS
+    ) {
+      refreshLensCloneSource(source);
     }
 
     const rect = ruler.getBoundingClientRect();
@@ -338,6 +553,7 @@
       rulerScrollHandler = null;
     }
 
+    stopLensMutationObserver();
   }
 
   function buildReadingRuler(rulerMode) {
@@ -426,8 +642,12 @@
     document.addEventListener("pointermove", rulerMoveHandler, { passive: true });
 
     if (normalisedMode === "lens") {
-      rulerScrollHandler = () => setRulerPosition(lastPointerX, lastPointerY);
+      rulerScrollHandler = () => {
+        lastLensScrollAt = getNow();
+        setRulerPosition(lastPointerX, lastPointerY);
+      };
       globalThis.addEventListener("scroll", rulerScrollHandler, { passive: true });
+      startLensMutationObserver();
     }
 
     setRulerPosition(window.innerWidth / 2, window.innerHeight / 2);
@@ -450,18 +670,8 @@
     return {
       ok: true,
       rulerMode: "none",
-      message: hadRuler ? "Reading ruler is off." : "No reading ruler is active on this page.",
+      message: hadRuler ? "Ruler off." : "No ruler is active.",
     };
-  }
-
-  function toggleReadingRuler() {
-    const hasRuler =
-      document.getElementById(RULER_ID) ||
-      LEGACY_RULER_IDS.some((id) => document.getElementById(id));
-
-    return hasRuler
-      ? disableReadingRuler()
-      : setReadingRuler("highlight");
   }
 
   function getCurrentFontMode() {
@@ -499,18 +709,30 @@
     return "none";
   }
 
+  function describePageToolState(fontMode, rulerMode) {
+    const fontLabel = FONT_MODES[fontMode]?.label || FONT_MODES.original.label;
+    const rulerLabel = RULER_MODES[rulerMode]?.label || RULER_MODES.none.label;
+
+    return `Font: ${fontLabel}. Ruler: ${rulerLabel}.`;
+  }
+
   function getPageToolState() {
     const fontMode = getCurrentFontMode();
     const rulerMode = getCurrentRulerMode();
+    const noticeMessage = lastPageToolNotice;
+    const noticeType = lastPageToolNoticeType;
+
+    lastPageToolNotice = "";
+    lastPageToolNoticeType = "neutral";
 
     return {
       ok: true,
       fontMode,
       rulerMode,
+      ...(noticeMessage ? { noticeType } : {}),
       message:
-        fontMode === "original" && rulerMode === "none"
-          ? "Page tools ready."
-          : "Page tools synced with the current page.",
+        noticeMessage ||
+        describePageToolState(fontMode, rulerMode),
     };
   }
 
@@ -897,7 +1119,7 @@
     const speakerButton = document.createElement("button");
     speakerButton.type = "button";
     speakerButton.setAttribute("aria-label", `Hear ${explanation?.term || "selected word"}`);
-    speakerButton.innerHTML = "&#128266;";
+    speakerButton.textContent = "\uD83D\uDD0A";
     Object.assign(speakerButton.style, {
       display: explanation?.ok ? "inline-flex" : "none",
       alignItems: "center",
@@ -1015,7 +1237,7 @@
     return {
       ok: true,
       message: explanation?.source === "demo-placeholder"
-        ? "Demo dictionary card shown."
+        ? "Example card shown."
         : "Dictionary card shown.",
     };
   }
@@ -1035,23 +1257,11 @@
       return setReadingRuler(message.rulerMode);
     }
 
-    if (action === "apply-readable-font") {
-      return applyReadableFont(message.fontMode);
-    }
-
-    if (action === "reset-readable-font") {
-      return resetReadableFont();
-    }
-
-    if (action === "toggle-reading-ruler") {
-      return toggleReadingRuler();
-    }
-
     if (action === "show-dictionary-popover") {
       return showDictionaryPopover(message.explanation);
     }
 
-    throw new Error("Clearead does not recognise that page tool action.");
+    throw new Error("Unknown page tool.");
   }
 
   function handleCleareadPageToolMessage(message, _sender, sendResponse) {
@@ -1064,7 +1274,7 @@
     } catch (error) {
       sendResponse({
         ok: false,
-        message: error.message || "Clearead page tools could not update this page.",
+        message: error.message || "Page tools are not available here.",
       });
     }
 
@@ -1077,14 +1287,13 @@
     version: VERSION,
     destroy() {
       chrome.runtime.onMessage.removeListener(handleCleareadPageToolMessage);
+      removeReadingRulerElement();
+      removeReadableFontStyle();
       removeDictionaryPopover();
     },
-    applyReadableFont,
-    resetReadableFont,
     setReadableFont,
     setReadingRuler,
     getPageToolState,
-    toggleReadingRuler,
     showDictionaryPopover,
   };
 })();

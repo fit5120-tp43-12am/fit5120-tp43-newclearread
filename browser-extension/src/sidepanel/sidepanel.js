@@ -18,6 +18,7 @@ const resultContent = document.querySelector("#result-content");
 const fontModeButtons = Array.from(document.querySelectorAll("[data-font-mode]"));
 const rulerModeButtons = Array.from(document.querySelectorAll("[data-ruler-mode]"));
 const pageToolsStatus = document.querySelector("#page-tools-status");
+const lensHint = document.querySelector("#lens-hint");
 const dictionaryToggleButton = document.querySelector("#dictionary-toggle");
 const dictionaryTermInput = document.querySelector("#dictionary-term");
 const dictionaryExplainButton = document.querySelector("#dictionary-explain");
@@ -30,13 +31,31 @@ const SIDE_PANEL_FONT_CLASSES = [
   "font-mode-opendyslexic",
   "font-mode-calibri",
 ];
+const PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE = "clearead:page-tool-state-maybe-changed";
+const PAGE_TOOL_STATE_SYNC_DEBOUNCE_MS = 180;
+const PAGE_TOOL_STATE_WATCH_INTERVAL_MS = 2000;
+const FONT_MODE_LABELS = Object.freeze({
+  original: "Original",
+  verdana: "Verdana",
+  opendyslexic: "OpenDyslexic",
+  calibri: "Calibri",
+});
+const RULER_MODE_LABELS = Object.freeze({
+  none: "No ruler",
+  highlight: "Highlight",
+  lens: "Lens",
+  line: "Line guide",
+});
 
 let isLoading = false;
 let isPageToolLoading = false;
+let isPageToolStateSyncing = false;
 let isDictionaryToggleLoading = false;
 let activeFontMode = "original";
 let activeRulerMode = "none";
 let isDictionaryEnabled = false;
+let pageToolStateSyncTimer = null;
+let pageToolStateWatchTimer = null;
 
 function countWords(text) {
   const words = text.trim().match(/\S+/g);
@@ -72,6 +91,40 @@ function setDictionaryStatus(type, message) {
   dictionaryStatus.setAttribute("role", type === "error" ? "alert" : "status");
 }
 
+function describePageToolState(fontMode = activeFontMode, rulerMode = activeRulerMode) {
+  const fontLabel = FONT_MODE_LABELS[fontMode] || FONT_MODE_LABELS.original;
+  const rulerLabel = RULER_MODE_LABELS[rulerMode] || RULER_MODE_LABELS.none;
+
+  return `Font: ${fontLabel}. Ruler: ${rulerLabel}.`;
+}
+
+function getPageToolStateStatusType() {
+  return activeFontMode === "original" && activeRulerMode === "none" ? "neutral" : "success";
+}
+
+function setCurrentPageToolStatus() {
+  setPageToolsStatus(getPageToolStateStatusType(), describePageToolState());
+}
+
+function keepPageToolNoticeIfNeeded(response) {
+  if (!response?.noticeType) {
+    return false;
+  }
+
+  setPageToolsStatus(response.noticeType, response.message || describePageToolState());
+  return true;
+}
+
+function applyPageToolResponseState(response, fallback = {}) {
+  applySidePanelFontMode(response.fontMode || fallback.fontMode || activeFontMode);
+  activeRulerMode = response.rulerMode || fallback.rulerMode || activeRulerMode;
+  updatePageToolButtonStates();
+}
+
+function updateLensHint() {
+  lensHint.hidden = activeRulerMode !== "lens";
+}
+
 function setChoiceButtonState(buttons, dataKey, activeValue) {
   buttons.forEach((button) => {
     const isActive = button.dataset[dataKey] === activeValue;
@@ -88,6 +141,8 @@ function setChoiceButtonState(buttons, dataKey, activeValue) {
 function updatePageToolButtonStates() {
   setChoiceButtonState(fontModeButtons, "fontMode", activeFontMode);
   setChoiceButtonState(rulerModeButtons, "rulerMode", activeRulerMode);
+  updateLensHint();
+  updatePageToolStateWatcher();
 }
 
 function updateDictionaryButtonState(enabled) {
@@ -125,6 +180,45 @@ function setPageToolLoading(nextLoading) {
   });
 }
 
+function hasActivePageToolState() {
+  return activeFontMode !== "original" || activeRulerMode !== "none";
+}
+
+function updatePageToolStateWatcher() {
+  if (hasActivePageToolState()) {
+    if (!pageToolStateWatchTimer) {
+      pageToolStateWatchTimer = window.setInterval(() => {
+        schedulePageToolStateSync();
+      }, PAGE_TOOL_STATE_WATCH_INTERVAL_MS);
+    }
+
+    return;
+  }
+
+  if (pageToolStateWatchTimer) {
+    window.clearInterval(pageToolStateWatchTimer);
+    pageToolStateWatchTimer = null;
+  }
+}
+
+function resetPageToolState(type, message) {
+  applySidePanelFontMode("original");
+  activeRulerMode = "none";
+  updatePageToolButtonStates();
+  setPageToolsStatus(type, message);
+}
+
+function schedulePageToolStateSync(delay = PAGE_TOOL_STATE_SYNC_DEBOUNCE_MS) {
+  if (pageToolStateSyncTimer) {
+    window.clearTimeout(pageToolStateSyncTimer);
+  }
+
+  pageToolStateSyncTimer = window.setTimeout(() => {
+    pageToolStateSyncTimer = null;
+    syncPageToolState();
+  }, delay);
+}
+
 function setDictionaryToggleLoading(nextLoading) {
   isDictionaryToggleLoading = nextLoading;
   dictionaryToggleButton.disabled = nextLoading;
@@ -142,9 +236,9 @@ function updateCountsAndValidation() {
   sourceText.classList.toggle("text-input-error", overLimit);
 
   if (overLimit) {
-    validationMessage.textContent = `This text is ${formatNumber(
+    validationMessage.textContent = `Too long by ${formatNumber(
       chars - MAX_TEXT_CHARS
-    )} characters over the 50,000 character backend limit.`;
+    )} characters. Limit: 50,000.`;
     validationMessage.className = "validation-message validation-error";
   } else {
     validationMessage.textContent = "Up to 50,000 characters.";
@@ -270,7 +364,7 @@ function renderDictionaryCard(explanation) {
   speakButton.type = "button";
   speakButton.className = "dictionary-speak-button";
   speakButton.setAttribute("aria-label", `Hear ${explanation.term || "selected word"}`);
-  speakButton.innerHTML = "&#128266;";
+  speakButton.textContent = "\uD83D\uDD0A";
   speakButton.addEventListener("click", () => {
     speakDictionaryTerm(explanation.term || "");
   });
@@ -295,7 +389,7 @@ function hideDictionaryResult() {
   dictionaryResult.hidden = true;
 }
 
-function showEmptyResult(message = "Results will appear here after the backend responds.") {
+function showEmptyResult(message = "Summary will appear here.") {
   clearElement(resultContent);
   resultPanel.hidden = false;
   resultContent.hidden = true;
@@ -308,7 +402,7 @@ function hideResult() {
   resultPanel.hidden = true;
   resultContent.hidden = true;
   resultEmpty.hidden = false;
-  resultEmpty.textContent = "Results will appear here after the backend responds.";
+  resultEmpty.textContent = "Summary will appear here.";
 }
 
 function renderSummaryResult(data) {
@@ -322,7 +416,7 @@ function renderSummaryResult(data) {
       resultContent,
       "p",
       "empty-state",
-      "The backend responded, but did not return any summary blocks."
+      "No summary was returned."
     );
   }
 
@@ -335,7 +429,7 @@ function renderSummaryResult(data) {
       card,
       "p",
       "summary-text",
-      block.summary || "No summary was returned for this block."
+      block.summary || "No summary was returned."
     );
 
     resultContent.appendChild(card);
@@ -349,15 +443,15 @@ function validateTextForSummary() {
   const text = sourceText.value.trim();
 
   if (!text) {
-    setStatus("error", "Paste text before requesting a summary.");
-    validationMessage.textContent = "Text is required before Clearead can summarize it.";
+    setStatus("error", "Paste text first.");
+    validationMessage.textContent = "Paste text to summarize.";
     validationMessage.className = "validation-message validation-error";
     sourceText.focus();
     return null;
   }
 
   if (sourceText.value.length > MAX_TEXT_CHARS) {
-    setStatus("error", "The pasted text is over the 50,000 character backend limit.");
+    setStatus("error", "Text is over 50,000 characters.");
     sourceText.focus();
     return null;
   }
@@ -377,16 +471,16 @@ async function summarizeText() {
   }
 
   setLoading(true);
-  showEmptyResult("Waiting for the Clearead backend response...");
-  setStatus("loading", "Sending pasted text to the Clearead backend for summary...");
+  showEmptyResult("Summarizing...");
+  setStatus("loading", "Summarizing...");
 
   try {
     const data = await requestSummary(text);
     renderSummaryResult(data);
-    setStatus("success", "Summary complete.");
+    setStatus("success", "Summary ready.");
   } catch (error) {
-    showEmptyResult("No summary is available yet.");
-    setStatus("error", error.message || "Clearead could not summarize this text.");
+    showEmptyResult("No summary yet.");
+    setStatus("error", error.message || "Summary failed. Try again.");
   } finally {
     setLoading(false);
     updateCountsAndValidation();
@@ -432,16 +526,16 @@ async function runPageTool(action, loadingMessage, payload = {}) {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Clearead page tools could not update this page.");
+      throw new Error(response?.message || "Tool is not available here.");
     }
 
-    setPageToolsStatus("success", response.message || "Page tool applied.");
+    setPageToolsStatus(response.noticeType || "success", response.message || "Done.");
     return response;
   } catch (error) {
     setPageToolsStatus(
       "error",
       error.message ||
-        "Clearead page tools could not run on this page. Try a normal webpage and reopen Clearead from the toolbar icon."
+        "This page is not supported. Try a text page or click Clearead again."
     );
     return null;
   } finally {
@@ -452,39 +546,39 @@ async function runPageTool(action, loadingMessage, payload = {}) {
 async function setReadableFontMode(fontMode) {
   const response = await runPageTool(
     "set-readable-font",
-    fontMode === "original"
-      ? "Restoring the original page font..."
-      : "Applying readable font settings to the active page...",
+    fontMode === "original" ? "Restoring font..." : "Applying font...",
     { fontMode }
   );
 
   if (response?.ok) {
-    applySidePanelFontMode(response.fontMode || fontMode);
-    updatePageToolButtonStates();
+    applyPageToolResponseState(response, { fontMode });
+    if (!keepPageToolNoticeIfNeeded(response)) {
+      setCurrentPageToolStatus();
+    }
   }
 }
 
 async function setReadingRulerMode(rulerMode) {
   const response = await runPageTool(
     "set-reading-ruler",
-    rulerMode === "none"
-      ? "Turning off the reading ruler..."
-      : "Applying the reading ruler to the active page...",
+    rulerMode === "none" ? "Turning ruler off..." : "Applying ruler...",
     { rulerMode }
   );
 
   if (response?.ok) {
-    activeRulerMode = response.rulerMode || rulerMode;
-    updatePageToolButtonStates();
+    applyPageToolResponseState(response, { rulerMode });
+    if (!keepPageToolNoticeIfNeeded(response)) {
+      setCurrentPageToolStatus();
+    }
   }
 }
 
 async function syncPageToolState() {
-  if (isPageToolLoading) {
+  if (isPageToolLoading || isPageToolStateSyncing) {
     return;
   }
 
-  setPageToolLoading(true);
+  isPageToolStateSyncing = true;
 
   try {
     const response = await sendRuntimeMessage({
@@ -493,14 +587,14 @@ async function syncPageToolState() {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Clearead could not read the current page tools.");
+      throw new Error(response?.message || "Page tools are not available here.");
     }
 
     if (response.syncUnavailable) {
-      setPageToolsStatus(
+      resetPageToolState(
         "neutral",
         response.message ||
-          "Click the Clearead toolbar icon on the target webpage to connect page tools."
+          "In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
       );
       return;
     }
@@ -509,17 +603,17 @@ async function syncPageToolState() {
     activeRulerMode = response.rulerMode || "none";
     updatePageToolButtonStates();
     setPageToolsStatus(
-      activeFontMode === "original" && activeRulerMode === "none" ? "neutral" : "success",
-      response.message || "Page tools synced with the current page."
+      response.noticeType || getPageToolStateStatusType(),
+      response.message || describePageToolState()
     );
   } catch (error) {
-    setPageToolsStatus(
+    resetPageToolState(
       "neutral",
       error.message ||
-        "Page tools ready. Use the toolbar popup on the target webpage if a tool needs access."
+        "Ready. If needed, in Chrome click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
     );
   } finally {
-    setPageToolLoading(false);
+    isPageToolStateSyncing = false;
   }
 }
 
@@ -532,19 +626,19 @@ async function loadDictionaryEnabledState() {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Clearead could not read the dictionary setting.");
+      throw new Error(response?.message || "Dictionary setting is unavailable.");
     }
 
     updateDictionaryButtonState(response.enabled);
     setDictionaryStatus(
       response.enabled ? "success" : "neutral",
-      response.enabled ? "On for selected text on webpages." : "Off for webpage right-clicks."
+      response.enabled ? "On for selected text." : "Off for right-clicks."
     );
   } catch (error) {
     updateDictionaryButtonState(false);
     setDictionaryStatus(
       "error",
-      error.message || "Clearead could not read the dictionary setting."
+      error.message || "Dictionary setting is unavailable."
     );
   } finally {
     setDictionaryToggleLoading(false);
@@ -561,7 +655,7 @@ async function updateDictionaryEnabledState() {
   setDictionaryToggleLoading(true);
   setDictionaryStatus(
     "loading",
-    nextEnabled ? "Turning on right-click dictionary..." : "Turning off right-click dictionary..."
+    nextEnabled ? "Turning dictionary on..." : "Turning dictionary off..."
   );
 
   try {
@@ -571,19 +665,19 @@ async function updateDictionaryEnabledState() {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Clearead could not update the dictionary menu.");
+      throw new Error(response?.message || "Dictionary did not update.");
     }
 
     updateDictionaryButtonState(response.enabled);
     setDictionaryStatus(
       response.enabled ? "success" : "neutral",
-      response.enabled ? "On for selected text on webpages." : "Off for webpage right-clicks."
+      response.enabled ? "On for selected text." : "Off for right-clicks."
     );
   } catch (error) {
     updateDictionaryButtonState(previousEnabled);
     setDictionaryStatus(
       "error",
-      error.message || "Clearead could not update the dictionary menu."
+      error.message || "Dictionary did not update."
     );
   } finally {
     setDictionaryToggleLoading(false);
@@ -603,7 +697,7 @@ function explainDictionaryTerm() {
 
   if (!term) {
     hideDictionaryResult();
-    setDictionaryStatus("error", "Paste one word or short phrase before clicking Explain.");
+    setDictionaryStatus("error", "Paste one word or short phrase first.");
     dictionaryTermInput.focus();
     return;
   }
@@ -613,7 +707,7 @@ function explainDictionaryTerm() {
 
   if (!explanation.ok) {
     hideDictionaryResult();
-    setDictionaryStatus("error", explanation.message || "Clearead could not explain this word.");
+    setDictionaryStatus("error", explanation.message || "Could not explain this word.");
     return;
   }
 
@@ -621,8 +715,8 @@ function explainDictionaryTerm() {
   setDictionaryStatus(
     "success",
     explanation.source === "demo-placeholder"
-      ? "Demo dictionary explanation shown below."
-      : "Dictionary explanation shown below."
+      ? "Example explanation shown."
+      : "Explanation shown."
   );
 }
 
@@ -649,6 +743,21 @@ dictionaryTermInput.addEventListener("keydown", (event) => {
 });
 dictionaryExplainButton.addEventListener("click", explainDictionaryTerm);
 openWebsiteLink.href = CLEAREAD_WEBSITE_URL;
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE) {
+    schedulePageToolStateSync();
+  }
+
+  return false;
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    schedulePageToolStateSync();
+  }
+});
+window.addEventListener("focus", () => {
+  schedulePageToolStateSync();
+});
 
 updateCountsAndValidation();
 hideResult();

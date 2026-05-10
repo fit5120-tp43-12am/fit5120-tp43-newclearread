@@ -43,6 +43,7 @@ The validation script currently checks:
 - No static `content_scripts`.
 - Required local source files.
 - Classic background service worker without static `import` or `export`.
+- Common unsafe source patterns, including HTML string injection APIs, `eval`, `new Function`, remote JavaScript URLs, non-session extension storage, localStorage, and credential-like names.
 
 ## Manual Chrome Checks Performed
 
@@ -55,7 +56,7 @@ Foundation:
 Text processing workflow:
 
 - Tested pasted text summary against deployed Azure backend.
-- Confirmed Summary complete status.
+- Confirmed Summary ready status.
 - Confirmed result displays summary text only.
 - Confirmed pasted text is sent only after Summary click.
 - Later UI change confirmed the status strip and Result panel are hidden before Summary is used.
@@ -106,10 +107,12 @@ Side panel state sync:
 - Turn on Highlight, Lens, or Line guide.
 - Close and reopen the side panel.
 - Confirm the selected Reading ruler button matches the actual page ruler.
+- With Lens active, navigate within the same tab, such as from Unit to Grades on a learning site, and confirm the side panel changes back to No ruler if the page removed the Lens overlay.
 - Click No ruler and confirm the overlay disappears and the button state changes.
 - Confirm Highlight and Line guide keep the whole ruler rectangle transparent, use blue top/bottom borders with blue glow fading outward, and dim the page outside the ruler slightly.
 - Reload the extension while a page tool is visible, then reopen Clearead from the toolbar popup and confirm state sync recovers from the existing page DOM.
-- Open the side panel without a current page connection and confirm it asks for toolbar popup reconnection instead of showing a false synced state.
+- Open the side panel without a current page connection and confirm it says: "In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
+- Open a direct PDF, DOCX, DOC, or TXT file URL and confirm it says: "File pages may not support page tools. Click Open website to upload the file."
 
 Lens regression:
 
@@ -117,9 +120,13 @@ Lens regression:
 - Select Lens.
 - Confirm the magnifier follows the pointer horizontally and vertically.
 - Confirm the magnifier does not show extracted multi-line text or duplicated rows.
+- Confirm ordinary webpage dropdown menus remain visible inside Lens after the menu opens.
 - Confirm it does not block page clicks because the overlay uses `pointer-events: none`.
 - Confirm disabling the ruler removes the lens overlay.
 - Test after scrolling halfway down a long page.
+- Confirm the Reading ruler section says: "Best on text pages. If Lens looks blank, try Highlight or Line guide."
+- Select Lens and confirm the status still shows the current Font/Ruler state while a separate Lens tip appears below it.
+- On a media-heavy or animation-heavy page, confirm Lens either remains usable or says: "Lens stopped on this dynamic page. Try Highlight or Line guide."
 
 Background service worker regression:
 

@@ -35,7 +35,7 @@ function explainLocalTerm(term) {
     return {
       ok: false,
       term: "",
-      message: "Select one word or a short phrase on the page, then try again.",
+      message: "Select one word or short phrase first.",
     };
   }
 
@@ -61,26 +61,26 @@ const OPEN_SIDE_PANEL_REQUEST_TYPE = "clearead:open-side-panel";
 const MARK_PAGE_ACTIVATION_REQUEST_TYPE = "clearead:mark-page-activation";
 const SET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:set-dictionary-enabled";
 const GET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:get-dictionary-enabled";
+const PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE = "clearead:page-tool-state-maybe-changed";
 const PAGE_TOOL_SCRIPT = "src/content/page-tools.js";
 const DICTIONARY_CONTEXT_MENU_ID = "clearead-explain-selection";
 const DICTIONARY_ENABLED_STORAGE_KEY = "cleareadDictionaryEnabled";
 const NORMAL_PAGE_URL_PATTERNS = ["http://*/*", "https://*/*"];
 const BROWSER_RESTRICTED_PAGE_MESSAGE =
-  "Chrome does not allow extensions to modify this page. Try a normal webpage.";
+  "Chrome blocks tools on this page. Try another webpage.";
+const FILE_PAGE_MESSAGE =
+  "File pages may not support page tools. Click Open website to upload the file.";
 const ACTIVE_TAB_ACCESS_MESSAGE =
-  "Clearead needs access to the current tab before page tools can run. Open the target webpage, click the Clearead toolbar icon, then try the page tool again.";
+  "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page.";
 const GENERIC_PAGE_TOOL_MESSAGE =
-  "Clearead page tools could not run on this page. Try a normal webpage and reopen Clearead from the toolbar icon.";
+  "This page is not supported. Try a text page or click Clearead again.";
 const PAGE_TOOL_RECONNECT_MESSAGE =
-  "Page tools are not connected to this page yet. Click the Clearead toolbar icon on the target webpage and open Clearead for this page.";
+  "Not connected. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page.";
 const RECENT_PAGE_ACTIVATION_MS = 120000;
 const PAGE_TOOL_ACTIONS = new Set([
   "get-page-tool-state",
   "set-readable-font",
   "set-reading-ruler",
-  "apply-readable-font",
-  "reset-readable-font",
-  "toggle-reading-ruler",
 ]);
 
 let isDictionaryEnabled = false;
@@ -94,7 +94,7 @@ function markPageToolActivation(message) {
   if (!Number.isInteger(message?.tabId)) {
     return {
       ok: false,
-      message: "Clearead could not identify the current tab for page tools.",
+      message: "No active page found.",
     };
   }
 
@@ -107,6 +107,18 @@ function markPageToolActivation(message) {
   return {
     ok: true,
   };
+}
+
+function notifyPageToolStateMaybeChanged(tabId) {
+  chrome.runtime.sendMessage(
+    {
+      type: PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE,
+      tabId,
+    },
+    () => {
+      chrome.runtime.lastError;
+    }
+  );
 }
 
 function hasRecentPageToolActivation(tab) {
@@ -218,6 +230,54 @@ function isBrowserRestrictedPageUrl(url) {
   );
 }
 
+function decodeForFileDetection(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function isLikelyUploadableFileUrl(tabOrUrl) {
+  const url = typeof tabOrUrl === "string" ? tabOrUrl : tabOrUrl?.url;
+  const title = typeof tabOrUrl === "string" ? "" : tabOrUrl?.title;
+
+  if (!url && !title) {
+    return false;
+  }
+
+  const urlText = decodeForFileDetection(url || "").toLowerCase();
+  const titleText = decodeForFileDetection(title || "").toLowerCase();
+  const uploadableFilePattern = /\.(pdf|doc|docx|txt)(?:$|[\s"'&#?])/;
+
+  if (
+    urlText.includes("application/pdf") ||
+    urlText.includes("application/msword") ||
+    urlText.includes(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) ||
+    urlText.includes("text/plain")
+  ) {
+    return true;
+  }
+
+  if (uploadableFilePattern.test(urlText)) {
+    return true;
+  }
+
+  if (/\.(pdf|doc|docx|txt)\s*$/.test(titleText)) {
+    return true;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const pathname = decodeURIComponent(parsedUrl.pathname).toLowerCase();
+    return /\.(pdf|doc|docx|txt)$/i.test(pathname);
+  } catch {
+    return /\.(pdf|doc|docx|txt)(?:$|[?#])/i.test(String(url).toLowerCase());
+  }
+}
+
 function isBrowserRestrictedPageError(message) {
   const normalizedMessage = message.toLowerCase();
 
@@ -249,8 +309,23 @@ function isActiveTabAccessError(message) {
   );
 }
 
-function normalisePageToolError(error, tabUrl) {
+function isMissingContentScriptError(error) {
+  const normalizedMessage = String(error?.message || "").toLowerCase();
+
+  return (
+    normalizedMessage.includes("receiving end does not exist") ||
+    normalizedMessage.includes("could not establish connection") ||
+    normalizedMessage.includes("no receiving end")
+  );
+}
+
+function normalisePageToolError(error, tabOrUrl) {
   const message = error?.message || "";
+  const tabUrl = typeof tabOrUrl === "string" ? tabOrUrl : tabOrUrl?.url;
+
+  if (isLikelyUploadableFileUrl(tabOrUrl)) {
+    return FILE_PAGE_MESSAGE;
+  }
 
   if (isBrowserRestrictedPageUrl(tabUrl) || isBrowserRestrictedPageError(message)) {
     return BROWSER_RESTRICTED_PAGE_MESSAGE;
@@ -267,7 +342,7 @@ async function getActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   if (!tab?.id) {
-    throw new Error("Clearead could not find an active tab for page tools.");
+    throw new Error("No active page found.");
   }
 
   return tab;
@@ -280,12 +355,66 @@ async function injectPageTools(tabId) {
   });
 }
 
+async function sendPageToolCommand(tabId, message) {
+  return chrome.tabs.sendMessage(tabId, {
+    type: PAGE_TOOL_COMMAND_TYPE,
+    action: message.action,
+    fontMode: message.fontMode,
+    rulerMode: message.rulerMode,
+    explanation: message.explanation,
+  });
+}
+
+async function clearPageToolsFromTab(tabId) {
+  await Promise.allSettled([
+    sendPageToolCommand(tabId, {
+      action: "set-reading-ruler",
+      rulerMode: "none",
+    }),
+    sendPageToolCommand(tabId, {
+      action: "set-readable-font",
+      fontMode: "original",
+    }),
+  ]);
+}
+
+function getPageToolUpdateFallback(message) {
+  if (message.action === "set-reading-ruler" && message.rulerMode === "none") {
+    return {
+      ok: true,
+      rulerMode: "none",
+      message: "No ruler is active.",
+    };
+  }
+
+  if (message.action === "set-readable-font" && message.fontMode === "original") {
+    return {
+      ok: true,
+      fontMode: "original",
+      message: "Original font restored.",
+    };
+  }
+
+  return null;
+}
+
 async function handlePageToolRequest(message) {
   if (!PAGE_TOOL_ACTIONS.has(message.action)) {
-    throw new Error("Clearead does not recognise that page tool action.");
+    throw new Error("Unknown page tool.");
   }
 
   const tab = await getActiveTab();
+
+  if (isLikelyUploadableFileUrl(tab)) {
+    await clearPageToolsFromTab(tab.id);
+    return {
+      ok: true,
+      fontMode: "original",
+      rulerMode: "none",
+      noticeType: "error",
+      message: FILE_PAGE_MESSAGE,
+    };
+  }
 
   if (isBrowserRestrictedPageUrl(tab.url)) {
     throw new Error(BROWSER_RESTRICTED_PAGE_MESSAGE);
@@ -294,10 +423,7 @@ async function handlePageToolRequest(message) {
   try {
     if (message.action === "get-page-tool-state") {
       try {
-        const existingResponse = await chrome.tabs.sendMessage(tab.id, {
-          type: PAGE_TOOL_COMMAND_TYPE,
-          action: message.action,
-        });
+        const existingResponse = await sendPageToolCommand(tab.id, message);
 
         if (existingResponse?.ok) {
           return existingResponse;
@@ -309,17 +435,14 @@ async function handlePageToolRequest(message) {
       if (hasRecentPageToolActivation(tab)) {
         await injectPageTools(tab.id);
 
-        const injectedResponse = await chrome.tabs.sendMessage(tab.id, {
-          type: PAGE_TOOL_COMMAND_TYPE,
-          action: message.action,
-        });
+        const injectedResponse = await sendPageToolCommand(tab.id, message);
 
         if (injectedResponse?.ok) {
           return injectedResponse;
         }
 
         throw new Error(
-          injectedResponse?.message || "Clearead page tools could not read this page."
+          injectedResponse?.message || "Page tools are not available here."
         );
       }
 
@@ -330,32 +453,55 @@ async function handlePageToolRequest(message) {
       };
     }
 
-    await injectPageTools(tab.id);
+    try {
+      const existingResponse = await sendPageToolCommand(tab.id, message);
 
-    const response = await chrome.tabs.sendMessage(tab.id, {
-      type: PAGE_TOOL_COMMAND_TYPE,
-      action: message.action,
-      fontMode: message.fontMode,
-      rulerMode: message.rulerMode,
-    });
+      if (existingResponse?.ok) {
+        return existingResponse;
+      }
+
+      throw new Error(existingResponse?.message || "Page tools are not available here.");
+    } catch (error) {
+      if (!isMissingContentScriptError(error)) {
+        throw error;
+      }
+    }
+
+    try {
+      await injectPageTools(tab.id);
+    } catch (error) {
+      const fallback = getPageToolUpdateFallback(message);
+
+      if (fallback) {
+        return fallback;
+      }
+
+      throw error;
+    }
+
+    const response = await sendPageToolCommand(tab.id, message);
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Clearead page tools could not update this page.");
+      throw new Error(response?.message || "Page tools are not available here.");
     }
 
     return response;
   } catch (error) {
-    throw new Error(normalisePageToolError(error, tab.url));
+    throw new Error(normalisePageToolError(error, tab));
   }
 }
 
 async function showDictionaryPopover(tab, selectedText) {
   if (!tab?.id) {
-    throw new Error("Clearead could not identify the tab for dictionary lookup.");
+    throw new Error("No active page found.");
   }
 
   if (isBrowserRestrictedPageUrl(tab.url)) {
     throw new Error(BROWSER_RESTRICTED_PAGE_MESSAGE);
+  }
+
+  if (isLikelyUploadableFileUrl(tab)) {
+    throw new Error(FILE_PAGE_MESSAGE);
   }
 
   const term = normaliseLookupTerm(selectedText);
@@ -371,10 +517,10 @@ async function showDictionaryPopover(tab, selectedText) {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Clearead could not show the dictionary popover.");
+      throw new Error(response?.message || "Dictionary is not available here.");
     }
   } catch (error) {
-    throw new Error(normalisePageToolError(error, tab.url));
+    throw new Error(normalisePageToolError(error, tab));
   }
 }
 
@@ -388,7 +534,7 @@ async function handleOpenSidePanelRequest(message) {
   } else if (Number.isInteger(message.windowId)) {
     openOptions.windowId = message.windowId;
   } else {
-    throw new Error("Clearead could not identify where to open the side panel.");
+    throw new Error("No active page found.");
   }
 
   await chrome.sidePanel.open(openOptions);
@@ -416,7 +562,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({
           ok: false,
           enabled: false,
-          message: error.message || "Clearead could not read the dictionary setting.",
+          message: error.message || "Dictionary setting is unavailable.",
         });
       });
 
@@ -430,7 +576,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({
           ok: false,
           enabled: isDictionaryEnabled,
-          message: error.message || "Clearead could not update the dictionary menu.",
+          message: error.message || "Dictionary setting did not update.",
         });
       });
 
@@ -443,7 +589,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((error) => {
         sendResponse({
           ok: false,
-          message: error.message || "Clearead could not open the side panel.",
+          message: error.message || "Side panel did not open.",
         });
       });
 
@@ -498,6 +644,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   handleDictionaryContextMenuClick(info, tab).catch((error) => {
     console.error("Clearead could not show the dictionary popover.", error);
   });
+});
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  notifyPageToolStateMaybeChanged(activeInfo.tabId);
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === "loading" || changeInfo.status === "complete" || changeInfo.url) {
+    notifyPageToolStateMaybeChanged(tabId);
+  }
 });
 
 syncDictionaryContextMenuFromSession().catch((error) => {

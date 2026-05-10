@@ -2,4 +2,4 @@
 
 This folder is reserved for shared extension styles.
 
-The current side panel has its own local stylesheet because it is the only implemented UI surface in Phase 1.
+The popup and side panel currently keep their styles beside their own HTML files because they are small, separate extension surfaces.

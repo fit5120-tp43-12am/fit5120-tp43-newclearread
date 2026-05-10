@@ -17,7 +17,7 @@
 
 ## Manifest V3 Pieces
 
-Phase 7 uses these Manifest V3 pieces:
+The extension uses these Manifest V3 pieces:
 
 - `manifest_version: 3`: required for the current Chrome extension platform.
 - `icons`: points to local packaged PNG files at 16, 32, 48, and 128 pixels.
@@ -29,7 +29,7 @@ Phase 7 uses these Manifest V3 pieces:
 - `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and a session-only boolean for the Right-click lookup button state.
 - `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend for Summary.
 
-No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used in this phase.
+No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used.
 
 Opening `https://clearead.azurewebsites.net/` is a normal external link from extension UI. It does not require a website host permission and does not let the extension inspect that website tab.
 
@@ -69,7 +69,7 @@ Text is not sent automatically while typing, and page content is not read automa
 8. The injected script applies or removes Clearead-owned page elements and returns a status message to the side panel.
 9. If Chrome rejects scripting, the service worker classifies the error as a browser-restricted page, a temporary active-tab access problem, or a generic page-tool failure before sending the message back to the side panel.
 
-The page-tool script is not registered in `manifest.json` as a static content script. It is packaged locally and runs only after clear user actions: activating Clearead from the popup, then opening the side panel for that page or clicking a side panel page-tool control. It does not send page text to the backend, persist settings, or scan pages automatically. Lens mode builds a local non-interactive clone of the current page DOM inside the same tab so it can render a magnified view; scripts and media sources are removed from that clone.
+The page-tool script is not registered in `manifest.json` as a static content script. It is packaged locally and runs only after clear user actions: activating Clearead from the popup, then opening the side panel for that page or clicking a side panel page-tool control. It does not send page text to the backend, persist settings, or scan pages automatically. Lens mode builds a local non-interactive clone of the current page DOM inside the same tab so it can render a magnified view; that local clone is refreshed after page DOM changes such as dropdown menus, and scripts, inline event handlers, form actions, and embedded media sources are removed from the clone. Lens is scoped to text-page support. If a page changes too frequently while Lens is active, the content script turns Lens off and returns: "Lens stopped on this dynamic page. Try Highlight or Line guide."
 
 ## Right-Click Dictionary Flow
 
@@ -92,15 +92,17 @@ Selected text is processed locally in the extension only after the user clicks t
 
 Readable font adds one removable style tag with id `clearead-readable-style`. The style targets common text containers such as `body`, `main`, `article`, `section`, paragraphs, list items, headings, labels, tables, links, inline spans, and form controls. The side panel offers Original, Verdana, OpenDyslexic, and Calibri. Choosing a readable font also increases line height, word spacing, and letter spacing so the change is visible and easier to scan. Choosing Original removes only this Clearead-owned style tag.
 
-Reading ruler adds one overlay element with id `clearead-reading-ruler-v2` and removes older `clearead-reading-ruler` overlays if found. The side panel offers No ruler, Highlight, Lens, and Line guide. The active ruler is fixed-position, pointer-following, visually dims the rest of the page, and uses `pointer-events: none` so page clicks can pass through. Lens follows the pointer horizontally and vertically, showing a local magnified clone of the page area under the pointer. Choosing No ruler removes the overlay and listeners. The active font and ruler are not persisted across page reloads, but the side panel can query the current active page to keep its buttons aligned with the actual page state.
+Reading ruler adds one overlay element with id `clearead-reading-ruler-v2` and removes older `clearead-reading-ruler` overlays if found. The side panel offers No ruler, Highlight, Lens, and Line guide. The active ruler is fixed-position, pointer-following, visually dims the rest of the page, and uses `pointer-events: none` so page clicks can pass through. Lens follows the pointer horizontally and vertically, showing a local magnified clone of the page area under the pointer. While Lens is active, a local mutation observer marks the clone for throttled refresh when ordinary webpage DOM changes. A safety threshold turns Lens off on pages that trigger too many DOM changes in a short window, such as some animated or media-heavy pages. The side panel also warns: "Best on text pages. If Lens looks blank, try Highlight or Line guide." Choosing No ruler removes the overlay and listeners. The active font and ruler are not persisted across page reloads, but the side panel can query the current active page to keep its buttons aligned with the actual page state.
 
 ## Unsupported Pages
 
-Some browser-controlled pages cannot be scripted by extensions. Clearead rejects or gracefully reports failure for `chrome://`, `edge://`, `about:`, Chrome Web Store pages, extension pages, some PDF viewers, and other restricted contexts. The expected side panel message is: "Chrome does not allow extensions to modify this page. Try a normal webpage."
+Some browser-controlled pages cannot be scripted by extensions. Clearead rejects or gracefully reports failure for `chrome://`, `edge://`, `about:`, Chrome Web Store pages, extension pages, some PDF viewers, and other restricted contexts. The expected side panel message is: "Chrome blocks tools on this page. Try another webpage."
 
-Normal webpages can also fail if Chrome has not granted Clearead temporary `activeTab` access for the current page. In that case, the expected side panel message is: "Clearead needs access to the current tab before page tools can run. Open the target webpage, click the Clearead toolbar icon, then try the page tool again."
+For direct PDF, DOCX, DOC, or TXT file URLs, the expected side panel message is: "File pages may not support page tools. Click Open website to upload the file." This guides users to the full Clearead website upload flow without adding broad file or host permissions.
 
-For unexpected page-tool failures, the fallback message is: "Clearead page tools could not run on this page. Try a normal webpage and reopen Clearead from the toolbar icon."
+Normal webpages can also fail if Chrome has not granted Clearead temporary `activeTab` access for the current page. In that case, the expected side panel message is: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
+
+For unexpected page-tool failures, the fallback message is: "This page is not supported. Try a text page or click Clearead again."
 
 ## Backend Contract
 

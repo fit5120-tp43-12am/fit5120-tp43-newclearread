@@ -65,7 +65,9 @@ Page tools:
 - Font tools inject a local style element.
 - Highlight and Line guide create local overlay elements.
 - Lens creates a local, non-interactive clone of the current page DOM inside the same tab for magnification.
-- Lens removes scripts and media sources from the clone.
+- Lens refreshes that local clone after ordinary webpage DOM changes, such as dropdown menus, while Lens is active.
+- Lens removes scripts, inline event handlers, form actions, and embedded media sources from the clone.
+- Lens is presented as a text-page reading aid. If a media-heavy or animation-heavy page changes too frequently while Lens is active, the content script turns Lens off and shows: "Lens stopped on this dynamic page. Try Highlight or Line guide."
 - Page content is not sent to the backend, not sent to third parties, and not stored.
 - Page-tool state is synchronized by querying the active page, not by storing page content or preferences.
 
@@ -102,6 +104,7 @@ Website link:
 - Visual polish aligned the extension with the Clearead website palette without adding permissions.
 - Recent Lens work returned to a local magnifier model and now documents the local DOM clone behavior honestly.
 - Recent state-sync work added a `get-page-tool-state` command so side panel buttons reflect the actual active page state after reopening.
+- Lens safety work added concise text-page guidance, clearer active-tab reconnection instructions, and a high-change safety cutoff for complex animated or media-heavy pages.
 
 ## Open Release Risks
 
@@ -109,7 +112,7 @@ Website link:
 - Final user-facing privacy policy is not complete.
 - Backend data retention, logging, and subprocessors still need confirmation.
 - Final production backend origin may change before release.
-- Lens behavior still needs manual usability testing on several normal websites.
+- Lens behavior still needs manual usability testing on several text-based websites and a small sample of complex media-heavy websites to confirm the safety cutoff is understandable.
 - The extension has not yet gone through a final package contents audit.
 
 ## Future Change Rules
