@@ -791,6 +791,17 @@ def preprocess_text(
     if not content_sentences:
         return {"segments": [], "debug": _empty_debug(all_sentences)} if debug else {"segments": []}
 
+    seen_sentences: set[str] = set()
+    deduped_sentences = []
+    for sentence in content_sentences:
+        if sentence["word_count"] >= 10:
+            key = _normalize_for_duplicate_check(sentence["text"])
+            if key in seen_sentences:
+                continue
+            seen_sentences.add(key)
+        deduped_sentences.append(sentence)
+    content_sentences = deduped_sentences
+
     blocks = build_sentence_blocks(content_sentences, block_size=block_size)
     boundaries = []
     if len(blocks) >= 2:
@@ -833,7 +844,7 @@ def preprocess_text(
     validate_segments_detailed(
         internal_segments,
         cleaned,
-        all_sentences,
+        content_sentences,
         keep_references=keep_references,
     )
 
