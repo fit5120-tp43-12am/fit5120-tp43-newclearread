@@ -321,7 +321,8 @@ def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
     # the whole input as a single block.
     try:
         preprocessing_result = preprocess_text(text, enrich_with_llm=False)
-    except Exception:
+    except Exception as exc:
+        print(f"[preprocess] failed: {type(exc).__name__}: {exc}", flush=True)
         return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", {}
 
     segments, success, metadata = _normalize_preprocess_result(preprocessing_result)
