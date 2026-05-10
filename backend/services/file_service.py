@@ -11,7 +11,6 @@ TEXT_EXTENSIONS = {
     ".txt",
 }
 
-#
 # Extensions that need a dedicated parser before text can be read.
 BINARY_EXTENSIONS = {
     ".pdf",
