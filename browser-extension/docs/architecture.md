@@ -12,6 +12,7 @@
 - `src/popup/`: small toolbar popup that activates Clearead for the current page before opening the side panel and also links to the full Clearead website.
 - `src/styles/`: reserved for shared styling.
 - `public/icons/`: packaged extension icon PNG assets for 16, 32, 48, and 128 pixel contexts.
+- `public/fonts/`: packaged OpenDyslexic WOFF2 font files and the SIL Open Font License text used by the OpenDyslexic font mode.
 - `docs/`: project documentation for architecture, privacy, permissions, and store checks.
 - `scripts/`: local validation scripts for extension checks.
 
@@ -26,8 +27,9 @@ The extension uses these Manifest V3 pieces:
 - `action.default_icon`: points the toolbar action to the same local packaged icon set.
 - `background.service_worker`: points to the extension service worker. It is kept as a classic worker so Chrome reloads do not depend on service-worker module parsing.
 - `side_panel.default_path`: points Chrome to the side panel HTML file.
-- `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and a session-only boolean for the Right-click lookup button state.
+- `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and session-only state for the Right-click lookup button plus recent page activation tracking.
 - `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend for Summary.
+- `web_accessible_resources`: exposes only the packaged OpenDyslexic WOFF2 files to normal `http` and `https` pages so injected readable-font CSS can load the local font files.
 
 No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used.
 
@@ -43,7 +45,7 @@ Opening `https://clearead.azurewebsites.net/` is a normal external link from ext
 6. The user manually pastes text into the textarea.
 7. The side panel counts words and characters locally.
 8. Empty input and text over 50,000 characters are rejected before any backend request.
-9. When the user clicks Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` with `{ "text": string }`.
+9. When the user runs Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` with `{ "text": string }`.
 10. The result panel renders only the returned summary text above the Page tools section.
 11. Backend validation and network failures are shown in the side panel as error states.
 
@@ -86,11 +88,11 @@ The page-tool script is not registered in `manifest.json` as a static content sc
 11. The content script renders a Clearead-owned dictionary card near the current selection, or in a safe viewport position if no selection rectangle is available.
 12. When the user turns the side panel Right-click lookup button off, the service worker removes the Clearead context menu item.
 
-Selected text is processed locally in the extension only after the user clicks the Clearead menu item. It is not sent to the Clearead backend, not stored, and not expanded into surrounding page content. The side panel word input is one line; clicking Explain or pressing Enter builds the same local demo dictionary response card inside the panel without sending or storing the word. The current card includes a local pronunciation button and no Save action. The context menu is limited with `documentUrlPatterns` for normal webpages and is not backed by static content scripts or broad host permissions. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep but is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
+Selected text is processed locally in the extension only after the user clicks the Clearead menu item. It is not sent to the Clearead backend, not stored, and not expanded into surrounding page content. The side panel word input is one line; clicking Explain or pressing Enter builds the same local demo dictionary response card inside the panel without sending or storing the word. The current card includes a local pronunciation button and no Save action. The context menu is limited with `documentUrlPatterns` for normal webpages and is not backed by static content scripts or broad host permissions. The dictionary enabled boolean is saved in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep but is cleared when the extension is disabled, reloaded, updated, or when the browser restarts. A recent page activation tab/window/time record is also saved in `chrome.storage.session` so page-tool state sync can recover after service worker sleep without storing page content.
 
 ## Page Tool Behaviors
 
-Readable font adds one removable style tag with id `clearead-readable-style`. The style targets common text containers such as `body`, `main`, `article`, `section`, paragraphs, list items, headings, labels, tables, links, inline spans, and form controls. The side panel offers Original, Verdana, OpenDyslexic, and Calibri. Choosing a readable font also increases line height, word spacing, and letter spacing so the change is visible and easier to scan. Choosing Original removes only this Clearead-owned style tag.
+Readable font adds one removable style tag with id `clearead-readable-style`. The style targets common text containers such as `body`, `main`, `article`, `section`, paragraphs, list items, headings, labels, tables, links, inline spans, and form controls. The side panel offers Original, Verdana, OpenDyslexic, and Calibri. OpenDyslexic loads from packaged local WOFF2 font files, not from a remote font service. Choosing a readable font also increases line height, word spacing, and letter spacing so the change is visible and easier to scan. Choosing Original removes only this Clearead-owned style tag.
 
 Reading ruler adds one overlay element with id `clearead-reading-ruler-v2` and removes older `clearead-reading-ruler` overlays if found. The side panel offers No ruler, Highlight, Lens, and Line guide. The active ruler is fixed-position, pointer-following, visually dims the rest of the page, and uses `pointer-events: none` so page clicks can pass through. Lens follows the pointer horizontally and vertically, showing a local magnified clone of the page area under the pointer. While Lens is active, a local mutation observer marks the clone for throttled refresh when ordinary webpage DOM changes. A safety threshold turns Lens off on pages that trigger too many DOM changes in a short window, such as some animated or media-heavy pages. The side panel also warns: "Best on text pages. If Lens looks blank, try Highlight or Line guide." Choosing No ruler removes the overlay and listeners. The active font and ruler are not persisted across page reloads, but the side panel can query the current active page to keep its buttons aligned with the actual page state.
 
@@ -146,4 +148,4 @@ This is separate from the deployed backend API origin. It is used only for user-
 
 ## Summary Status
 
-Summary uses the deployed Clearead reading processing route: `POST /api/process-text`. The side panel sends `{ "text": string }` to the shared backend only after the user clicks Summary, then renders the returned `blocks[].summary` text.
+Summary uses the deployed Clearead reading processing route: `POST /api/process-text`. The side panel sends `{ "text": string }` to the shared backend only after the user runs Summary, then renders the returned `blocks[].summary` text.

@@ -1,5 +1,7 @@
 import { API_ENDPOINTS, BACKEND_API_BASE_URL } from "../shared/config.js";
 
+const SUMMARY_REQUEST_TIMEOUT_MS = 90000;
+
 export class BackendApiError extends Error {
   constructor(message, options = {}) {
     super(message);
@@ -52,6 +54,10 @@ function getErrorDetail(data) {
 
 export async function requestSummary(text) {
   let response;
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => {
+    controller.abort();
+  }, SUMMARY_REQUEST_TIMEOUT_MS);
 
   try {
     response = await fetch(buildBackendUrl(API_ENDPOINTS.processText), {
@@ -60,12 +66,22 @@ export async function requestSummary(text) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ text }),
+      signal: controller.signal,
     });
   } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new BackendApiError(
+        "Summary is taking too long. Try again or use the full Clearead website.",
+        { cause: error }
+      );
+    }
+
     throw new BackendApiError(
       "Summary is unavailable. Check your connection and try again.",
       { cause: error }
     );
+  } finally {
+    globalThis.clearTimeout(timeoutId);
   }
 
   const data = await readJsonResponse(response);

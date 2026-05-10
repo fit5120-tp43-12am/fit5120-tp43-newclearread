@@ -720,7 +720,58 @@ function explainDictionaryTerm() {
   );
 }
 
+function isComposingText(event) {
+  return event.isComposing || event.keyCode === 229;
+}
+
+function insertSourceTextLineBreak() {
+  const selectionStart = sourceText.selectionStart ?? sourceText.value.length;
+  const selectionEnd = sourceText.selectionEnd ?? selectionStart;
+  const selectedLength = Math.max(selectionEnd - selectionStart, 0);
+  const nextLength = sourceText.value.length - selectedLength + 1;
+
+  if (nextLength > MAX_TEXT_CHARS) {
+    updateCountsAndValidation();
+    return;
+  }
+
+  if (typeof sourceText.setRangeText === "function") {
+    sourceText.setRangeText("\n", selectionStart, selectionEnd, "end");
+  } else {
+    sourceText.value = `${sourceText.value.slice(0, selectionStart)}\n${sourceText.value.slice(selectionEnd)}`;
+    sourceText.selectionStart = selectionStart + 1;
+    sourceText.selectionEnd = selectionStart + 1;
+  }
+
+  sourceText.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function handleSummaryTextKeydown(event) {
+  if (event.key !== "Enter" || isComposingText(event)) {
+    return;
+  }
+
+  if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) {
+    event.preventDefault();
+    insertSourceTextLineBreak();
+    return;
+  }
+
+  event.preventDefault();
+  summarizeText();
+}
+
+function handleDictionaryTermKeydown(event) {
+  if (event.key !== "Enter" || isComposingText(event)) {
+    return;
+  }
+
+  event.preventDefault();
+  explainDictionaryTerm();
+}
+
 sourceText.addEventListener("input", updateCountsAndValidation);
+sourceText.addEventListener("keydown", handleSummaryTextKeydown);
 summaryButton.addEventListener("click", summarizeText);
 clearButton.addEventListener("click", clearText);
 fontModeButtons.forEach((button) => {
@@ -735,12 +786,7 @@ rulerModeButtons.forEach((button) => {
 });
 dictionaryToggleButton.addEventListener("click", updateDictionaryEnabledState);
 dictionaryTermInput.addEventListener("input", normalizeDictionaryTermInput);
-dictionaryTermInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    explainDictionaryTerm();
-  }
-});
+dictionaryTermInput.addEventListener("keydown", handleDictionaryTermKeydown);
 dictionaryExplainButton.addEventListener("click", explainDictionaryTerm);
 openWebsiteLink.href = CLEAREAD_WEBSITE_URL;
 chrome.runtime.onMessage.addListener((message) => {

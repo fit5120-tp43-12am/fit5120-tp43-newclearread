@@ -65,6 +65,7 @@ const PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE = "clearead:page-tool-state-maybe-chang
 const PAGE_TOOL_SCRIPT = "src/content/page-tools.js";
 const DICTIONARY_CONTEXT_MENU_ID = "clearead-explain-selection";
 const DICTIONARY_ENABLED_STORAGE_KEY = "cleareadDictionaryEnabled";
+const PAGE_TOOL_ACTIVATION_STORAGE_KEY = "cleareadPageToolActivation";
 const NORMAL_PAGE_URL_PATTERNS = ["http://*/*", "https://*/*"];
 const BROWSER_RESTRICTED_PAGE_MESSAGE =
   "Chrome blocks tools on this page. Try another webpage.";
@@ -90,19 +91,66 @@ let lastPageToolActivation = {
   activatedAt: 0,
 };
 
-function markPageToolActivation(message) {
+function isValidPageToolActivationRecord(record) {
+  return Boolean(
+    record &&
+      Number.isInteger(record.tabId) &&
+      Number.isFinite(record.activatedAt)
+  );
+}
+
+function createPageToolActivationRecord(message) {
   if (!Number.isInteger(message?.tabId)) {
+    return null;
+  }
+
+  return {
+    tabId: message.tabId,
+    windowId: Number.isInteger(message.windowId) ? message.windowId : null,
+    activatedAt: Date.now(),
+  };
+}
+
+async function writePageToolActivation(record) {
+  lastPageToolActivation = record;
+  await chrome.storage.session.set({
+    [PAGE_TOOL_ACTIVATION_STORAGE_KEY]: record,
+  });
+}
+
+async function readPageToolActivation() {
+  try {
+    const storedValues = await chrome.storage.session.get(
+      PAGE_TOOL_ACTIVATION_STORAGE_KEY
+    );
+    const storedRecord = storedValues[PAGE_TOOL_ACTIVATION_STORAGE_KEY];
+
+    if (isValidPageToolActivationRecord(storedRecord)) {
+      lastPageToolActivation = storedRecord;
+      return storedRecord;
+    }
+  } catch {
+    // The in-memory copy is enough for the current service worker lifetime.
+  }
+
+  return lastPageToolActivation;
+}
+
+async function markPageToolActivation(message) {
+  const activationRecord = createPageToolActivationRecord(message);
+
+  if (!activationRecord) {
     return {
       ok: false,
       message: "No active page found.",
     };
   }
 
-  lastPageToolActivation = {
-    tabId: message.tabId,
-    windowId: Number.isInteger(message.windowId) ? message.windowId : null,
-    activatedAt: Date.now(),
-  };
+  try {
+    await writePageToolActivation(activationRecord);
+  } catch {
+    lastPageToolActivation = activationRecord;
+  }
 
   return {
     ok: true,
@@ -121,20 +169,25 @@ function notifyPageToolStateMaybeChanged(tabId) {
   );
 }
 
-function hasRecentPageToolActivation(tab) {
-  if (!tab?.id || lastPageToolActivation.tabId !== tab.id) {
+function isRecentPageToolActivationForTab(tab, activationRecord) {
+  if (!tab?.id || activationRecord.tabId !== tab.id) {
     return false;
   }
 
   if (
-    Number.isInteger(lastPageToolActivation.windowId) &&
+    Number.isInteger(activationRecord.windowId) &&
     Number.isInteger(tab.windowId) &&
-    lastPageToolActivation.windowId !== tab.windowId
+    activationRecord.windowId !== tab.windowId
   ) {
     return false;
   }
 
-  return Date.now() - lastPageToolActivation.activatedAt <= RECENT_PAGE_ACTIVATION_MS;
+  return Date.now() - activationRecord.activatedAt <= RECENT_PAGE_ACTIVATION_MS;
+}
+
+async function hasRecentPageToolActivation(tab) {
+  const activationRecord = await readPageToolActivation();
+  return isRecentPageToolActivationForTab(tab, activationRecord);
 }
 
 async function readDictionaryEnabled() {
@@ -432,7 +485,7 @@ async function handlePageToolRequest(message) {
         // Startup state sync should not request fresh activeTab access.
       }
 
-      if (hasRecentPageToolActivation(tab)) {
+      if (await hasRecentPageToolActivation(tab)) {
         await injectPageTools(tab.id);
 
         const injectedResponse = await sendPageToolCommand(tab.id, message);
@@ -525,7 +578,11 @@ async function showDictionaryPopover(tab, selectedText) {
 }
 
 async function handleOpenSidePanelRequest(message) {
-  markPageToolActivation(message);
+  const activationResponse = await markPageToolActivation(message);
+
+  if (!activationResponse.ok) {
+    throw new Error(activationResponse.message);
+  }
 
   const openOptions = {};
 
@@ -546,8 +603,16 @@ async function handleOpenSidePanelRequest(message) {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === MARK_PAGE_ACTIVATION_REQUEST_TYPE) {
-    sendResponse(markPageToolActivation(message));
-    return false;
+    markPageToolActivation(message)
+      .then((response) => sendResponse(response))
+      .catch((error) => {
+        sendResponse({
+          ok: false,
+          message: error.message || "No active page found.",
+        });
+      });
+
+    return true;
   }
 
   if (message?.type === GET_DICTIONARY_ENABLED_REQUEST_TYPE) {

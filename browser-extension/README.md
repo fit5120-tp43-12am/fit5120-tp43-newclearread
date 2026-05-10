@@ -10,11 +10,11 @@ This folder contains the Manifest V3 Clearead Chrome extension. It includes the 
 - Lets the user paste text manually.
 - Shows live word and character counts.
 - Enforces the backend limit of 50,000 characters.
-- Sends text to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` only when the user clicks Summary.
+- Sends text to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` only when the user runs Summary.
 - Displays only returned summary text in the result panel.
-- Shows clear loading, success, empty-input, over-limit, backend-unavailable, and backend-validation states.
+- Shows clear loading, success, empty-input, over-limit, backend-timeout, backend-unavailable, and backend-validation states.
 - Uses the shared Clearead backend processing route for Summary.
-- Lets the user choose Original, Verdana, OpenDyslexic, or Calibri page font styling from the side panel.
+- Lets the user choose Original, Verdana, OpenDyslexic, or Calibri page font styling from the side panel. OpenDyslexic WOFF2 font files are packaged locally with the extension.
 - Applies wider line height, word spacing, and letter spacing with the chosen readable font.
 - Lets the user choose No ruler, Highlight, Lens, or Line guide reading ruler styles from the side panel. Reading rulers are intended for text pages. Lens is a local pointer-following magnifier that clones the current page DOM into a non-interactive overlay and enlarges the area under the pointer. If a dynamic page changes too rapidly, Lens stops and tells the user to try Highlight or Line guide.
 - Lets the user opt in from the side panel dictionary button, then select one word or a short phrase on a normal webpage, right-click it, and choose Explain with Clearead to show a dictionary card on the page. The side panel also includes a one-line word input with an Explain button that shows the same demo dictionary card shape inside the panel. The current dictionary content is local demo placeholder data until a stable backend dictionary function exists.
@@ -36,7 +36,7 @@ This folder contains the Manifest V3 Clearead Chrome extension. It includes the 
 2. Load the unpacked extension from `browser-extension/`.
 3. Click the Clearead toolbar icon, then click Open Clearead for this page.
 4. Paste text into the textarea.
-5. Click Summary.
+5. Click Summary or press Enter from the text box.
 6. Confirm the result appears above Page tools and renders only summary text.
 7. Temporarily block network access or point a development build at an unavailable backend to confirm the side panel shows a useful backend-unavailable error.
 
@@ -88,7 +88,7 @@ The extension requests:
 - `activeTab`: gives temporary access to the current tab after a user action so page tools can run on that active page.
 - `scripting`: allows Clearead to inject its local packaged page-tool script only after the user clicks a page-tool button.
 - `contextMenus`: lets Clearead add an opt-in right-click menu item that appears only after the user enables it in the side panel and selects text on normal `http` and `https` webpages.
-- `storage`: keeps one session-only boolean for whether the user enabled the right-click dictionary, so the menu survives Manifest V3 service worker sleep without storing text.
+- `storage`: keeps session-only extension state: whether the user enabled the right-click dictionary, plus the recent page activation tab/window/time used to keep side panel state sync stable across Manifest V3 service worker sleep. It does not store pasted text, selected text, page content, summaries, or dictionary results.
 - `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the extension side panel to send user-submitted text to the shared Clearead backend for Summary.
 
 The extension does not request `<all_urls>`, `tabs`, clipboard permissions, broad host permissions, or static `content_scripts`.
@@ -97,9 +97,11 @@ The Clearead website link does not require a host permission. It opens `https://
 
 The manifest declares local PNG icons at 16, 32, 48, and 128 pixels. These files are packaged with the extension and are not loaded from a remote URL.
 
+The manifest also declares the packaged OpenDyslexic WOFF2 files as web-accessible font resources for normal `http` and `https` webpages so the injected readable-font CSS can load the local font files. No executable code is exposed this way.
+
 ## Data Flow
 
-Pasted text is not sent while the user types. When the user clicks Summary, the side panel sends this request body to the backend:
+Pasted text is not sent while the user types. When the user runs Summary, the side panel sends this request body to the backend:
 
 ```json
 { "text": "the pasted text" }
@@ -111,7 +113,7 @@ The website entry point is separate from the backend API origin. `https://cleare
 
 Page tools do not send page content to the backend. The toolbar popup is an explicit activation step for the current page. After the user clicks Open Clearead for this page, the side panel opens. The service worker can then query the active page to sync the side panel button state, and page-tool buttons can apply the selected tool. In both cases the service worker checks the active tab, rejects known restricted browser pages, and injects `src/content/page-tools.js` from the packaged extension only for that active tab when needed. The injected script adds or removes Clearead-owned style and overlay elements only. Lens mode clones the current page DOM locally inside the same tab for magnification, refreshes that local clone after page DOM changes such as dropdown menus, removes scripts, inline event handlers, form actions, and embedded media sources from the clone, and keeps it non-interactive. Lens is intended for text pages; if a dynamic page changes too rapidly, Lens stops and tells the user to try Highlight or Line guide. Page tools do not send page text, persist page-tool state, or run automatically on every page.
 
-Right-click dictionary lookup uses Chrome's selection context menu only after the user turns on the Right-click lookup button in the side panel. The menu is off by default. The extension stores only that on/off flag in `chrome.storage.session`, which is memory-backed and cleared when the extension is disabled, reloaded, updated, or when the browser restarts. When enabled, the menu item appears only when the user has selected text on a normal `http` or `https` webpage. After the user clicks the Clearead menu item, the service worker uses only `info.selectionText`, trims and normalizes whitespace, limits it to 80 characters, and builds a demo dictionary response with Simple meaning, Word parts, and Meaning from parts fields. The service worker then injects the local packaged page-tool script if needed and asks it to render an on-page dictionary card. The selected text is processed locally, is not sent to the Clearead backend, is not stored, and no surrounding page content is read. The one-line side panel word input uses the same local demo dictionary response after the user clicks Explain or presses Enter; it is not sent to the backend and is not stored. The card has no Save action.
+Right-click dictionary lookup uses Chrome's selection context menu only after the user turns on the Right-click lookup button in the side panel. The menu is off by default. The extension stores that on/off flag in `chrome.storage.session`, which is memory-backed and cleared when the extension is disabled, reloaded, updated, or when the browser restarts. When enabled, the menu item appears only when the user has selected text on a normal `http` or `https` webpage. After the user clicks the Clearead menu item, the service worker uses only `info.selectionText`, trims and normalizes whitespace, limits it to 80 characters, and builds a demo dictionary response with Simple meaning, Word parts, and Meaning from parts fields. The service worker then injects the local packaged page-tool script if needed and asks it to render an on-page dictionary card. The selected text is processed locally, is not sent to the Clearead backend, is not stored, and no surrounding page content is read. The one-line side panel word input uses the same local demo dictionary response after the user clicks Explain or presses Enter; it is not sent to the backend and is not stored. The card has no Save action. The extension also stores a recent page activation tab/window/time record in `chrome.storage.session` so page-tool state sync remains stable across Manifest V3 service worker sleep; this record does not contain page text or selected text.
 
 After a Summary request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. Any API keys or secrets for those services must stay on the backend side and must not be stored in the extension.
 

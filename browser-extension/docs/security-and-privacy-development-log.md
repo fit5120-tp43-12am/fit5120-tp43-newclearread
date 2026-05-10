@@ -30,7 +30,7 @@ This is a development log for the Clearead browser extension. It supports review
 - `activeTab`: grants temporary access to the current page after the user activates Clearead.
 - `scripting`: injects the packaged page-tool script only for the active page after user action.
 - `contextMenus`: creates one opt-in selected-text right-click dictionary item.
-- `storage`: uses `chrome.storage.session` only for one dictionary enabled boolean.
+- `storage`: uses `chrome.storage.session` only for session state: one dictionary enabled boolean and a recent page activation tab/window/time record.
 - `host_permissions`: limited to `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*` so the side panel can submit pasted text to the Clearead backend.
 
 Permissions intentionally not requested:
@@ -47,7 +47,7 @@ Pasted summary text:
 
 - The user manually pastes text into the side panel.
 - Nothing is sent while the user types.
-- Text is sent only after the user clicks Summary.
+- Text is sent only after the user runs Summary.
 - The request goes to `POST /api/process-text` on the deployed Clearead backend.
 - The side panel renders only summary text.
 - Extra backend fields such as original text or fallback details are not displayed.
@@ -83,7 +83,7 @@ Right-click dictionary:
 - The one-line side panel dictionary word input builds a local demo response only after Explain or Enter; the pasted word is not sent to the backend or stored in the current build.
 - A future backend dictionary function must be documented before any selected text is sent to the backend.
 - Selected text is not sent to the backend and is not stored.
-- `chrome.storage.session` stores only whether the menu is enabled in the current browser session.
+- `chrome.storage.session` stores only whether the menu is enabled in the current browser session and a recent page activation tab/window/time record for page-tool state sync.
 
 Website link:
 

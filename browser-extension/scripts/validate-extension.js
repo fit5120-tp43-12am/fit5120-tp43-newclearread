@@ -22,6 +22,12 @@ const requiredIconPaths = Object.freeze({
   "48": "public/icons/icon-48.png",
   "128": "public/icons/icon-128.png",
 });
+const requiredFontPaths = Object.freeze([
+  "public/fonts/OpenDyslexic-Regular.woff2",
+  "public/fonts/OpenDyslexic-Bold.woff2",
+  "public/fonts/OpenDyslexic-Italic.woff2",
+  "public/fonts/OpenDyslexic-BoldItalic.woff2",
+]);
 const sourceFilesToScan = Object.freeze([
   "src/background/service-worker.js",
   "src/content/page-tools.js",
@@ -99,6 +105,11 @@ function getPngDimensions(filePath) {
   };
 }
 
+function isWoff2File(filePath) {
+  const font = readFileSync(filePath);
+  return font.length > 4 && font.subarray(0, 4).toString("utf8") === "wOF2";
+}
+
 function requireIconSet(iconSet, label) {
   requireValue(iconSet && typeof iconSet === "object", `${label} must be defined.`);
 
@@ -124,6 +135,63 @@ function requireIconSet(iconSet, label) {
       `${expectedPath} must be a ${size}x${size} PNG.`
     );
   }
+}
+
+function requireOpenDyslexicFonts() {
+  for (const fontPath of requiredFontPaths) {
+    const absolutePath = join(root, fontPath);
+    requireValue(existsSync(absolutePath), `${fontPath} must exist.`);
+
+    if (existsSync(absolutePath)) {
+      requireValue(isWoff2File(absolutePath), `${fontPath} must be a WOFF2 font.`);
+    }
+  }
+
+  requireValue(
+    existsSync(join(root, "public", "fonts", "OFL.txt")),
+    "The OpenDyslexic SIL OFL license file must be included."
+  );
+}
+
+function requireFontWebAccessibleResources() {
+  const resources = manifest.web_accessible_resources;
+
+  requireValue(
+    Array.isArray(resources),
+    "OpenDyslexic font files must be declared in web_accessible_resources."
+  );
+
+  if (!Array.isArray(resources)) {
+    return;
+  }
+
+  const fontResourceBlocks = resources.filter((entry) => {
+    return requiredFontPaths.every((fontPath) => entry.resources?.includes(fontPath));
+  });
+
+  requireValue(
+    fontResourceBlocks.length === 1,
+    "OpenDyslexic fonts must be declared in exactly one web_accessible_resources entry."
+  );
+
+  if (fontResourceBlocks.length !== 1) {
+    return;
+  }
+
+  const [fontResourceBlock] = fontResourceBlocks;
+  const unexpectedResources = fontResourceBlock.resources.filter((resource) => {
+    return !requiredFontPaths.includes(resource);
+  });
+
+  requireValue(
+    unexpectedResources.length === 0,
+    `Only OpenDyslexic font files should be web-accessible: ${unexpectedResources.join(", ")}`
+  );
+  requireValue(
+    fontResourceBlock.matches?.includes("http://*/*") &&
+      fontResourceBlock.matches?.includes("https://*/*"),
+    "OpenDyslexic web-accessible font resources must match normal http and https webpages."
+  );
 }
 
 function validateSourceFile(filePath) {
@@ -159,6 +227,8 @@ requireValue(
 );
 requireIconSet(manifest.icons, "manifest.icons");
 requireIconSet(manifest.action?.default_icon, "manifest.action.default_icon");
+requireOpenDyslexicFonts();
+requireFontWebAccessibleResources();
 requireValue(
   manifest.background?.service_worker,
   "manifest.background.service_worker is required for popup-triggered side panel behavior."

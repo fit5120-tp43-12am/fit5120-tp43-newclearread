@@ -35,5 +35,19 @@
   ],
   "host_permissions": [
     "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "public/fonts/OpenDyslexic-Regular.woff2",
+        "public/fonts/OpenDyslexic-Bold.woff2",
+        "public/fonts/OpenDyslexic-Italic.woff2",
+        "public/fonts/OpenDyslexic-BoldItalic.woff2"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
   ]
 }

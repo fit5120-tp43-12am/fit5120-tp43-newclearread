@@ -26,6 +26,41 @@
   const LENS_MUTATION_SAFETY_LIMIT = 120;
   const LENS_SAFETY_MESSAGE =
     "Lens stopped on this dynamic page. Try Highlight or Line guide.";
+  const OPEN_DYSLEXIC_FONT_FAMILY = "CleareadOpenDyslexic";
+  const DEFAULT_LIGHT_PAGE_THEME = Object.freeze({
+    name: "light",
+    background: "#ffffff",
+    text: "#172033",
+    embeddedPlaceholderBackground: "rgba(226, 232, 240, 0.9)",
+  });
+  const DEFAULT_DARK_PAGE_THEME = Object.freeze({
+    name: "dark",
+    background: "#0d1117",
+    text: "#f8fafc",
+    embeddedPlaceholderBackground: "rgba(30, 41, 59, 0.92)",
+  });
+  const RULER_VISUAL_THEMES = Object.freeze({
+    light: {
+      border: "1px solid rgba(37, 99, 235, 0.46)",
+      edgeGlow:
+        "0 -14px 20px -16px rgba(37, 99, 235, 0.6), 0 14px 20px -16px rgba(37, 99, 235, 0.6), 0 0 0 9999px rgba(15, 23, 42, 0.18)",
+      lensBorder: "1px solid rgba(37, 99, 235, 0.35)",
+      lensShadow:
+        "0 0 0 9999px rgba(15, 23, 42, 0.16), 0 14px 38px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.78)",
+      lineColor: "rgba(37, 99, 235, 0.58)",
+      lineShadow: "0 1px 0 rgba(255, 255, 255, 0.55)",
+    },
+    dark: {
+      border: "2px solid rgba(147, 197, 253, 0.92)",
+      edgeGlow:
+        "0 -18px 30px -16px rgba(96, 165, 250, 0.95), 0 18px 30px -16px rgba(96, 165, 250, 0.95), 0 0 0 9999px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(255, 255, 255, 0.24)",
+      lensBorder: "2px solid rgba(147, 197, 253, 0.9)",
+      lensShadow:
+        "0 0 0 9999px rgba(0, 0, 0, 0.28), 0 16px 42px rgba(96, 165, 250, 0.32), 0 0 20px rgba(96, 165, 250, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16)",
+      lineColor: "rgba(191, 219, 254, 0.98)",
+      lineShadow: "0 0 12px rgba(96, 165, 250, 0.75)",
+    },
+  });
   const FONT_MODES = Object.freeze({
     original: {
       label: "Original",
@@ -37,7 +72,7 @@
     },
     opendyslexic: {
       label: "OpenDyslexic",
-      family: "'OpenDyslexic', 'Comic Sans MS', 'Trebuchet MS', Arial, sans-serif",
+      family: `'${OPEN_DYSLEXIC_FONT_FAMILY}', 'OpenDyslexic', 'Comic Sans MS', 'Trebuchet MS', Arial, sans-serif`,
     },
     calibri: {
       label: "Calibri",
@@ -101,12 +136,160 @@
     return container;
   }
 
+  function parseCssRgbColor(value) {
+    const match = String(value || "")
+      .trim()
+      .match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/i);
+
+    if (!match) {
+      return null;
+    }
+
+    const alpha = match[4] === undefined ? 1 : Number.parseFloat(match[4]);
+
+    if (!Number.isFinite(alpha) || alpha <= 0.05) {
+      return null;
+    }
+
+    return {
+      r: Math.max(0, Math.min(255, Number.parseFloat(match[1]))),
+      g: Math.max(0, Math.min(255, Number.parseFloat(match[2]))),
+      b: Math.max(0, Math.min(255, Number.parseFloat(match[3]))),
+      a: alpha,
+    };
+  }
+
+  function toRgbString(color) {
+    return `rgb(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)})`;
+  }
+
+  function getRelativeLuminance(color) {
+    const channelValues = [color.r, color.g, color.b].map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.03928
+        ? normalized / 12.92
+        : ((normalized + 0.055) / 1.055) ** 2.4;
+    });
+
+    return (
+      0.2126 * channelValues[0] +
+      0.7152 * channelValues[1] +
+      0.0722 * channelValues[2]
+    );
+  }
+
+  function findEffectiveBackgroundColor(element) {
+    let current = element;
+
+    while (current && current.nodeType === Node.ELEMENT_NODE) {
+      const color = parseCssRgbColor(globalThis.getComputedStyle(current).backgroundColor);
+
+      if (color) {
+        return color;
+      }
+
+      current = current.parentElement;
+    }
+
+    return null;
+  }
+
+  function getPageTheme() {
+    const sampleX = Math.max(0, Math.min(window.innerWidth - 1, lastPointerX));
+    const sampleY = Math.max(0, Math.min(window.innerHeight - 1, lastPointerY));
+    const sampleElement = document.elementFromPoint(sampleX, sampleY);
+    const backgroundColor =
+      findEffectiveBackgroundColor(sampleElement) ||
+      findEffectiveBackgroundColor(document.body) ||
+      findEffectiveBackgroundColor(document.documentElement);
+    const textColor =
+      parseCssRgbColor(globalThis.getComputedStyle(document.body || document.documentElement).color) ||
+      parseCssRgbColor(globalThis.getComputedStyle(document.documentElement).color);
+
+    if (!backgroundColor) {
+      return DEFAULT_LIGHT_PAGE_THEME;
+    }
+
+    const isDark = getRelativeLuminance(backgroundColor) < 0.22;
+    const fallbackTheme = isDark ? DEFAULT_DARK_PAGE_THEME : DEFAULT_LIGHT_PAGE_THEME;
+
+    return {
+      ...fallbackTheme,
+      name: isDark ? "dark" : "light",
+      background: toRgbString(backgroundColor),
+      text: textColor ? toRgbString(textColor) : fallbackTheme.text,
+    };
+  }
+
+  function getRulerVisualTheme(pageTheme) {
+    return RULER_VISUAL_THEMES[pageTheme.name] || RULER_VISUAL_THEMES.light;
+  }
+
   function removeReadableFontStyle() {
     document.getElementById(STYLE_ID)?.remove();
   }
 
   function normaliseFontMode(fontMode) {
     return FONT_MODES[fontMode] ? fontMode : "verdana";
+  }
+
+  function getExtensionResourceUrl(path) {
+    try {
+      return chrome.runtime.getURL(path);
+    } catch {
+      return "";
+    }
+  }
+
+  function getOpenDyslexicFontFaceCss() {
+    const regularUrl = getExtensionResourceUrl(
+      "public/fonts/OpenDyslexic-Regular.woff2"
+    );
+    const boldUrl = getExtensionResourceUrl("public/fonts/OpenDyslexic-Bold.woff2");
+    const italicUrl = getExtensionResourceUrl(
+      "public/fonts/OpenDyslexic-Italic.woff2"
+    );
+    const boldItalicUrl = getExtensionResourceUrl(
+      "public/fonts/OpenDyslexic-BoldItalic.woff2"
+    );
+
+    if (!regularUrl || !boldUrl || !italicUrl || !boldItalicUrl) {
+      return "";
+    }
+
+    return `
+      @font-face {
+        font-family: '${OPEN_DYSLEXIC_FONT_FAMILY}';
+        src: url('${regularUrl}') format('woff2');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: '${OPEN_DYSLEXIC_FONT_FAMILY}';
+        src: url('${boldUrl}') format('woff2');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: '${OPEN_DYSLEXIC_FONT_FAMILY}';
+        src: url('${italicUrl}') format('woff2');
+        font-weight: 400;
+        font-style: italic;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: '${OPEN_DYSLEXIC_FONT_FAMILY}';
+        src: url('${boldItalicUrl}') format('woff2');
+        font-weight: 700;
+        font-style: italic;
+        font-display: swap;
+      }
+    `;
   }
 
   function setReadableFont(fontMode = "verdana") {
@@ -129,6 +312,8 @@
     style.id = STYLE_ID;
     style.dataset.cleareadFontMode = normalisedMode;
     style.textContent = `
+      ${normalisedMode === "opendyslexic" ? getOpenDyslexicFontFaceCss() : ""}
+
       body,
       main,
       article,
@@ -389,7 +574,7 @@
     );
   }
 
-  function cleanLensClone(clone) {
+  function cleanLensClone(clone, pageTheme) {
     [RULER_ID, ...LEGACY_RULER_IDS, DICTIONARY_POPOVER_ID, DICTIONARY_TAIL_ID].forEach((id) => {
       clone.querySelectorAll(`#${id}`).forEach((element) => element.remove());
     });
@@ -416,12 +601,12 @@
       });
       element.setAttribute("aria-hidden", "true");
       Object.assign(element.style, {
-        background: "rgba(226, 232, 240, 0.9)",
+        background: pageTheme.embeddedPlaceholderBackground,
       });
     });
   }
 
-  function createLensPageClone() {
+  function createLensPageClone(pageTheme = getPageTheme()) {
     const clone = document.body
       ? document.body.cloneNode(true)
       : document.createElement("div");
@@ -437,15 +622,18 @@
       minHeight: `${getDocumentHeight()}px`,
       margin: bodyStyle?.margin || "0",
       padding: bodyStyle?.padding || "0",
+      background: pageTheme.background,
+      color: pageTheme.text,
+      colorScheme: pageTheme.name,
       pointerEvents: "none",
       transformOrigin: "0 0",
     });
 
-    cleanLensClone(clone);
+    cleanLensClone(clone, pageTheme);
     return clone;
   }
 
-  function createLensCloneViewport() {
+  function createLensCloneViewport(pageTheme) {
     const viewport = document.createElement("div");
     const source = document.createElement("div");
 
@@ -454,7 +642,9 @@
       inset: "0",
       overflow: "hidden",
       borderRadius: "inherit",
-      background: "#ffffff",
+      background: pageTheme.background,
+      color: pageTheme.text,
+      colorScheme: pageTheme.name,
       contain: "layout style paint",
     });
 
@@ -470,13 +660,19 @@
       willChange: "transform",
     });
 
-    source.appendChild(createLensPageClone());
+    source.appendChild(createLensPageClone(pageTheme));
     viewport.appendChild(source);
     return viewport;
   }
 
   function refreshLensCloneSource(source) {
-    source.replaceChildren(createLensPageClone());
+    const ruler = document.getElementById(RULER_ID);
+    const pageTheme = getPageTheme();
+    if (ruler) {
+      ruler.dataset.cleareadPageTheme = pageTheme.name;
+      ruler.style.background = pageTheme.background;
+    }
+    source.replaceChildren(createLensPageClone(pageTheme));
     lensCloneDirty = false;
     lastLensCloneRefreshAt = getNow();
   }
@@ -558,9 +754,12 @@
 
   function buildReadingRuler(rulerMode) {
     const modeConfig = RULER_MODES[rulerMode] || RULER_MODES.highlight;
+    const pageTheme = getPageTheme();
+    const visualTheme = getRulerVisualTheme(pageTheme);
     const ruler = document.createElement("div");
     ruler.id = RULER_ID;
     ruler.dataset.cleareadRulerMode = rulerMode;
+    ruler.dataset.cleareadPageTheme = pageTheme.name;
     ruler.setAttribute("aria-hidden", "true");
     Object.assign(ruler.style, {
       position: "fixed",
@@ -578,10 +777,9 @@
     if (rulerMode === "highlight") {
       Object.assign(ruler.style, {
         background: "transparent",
-        borderTop: "1px solid rgba(37, 99, 235, 0.42)",
-        borderBottom: "1px solid rgba(37, 99, 235, 0.42)",
-        boxShadow:
-          "0 -14px 20px -16px rgba(37, 99, 235, 0.6), 0 14px 20px -16px rgba(37, 99, 235, 0.6), 0 0 0 9999px rgba(15, 23, 42, 0.18)",
+        borderTop: visualTheme.border,
+        borderBottom: visualTheme.border,
+        boxShadow: visualTheme.edgeGlow,
       });
     }
 
@@ -590,23 +788,21 @@
         left: "0",
         width: "min(720px, calc(100vw - 24px))",
         height: "124px",
-        border: "1px solid rgba(37, 99, 235, 0.35)",
+        border: visualTheme.lensBorder,
         borderRadius: "18px",
-        background: "#ffffff",
-        boxShadow:
-          "0 0 0 9999px rgba(15, 23, 42, 0.16), 0 14px 38px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.78)",
+        background: pageTheme.background,
+        boxShadow: visualTheme.lensShadow,
       });
 
-      ruler.appendChild(createLensCloneViewport());
+      ruler.appendChild(createLensCloneViewport(pageTheme));
     }
 
     if (rulerMode === "line") {
       Object.assign(ruler.style, {
         background: "transparent",
-        borderTop: "1px solid rgba(37, 99, 235, 0.38)",
-        borderBottom: "1px solid rgba(37, 99, 235, 0.38)",
-        boxShadow:
-          "0 -14px 20px -16px rgba(37, 99, 235, 0.55), 0 14px 20px -16px rgba(37, 99, 235, 0.55), 0 0 0 9999px rgba(15, 23, 42, 0.18)",
+        borderTop: visualTheme.border,
+        borderBottom: visualTheme.border,
+        boxShadow: visualTheme.edgeGlow,
       });
 
       const centerLine = document.createElement("div");
@@ -617,8 +813,8 @@
         right: "0",
         height: "2px",
         transform: "translateY(-50%)",
-        background: "rgba(37, 99, 235, 0.58)",
-        boxShadow: "0 1px 0 rgba(255, 255, 255, 0.55)",
+        background: visualTheme.lineColor,
+        boxShadow: visualTheme.lineShadow,
       });
       ruler.appendChild(centerLine);
     }

@@ -14,7 +14,7 @@ The extension does not collect browsing history, analytics, account information,
 
 Yes, but only after a clear user action.
 
-Pasted text is sent when the user clicks Summary. It is not sent automatically while the user types, and the extension does not read webpage content automatically.
+Pasted text is sent when the user runs Summary. It is not sent automatically while the user types, and the extension does not read webpage content automatically.
 
 ## Summary Request
 
@@ -69,13 +69,15 @@ Open website links in the popup and side panel point to `https://clearead.azurew
 
 ## Storage
 
-The extension does not save pasted text or selected text. It uses `chrome.storage.session` only for one right-click dictionary enabled boolean. It does not use `chrome.storage.local`, `chrome.storage.sync`, localStorage, indexedDB, cookies, or a custom cache for pasted content, selected text, or page-tool state. Page-tool button state is synchronized by querying the current active page, not by storing page content or preferences.
+The extension does not save pasted text or selected text. It uses `chrome.storage.session` only for session state: one right-click dictionary enabled boolean and a recent page activation tab/window/time record used to keep page-tool state sync stable across Manifest V3 service worker sleep. It does not use `chrome.storage.local`, `chrome.storage.sync`, localStorage, indexedDB, cookies, or a custom cache for pasted content, selected text, page content, summaries, dictionary results, or page-tool preferences. Page-tool button state is synchronized by querying the current active page, not by storing page content or preferences.
 
 ## Secrets And Remote Code
 
 The extension does not include API keys, access tokens, secrets, analytics IDs, or private credentials.
 
 All side panel and page-tool code is packaged locally with the extension. The extension does not load remote executable JavaScript, use `eval`, or inject remote scripts into webpages.
+
+The OpenDyslexic font mode uses local WOFF2 font files packaged with the extension under `public/fonts/`. These files are exposed as web-accessible font resources only so the injected page style can load the font on normal webpages. This does not expose user text or executable code.
 
 ## Current Permissions
 

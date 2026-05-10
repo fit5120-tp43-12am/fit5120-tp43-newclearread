@@ -1,3 +1,35 @@
+@font-face {
+  font-family: "CleareadOpenDyslexic";
+  src: url("../../public/fonts/OpenDyslexic-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CleareadOpenDyslexic";
+  src: url("../../public/fonts/OpenDyslexic-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CleareadOpenDyslexic";
+  src: url("../../public/fonts/OpenDyslexic-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CleareadOpenDyslexic";
+  src: url("../../public/fonts/OpenDyslexic-BoldItalic.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
   --sidepanel-font-family: Inter, Arial, Helvetica, sans-serif;
@@ -26,7 +58,7 @@ body.font-mode-verdana {
 }
 
 body.font-mode-opendyslexic {
-  --sidepanel-font-family: "OpenDyslexic", "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
+  --sidepanel-font-family: "CleareadOpenDyslexic", "OpenDyslexic", "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
 }
 
 body.font-mode-calibri {

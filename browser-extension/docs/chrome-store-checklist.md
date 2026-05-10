@@ -8,9 +8,10 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 - [x] Uses the `activeTab` permission for temporary access to the active page after user action.
 - [x] Uses the `scripting` permission for programmatic injection of local packaged page-tool code.
 - [x] Uses the `contextMenus` permission for one opt-in selected-text right-click dictionary item.
-- [x] Uses the `storage` permission only for one `chrome.storage.session` boolean that tracks whether the user enabled the dictionary menu during the current browser session.
+- [x] Uses the `storage` permission only for session state: the right-click dictionary enabled boolean and a recent page activation tab/window/time record.
 - [x] Uses only `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*` as a narrow deployed backend host permission.
 - [x] Opens `https://clearead.azurewebsites.net/` as a user-clicked website link without adding it to `host_permissions`.
+- [x] Declares only packaged OpenDyslexic WOFF2 font files as web-accessible resources for normal webpages.
 - [x] Does not request `<all_urls>`.
 - [x] Does not request broad host permissions.
 - [x] Does not request `tabs` or clipboard permissions.
@@ -24,6 +25,7 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 
 - [x] Uses local HTML, CSS, and JavaScript only.
 - [x] Uses only JavaScript and page-tool code packaged with the extension.
+- [x] Uses packaged local OpenDyslexic font files instead of remote font loading.
 - [x] Injects only local packaged code into the active tab after a user clicks a page-tool control.
 - [x] Does not load scripts from a CDN.
 - [x] Does not use `eval` or dynamic remote executable code.
@@ -32,7 +34,7 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 
 ## Privacy And Data Flow
 
-- [x] Pasted text is sent only after the user clicks Summary.
+- [x] Pasted text is sent only after the user runs Summary.
 - [x] Pasted text is sent to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text`.
 - [x] Text is not sent automatically while typing.
 - [x] Webpage content is not read automatically. Page tools run only after user activation.
@@ -44,6 +46,7 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 - [x] Selected-word lookup is processed locally and is not sent to the Clearead backend.
 - [x] Selected-word lookup is not stored.
 - [x] Right-click lookup button state is stored only as a `chrome.storage.session` boolean and does not include selected text.
+- [x] Recent page activation state is stored only as tab/window/time metadata in `chrome.storage.session` and does not include page content.
 - [x] No surrounding page content is read for selected-word lookup.
 - [x] Pasted text is not saved by the extension.
 - [x] Page-tool state is not persisted across page reloads.
@@ -67,6 +70,7 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 - [x] Summary uses the shared `/api/process-text` route and renders the returned summary text.
 - [x] General text-to-speech, file upload, remote dictionary service, automatic page scanning, and static content scripts are not claimed as implemented extension features.
 - [x] Add extension icons in 16, 32, 48, and 128 pixel sizes.
+- [x] Package OpenDyslexic WOFF2 files and the SIL Open Font License text for the OpenDyslexic font mode.
 - [ ] Complete final brand review for icon artwork before store submission.
 - [ ] Prepare accurate Chrome Web Store listing text.
 

@@ -58,7 +58,8 @@ Text processing workflow:
 - Tested pasted text summary against deployed Azure backend.
 - Confirmed Summary ready status.
 - Confirmed result displays summary text only.
-- Confirmed pasted text is sent only after Summary click.
+- Confirmed pasted text is sent only after Summary is run.
+- Confirm Summary runs from the text box with Enter, and Ctrl+Enter or Shift+Enter inserts a line break instead.
 - Later UI change confirmed the status strip and Result panel are hidden before Summary is used.
 
 Popup activation and page access:
@@ -110,6 +111,7 @@ Side panel state sync:
 - With Lens active, navigate within the same tab, such as from Unit to Grades on a learning site, and confirm the side panel changes back to No ruler if the page removed the Lens overlay.
 - Click No ruler and confirm the overlay disappears and the button state changes.
 - Confirm Highlight and Line guide keep the whole ruler rectangle transparent, use blue top/bottom borders with blue glow fading outward, and dim the page outside the ruler slightly.
+- On a dark-background webpage, confirm Highlight and Line guide remain visible and Lens keeps the page's dark surface instead of turning into a white panel.
 - Reload the extension while a page tool is visible, then reopen Clearead from the toolbar popup and confirm state sync recovers from the existing page DOM.
 - Open the side panel without a current page connection and confirm it says: "In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
 - Open a direct PDF, DOCX, DOC, or TXT file URL and confirm it says: "File pages may not support page tools. Click Open website to upload the file."
@@ -120,6 +122,7 @@ Lens regression:
 - Select Lens.
 - Confirm the magnifier follows the pointer horizontally and vertically.
 - Confirm the magnifier does not show extracted multi-line text or duplicated rows.
+- Confirm Lens remains readable on dark-background webpages.
 - Confirm ordinary webpage dropdown menus remain visible inside Lens after the menu opens.
 - Confirm it does not block page clicks because the overlay uses `pointer-events: none`.
 - Confirm disabling the ruler removes the lens overlay.
@@ -142,7 +145,7 @@ Chrome Store readiness regression:
 - Confirm no remote executable code.
 - Confirm no static content scripts.
 - Confirm no text, selected text, or page content is stored.
-- Confirm pasted text network calls only go to the deployed Clearead backend after Summary click.
+- Confirm pasted text network calls only go to the deployed Clearead backend after Summary is run.
 
 ## Known Current Gaps
 
