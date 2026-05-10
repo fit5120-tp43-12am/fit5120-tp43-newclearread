@@ -183,99 +183,106 @@ function relativeDate(iso) {
     </div>
 
 
-    <!-- ── Main ── -->
-    <main class="main">
-      <div class="inner">
+    <!-- ── Hero header ── -->
+    <header class="hero">
+      <!-- Decorative faded alphabet strip — typographic, not an icon -->
+      <div class="hero-alpha" aria-hidden="true">
+        <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span>
+        <span>F</span><span>G</span><span>H</span><span>I</span><span>J</span>
+        <span>K</span><span>L</span><span>M</span><span>N</span><span>O</span>
+        <span>P</span><span>Q</span><span>R</span><span>S</span><span>T</span>
+        <span>U</span><span>V</span><span>W</span><span>X</span><span>Y</span><span>Z</span>
+      </div>
 
-        <!-- Page header -->
-        <div class="page-header">
-          <div class="page-header-icon">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <rect x="3" y="2" width="22" height="24" rx="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
-              <path d="M8 9h12M8 13h12M8 17h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <h1 class="page-title">Dictionary</h1>
-            <p class="page-sub">Search any word to see its meaning and how it breaks down into parts.</p>
-          </div>
-        </div>
+      <div class="hero-content">
+        <p class="hero-eyebrow">Word Lookup</p>
+        <h1 class="hero-title">
+          Find the meaning of<br>
+          <span class="hero-title-accent">any word.</span>
+        </h1>
+        <p class="hero-sub">
+          See a plain-English definition, how the word breaks into parts,<br class="hero-br">
+          and what every part contributes to the meaning.
+        </p>
 
-        <!-- Search bar -->
+        <!-- Search bar — inside the hero so it feels like the primary action -->
         <div class="search-card">
           <div class="search-row">
             <div class="search-input-wrap">
               <svg class="search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.6"/>
-                <path d="M12.5 12.5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.7"/>
+                <path d="M12.5 12.5l3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
               </svg>
               <input
                 v-model="query"
                 class="search-input"
                 type="text"
-                placeholder="Type a word and press Enter…"
+                placeholder="Type a word…"
                 spellcheck="false"
                 autocomplete="off"
                 @keydown="handleKeydown"
               />
               <button v-if="query" class="search-clear" @click="query = ''; result = null; searched = false; errorMsg = ''" aria-label="Clear">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M2 2l9 9M11 2l-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                 </svg>
               </button>
             </div>
             <button class="search-btn" :disabled="!query.trim() || loading" @click="handleSearch">
               <svg v-if="loading" class="spin" width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <circle cx="7.5" cy="7.5" r="5.5" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+                <circle cx="7.5" cy="7.5" r="5.5" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
                 <path d="M7.5 2a5.5 5.5 0 0 1 5.5 5.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
               </svg>
-              <template v-else>
-                Look up
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M2 6.5H11M11 6.5L7 2.5M11 6.5L7 10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </template>
+              <template v-else>Look up</template>
             </button>
           </div>
           <p class="search-hint">
-            <kbd>Enter</kbd> to search · double-click any word on the <RouterLink to="/reading" class="search-hint-link">Reading page</RouterLink> for a quick lookup
+            <kbd>Enter</kbd> to search &nbsp;·&nbsp;
+            double-click any word on the
+            <RouterLink to="/reading" class="search-hint-link">Reading page</RouterLink>
+            for a quick lookup
           </p>
         </div>
+      </div>
+    </header>
 
+    <!-- ── Main ── -->
+    <main class="main">
+      <div class="inner">
 
         <!-- ── Results ── -->
 
         <!-- Loading -->
         <div v-if="loading" class="state-loading">
-          <svg class="spin" width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <circle cx="14" cy="14" r="11" stroke="#e0e7ff" stroke-width="3"/>
-            <path d="M14 3a11 11 0 0 1 11 11" stroke="#4f46e5" stroke-width="3" stroke-linecap="round"/>
+          <svg class="spin" width="26" height="26" viewBox="0 0 26 26" fill="none">
+            <circle cx="13" cy="13" r="10" stroke="#ddd6fe" stroke-width="2.5"/>
+            <path d="M13 3a10 10 0 0 1 10 10" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
           <span>Looking up…</span>
         </div>
 
         <!-- Error -->
         <div v-else-if="errorMsg" class="state-error">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="9" stroke="#ef4444" stroke-width="1.5"/>
-            <path d="M10 6v5M10 13.5v.5" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="8" stroke="#ef4444" stroke-width="1.5"/>
+            <path d="M9 5.5v4M9 12v.5" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
           <span>{{ errorMsg }}</span>
         </div>
 
-        <!-- Empty state before first search -->
-        <div v-else-if="!searched" class="state-empty">
-          <div class="empty-illustration">
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <rect x="8" y="6" width="48" height="52" rx="6" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
-              <path d="M18 20h28M18 28h28M18 36h18" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
-              <circle cx="46" cy="46" r="12" fill="#4f46e5"/>
-              <circle cx="46" cy="43" r="4" stroke="white" stroke-width="1.5" fill="none"/>
-              <path d="M49 47l3.5 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+        <!-- Empty state — clean typographic, no icon -->
+        <div v-else-if="!searched && !savedWords.length" class="state-empty">
+          <p class="empty-title">Start by typing a word above.</p>
+          <p class="empty-sub">
+            You'll see a plain definition, the word's etymology broken down<br>
+            by prefix, root, and suffix — and how those parts create the meaning.
+          </p>
+          <div class="empty-pills">
+            <button class="empty-pill" @click="query = 'understand'; handleSearch()">understand</button>
+            <button class="empty-pill" @click="query = 'dyslexia'; handleSearch()">dyslexia</button>
+            <button class="empty-pill" @click="query = 'cognition'; handleSearch()">cognition</button>
+            <button class="empty-pill" @click="query = 'prefix'; handleSearch()">prefix</button>
           </div>
-          <p class="empty-title">Search a word to get started</p>
-          <p class="empty-sub">You'll see a simple definition, how the word breaks into parts, and what each part means.</p>
         </div>
 
         <!-- Result card -->
@@ -413,22 +420,29 @@ function relativeDate(iso) {
 
 <style scoped>
 
-/* ── Page shell ── */
+/* ── Page shell — same gradient canvas as HomePage ── */
 .page {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #f8f9fc;
+  background:
+    radial-gradient(ellipse 80% 40% at 0%   0%,   rgba(147,167,255,0.50) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 35% at 100% 0%,   rgba(255,200,150,0.42) 0%, transparent 52%),
+    radial-gradient(ellipse 60% 30% at 0%   50%,  rgba(147,167,255,0.25) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 28% at 100% 50%,  rgba(255,218,180,0.28) 0%, transparent 52%),
+    radial-gradient(ellipse 65% 30% at 0%   100%, rgba(147,167,255,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 28% at 100% 100%, rgba(255,200,150,0.30) 0%, transparent 52%),
+    #f4f5ff;
 }
 
 /* ── Navbar ── */
 .navbar {
   flex-shrink: 0;
   position: sticky; top: 0;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(244,245,255,0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(147,167,255,0.18);
   z-index: 50;
 }
 .nav-inner {
@@ -484,270 +498,304 @@ function relativeDate(iso) {
   .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
 }
 
-/* ── Main content ── */
-.main {
-  flex: 1;
-  padding: 48px 24px 80px;
-}
-.inner {
-  max-width: 680px;
-  margin: 0 auto;
-  display: flex; flex-direction: column; gap: 28px;
+/* ── Hero header ── */
+.hero {
+  position: relative;
+  padding: 80px 24px 72px;
+  text-align: center;
+  overflow: hidden;
 }
 
-/* ── Page header ── */
-.page-header {
-  display: flex; align-items: flex-start; gap: 18px;
-}
-.page-header-icon {
-  flex-shrink: 0;
+/* Decorative faded alphabet strip floating behind the text */
+.hero-alpha {
+  position: absolute;
+  inset: 0;
   display: flex; align-items: center; justify-content: center;
-  width: 54px; height: 54px;
-  background: #eef2ff; border: 1.5px solid #c7d2fe;
-  border-radius: 16px; color: #4f46e5;
+  flex-wrap: nowrap; gap: 0;
+  pointer-events: none; user-select: none;
+  overflow: hidden;
 }
-.page-title {
-  font-size: 30px; font-weight: 800; color: #0f172a;
-  letter-spacing: -0.03em; margin: 0 0 6px; line-height: 1.2;
-}
-.page-sub {
-  font-size: 15px; color: #64748b; margin: 0; line-height: 1.6;
+.hero-alpha span {
+  font-size: clamp(56px, 8vw, 100px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: rgba(99, 102, 241, 0.055);
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-/* ── Search card ── */
+/* Hero text */
+.hero-content {
+  position: relative; z-index: 1;
+  max-width: 640px; margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+.hero-eyebrow {
+  display: inline-block;
+  padding: 5px 16px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #4f46e5;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(99,102,241,0.18);
+  border-radius: 999px;
+  margin: 0;
+  backdrop-filter: blur(8px);
+}
+.hero-title {
+  font-size: clamp(36px, 6vw, 56px);
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 0;
+}
+.hero-title-accent {
+  background: linear-gradient(120deg, #4f46e5 10%, #7c3aed 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: 16px; line-height: 1.7; color: #64748b; margin: 0;
+}
+.hero-br { display: none; }
+@media (min-width: 640px) { .hero-br { display: inline; } }
+
+/* ── Search card — glass style, inside hero ── */
 .search-card {
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 20px 20px 14px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  width: 100%; max-width: 560px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 20px;
+  padding: 18px 18px 14px;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,0.8) inset,
+    0 8px 32px rgba(99,102,241,0.10),
+    0 2px 8px rgba(0,0,0,0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
-.search-row {
-  display: flex; gap: 10px;
-}
+.search-row { display: flex; gap: 10px; }
 .search-input-wrap {
-  flex: 1; position: relative;
-  display: flex; align-items: center;
+  flex: 1; position: relative; display: flex; align-items: center;
 }
 .search-icon {
   position: absolute; left: 14px;
-  color: #94a3b8; flex-shrink: 0; pointer-events: none;
+  color: #a5b4fc; flex-shrink: 0; pointer-events: none;
 }
 .search-input {
-  width: 100%; height: 48px;
-  padding: 0 40px 0 42px;
+  width: 100%; height: 50px;
+  padding: 0 38px 0 44px;
   font-size: 16px; font-weight: 500; color: #0f172a;
   font-family: inherit;
-  background: #f8fafc; border: 1.5px solid #e2e8f0;
-  border-radius: 12px; outline: none;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  background: rgba(255,255,255,0.85);
+  border: 1.5px solid rgba(165,180,252,0.4);
+  border-radius: 14px; outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 }
 .search-input:focus {
   border-color: #818cf8;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.14);
   background: #fff;
 }
-.search-input::placeholder { color: #b0b8cc; }
+.search-input::placeholder { color: #c4c9e2; }
 .search-clear {
   position: absolute; right: 12px;
   display: flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border-radius: 50%;
   background: none; border: none; cursor: pointer;
-  color: #94a3b8; transition: background 0.15s, color 0.15s;
+  color: #a5b4fc; transition: background 0.15s, color 0.15s;
 }
-.search-clear:hover { background: #f1f5f9; color: #475569; }
+.search-clear:hover { background: rgba(99,102,241,0.1); color: #4f46e5; }
 
 .search-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 0 22px; height: 48px;
-  font-size: 14px; font-weight: 700; color: #fff;
-  background: #4f46e5; border: none; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 24px; height: 50px;
+  font-size: 14.5px; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border: none; border-radius: 14px;
   cursor: pointer; font-family: inherit; white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(79,70,229,0.28);
-  transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
+  box-shadow: 0 4px 16px rgba(79,70,229,0.35);
+  transition: opacity 0.18s, transform 0.12s, box-shadow 0.18s;
 }
 .search-btn:hover:not(:disabled) {
-  background: #4338ca;
-  box-shadow: 0 6px 20px rgba(79,70,229,0.38);
+  opacity: 0.92;
+  box-shadow: 0 6px 22px rgba(79,70,229,0.45);
   transform: translateY(-1px);
 }
 .search-btn:active:not(:disabled) { transform: translateY(0); }
-.search-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.search-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
 .search-hint {
-  margin: 12px 0 0;
+  margin: 11px 0 0; text-align: left;
   font-size: 12px; color: #94a3b8;
-  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
 }
 .search-hint kbd {
   display: inline-flex; align-items: center;
   padding: 1px 6px; font-size: 11px; font-weight: 600;
   font-family: inherit; color: #64748b;
-  background: #f1f5f9; border: 1px solid #e2e8f0;
+  background: rgba(255,255,255,0.8); border: 1px solid #e2e8f0;
   border-bottom-width: 2px; border-radius: 4px;
 }
-.search-hint-link {
-  color: #4f46e5; text-decoration: none; font-weight: 600;
-}
+.search-hint-link { color: #4f46e5; text-decoration: none; font-weight: 600; }
 .search-hint-link:hover { text-decoration: underline; }
+
+/* ── Main area below the hero ── */
+.main { flex: 1; padding: 36px 24px 80px; }
+.inner {
+  max-width: 660px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 24px;
+}
 
 /* ── State: loading ── */
 .state-loading {
   display: flex; align-items: center; justify-content: center; gap: 12px;
-  padding: 48px 0;
-  font-size: 15px; color: #64748b; font-weight: 500;
+  padding: 56px 0;
+  font-size: 15px; font-weight: 600; color: #64748b;
 }
 
 /* ── State: error ── */
 .state-error {
   display: flex; align-items: center; gap: 10px;
-  padding: 18px 20px;
-  background: #fef2f2; border: 1px solid #fecaca; border-radius: 14px;
+  padding: 16px 20px;
+  background: rgba(254,242,242,0.9); border: 1px solid #fecaca; border-radius: 14px;
   font-size: 14px; color: #b91c1c; font-weight: 500;
+  backdrop-filter: blur(8px);
 }
 
-/* ── State: empty ── */
+/* ── Empty state — clean typographic ── */
 .state-empty {
   display: flex; flex-direction: column; align-items: center;
-  gap: 14px; padding: 56px 24px; text-align: center;
+  gap: 16px; padding: 48px 24px; text-align: center;
 }
-.empty-illustration { opacity: 0.85; }
 .empty-title {
-  font-size: 18px; font-weight: 700; color: #0f172a; margin: 0;
+  font-size: 20px; font-weight: 800; color: #1e1b4b; margin: 0;
+  letter-spacing: -0.02em;
 }
 .empty-sub {
-  font-size: 14px; color: #64748b; margin: 0; max-width: 400px; line-height: 1.65;
+  font-size: 14.5px; color: #64748b; margin: 0;
+  max-width: 420px; line-height: 1.7;
+}
+/* Example word pills */
+.empty-pills {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin-top: 8px;
+}
+.empty-pill {
+  padding: 8px 18px;
+  font-size: 13.5px; font-weight: 600; color: #4f46e5;
+  background: rgba(255,255,255,0.72); border: 1.5px solid rgba(165,180,252,0.5);
+  border-radius: 999px; cursor: pointer; font-family: inherit;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+.empty-pill:hover {
+  background: #eef2ff; border-color: #a5b4fc; transform: translateY(-1px);
 }
 
-/* ── Result card ── */
+/* ── Result card — glass ── */
 .result-card {
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 20px;
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(255,255,255,0.95);
+  border-radius: 22px;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(99,102,241,0.05),
-    0 8px 32px rgba(0,0,0,0.08);
+    0 2px 0 rgba(255,255,255,0.9) inset,
+    0 0 0 1px rgba(99,102,241,0.07),
+    0 12px 40px rgba(0,0,0,0.10);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-/* Header row: word title + TTS */
+/* Header row */
 .result-header {
   display: flex; align-items: center; gap: 14px;
-  padding: 26px 28px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 28px 30px 22px;
+  border-bottom: 1px solid rgba(241,245,249,0.9);
 }
 .result-header-left { flex: 1; min-width: 0; }
 .result-word {
-  font-size: 34px; font-weight: 900;
-  color: #0f172a; letter-spacing: -0.04em; margin: 0;
-  line-height: 1.1;
+  font-size: 36px; font-weight: 900;
+  color: #0f172a; letter-spacing: -0.04em; margin: 0; line-height: 1.1;
 }
 
-/* Header actions group */
-.result-header-actions {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-}
+/* Header action buttons */
+.result-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-/* TTS button */
 .result-tts-btn {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 18px;
-  font-size: 13px; font-weight: 700;
-  color: #4f46e5; background: #eef2ff;
-  border: 1.5px solid #c7d2fe; border-radius: 999px;
+  padding: 9px 18px; font-size: 13px; font-weight: 700;
+  color: #4f46e5; background: rgba(238,242,255,0.9);
+  border: 1.5px solid rgba(199,210,254,0.7); border-radius: 999px;
   cursor: pointer; font-family: inherit; flex-shrink: 0;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .result-tts-btn:hover { background: #e0e7ff; border-color: #a5b4fc; }
 .result-tts-btn--active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
-/* Save / Saved button */
 .result-save-btn {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 18px;
-  font-size: 13px; font-weight: 700;
-  color: #64748b; background: #f8fafc;
-  border: 1.5px solid #e2e8f0; border-radius: 999px;
+  padding: 9px 18px; font-size: 13px; font-weight: 700;
+  color: #64748b; background: rgba(248,250,252,0.8);
+  border: 1.5px solid rgba(226,232,240,0.7); border-radius: 999px;
   cursor: pointer; font-family: inherit; flex-shrink: 0;
   transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
 }
 .result-save-btn:hover { background: #f0fdf4; border-color: #86efac; color: #15803d; }
 .result-save-btn:active { transform: scale(0.96); }
-/* Saved state: green fill */
-.result-save-btn--saved {
-  background: #f0fdf4; border-color: #86efac; color: #15803d;
-}
+.result-save-btn--saved { background: #f0fdf4; border-color: #86efac; color: #15803d; }
 .result-save-btn--saved:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
 
 /* Content sections */
 .result-section {
-  padding: 20px 28px;
-  border-bottom: 1px solid #f8fafc;
+  padding: 22px 30px;
+  border-bottom: 1px solid rgba(248,250,252,0.95);
 }
 .result-section--last { border-bottom: none; }
 
 .result-section-label {
   font-size: 10.5px; font-weight: 800;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: #4f46e5; margin-bottom: 10px;
+  color: #4f46e5; margin-bottom: 12px;
 }
-
-/* Simple meaning */
 .result-simple-meaning {
-  font-size: 16px; line-height: 1.75; color: #1e293b; margin: 0;
+  font-size: 16px; line-height: 1.8; color: #1e293b; margin: 0;
 }
 
 /* Word parts */
-.result-parts {
-  display: flex; flex-direction: column; gap: 10px;
-}
+.result-parts { display: flex; flex-direction: column; gap: 10px; }
 .result-part-row {
   display: flex; align-items: center; gap: 12px;
-  padding: 11px 14px;
-  border-radius: 12px;
+  padding: 12px 14px; border-radius: 12px;
   border-left: 3px solid transparent;
 }
-.result-part-row--prefix { background: #fff1f2; border-left-color: #fda4af; }
-.result-part-row--root   { background: #eff6ff; border-left-color: #93c5fd; }
-.result-part-row--suffix { background: #f0fdf4; border-left-color: #86efac; }
-.result-part-row--infix  { background: #faf5ff; border-left-color: #d8b4fe; }
-
-.result-part-form {
-  font-size: 14px; font-weight: 800;
-  color: #0f172a; min-width: 54px; flex-shrink: 0;
-}
-.result-part-meaning {
-  flex: 1; font-size: 14px; line-height: 1.5; color: #475569;
-}
+.result-part-row--prefix { background: rgba(255,241,242,0.9); border-left-color: #fda4af; }
+.result-part-row--root   { background: rgba(239,246,255,0.9); border-left-color: #93c5fd; }
+.result-part-row--suffix { background: rgba(240,253,244,0.9); border-left-color: #86efac; }
+.result-part-row--infix  { background: rgba(250,245,255,0.9); border-left-color: #d8b4fe; }
+.result-part-form { font-size: 14px; font-weight: 800; color: #0f172a; min-width: 54px; flex-shrink: 0; }
+.result-part-meaning { flex: 1; font-size: 14px; line-height: 1.5; color: #475569; }
 .result-part-badge {
-  font-size: 11px; font-weight: 800;
-  padding: 4px 11px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; padding: 4px 11px; border-radius: 999px;
   letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0;
 }
 .result-part-badge--prefix { background: #ffe4e6; color: #e11d48; }
 .result-part-badge--root   { background: #dbeafe; color: #1d4ed8; }
 .result-part-badge--suffix { background: #dcfce7; color: #15803d; }
 .result-part-badge--infix  { background: #ede9fe; color: #7c3aed; }
+.result-parts-meaning { font-size: 15px; line-height: 1.78; color: #334155; margin: 0; font-style: italic; }
 
-/* Meaning from parts */
-.result-parts-meaning {
-  font-size: 15px; line-height: 1.75;
-  color: #334155; margin: 0; font-style: italic;
-}
-
-/* ── Saved Words panel ── */
+/* ── Saved Words panel — glass ── */
 .saved-panel {
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 20px; overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
 }
-
 .saved-panel-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 22px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 16px 22px; border-bottom: 1px solid rgba(241,245,249,0.8);
 }
 .saved-panel-title {
   display: flex; align-items: center; gap: 8px;
@@ -767,43 +815,27 @@ function relativeDate(iso) {
 }
 .saved-clear-btn:hover { background: #fef2f2; color: #dc2626; }
 
-/* Word list */
-.saved-list {
-  list-style: none; margin: 0; padding: 0;
-}
+.saved-list { list-style: none; margin: 0; padding: 0; }
 .saved-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 0 12px 0 0;
-  border-bottom: 1px solid #f8fafc;
+  padding: 0 12px 0 0; border-bottom: 1px solid rgba(248,250,252,0.9);
   transition: background 0.12s;
 }
 .saved-item:last-child { border-bottom: none; }
-.saved-item:hover { background: #fafbff; }
+.saved-item:hover { background: rgba(238,242,255,0.4); }
 
-/* Clickable left part */
 .saved-item-btn {
   flex: 1; min-width: 0;
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
   padding: 14px 8px 14px 22px;
-  background: none; border: none; cursor: pointer; font-family: inherit;
-  text-align: left;
+  background: none; border: none; cursor: pointer; font-family: inherit; text-align: left;
 }
-.saved-item-word {
-  font-size: 15px; font-weight: 800; color: #0f172a;
-  letter-spacing: -0.02em;
-}
-.saved-item-meaning {
-  font-size: 12.5px; color: #64748b; line-height: 1.4;
-}
+.saved-item-word { font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+.saved-item-meaning { font-size: 12.5px; color: #64748b; line-height: 1.4; }
 .saved-item-btn:hover .saved-item-word { color: #4f46e5; }
 
-/* Right meta: date + remove */
-.saved-item-meta {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-}
-.saved-item-date {
-  font-size: 11.5px; color: #94a3b8; white-space: nowrap;
-}
+.saved-item-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.saved-item-date { font-size: 11.5px; color: #94a3b8; white-space: nowrap; }
 .saved-remove-btn {
   display: flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border-radius: 50%;
@@ -818,15 +850,16 @@ function relativeDate(iso) {
 
 /* Mobile */
 @media (max-width: 600px) {
-  .main { padding: 32px 16px 60px; }
-  .page-header { flex-direction: column; gap: 12px; }
-  .page-header-icon { width: 44px; height: 44px; }
-  .page-title { font-size: 24px; }
+  .hero { padding: 56px 20px 52px; }
+  .hero-alpha span { font-size: 52px; }
+  .hero-title { font-size: 32px; }
+  .hero-sub { font-size: 14px; }
+  .search-card { padding: 14px 14px 12px; }
   .search-row { flex-direction: column; }
-  .search-btn { width: 100%; justify-content: center; height: 44px; }
-  .result-word { font-size: 26px; }
-  .result-header { padding: 20px 20px 16px; }
+  .search-btn { width: 100%; height: 46px; }
+  .main { padding: 24px 16px 60px; }
+  .result-word { font-size: 28px; }
+  .result-header { padding: 20px 20px 16px; flex-wrap: wrap; }
   .result-section { padding: 16px 20px; }
-  .result-header { flex-wrap: wrap; }
 }
 </style>
