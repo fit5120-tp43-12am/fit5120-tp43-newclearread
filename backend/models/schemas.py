@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel
+﻿from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
 
@@ -27,6 +27,10 @@ class ExtractFileResponse(BaseModel):
 # A single reading block shown by the frontend result page.
 class TextBlock(BaseModel):
     id: int
+    # Short section title shown on the section card.
+    title: str = ""
+    # One-line section description shown under the section title.
+    subtitle: str = ""
     # Cleaned source text for this semantic block.
     originalText: str
     # One-sentence summary generated for this block.
@@ -37,6 +41,10 @@ class TextBlock(BaseModel):
 
 # Compact processing metrics exposed for debugging in the browser network response.
 class TextProcessingStats(BaseModel):
+    # Total time spent processing the request end to end.
+    totalSeconds: float = 0.0
+    # Time spent generating the whole-document overview summary.
+    overallSummarySeconds: float = 0.0
     # Time spent cleaning, splitting sentences, and building reading blocks.
     preprocessSeconds: float
     # Time spent calling the team summary model.
@@ -51,6 +59,12 @@ class TextProcessingStats(BaseModel):
     blockWordCounts: List[int]
 
 
+# Overall document summary shown above the section cards.
+class OverallSummary(BaseModel):
+    heading: str = ""
+    text: str = ""
+
+
 # Response returned after splitting and summarising reading text.
 class TextResponse(BaseModel):
     # Message displayed in the green result banner.
@@ -61,6 +75,8 @@ class TextResponse(BaseModel):
     fallbackReason: str
     # Explains whether block segmentation came from AI or local fallback.
     segmentation: Dict[str, Any]
+    # Short whole-document summary shown at the top of the result page.
+    overallSummary: OverallSummary = Field(default_factory=OverallSummary)
     # Block list consumed directly by ReadingPage.vue.
     blocks: List[TextBlock]
     # Compact timing and block-count data for browser Network response debugging.

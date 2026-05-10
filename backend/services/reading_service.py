@@ -7,6 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from services import model_service
+from services.overall_summary_service import generate_overall_summary
 from services.text_preprocessor import preprocess_text
 from services.text_service import basic_algorithm, use_openai
 
@@ -36,7 +37,9 @@ def process_reading_text(text: str) -> dict:
     # This is the main service used by the Reading Support page.
     # It converts one raw article into the block-based response expected by the frontend.
     preprocess_seconds = 0.0
+    overall_summary_seconds = 0.0
     team_model_seconds = 0.0
+    total_start = time.perf_counter()
     timing_enabled = _env_bool("CLEARREAD_READING_TIMING_LOGS", False)
 
     source_text = (text or "").strip()
@@ -44,7 +47,9 @@ def process_reading_text(text: str) -> dict:
         # Empty input is handled here so the API can return a consistent response shape.
         _log_reading_timing(
             timing_enabled,
+            time.perf_counter() - total_start,
             preprocess_seconds,
+            overall_summary_seconds,
             team_model_seconds,
             block_count=0,
             model_block_count=0,
@@ -63,14 +68,20 @@ def process_reading_text(text: str) -> dict:
             ),
             "blocks": [],
             "processingStats": _build_processing_stats(
-                preprocess_seconds,
-                team_model_seconds,
+                total_seconds=time.perf_counter() - total_start,
+                overall_summary_seconds=overall_summary_seconds,
+                preprocess_seconds=preprocess_seconds,
+                team_model_seconds=team_model_seconds,
                 block_count=0,
                 model_block_count=0,
                 fallback_block_count=0,
                 block_word_counts=[],
             ),
         }
+
+    overall_summary_start = time.perf_counter()
+    overall_summary = generate_overall_summary(source_text)
+    overall_summary_seconds = time.perf_counter() - overall_summary_start
 
     # The preprocessor cleans the text and splits it into semantic reading segments.
     preprocess_start = time.perf_counter()
@@ -96,6 +107,8 @@ def process_reading_text(text: str) -> dict:
             {
                 "frontend_id": index,
                 "model_id": f"block-{index}",
+                "title": str(segment.get("viewpoint") or "").strip(),
+                "subtitle": str(segment.get("segment_summary") or "").strip(),
                 "original_text": display_text,
                 "summary_text": _limit_block_text(display_text),
             }
@@ -163,6 +176,8 @@ def process_reading_text(text: str) -> dict:
         blocks.append(
             {
                 "id": block["frontend_id"],
+                "title": block["title"],
+                "subtitle": block["subtitle"],
                 "originalText": block["original_text"],
                 "summary": summary_result.get("summary") or "",
                 "keyPoints": summary_result.get("keyPoints") or [],
@@ -175,7 +190,9 @@ def process_reading_text(text: str) -> dict:
 
     _log_reading_timing(
         timing_enabled,
+        time.perf_counter() - total_start,
         preprocess_seconds,
+        overall_summary_seconds,
         team_model_seconds,
         block_count=len(blocks),
         model_block_count=len(model_blocks),
@@ -193,10 +210,13 @@ def process_reading_text(text: str) -> dict:
             preprocessing_reason,
             len(blocks),
         ),
+        "overallSummary": overall_summary,
         "blocks": blocks,
         "processingStats": _build_processing_stats(
-            preprocess_seconds,
-            team_model_seconds,
+            total_seconds=time.perf_counter() - total_start,
+            overall_summary_seconds=overall_summary_seconds,
+            preprocess_seconds=preprocess_seconds,
+            team_model_seconds=team_model_seconds,
             block_count=len(blocks),
             model_block_count=len(model_blocks),
             fallback_block_count=len(fallback_blocks),
@@ -223,6 +243,8 @@ def _normalize_preprocess_result(preprocessing_result: dict) -> tuple[list[dict]
             {
                 "segment_id": segment.get("segment_id") or len(normalized_segments) + 1,
                 "cleaned_text": cleaned_text,
+                "viewpoint": str(segment.get("viewpoint") or "").strip(),
+                "segment_summary": str(segment.get("summary") or "").strip(),
             }
         )
 
@@ -338,7 +360,9 @@ def _has_valid_model_summary(model_result: dict | None) -> bool:
 
 def _log_reading_timing(
     enabled: bool,
+    total_seconds: float,
     preprocess_seconds: float,
+    overall_summary_seconds: float,
     team_model_seconds: float,
     block_count: int,
     model_block_count: int,
@@ -351,6 +375,8 @@ def _log_reading_timing(
     block_word_counts = block_word_counts or []
     print(
         "[reading pipeline] "
+        f"total={total_seconds:.2f}s "
+        f"overall_summary={overall_summary_seconds:.2f}s "
         f"preprocess={preprocess_seconds:.2f}s "
         f"team_model={team_model_seconds:.2f}s "
         f"blocks={block_count} "
@@ -362,6 +388,8 @@ def _log_reading_timing(
 
 
 def _build_processing_stats(
+    total_seconds: float,
+    overall_summary_seconds: float,
     preprocess_seconds: float,
     team_model_seconds: float,
     block_count: int,
@@ -370,6 +398,8 @@ def _build_processing_stats(
     block_word_counts: list[int],
 ) -> dict:
     return {
+        "totalSeconds": round(total_seconds, 2),
+        "overallSummarySeconds": round(overall_summary_seconds, 2),
         "preprocessSeconds": round(preprocess_seconds, 2),
         "modelSeconds": round(team_model_seconds, 2),
         "blockCount": block_count,
