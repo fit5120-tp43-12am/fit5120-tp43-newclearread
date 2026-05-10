@@ -2,6 +2,7 @@
 import binascii
 import io
 import re
+import zipfile
 from pathlib import Path
 
 MAX_EXTRACTED_TEXT_CHARS = 50000
@@ -63,7 +64,11 @@ def _extract_text_from_docx(file_bytes: bytes) -> str:
     except ImportError:
         raise RuntimeError("DOCX extraction requires the 'python-docx' package.")
 
-    document = Document(io.BytesIO(file_bytes))
+    try:
+        document = Document(io.BytesIO(file_bytes))
+    except zipfile.BadZipFile:
+        raise ValueError("The Word file appears to be empty or corrupted. Please try a different file.")
+
     return "\n".join(paragraph.text for paragraph in document.paragraphs)
 
 
