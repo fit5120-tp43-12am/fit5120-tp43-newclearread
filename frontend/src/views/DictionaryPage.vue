@@ -63,8 +63,74 @@ function handleKeydown(e) {
   if (e.key === 'Enter') handleSearch()
 }
 
-const hasWordParts      = computed(() => result.value?.wordParts?.length > 0)
+const hasWordParts        = computed(() => result.value?.wordParts?.length > 0)
 const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
+
+
+// ── Saved words (localStorage) ────────────────────────────────────────────────
+// Each entry: { word, simpleMeaning, wordParts, meaningFromParts, savedAt }
+const SAVED_KEY  = 'clearead-dict-saved'
+
+function loadSavedWords() {
+  try { return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]') }
+  catch { return [] }
+}
+
+const savedWords = ref(loadSavedWords())
+
+/** Is the current result already in the saved list? */
+const isSaved = computed(() =>
+  result.value ? savedWords.value.some(w => w.word === result.value.word) : false
+)
+
+/** Save or unsave the current result word. */
+function toggleSave() {
+  if (!result.value) return
+  if (isSaved.value) {
+    savedWords.value = savedWords.value.filter(w => w.word !== result.value.word)
+  } else {
+    savedWords.value = [
+      { ...result.value, savedAt: new Date().toISOString() },
+      ...savedWords.value,
+    ]
+  }
+  localStorage.setItem(SAVED_KEY, JSON.stringify(savedWords.value))
+}
+
+/** Remove one entry from the saved list. */
+function removeSaved(word) {
+  savedWords.value = savedWords.value.filter(w => w.word !== word)
+  localStorage.setItem(SAVED_KEY, JSON.stringify(savedWords.value))
+}
+
+/** Clear every saved word. */
+function clearAllSaved() {
+  savedWords.value = []
+  localStorage.removeItem(SAVED_KEY)
+}
+
+/** Load a saved entry back into the result card. */
+function loadSaved(entry) {
+  result.value   = entry
+  query.value    = entry.word
+  searched.value = true
+  errorMsg.value = ''
+  ttsPlaying.value = false
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+/** Human-readable relative date label. */
+function relativeDate(iso) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1)   return 'Just now'
+  if (mins < 60)  return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)   return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 7)   return `${days}d ago`
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
 </script>
 
 
@@ -215,19 +281,46 @@ const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
         <!-- Result card -->
         <div v-else-if="result" class="result-card">
 
-          <!-- Card header: word + TTS + close -->
+          <!-- Card header: word + TTS + Save -->
           <div class="result-header">
             <div class="result-header-left">
               <h2 class="result-word">{{ result.word }}</h2>
             </div>
-            <button class="result-tts-btn" :class="{ 'result-tts-btn--active': ttsPlaying }" @click="speakWord" title="Listen to pronunciation">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 6.5H6L9.5 3.5v11L6 11.5H3V6.5z" fill="currentColor"/>
-                <path d="M12 5a6 6 0 0 1 0 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-                <path d="M13.5 7.5a3 3 0 0 1 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-              </svg>
-              {{ ttsPlaying ? 'Playing…' : 'Listen' }}
-            </button>
+            <div class="result-header-actions">
+              <!-- Listen button -->
+              <button class="result-tts-btn" :class="{ 'result-tts-btn--active': ttsPlaying }" @click="speakWord" title="Listen to pronunciation">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M3 6.5H6L9.5 3.5v11L6 11.5H3V6.5z" fill="currentColor"/>
+                  <path d="M12 5a6 6 0 0 1 0 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                  <path d="M13.5 7.5a3 3 0 0 1 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                </svg>
+                {{ ttsPlaying ? 'Playing…' : 'Listen' }}
+              </button>
+
+              <!-- Save / Saved toggle -->
+              <button
+                class="result-save-btn"
+                :class="{ 'result-save-btn--saved': isSaved }"
+                @click="toggleSave"
+                :title="isSaved ? 'Remove from saved words' : 'Save for later study'"
+              >
+                <!-- Bookmark icon: filled when saved, outline when not -->
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path
+                    v-if="isSaved"
+                    d="M3 2h10a1 1 0 0 1 1 1v11l-6-3-6 3V3a1 1 0 0 1 1-1z"
+                    fill="currentColor"
+                  />
+                  <path
+                    v-else
+                    d="M3 2h10a1 1 0 0 1 1 1v11l-6-3-6 3V3a1 1 0 0 1 1-1z"
+                    stroke="currentColor" stroke-width="1.5"
+                    stroke-linejoin="round" fill="none"
+                  />
+                </svg>
+                {{ isSaved ? 'Saved' : 'Save' }}
+              </button>
+            </div>
           </div>
 
           <!-- Simple meaning -->
@@ -259,6 +352,55 @@ const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
             <div class="result-section-label">Meaning from parts</div>
             <p class="result-parts-meaning">{{ result.meaningFromParts }}</p>
           </div>
+
+        </div>
+
+        <!-- ── Saved Words panel ── -->
+        <!-- Always visible when there are saved words -->
+        <div v-if="savedWords.length" class="saved-panel">
+
+          <!-- Panel header -->
+          <div class="saved-panel-header">
+            <div class="saved-panel-title">
+              <!-- Bookmark icon -->
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M2.5 2h10a1 1 0 0 1 1 1v10l-5.5-2.75L2.5 13V3a1 1 0 0 1 1-1z"
+                  fill="#4f46e5" stroke="#4f46e5" stroke-width="0.5" stroke-linejoin="round"/>
+              </svg>
+              Saved Words
+              <span class="saved-panel-count">{{ savedWords.length }}</span>
+            </div>
+            <button class="saved-clear-btn" @click="clearAllSaved" title="Remove all saved words">
+              Clear all
+            </button>
+          </div>
+
+          <!-- Word rows -->
+          <ul class="saved-list">
+            <li
+              v-for="entry in savedWords"
+              :key="entry.word"
+              class="saved-item"
+            >
+              <!-- Clickable area: loads the word back -->
+              <button class="saved-item-btn" @click="loadSaved(entry)">
+                <span class="saved-item-word">{{ entry.word }}</span>
+                <span v-if="entry.simpleMeaning" class="saved-item-meaning">
+                  {{ entry.simpleMeaning.length > 60 ? entry.simpleMeaning.slice(0, 60) + '…' : entry.simpleMeaning }}
+                </span>
+              </button>
+
+              <!-- Right: date + remove -->
+              <div class="saved-item-meta">
+                <span class="saved-item-date">{{ relativeDate(entry.savedAt) }}</span>
+                <button class="saved-remove-btn" @click.stop="removeSaved(entry.word)" :title="`Remove '${entry.word}'`">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </li>
+          </ul>
 
         </div>
 
@@ -501,6 +643,11 @@ const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
   line-height: 1.1;
 }
 
+/* Header actions group */
+.result-header-actions {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+
 /* TTS button */
 .result-tts-btn {
   display: inline-flex; align-items: center; gap: 7px;
@@ -513,6 +660,24 @@ const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
 }
 .result-tts-btn:hover { background: #e0e7ff; border-color: #a5b4fc; }
 .result-tts-btn--active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+/* Save / Saved button */
+.result-save-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px;
+  font-size: 13px; font-weight: 700;
+  color: #64748b; background: #f8fafc;
+  border: 1.5px solid #e2e8f0; border-radius: 999px;
+  cursor: pointer; font-family: inherit; flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+.result-save-btn:hover { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+.result-save-btn:active { transform: scale(0.96); }
+/* Saved state: green fill */
+.result-save-btn--saved {
+  background: #f0fdf4; border-color: #86efac; color: #15803d;
+}
+.result-save-btn--saved:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
 
 /* Content sections */
 .result-section {
@@ -569,6 +734,83 @@ const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
   font-size: 15px; line-height: 1.75;
   color: #334155; margin: 0; font-style: italic;
 }
+
+/* ── Saved Words panel ── */
+.saved-panel {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+
+.saved-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.saved-panel-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 800; color: #0f172a;
+}
+.saved-panel-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  background: #eef2ff; color: #4f46e5;
+  font-size: 11px; font-weight: 800; border-radius: 999px;
+}
+.saved-clear-btn {
+  font-size: 12px; font-weight: 600; color: #94a3b8;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  padding: 4px 8px; border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.saved-clear-btn:hover { background: #fef2f2; color: #dc2626; }
+
+/* Word list */
+.saved-list {
+  list-style: none; margin: 0; padding: 0;
+}
+.saved-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 12px 0 0;
+  border-bottom: 1px solid #f8fafc;
+  transition: background 0.12s;
+}
+.saved-item:last-child { border-bottom: none; }
+.saved-item:hover { background: #fafbff; }
+
+/* Clickable left part */
+.saved-item-btn {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 14px 8px 14px 22px;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  text-align: left;
+}
+.saved-item-word {
+  font-size: 15px; font-weight: 800; color: #0f172a;
+  letter-spacing: -0.02em;
+}
+.saved-item-meaning {
+  font-size: 12.5px; color: #64748b; line-height: 1.4;
+}
+.saved-item-btn:hover .saved-item-word { color: #4f46e5; }
+
+/* Right meta: date + remove */
+.saved-item-meta {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.saved-item-date {
+  font-size: 11.5px; color: #94a3b8; white-space: nowrap;
+}
+.saved-remove-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  color: #cbd5e1; transition: background 0.15s, color 0.15s;
+}
+.saved-remove-btn:hover { background: #fee2e2; color: #ef4444; }
 
 /* Spin utility */
 .spin { animation: spin 0.9s linear infinite; }
