@@ -4,7 +4,7 @@ Morpheme utilities (shared by the analyzer):
 * ``CharVocab``                       – char-level vocabulary
 * boundary <-> segment conversion     – for inference / training labels
 * rule-based prefix/root/suffix tag   – ``classify_segments``
-* morpheme meaning lookup             – backed by ``data/morphemes.json``
+* morpheme meaning lookup             – backed by morpheme data
   (colingoldberg/morphemes, MIT)
 """
 
@@ -151,7 +151,7 @@ def classify_segments(segments: list[str]) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- #
-# Morpheme meanings (data/morphemes.json at the project root)
+# Morpheme meanings (data/morphemes.json)
 # --------------------------------------------------------------------------- #
 MEANINGS_FILE = Path(__file__).resolve().parent.parent / "data" / "morphemes.json"
 
