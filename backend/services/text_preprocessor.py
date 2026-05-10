@@ -7,9 +7,30 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import Counter
 from typing import Any
 
+from pydantic import BaseModel, Field
+
 
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_BATCH_SIZE = 96
+
+
+class SegmentCardOutput(BaseModel):
+    viewpoint: str = Field(
+        max_length=36,
+        description="A compact 3-7 word section card title.",
+    )
+    summary: str = Field(
+        max_length=90,
+        description="A concise one-sentence section card preview.",
+    )
+
+
+class SegmentCardItem(SegmentCardOutput):
+    segment_id: int
+
+
+class SegmentCardBatchOutput(BaseModel):
+    items: list[SegmentCardItem]
 
 SEGMENT_TYPES = {
     "introduction",
@@ -757,7 +778,7 @@ def preprocess_text(
     enrich_with_llm: bool = True,
     llm_model: str = "gpt-4.1-mini",
     llm_concurrency: int = 5,
-    llm_max_retries: int = 3,
+    llm_max_retries: int = 1,
 ) -> dict:
     cleaned = clean_text(text)
     if not cleaned:
@@ -769,6 +790,17 @@ def preprocess_text(
     ]
     if not content_sentences:
         return {"segments": [], "debug": _empty_debug(all_sentences)} if debug else {"segments": []}
+
+    seen_sentences: set[str] = set()
+    deduped_sentences = []
+    for sentence in content_sentences:
+        if sentence["word_count"] >= 10:
+            key = _normalize_for_duplicate_check(sentence["text"])
+            if key in seen_sentences:
+                continue
+            seen_sentences.add(key)
+        deduped_sentences.append(sentence)
+    content_sentences = deduped_sentences
 
     blocks = build_sentence_blocks(content_sentences, block_size=block_size)
     boundaries = []
@@ -812,7 +844,7 @@ def preprocess_text(
     validate_segments_detailed(
         internal_segments,
         cleaned,
-        all_sentences,
+        content_sentences,
         keep_references=keep_references,
     )
 
@@ -856,44 +888,47 @@ def preprocess_text(
     return result
 
 
-def build_segment_prompt(segment: dict) -> str:
+def build_segment_batch_prompt(segments: list[dict]) -> str:
+    compact_segments = [
+        {
+            "segment_id": segment.get("segment_id"),
+            "content": str(segment.get("content") or "")[:4000],
+        }
+        for segment in segments
+    ]
     return f"""
-You will receive one already segmented text block.
+You will receive a JSON array of already segmented text blocks.
 
-Your task is to generate only:
+For each block, generate concise card copy only:
+- segment_id
 - viewpoint
 - summary
 
-Return strict JSON only:
-{{
-  "viewpoint": "...",
-  "summary": "..."
-}}
+Return one item for every input segment_id.
 
 Viewpoint requirements:
-- 6 to 16 words if possible.
-- Short, strong, and suitable for a mind map node.
-- Express the central claim, issue, contrast, cause, impact, solution, or conclusion.
-- Represent the whole segment, not a minor local detail.
+- 2 to 5 words.
+- Short, specific, and suitable for a section card title.
+- Prefer a compact noun phrase in Title Case, not a full sentence.
 - Do not use generic labels such as Background, Discussion, General, Conclusion, or Mental health.
 - Do not include URLs, citations, markdown links, or reference markers.
 
 Summary requirements:
-- One factual sentence.
-- More descriptive than the viewpoint.
+- One concise factual sentence, 8 to 14 words if possible.
+- More descriptive than the viewpoint, but short enough for a card preview.
 - Represent the whole segment.
-- Do not include URLs, citations, markdown links, or reference markers.
+- Do not list every detail.
 - Do not invent facts.
 
-Segment content:
-{segment.get("content", "")}
+Segments:
+{json.dumps(compact_segments, ensure_ascii=False)}
 """.strip()
 
 
-async def call_llm_for_segment(
-    segment: dict,
+async def call_llm_for_segments_batch(
+    segments: list[dict],
     model: str,
-) -> dict:
+) -> list[dict]:
     if not os.getenv("OPENAI_API_KEY"):
         raise ValueError("OPENAI_API_KEY is not configured.")
 
@@ -903,51 +938,49 @@ async def call_llm_for_segment(
         raise ImportError("The openai package is required for LLM enrichment.") from error
 
     client = AsyncOpenAI()
-    response = await client.chat.completions.create(
+    response = await client.beta.chat.completions.parse(
         model=model,
         messages=[
             {
                 "role": "system",
-                "content": "You generate strict JSON for segment viewpoint and summary fields.",
+                "content": "You generate concise section card copy for multiple text segments.",
             },
             {
                 "role": "user",
-                "content": build_segment_prompt(segment),
+                "content": build_segment_batch_prompt(segments),
             },
         ],
         temperature=0.2,
-        response_format={"type": "json_object"},
+        response_format=SegmentCardBatchOutput,
         timeout=30,
     )
 
-    content = response.choices[0].message.content
-    return validate_llm_enrichment(_extract_json_object(content))
+    parsed = response.choices[0].message.parsed
+    if isinstance(parsed, SegmentCardBatchOutput):
+        raw_items = [item.model_dump() for item in parsed.items]
+    elif isinstance(parsed, dict):
+        raw_items = parsed.get("items") or []
+    else:
+        raise ValueError("Segment card batch response did not match the expected schema.")
 
-
-async def enrich_one_segment(
-    segment: dict,
-    model: str,
-    semaphore: asyncio.Semaphore,
-    max_retries: int,
-) -> dict:
-    async with semaphore:
-        last_error: Exception | None = None
-        for attempt in range(max(1, max_retries)):
-            try:
-                enrichment = await call_llm_for_segment(segment, model)
-                return _apply_enrichment(segment, enrichment)
-            except Exception as error:
-                last_error = error
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
-
-        fallback = fallback_generate_viewpoint_and_summary(segment)
+    normalized_by_id = {}
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
         try:
-            return _apply_enrichment(segment, validate_llm_enrichment(fallback))
-        except Exception as fallback_error:
-            raise ValueError(
-                f"LLM enrichment failed and fallback enrichment was invalid: {fallback_error}"
-            ) from last_error
+            segment_id = int(item.get("segment_id"))
+        except (TypeError, ValueError):
+            continue
+        normalized_by_id[segment_id] = validate_card_enrichment(item)
+
+    enriched_segments = []
+    for segment in segments:
+        segment_id = segment.get("segment_id")
+        enrichment = normalized_by_id.get(segment_id)
+        if enrichment is None:
+            enrichment = fallback_generate_viewpoint_and_summary(segment)
+        enriched_segments.append(_apply_enrichment(segment, enrichment))
+    return enriched_segments
 
 
 async def enrich_segments_with_llm(
@@ -962,12 +995,17 @@ async def enrich_segments_with_llm(
     if not os.getenv("OPENAI_API_KEY"):
         return [dict(segment) for segment in segments]
 
-    semaphore = asyncio.Semaphore(max(1, concurrency))
-    tasks = [
-        enrich_one_segment(segment, model, semaphore, max_retries)
+    for attempt in range(max(1, max_retries)):
+        try:
+            return await call_llm_for_segments_batch(segments, model)
+        except Exception as error:
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2 ** attempt)
+
+    return [
+        _apply_enrichment(segment, fallback_generate_viewpoint_and_summary(segment))
         for segment in segments
     ]
-    return await asyncio.gather(*tasks)
 
 
 def validate_llm_enrichment(data: dict) -> dict:
@@ -979,6 +1017,30 @@ def validate_llm_enrichment(data: dict) -> dict:
 
     _validate_viewpoint(viewpoint, 0)
     _validate_summary(summary, 0)
+
+    return {
+        "viewpoint": viewpoint,
+        "summary": summary,
+    }
+
+
+def validate_card_enrichment(data: dict) -> dict:
+    if not isinstance(data, dict):
+        raise ValueError("Card enrichment must be a JSON object.")
+
+    viewpoint = _clean_viewpoint(str(data.get("viewpoint") or "")).strip(" .")
+    summary = _clean_sentence_for_output(str(data.get("summary") or ""))
+
+    if not viewpoint:
+        raise ValueError("Card viewpoint is empty.")
+    if not summary:
+        raise ValueError("Card summary is empty.")
+
+    lowered = viewpoint.lower().strip(" .")
+    if lowered in WEAK_VIEWPOINTS or lowered in REFERENCE_HEADINGS:
+        raise ValueError("Card viewpoint is generic.")
+    if re.search(r"https?://|www\.|\[[^\]]+\]", f"{viewpoint} {summary}"):
+        raise ValueError("Card enrichment contains URL or citation markers.")
 
     return {
         "viewpoint": viewpoint,

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from services import model_service
 from services.overall_summary_service import generate_overall_summary
-from services.text_preprocessor import preprocess_text
+from services.text_preprocessor import enrich_segments_with_llm, preprocess_text
 from services.text_service import basic_algorithm, use_openai
 
 
@@ -38,6 +38,7 @@ def process_reading_text(text: str) -> dict:
     # It converts one raw article into the block-based response expected by the frontend.
     preprocess_seconds = 0.0
     overall_summary_seconds = 0.0
+    section_card_seconds = 0.0
     team_model_seconds = 0.0
     total_start = time.perf_counter()
     timing_enabled = _env_bool("CLEARREAD_READING_TIMING_LOGS", False)
@@ -50,6 +51,7 @@ def process_reading_text(text: str) -> dict:
             time.perf_counter() - total_start,
             preprocess_seconds,
             overall_summary_seconds,
+            section_card_seconds,
             team_model_seconds,
             block_count=0,
             model_block_count=0,
@@ -70,6 +72,7 @@ def process_reading_text(text: str) -> dict:
             "processingStats": _build_processing_stats(
                 total_seconds=time.perf_counter() - total_start,
                 overall_summary_seconds=overall_summary_seconds,
+                section_card_seconds=section_card_seconds,
                 preprocess_seconds=preprocess_seconds,
                 team_model_seconds=team_model_seconds,
                 block_count=0,
@@ -79,19 +82,30 @@ def process_reading_text(text: str) -> dict:
             ),
         }
 
-    overall_summary_start = time.perf_counter()
-    overall_summary = generate_overall_summary(source_text)
-    overall_summary_seconds = time.perf_counter() - overall_summary_start
+    # The whole-document overview and semantic segmentation both depend only on
+    # the source text, so run them together instead of making the user wait twice.
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        overall_summary_future = executor.submit(
+            _timed_call,
+            generate_overall_summary,
+            source_text,
+        )
+        preprocess_future = executor.submit(
+            _timed_call,
+            _build_segments,
+            source_text,
+        )
 
-    # The preprocessor cleans the text and splits it into semantic reading segments.
-    preprocess_start = time.perf_counter()
-    (
-        segments,
-        preprocessing_used_fallback,
-        preprocessing_reason,
-        segmentation_metadata,
-    ) = _build_segments(source_text)
-    preprocess_seconds = time.perf_counter() - preprocess_start
+        overall_summary, overall_summary_seconds = overall_summary_future.result()
+        (
+            (
+                segments,
+                preprocessing_used_fallback,
+                preprocessing_reason,
+                segmentation_metadata,
+            ),
+            preprocess_seconds,
+        ) = preprocess_future.result()
 
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
@@ -106,6 +120,7 @@ def process_reading_text(text: str) -> dict:
         prepared_blocks.append(
             {
                 "frontend_id": index,
+                "segment_id": segment.get("segment_id") or index,
                 "model_id": f"block-{index}",
                 "title": str(segment.get("viewpoint") or "").strip(),
                 "subtitle": str(segment.get("segment_summary") or "").strip(),
@@ -118,21 +133,39 @@ def process_reading_text(text: str) -> dict:
     model_blocks = (
         prepared_blocks[: model_service.get_summary_max_blocks()] if model_enabled else []
     )
-    if model_blocks:
-        team_model_start = time.perf_counter()
-        try:
-            model_response = model_service.summarize_blocks(
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        section_card_future = (
+            executor.submit(_timed_call, _enrich_section_cards, segments)
+            if segments
+            else None
+        )
+        model_future = None
+        if model_blocks:
+            model_future = executor.submit(
+                _timed_call,
+                model_service.summarize_blocks,
                 [
                     {"id": block["model_id"], "text": block["summary_text"]}
                     for block in model_blocks
-                ]
+                ],
             )
-            model_results_by_id = model_service.normalize_model_results(model_response)
-        except Exception:
-            used_fallback = True
-            fallback_reasons.append("team_model_unavailable")
-        finally:
-            team_model_seconds = time.perf_counter() - team_model_start
+
+        if section_card_future is not None:
+            try:
+                enriched_segments, section_card_seconds = section_card_future.result()
+                _apply_section_card_copy(prepared_blocks, enriched_segments)
+            except Exception:
+                used_fallback = True
+                if "section_card_enrichment_failed" not in fallback_reasons:
+                    fallback_reasons.append("section_card_enrichment_failed")
+
+        if model_future is not None:
+            try:
+                model_response, team_model_seconds = model_future.result()
+                model_results_by_id = model_service.normalize_model_results(model_response)
+            except Exception:
+                used_fallback = True
+                fallback_reasons.append("team_model_unavailable")
 
     fallback_blocks = []
     model_summaries_by_id = {}
@@ -193,6 +226,7 @@ def process_reading_text(text: str) -> dict:
         time.perf_counter() - total_start,
         preprocess_seconds,
         overall_summary_seconds,
+        section_card_seconds,
         team_model_seconds,
         block_count=len(blocks),
         model_block_count=len(model_blocks),
@@ -215,6 +249,7 @@ def process_reading_text(text: str) -> dict:
         "processingStats": _build_processing_stats(
             total_seconds=time.perf_counter() - total_start,
             overall_summary_seconds=overall_summary_seconds,
+            section_card_seconds=section_card_seconds,
             preprocess_seconds=preprocess_seconds,
             team_model_seconds=team_model_seconds,
             block_count=len(blocks),
@@ -285,8 +320,9 @@ def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
     # Use semantic preprocessing first. If it fails, keep the page usable by treating
     # the whole input as a single block.
     try:
-        preprocessing_result = preprocess_text(text)
-    except Exception:
+        preprocessing_result = preprocess_text(text, enrich_with_llm=False)
+    except Exception as exc:
+        print(f"[preprocess] failed: {type(exc).__name__}: {exc}", flush=True)
         return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", {}
 
     segments, success, metadata = _normalize_preprocess_result(preprocessing_result)
@@ -306,6 +342,66 @@ def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
         return segments, False, "", metadata
 
     return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", metadata
+
+
+def _timed_call(function, *args, **kwargs):
+    started_at = time.perf_counter()
+    result = function(*args, **kwargs)
+    return result, time.perf_counter() - started_at
+
+
+def _enrich_section_cards(segments: list[dict]) -> list[dict]:
+    if not segments:
+        return []
+
+    enrichment_segments = [
+        {
+            "segment_id": segment.get("segment_id") or index,
+            "content": str(segment.get("cleaned_text") or segment.get("content") or "").strip(),
+            "viewpoint": str(segment.get("viewpoint") or "").strip(),
+            "summary": str(segment.get("segment_summary") or segment.get("summary") or "").strip(),
+        }
+        for index, segment in enumerate(segments, start=1)
+    ]
+
+    async def run_enrichment() -> list[dict]:
+        return await enrich_segments_with_llm(
+            enrichment_segments,
+            model=os.getenv("CLEARREAD_SECTION_CARD_MODEL", "gpt-4.1-mini"),
+            concurrency=_env_int("CLEARREAD_SECTION_CARD_CONCURRENCY", 5),
+            max_retries=_env_int("CLEARREAD_SECTION_CARD_MAX_RETRIES", 1),
+        )
+
+    import asyncio
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(run_enrichment())
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(lambda: asyncio.run(run_enrichment())).result()
+
+
+def _apply_section_card_copy(blocks: list[dict], enriched_segments: list[dict]) -> None:
+    if not blocks or not enriched_segments:
+        return
+
+    enriched_by_id = {
+        segment.get("segment_id"): segment
+        for segment in enriched_segments
+        if isinstance(segment, dict)
+    }
+    for block in blocks:
+        segment = enriched_by_id.get(block.get("segment_id") or block["frontend_id"])
+        if not segment:
+            continue
+        title = str(segment.get("viewpoint") or "").strip()
+        subtitle = str(segment.get("summary") or "").strip()
+        if title:
+            block["title"] = title
+        if subtitle:
+            block["subtitle"] = subtitle
 
 
 def _summarise_block_fallback(text: str) -> dict:
@@ -363,6 +459,7 @@ def _log_reading_timing(
     total_seconds: float,
     preprocess_seconds: float,
     overall_summary_seconds: float,
+    section_card_seconds: float,
     team_model_seconds: float,
     block_count: int,
     model_block_count: int,
@@ -378,6 +475,7 @@ def _log_reading_timing(
         f"total={total_seconds:.2f}s "
         f"overall_summary={overall_summary_seconds:.2f}s "
         f"preprocess={preprocess_seconds:.2f}s "
+        f"section_cards={section_card_seconds:.2f}s "
         f"team_model={team_model_seconds:.2f}s "
         f"blocks={block_count} "
         f"model_blocks={model_block_count} "
@@ -390,6 +488,7 @@ def _log_reading_timing(
 def _build_processing_stats(
     total_seconds: float,
     overall_summary_seconds: float,
+    section_card_seconds: float,
     preprocess_seconds: float,
     team_model_seconds: float,
     block_count: int,
@@ -400,6 +499,7 @@ def _build_processing_stats(
     return {
         "totalSeconds": round(total_seconds, 2),
         "overallSummarySeconds": round(overall_summary_seconds, 2),
+        "sectionCardSeconds": round(section_card_seconds, 2),
         "preprocessSeconds": round(preprocess_seconds, 2),
         "modelSeconds": round(team_model_seconds, 2),
         "blockCount": block_count,

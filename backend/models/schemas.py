@@ -45,6 +45,8 @@ class TextProcessingStats(BaseModel):
     totalSeconds: float = 0.0
     # Time spent generating the whole-document overview summary.
     overallSummarySeconds: float = 0.0
+    # Time spent generating section card title/subtitle copy.
+    sectionCardSeconds: float = 0.0
     # Time spent cleaning, splitting sentences, and building reading blocks.
     preprocessSeconds: float
     # Time spent calling the team summary model.

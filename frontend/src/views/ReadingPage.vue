@@ -1,3 +1,13 @@
+<script>
+const readingPageMemory = {
+  mode: 'idle',
+  result: null,
+  inputText: '',
+  uploadedFileText: '',
+  uploadedFileName: '',
+}
+</script>
+
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
@@ -28,7 +38,6 @@ const textareaRef = ref(null)     // ref to the textarea DOM element for auto-re
 
 // The page can be in one of three states at any time
 const mode = ref('idle')   // 'idle' | 'loading' | 'result'
-const READING_STATE_KEY = 'clearead-reading-page-state'
 
 // Holds the processed result returned by the backend.
 //
@@ -60,47 +69,31 @@ const READING_STATE_KEY = 'clearead-reading-page-state'
 const result = ref(null)
 
 function saveReadingState() {
-  try {
-    const state = {
-      mode: result.value && mode.value === 'result' ? 'result' : 'idle',
-      result: result.value,
-      inputText: inputText.value,
-      uploadedFileText: uploadedFileText.value,
-      uploadedFileName: uploadedFileName.value,
-    }
-    sessionStorage.setItem(READING_STATE_KEY, JSON.stringify(state))
-  } catch (err) {
-    console.warn('[ReadingPage] Could not save reading state:', err)
-  }
+  readingPageMemory.mode = result.value && mode.value === 'result' ? 'result' : 'idle'
+  readingPageMemory.result = result.value
+  readingPageMemory.inputText = inputText.value
+  readingPageMemory.uploadedFileText = uploadedFileText.value
+  readingPageMemory.uploadedFileName = uploadedFileName.value
 }
 
 function restoreReadingState() {
-  try {
-    const raw = sessionStorage.getItem(READING_STATE_KEY)
-    if (!raw) return
+  inputText.value        = typeof readingPageMemory.inputText === 'string' ? readingPageMemory.inputText : ''
+  uploadedFileText.value = typeof readingPageMemory.uploadedFileText === 'string' ? readingPageMemory.uploadedFileText : ''
+  uploadedFileName.value = typeof readingPageMemory.uploadedFileName === 'string' ? readingPageMemory.uploadedFileName : ''
 
-    const state = JSON.parse(raw)
-    inputText.value        = typeof state.inputText === 'string' ? state.inputText : ''
-    uploadedFileText.value = typeof state.uploadedFileText === 'string' ? state.uploadedFileText : ''
-    uploadedFileName.value = typeof state.uploadedFileName === 'string' ? state.uploadedFileName : ''
-
-    if (state.result && state.mode === 'result') {
-      result.value = state.result
-      mode.value   = 'result'
-      feedback.value = { type: 'success', message: 'Text processed successfully.' }
-    }
-  } catch (err) {
-    console.warn('[ReadingPage] Could not restore reading state:', err)
-    sessionStorage.removeItem(READING_STATE_KEY)
+  if (readingPageMemory.result && readingPageMemory.mode === 'result') {
+    result.value = readingPageMemory.result
+    mode.value   = 'result'
+    feedback.value = { type: 'success', message: 'Text processed successfully.' }
   }
 }
 
 function clearReadingState() {
-  try {
-    sessionStorage.removeItem(READING_STATE_KEY)
-  } catch (err) {
-    console.warn('[ReadingPage] Could not clear reading state:', err)
-  }
+  readingPageMemory.mode = 'idle'
+  readingPageMemory.result = null
+  readingPageMemory.inputText = ''
+  readingPageMemory.uploadedFileText = ''
+  readingPageMemory.uploadedFileName = ''
 }
 
 
