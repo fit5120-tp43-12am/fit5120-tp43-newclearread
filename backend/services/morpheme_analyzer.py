@@ -1,41 +1,18 @@
 """
-Morpheme analyzer: ONNX inference + ``MorphemeSegmenter`` class + CLI.
+Morpheme analyzer: ONNX inference + ``MorphemeSegmenter`` class.
 
 Wraps the trained BiLSTM boundary tagger (loaded from ONNX), the rule-based
 prefix/root/suffix classifier, and the morpheme meaning dictionary. Optionally
 calls WordsAPI to fetch a whole-word ``simple_meaning``, and for each
 ``Root`` segment optionally ``explanation`` (WordsAPI ``results[0].definition``).
-
-CLI usage::
-
-    python -m src.morpheme_analyzer <word> [<word> ...]
-
-Output JSON:
-    {
-        "word": "...",
-        "simple_meaning": "...",
-        "parts": [
-            {"text": "mis", "display": "mis-", "type": "Prefix",
-             "meaning": ["wrong", "badly"], "matched": "..."},
-            {"text": "act", "display": "act", "type": "Root",
-             "meaning": null, "explanation": "something done (usually as opposed to something said)"},
-            ...
-        ],
-        "found": true
-    }
-
-If the word cannot be meaningfully analyzed (single piece AND no dictionary
-hit), only ``word`` and ``simple_meaning`` are returned.
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
-import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 import onnxruntime as ort
@@ -49,10 +26,9 @@ from .morpheme_utils import (
     lookup_meaning,
 )
 
-# Default artifact locations live one level above this file (the project root)
-# so the package works regardless of the caller's cwd.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-MODELS_DIR = PROJECT_ROOT / "models"
+# Default artifact locations - pointing to backend/models/
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
+MODELS_DIR = BACKEND_ROOT / "models"
 DEFAULT_ONNX = MODELS_DIR / "morpheme_bilstm.onnx"
 DEFAULT_VOCAB = MODELS_DIR / "char_vocab.json"
 
@@ -256,44 +232,3 @@ class MorphemeSegmenter:
     def analyze_json(self, word: str, *, indent: int | None = 2) -> str:
         """Convenience: return ``analyze(word)`` already JSON-serialized."""
         return json.dumps(self.analyze(word), ensure_ascii=False, indent=indent)
-
-
-# --------------------------------------------------------------------------- #
-# CLI
-# --------------------------------------------------------------------------- #
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(
-        prog="python -m src.morpheme_analyzer",
-        description="Analyze morpheme segmentation of one or more words",
-    )
-    p.add_argument("words", nargs="+", help="One or more words to analyze")
-    p.add_argument("--onnx", default=str(DEFAULT_ONNX),
-                   help="Path to the ONNX model (.onnx)")
-    p.add_argument("--vocab", default=str(DEFAULT_VOCAB),
-                   help="Path to the char vocab JSON")
-    p.add_argument("--threshold", type=float, default=0.5,
-                   help="Boundary probability cut-off in [0, 1]; lower = more splits")
-    return p.parse_args()
-
-
-def run(words: Iterable[str], seg: MorphemeSegmenter) -> None:
-    for w in words:
-        print(seg.analyze_json(w))
-
-
-def main() -> None:
-    args = parse_args()
-    try:
-        seg = MorphemeSegmenter(
-            onnx_path=args.onnx,
-            vocab_path=args.vocab,
-            threshold=args.threshold,
-        )
-    except FileNotFoundError as e:
-        print(str(e), file=sys.stderr)
-        sys.exit(1)
-    run(args.words, seg)
-
-
-if __name__ == "__main__":
-    main()
