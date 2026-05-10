@@ -42,3 +42,4 @@ ai/lora_training/**/*.jsonl
 
 # Local work logs (do not publish)
 frontend/WORKLOG.md
+*.docx
