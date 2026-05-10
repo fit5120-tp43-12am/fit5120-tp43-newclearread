@@ -2811,7 +2811,7 @@ kbd {
   font-size: 21px; font-weight: 800; color: #0f172a;
   letter-spacing: -0.025em; margin: 0 0 5px; line-height: 1.3;
 }
-.modal-subtitle { font-size: 13.5px; color: #64748b; margin: 0; line-height: 1.45; }
+.modal-subtitle { font-size: 13.5px; color: #374151; margin: 0; line-height: 1.45; }
 
 /* Close button */
 .modal-close-btn {
@@ -2877,11 +2877,11 @@ kbd {
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: #4b5563;
   white-space: nowrap;
   flex-shrink: 0;
 }
-.modal-orig-col:hover .modal-orig-label { color: #64748b; }
+.modal-orig-col:hover .modal-orig-label { color: #111827; }
 
 /* Collapsed: rotate the whole label block vertically */
 .modal-orig-col--collapsed .modal-orig-label {
@@ -2895,7 +2895,7 @@ kbd {
 .modal-orig-text {
   font-size: 14px;
   line-height: 1.78;
-  color: #475569;
+  color: #1e293b;
   margin: 0;
   cursor: text;
 }
@@ -2927,7 +2927,7 @@ kbd {
 /* Column label (ORIGINAL TEXT / SUMMARY / KEY POINTS) */
 .modal-col-label {
   font-size: 10.5px; font-weight: 700;
-  letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;
+  letter-spacing: 0.09em; text-transform: uppercase; color: #4b5563;
 }
 
 /* Vertical divider */
