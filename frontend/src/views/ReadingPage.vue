@@ -28,6 +28,7 @@ const textareaRef = ref(null)     // ref to the textarea DOM element for auto-re
 
 // The page can be in one of three states at any time
 const mode = ref('idle')   // 'idle' | 'loading' | 'result'
+const READING_STATE_KEY = 'clearead-reading-page-state'
 
 // Holds the processed result returned by the backend.
 //
@@ -57,6 +58,50 @@ const mode = ref('idle')   // 'idle' | 'loading' | 'result'
 //   - If block.title is missing, we show "Section {id}" as the node label.
 // ─────────────────────────────────────────────────────────────────────────────
 const result = ref(null)
+
+function saveReadingState() {
+  try {
+    const state = {
+      mode: result.value && mode.value === 'result' ? 'result' : 'idle',
+      result: result.value,
+      inputText: inputText.value,
+      uploadedFileText: uploadedFileText.value,
+      uploadedFileName: uploadedFileName.value,
+    }
+    sessionStorage.setItem(READING_STATE_KEY, JSON.stringify(state))
+  } catch (err) {
+    console.warn('[ReadingPage] Could not save reading state:', err)
+  }
+}
+
+function restoreReadingState() {
+  try {
+    const raw = sessionStorage.getItem(READING_STATE_KEY)
+    if (!raw) return
+
+    const state = JSON.parse(raw)
+    inputText.value        = typeof state.inputText === 'string' ? state.inputText : ''
+    uploadedFileText.value = typeof state.uploadedFileText === 'string' ? state.uploadedFileText : ''
+    uploadedFileName.value = typeof state.uploadedFileName === 'string' ? state.uploadedFileName : ''
+
+    if (state.result && state.mode === 'result') {
+      result.value = state.result
+      mode.value   = 'result'
+      feedback.value = { type: 'success', message: 'Text processed successfully.' }
+    }
+  } catch (err) {
+    console.warn('[ReadingPage] Could not restore reading state:', err)
+    sessionStorage.removeItem(READING_STATE_KEY)
+  }
+}
+
+function clearReadingState() {
+  try {
+    sessionStorage.removeItem(READING_STATE_KEY)
+  } catch (err) {
+    console.warn('[ReadingPage] Could not clear reading state:', err)
+  }
+}
 
 
 // ── Overall summary (computed from backend response) ──────────────────────────
@@ -167,6 +212,7 @@ function loadDemo() {
   result.value      = DEMO_RESULT
   mode.value        = 'result'
   activeSection.value = null
+  saveReadingState()
 }
 
 
@@ -475,6 +521,11 @@ function autoResize() {
   el.style.height = Math.min(el.scrollHeight, 180) + 'px'   // cap at 180px
 }
 watch(inputText, () => nextTick(autoResize))
+watch(
+  [mode, result, inputText, uploadedFileText, uploadedFileName],
+  saveReadingState,
+  { deep: true },
+)
 
 
 // ── Submit / process text ─────────────────────────────────────────────────────
@@ -531,6 +582,7 @@ function handleBackToInput() {
   feedback.value       = null
   expandedBlocks.value = new Set()
   clampedBlocks.value  = {}
+  clearReadingState()
 }
 
 
@@ -542,6 +594,7 @@ function handleClear() {
   uploadedFileName.value = ''
   feedback.value         = null
   clearTimeout(feedbackTimer)
+  saveReadingState()
   nextTick(autoResize)
 }
 
@@ -642,6 +695,7 @@ function onKeydown(e) {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
+  restoreReadingState()
   window.addEventListener('scroll', onScroll)
   nextTick(autoResize)
 
