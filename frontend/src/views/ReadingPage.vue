@@ -1043,13 +1043,17 @@ function closeDictPopup() {
           ══════════════════════════════════════════════════════════════ -->
           <div class="stage-tree">
 
-            <!-- Bridge: thin rule + "N Sections" label + thin rule -->
-            <div class="sections-bridge" aria-hidden="true">
-              <div class="sections-bridge-line"></div>
-              <span class="sections-bridge-label">
-                {{ result.blocks?.length || 0 }} Sections
-              </span>
-              <div class="sections-bridge-line"></div>
+            <!-- Vertical connector: flows from overview card → pill label → sections grid -->
+            <div class="stage-connector" aria-hidden="true">
+              <div class="stage-connector-line stage-connector-line--top"></div>
+              <div class="stage-connector-pill">
+                <!-- Down-arrow icon -->
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M6.5 2v9M3 8l3.5 3L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{{ result.blocks?.length || 0 }} Sections</span>
+              </div>
+              <div class="stage-connector-line stage-connector-line--bottom"></div>
             </div>
 
             <!--
@@ -2513,14 +2517,14 @@ kbd {
 ───────────────────────────────────────── */
 .stage-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
 .stage-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 14px;
-  font-size: 10.5px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 18px;
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
   border-radius: 999px;
 }
-.stage-pill--green { color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; }
-.stage-pill--blue  { color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; }
+.stage-pill--green { color: #15803d; background: #f0fdf4; border: 1.5px solid #86efac; }
+.stage-pill--blue  { color: #4338ca; background: #eef2ff; border: 1.5px solid #c7d2fe; }
 .stage-pill-count  { font-size: 12px; color: #9ca3af; font-weight: 500; }
 
 
@@ -2673,6 +2677,7 @@ kbd {
 .stage-tree {
   display: flex;
   flex-direction: column;
+  align-items: center;   /* so connector pill centres within full-width container */
   gap: 0;
   padding: 0 0 64px;
   max-width: 1100px;
@@ -2681,27 +2686,40 @@ kbd {
 }
 
 /* ─────────────────────────────────────────
-   Bridge: "N Sections" label with horizontal
-   rules on each side, connecting overview ↔ grid
+   Vertical connector: flows overview → N Sections pill → grid
 ───────────────────────────────────────── */
-.sections-bridge {
+.stage-connector {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 36px 0 28px;
+  padding: 0;
+  gap: 0;
 }
-.sections-bridge-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e0e7ff 40%, #e0e7ff 60%, transparent);
+
+/* Thin vertical lines above and below the pill */
+.stage-connector-line {
+  width: 2px;
+  background: linear-gradient(to bottom, #c7d2fe, #ddd6fe);
+  border-radius: 2px;
 }
-.sections-bridge-label {
-  flex-shrink: 0;
-  font-size: 11px;
+.stage-connector-line--top    { height: 32px; }
+.stage-connector-line--bottom { height: 28px; }
+
+/* The pill badge in the centre */
+.stage-connector-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  font-size: 13.5px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #a5b4fc;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.10);
   white-space: nowrap;
 }
 
@@ -2712,6 +2730,7 @@ kbd {
   A soft background + border draws the eye to the group as a whole.
 */
 .tree-container {
+  width: 100%;                /* fill stage-tree even when parent uses align-items: center */
   border: 1.5px solid #e0e7ff;
   border-radius: 20px;
   padding: 20px;
