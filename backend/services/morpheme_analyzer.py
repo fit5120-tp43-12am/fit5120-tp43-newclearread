@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -44,6 +46,11 @@ ROLE_LABEL = {
 # error / non-2xx response all fall back silently to ``simple_meaning = null``.
 USE_WORDSAPI = True
 
+# Whether to call WordsAPI for each Root segment's ``explanation`` field.
+# Set to False to skip these extra requests (the frontend does not use this field).
+# Set to True to re-enable when needed.
+USE_ROOT_EXPLANATION = False
+
 WORDSAPI_HOST = "wordsapiv1.p.rapidapi.com"
 WORDSAPI_BASE_URL = f"https://{WORDSAPI_HOST}/words"
 
@@ -52,7 +59,7 @@ def _pick_wordsapi_key() -> Optional[str]:
     return os.getenv("RAPIDAPI_KEY") or os.getenv("WORDSAPI_KEY")
 
 
-def _fetch_wordsapi_raw(word: str, api_key: str, *, timeout_s: float = 20) -> Dict[str, Any]:
+def _fetch_wordsapi_raw(word: str, api_key: str, *, timeout_s: float = 4) -> Dict[str, Any]:
     url = f"{WORDSAPI_BASE_URL}/{word}"
     headers = {
         "x-rapidapi-key": api_key,
@@ -184,49 +191,73 @@ class MorphemeSegmenter:
         structure (single piece AND no dictionary hit), only ``word`` and
         ``simple_meaning`` are returned.
         """
-        simple_meaning = fetch_word_definition(word)
+        total_start = time.perf_counter()
 
-        segs = self.segment(word)
+        # Fetch whole-word definition and run segmentation in parallel.
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            t0 = time.perf_counter()
+            simple_meaning_future = ex.submit(fetch_word_definition, word)
+            segs_future = ex.submit(self.segment, word)
+            simple_meaning = simple_meaning_future.result()
+            wordsapi_seconds = time.perf_counter() - t0
+            segs = segs_future.result()
+            segment_seconds = time.perf_counter() - t0 - wordsapi_seconds
+
         items = classify_segments(segs) if segs else []
 
+        # Collect root segments that need a WordsAPI explanation lookup.
         parts: list[dict] = []
         any_meaning_hit = False
-        for it in items:
-            seg_text = it["text"]
-            role_raw = (it.get("type") or "").lower()
-            type_label = ROLE_LABEL.get(role_raw, role_raw.capitalize() or "Root")
+        root_futures: dict[int, Any] = {}
 
-            info = lookup_meaning(
-                seg_text, role_raw, self._pref_idx, self._suff_idx, self._root_idx
-            )
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            for i, it in enumerate(items):
+                seg_text = it["text"]
+                role_raw = (it.get("type") or "").lower()
+                type_label = ROLE_LABEL.get(role_raw, role_raw.capitalize() or "Root")
 
-            meaning = info.get("meaning")[:3] if info and info.get("meaning") else None
-            if meaning:
-                any_meaning_hit = True
+                info = lookup_meaning(
+                    seg_text, role_raw, self._pref_idx, self._suff_idx, self._root_idx
+                )
 
-            part: dict = {
-                "text": seg_text,
-                "display": _format_segment(seg_text, type_label),
-                "type": type_label,
-                "meaning": meaning,
-            }
-            if info and info.get("matched") and info["matched"] != seg_text.lower():
-                part["matched"] = info["matched"]
-            if type_label == "Root":
-                explanation = fetch_word_definition(seg_text)
-                if explanation:
-                    part["explanation"] = explanation
-            parts.append(part)
+                meaning = info.get("meaning")[:3] if info and info.get("meaning") else None
+                if meaning:
+                    any_meaning_hit = True
+
+                part: dict = {
+                    "text": seg_text,
+                    "display": _format_segment(seg_text, type_label),
+                    "type": type_label,
+                    "meaning": meaning,
+                }
+                if info and info.get("matched") and info["matched"] != seg_text.lower():
+                    part["matched"] = info["matched"]
+                if type_label == "Root" and USE_ROOT_EXPLANATION:
+                    root_futures[i] = ex.submit(fetch_word_definition, seg_text)
+                parts.append(part)
+
+        for i, future in root_futures.items():
+            explanation = future.result()
+            if explanation:
+                parts[i]["explanation"] = explanation
+
+        total_seconds = time.perf_counter() - total_start
+        timing = {
+            "totalSeconds": round(total_seconds, 3),
+            "wordsApiSeconds": round(wordsapi_seconds, 3),
+            "segmentSeconds": round(segment_seconds, 3),
+        }
 
         not_found = len(parts) <= 1 and not any_meaning_hit
         if not_found:
-            return {"word": word, "simple_meaning": simple_meaning}
+            return {"word": word, "simple_meaning": simple_meaning, "_timing": timing}
 
         return {
             "word": word,
             "simple_meaning": simple_meaning,
             "parts": parts,
             "found": True,
+            "_timing": timing,
         }
 
     def analyze_json(self, word: str, *, indent: int | None = 2) -> str:
