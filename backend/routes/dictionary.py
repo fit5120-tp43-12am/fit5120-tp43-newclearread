@@ -6,6 +6,7 @@ from services.morpheme_service import analyze_word
 router = APIRouter()
 
 
+#
 class DictionaryRequest(BaseModel):
     word: str = Field(..., min_length=1, max_length=256)
 
@@ -44,7 +45,9 @@ def _build_response(raw: dict) -> dict:
         meanings = part.get("meaning") or []
         first_meaning = meanings[0] if meanings else ""
 
-        word_parts.append(DictionaryPart(form=form, meaning=first_meaning, type=type_label))
+        word_parts.append(
+            DictionaryPart(form=form, meaning=first_meaning, type=type_label)
+        )
 
         if first_meaning:
             meaning_fragments.append(f"{form} ({first_meaning})")
@@ -73,8 +76,12 @@ def dictionary_lookup(request: DictionaryRequest):
         return _build_response(raw)
 
     except FileNotFoundError as e:
-        raise HTTPException(status_code=500, detail=f"Model files not found: {str(e)}") from e
+        raise HTTPException(
+            status_code=500, detail=f"Model files not found: {str(e)}"
+        ) from e
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}") from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}") from e
+        raise HTTPException(
+            status_code=500, detail=f"Unexpected error: {str(e)}"
+        ) from e
