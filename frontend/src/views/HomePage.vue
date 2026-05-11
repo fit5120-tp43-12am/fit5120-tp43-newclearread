@@ -225,61 +225,67 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
           <div class="dict-inner">
 
-            <!-- Left: visual mock of the popup -->
+            <!-- Left: animated double-click guide -->
             <div class="dict-visual" aria-hidden="true">
 
-              <!-- Mock popup card -->
-              <div class="dict-mock-card">
-                <!-- Header -->
-                <div class="dict-mock-header">
-                  <span class="dict-mock-word">understand</span>
-                  <div class="dict-mock-actions">
-                    <span class="dict-mock-btn dict-mock-btn--tts">
-                      <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
-                        <path d="M2 5H4.5L7.5 2.5v10L4.5 10H2V5z" fill="#6366f1"/>
-                        <path d="M10 4a5 5 0 0 1 0 7" stroke="#6366f1" stroke-width="1.4" stroke-linecap="round"/>
-                      </svg>
-                    </span>
-                    <span class="dict-mock-btn dict-mock-btn--star">
-                      <svg width="12" height="12" viewBox="0 0 13 13" fill="none">
-                        <path d="M6.5 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L6.5 9 3 10.5l.6-3.2L1.2 5l3.3-.5z"
-                          fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" stroke-linejoin="round"/>
-                      </svg>
-                    </span>
-                  </div>
+              <!-- Step 1: text passage with target word -->
+              <div class="demo-scene">
+
+                <!-- Text card -->
+                <div class="demo-text-card">
+                  <p class="demo-passage">
+                    Often hard to
+                    <span class="demo-target-word">comprehend</span>
+                    complex terms.
+                  </p>
+                  <!-- Hint label -->
+                  <p class="demo-hint-label">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                      <circle cx="6" cy="6" r="5" stroke="#6366f1" stroke-width="1.3"/>
+                      <path d="M6 4v3M6 8.5v.2" stroke="#6366f1" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    Double-click any word to look it up
+                  </p>
                 </div>
 
-                <!-- Simple meaning -->
-                <div class="dict-mock-section">
-                  <div class="dict-mock-label">Simple meaning</div>
-                  <p class="dict-mock-meaning">To know the meaning or nature of something clearly.</p>
-                </div>
-
-                <!-- Word parts -->
-                <div class="dict-mock-section">
-                  <div class="dict-mock-label">Word parts</div>
-                  <div class="dict-mock-parts">
-                    <div class="dict-mock-part dict-mock-part--prefix">
-                      <span class="dict-mock-form">under-</span>
-                      <span class="dict-mock-desc">below, beneath</span>
-                      <span class="dict-mock-badge dict-mock-badge--prefix">Prefix</span>
-                    </div>
-                    <div class="dict-mock-part dict-mock-part--root">
-                      <span class="dict-mock-form">stand</span>
-                      <span class="dict-mock-desc">to be in a position</span>
-                      <span class="dict-mock-badge dict-mock-badge--root">Root</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Dblclick hint pill -->
-                <div class="dict-mock-hint">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <circle cx="6" cy="6" r="5" stroke="#6366f1" stroke-width="1.2"/>
-                    <path d="M6 4v3M6 8.5v.2" stroke="#6366f1" stroke-width="1.2" stroke-linecap="round"/>
+                <!-- Animated cursor -->
+                <div class="demo-cursor">
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <path d="M4 2l14 9-7 1-4 7z" fill="white" stroke="#4f46e5" stroke-width="1.5" stroke-linejoin="round"/>
                   </svg>
-                  Double-click any word to look it up
                 </div>
+
+                <!-- Double-click ripple (fires twice) -->
+                <div class="demo-ripple demo-ripple--1"></div>
+                <div class="demo-ripple demo-ripple--2"></div>
+
+                <!-- Popup card that slides in after double-click -->
+                <div class="demo-popup">
+                  <div class="demo-popup-header">
+                    <span class="demo-popup-word">comprehend</span>
+                    <span class="demo-popup-star">★</span>
+                  </div>
+                  <div class="demo-popup-section">
+                    <div class="demo-popup-label">Simple meaning</div>
+                    <p class="demo-popup-meaning">To understand something fully and clearly.</p>
+                  </div>
+                  <div class="demo-popup-section">
+                    <div class="demo-popup-label">Word parts</div>
+                    <div class="demo-popup-parts">
+                      <div class="demo-popup-part demo-popup-part--prefix">
+                        <span class="demo-popup-form">com-</span>
+                        <span class="demo-popup-desc">together</span>
+                        <span class="demo-popup-badge demo-popup-badge--prefix">Prefix</span>
+                      </div>
+                      <div class="demo-popup-part demo-popup-part--root">
+                        <span class="demo-popup-form">prehend</span>
+                        <span class="demo-popup-desc">to grasp</span>
+                        <span class="demo-popup-badge demo-popup-badge--root">Root</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -703,9 +709,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .dict-visual {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  min-height: 320px;
+  min-height: 310px;
 }
 /* Alphabet confined to left half of panel only */
 .dict-visual-alpha {
@@ -791,6 +797,182 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   background: #f5f3ff;
 }
 
+/* ═══════════════════════════════════════════════════════
+   ANIMATED DEMO SCENE (double-click guide)
+   ═══════════════════════════════════════════════════════ */
+.demo-scene {
+  position: relative;
+  width: 100%;
+  /* tall enough to show popup below the text card; no clip so popup isn't cut */
+  height: 310px;
+}
+
+/* ── Text card ──
+   Fixed width + centered so "comprehend" lands at a predictable x/y.
+   At 280px card → 244px content area; "Often hard to " (14 chars ≈ 95px)
+   + "comprehend" bold (~84px) = 179px — all on ONE line.
+   comprehend centre ≈ left: 95+42+18 = 155px from card left.
+   card left in a ~436px column = (436-280)/2 = 78px from scene left.
+   → comprehend centre in scene ≈ x: 78+155 = 233px, y: 16+16+12 = 44px */
+.demo-text-card {
+  position: absolute;
+  top: 16px;
+  left: 50%; transform: translateX(-50%);
+  width: 280px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  z-index: 2;
+}
+.demo-passage {
+  font-size: 14px; line-height: 1.72;
+  color: #374151; margin: 0 0 10px;
+}
+.demo-target-word {
+  font-weight: 800; color: #4f46e5;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(99,102,241,0.45);
+}
+.demo-hint-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: #6366f1; font-weight: 600;
+  margin: 0;
+  animation: demo-hint-pulse 7s ease-in-out infinite;
+}
+
+/* ── Cursor — starts bottom-right, glides up to "comprehend" ──
+   Target: scene x≈233 y≈44; cursor tip is top-left of SVG, so
+   translate(223px, 34px) puts the tip near the word centre. */
+.demo-cursor {
+  position: absolute;
+  top: 0; left: 0;
+  width: 22px; height: 22px;
+  pointer-events: none; z-index: 10;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25));
+  animation: demo-cursor-travel 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Ripples — centred on "comprehend" in the scene ── */
+.demo-ripple {
+  position: absolute;
+  top: 44px; left: 233px;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 2px solid #6366f1;
+  pointer-events: none; z-index: 8;
+  opacity: 0;
+}
+.demo-ripple--1 { animation: demo-ripple-burst 7s ease-out infinite; }
+.demo-ripple--2 { animation: demo-ripple-burst 7s ease-out 0.28s infinite; }
+
+/* ── Popup card — appears below the word, fully inside 300px scene ──
+   top: 90px gives ~210px for popup (header+2 sections ≈ 155px, fits OK).
+   left aligned with card left edge (78px) for a natural feel. */
+.demo-popup {
+  position: absolute;
+  top: 95px; left: 50%; transform-origin: top center;
+  width: 248px;
+  margin-left: -124px;   /* centre under comprehend */
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 14px 42px rgba(0,0,0,0.13);
+  overflow: hidden;
+  z-index: 9;
+  opacity: 0;
+  animation: demo-popup-appear 7s cubic-bezier(0.34, 1.3, 0.64, 1) infinite;
+}
+.demo-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.demo-popup-word {
+  font-size: 18px; font-weight: 800;
+  color: #0f172a; letter-spacing: -0.03em;
+}
+.demo-popup-star {
+  font-size: 15px; color: #f59e0b;
+}
+.demo-popup-section {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f8fafc;
+}
+.demo-popup-section:last-child { border-bottom: none; }
+.demo-popup-label {
+  font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #94a3b8; margin-bottom: 6px;
+}
+.demo-popup-meaning {
+  font-size: 12.5px; line-height: 1.6; color: #1e293b; margin: 0;
+}
+.demo-popup-parts { display: flex; flex-direction: column; gap: 5px; }
+.demo-popup-part {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 9px; border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+.demo-popup-part--prefix { background: #fff1f2; border-left-color: #fda4af; }
+.demo-popup-part--root   { background: #eff6ff; border-left-color: #93c5fd; }
+.demo-popup-form  { font-size: 11px; font-weight: 800; color: #0f172a; min-width: 44px; flex-shrink: 0; }
+.demo-popup-desc  { flex: 1; font-size: 11px; color: #475569; }
+.demo-popup-badge {
+  font-size: 9px; font-weight: 800;
+  padding: 2px 6px; border-radius: 999px;
+  letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+}
+.demo-popup-badge--prefix { background: #ffe4e6; color: #e11d48; }
+.demo-popup-badge--root   { background: #dbeafe; color: #1d4ed8; }
+
+/* ── Keyframes ── */
+
+/* Cursor: starts bottom-right, glides to comprehend at ≈(223px, 34px).
+   280px-wide card centred in ~436px column → card left ≈ 78px.
+   "Often hard to " ≈ 95px + 18px padding → comprehend starts at x≈191px;
+   half-word-width ≈ 42px → centre x≈233px. Cursor tip offset: -10px → 223px. */
+@keyframes demo-cursor-travel {
+  0%        { transform: translate(330px, 230px); opacity: 0; }
+  6%        { opacity: 1; }
+  26%       { transform: translate(223px, 34px); }   /* arrives at word */
+  28%       { transform: translate(223px, 34px); }   /* pause */
+  30%       { transform: translate(221px, 32px); }   /* click 1 press */
+  31%       { transform: translate(223px, 34px); }   /* release */
+  33%       { transform: translate(221px, 32px); }   /* click 2 press */
+  34%       { transform: translate(223px, 34px); }   /* release */
+  76%       { transform: translate(223px, 34px); opacity: 1; }
+  86%       { transform: translate(223px, 34px); opacity: 0; }
+  100%      { transform: translate(330px, 230px); opacity: 0; }
+}
+
+/* Ripple burst — fires at ~29–38% of the 7s loop */
+@keyframes demo-ripple-burst {
+  0%, 29%   { transform: scale(0); opacity: 0; }
+  30%       { transform: scale(0); opacity: 0.75; }
+  38%       { transform: scale(3.2); opacity: 0; }
+  100%      { transform: scale(0); opacity: 0; }
+}
+
+/* Popup: pops in at 40%, stays until 78%, then fades out */
+@keyframes demo-popup-appear {
+  0%, 39%   { opacity: 0; transform: translateY(10px) scale(0.92); }
+  46%       { opacity: 1; transform: translateY(0)    scale(1); }
+  76%       { opacity: 1; transform: translateY(0)    scale(1); }
+  86%       { opacity: 0; transform: translateY(-5px) scale(0.96); }
+  100%      { opacity: 0; transform: translateY(10px) scale(0.92); }
+}
+
+/* Hint label subtle pulse */
+@keyframes demo-hint-pulse {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
 /* ── Text side ── */
 .dict-text { display: flex; flex-direction: column; gap: 20px; }
 .dict-desc {
@@ -824,7 +1006,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   .dict-panel { padding: 36px 24px; border-radius: 20px; }
   .dict-inner { grid-template-columns: 1fr; gap: 36px; }
   .dict-visual { order: -1; min-height: 260px; }
-  .dict-mock-card { max-width: 280px; }
+  .demo-scene { height: 260px; }
+  .demo-popup { width: 210px; }
 }
 
 /* ═══════════════════════════════════════════════════════
