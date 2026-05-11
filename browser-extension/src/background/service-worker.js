@@ -1,5 +1,9 @@
 const MAX_LOOKUP_TERM_CHARS = 80;
-const DICTIONARY_DEMO_TEXT = "demo demo demo";
+const BACKEND_API_BASE_URL =
+  "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net";
+const DICTIONARY_ENDPOINT = "/api/dictionary";
+const DICTIONARY_REQUEST_TIMEOUT_MS = 30000;
+const SINGLE_LOOKUP_WORD_PATTERN = /^[a-z]+(?:['-][a-z]+)*$/i;
 
 function normaliseLookupTerm(term) {
   return String(term || "")
@@ -8,45 +12,173 @@ function normaliseLookupTerm(term) {
     .slice(0, MAX_LOOKUP_TERM_CHARS);
 }
 
-function createDemoWordParts() {
-  return [
-    {
-      part: "demo",
-      meaning: DICTIONARY_DEMO_TEXT,
-      type: "Prefix",
-    },
-    {
-      part: "demo",
-      meaning: DICTIONARY_DEMO_TEXT,
-      type: "Root",
-    },
-    {
-      part: "demo",
-      meaning: DICTIONARY_DEMO_TEXT,
-      type: "Suffix",
-    },
-  ];
+function stripEdgePunctuation(term) {
+  return term.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, "");
 }
 
-function explainLocalTerm(term) {
-  const normalizedTerm = normaliseLookupTerm(term);
+function normaliseLookupWord(term) {
+  return stripEdgePunctuation(normaliseLookupTerm(term)).toLowerCase();
+}
 
-  if (!normalizedTerm) {
+function validateLookupWord(term) {
+  const word = normaliseLookupWord(term);
+
+  if (!word) {
     return {
       ok: false,
-      term: "",
-      message: "Select one word or short phrase first.",
+      word: "",
+      message: "Select one English word first.",
     };
   }
 
+  if (word.length > MAX_LOOKUP_TERM_CHARS || !SINGLE_LOOKUP_WORD_PATTERN.test(word)) {
+    return {
+      ok: false,
+      word,
+      message: "Select one English word only, not a sentence.",
+    };
+  }
+
+  return { ok: true, word };
+}
+
+function buildBackendUrl(path) {
+  return `${BACKEND_API_BASE_URL.replace(/\/$/, "")}${path}`;
+}
+
+function getErrorDetail(data) {
+  if (!data) {
+    return "";
+  }
+
+  if (typeof data.detail === "string") {
+    return data.detail;
+  }
+
+  if (Array.isArray(data.detail)) {
+    return data.detail
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  return "";
+}
+
+async function readJsonResponse(response) {
+  const bodyText = await response.text();
+
+  if (!bodyText) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(bodyText);
+  } catch (error) {
+    throw new Error("Dictionary returned an unreadable response.", {
+      cause: error,
+    });
+  }
+}
+
+function normalizeDictionaryPart(part) {
+  return {
+    part: String(part?.form || part?.part || "").trim(),
+    meaning: String(part?.meaning || "").trim(),
+    type: String(part?.type || "Part").trim() || "Part",
+  };
+}
+
+function normalizeDictionaryResponse(data, fallbackWord) {
+  const word = String(data?.word || fallbackWord || "").trim();
+  const wordParts = Array.isArray(data?.wordParts)
+    ? data.wordParts
+        .map(normalizeDictionaryPart)
+        .filter((part) => part.part || part.meaning)
+    : [];
+  const simpleMeaning = String(data?.simpleMeaning || "").trim();
+  const meaningFromParts = String(data?.meaningFromParts || "").trim();
+  const processingStats =
+    data?.processingStats && typeof data.processingStats === "object"
+      ? data.processingStats
+      : null;
+  const backendSource = String(processingStats?.source || "").toLowerCase();
+  const isNonResultFallback = backendSource === "fallback" || backendSource === "invalid_input";
+  const hasResult =
+    Boolean(simpleMeaning || wordParts.length > 0 || meaningFromParts) &&
+    !isNonResultFallback;
+
   return {
     ok: true,
-    term: normalizedTerm,
-    simpleMeaning: DICTIONARY_DEMO_TEXT,
-    wordParts: createDemoWordParts(),
-    meaningFromParts: DICTIONARY_DEMO_TEXT,
-    source: "demo-placeholder",
+    term: word,
+    simpleMeaning,
+    wordParts,
+    meaningFromParts,
+    hasResult,
+    noResultMessage:
+      isNonResultFallback && simpleMeaning
+        ? simpleMeaning
+        : "No dictionary result was returned for this word. Try another word or use the full Clearead website.",
+    processingStats,
+    source: "backend-dictionary",
   };
+}
+
+function createDictionaryErrorExplanation(term, message) {
+  return {
+    ok: false,
+    term: term || "Selected word",
+    message,
+  };
+}
+
+function createDictionaryLoadingExplanation(term) {
+  return {
+    ok: false,
+    loading: true,
+    term,
+    message: "Looking up...",
+  };
+}
+
+async function requestDictionary(word) {
+  let response;
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => {
+    controller.abort();
+  }, DICTIONARY_REQUEST_TIMEOUT_MS);
+
+  try {
+    response = await fetch(buildBackendUrl(DICTIONARY_ENDPOINT), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ word }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Dictionary is taking too long. Try again or use the full Clearead website."
+      );
+    }
+
+    throw new Error(
+      "Dictionary is unavailable. Check your connection and try again."
+    );
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
+
+  const data = await readJsonResponse(response);
+
+  if (!response.ok) {
+    const detail = getErrorDetail(data);
+    throw new Error(detail || "Dictionary is unavailable. Try again later.");
+  }
+
+  return normalizeDictionaryResponse(data, word);
 }
 
 chrome.sidePanel
@@ -557,11 +689,36 @@ async function showDictionaryPopover(tab, selectedText) {
     throw new Error(FILE_PAGE_MESSAGE);
   }
 
-  const term = normaliseLookupTerm(selectedText);
-  const explanation = explainLocalTerm(term);
+  const validation = validateLookupWord(selectedText);
+  const term = validation.word || normaliseLookupTerm(selectedText) || "Selected word";
 
   try {
     await injectPageTools(tab.id);
+
+    if (!validation.ok) {
+      await chrome.tabs.sendMessage(tab.id, {
+        type: PAGE_TOOL_COMMAND_TYPE,
+        action: "show-dictionary-popover",
+        explanation: createDictionaryErrorExplanation(term, validation.message),
+      });
+      return;
+    }
+
+    await chrome.tabs.sendMessage(tab.id, {
+      type: PAGE_TOOL_COMMAND_TYPE,
+      action: "show-dictionary-popover",
+      explanation: createDictionaryLoadingExplanation(term),
+    });
+
+    let explanation;
+    try {
+      explanation = await requestDictionary(validation.word);
+    } catch (error) {
+      explanation = createDictionaryErrorExplanation(
+        term,
+        error.message || "Dictionary is unavailable. Try again."
+      );
+    }
 
     const response = await chrome.tabs.sendMessage(tab.id, {
       type: PAGE_TOOL_COMMAND_TYPE,

@@ -1,6 +1,6 @@
 # Testing Development Log
 
-Last updated: 2026-05-09
+Last updated: 2026-05-11
 
 This is a development testing log for the Clearead browser extension. It records validation commands, manual checks, known gaps, and regression items. It is not a final QA sign-off.
 
@@ -57,7 +57,8 @@ Text processing workflow:
 
 - Tested pasted text summary against deployed Azure backend.
 - Confirmed Summary ready status.
-- Confirmed result displays summary text only.
+- Confirmed deployed `/api/plugin/summary` returns `overallSummary.heading` and `overallSummary.text` without returning block summaries.
+- Confirmed result displays only the full-document `overallSummary.text` value.
 - Confirmed pasted text is sent only after Summary is run.
 - Confirm Summary runs from the text box with Enter, and Ctrl+Enter or Shift+Enter inserts a line break instead.
 - Later UI change confirmed the status strip and Result panel are hidden before Summary is used.
@@ -82,12 +83,13 @@ Dictionary:
 - Confirmed enabling the side panel Right-click lookup button creates the selected-text context menu item.
 - Confirmed disabling removes the context menu item.
 - Confirm Right-click lookup button state is loaded from the real background/session state, and failed updates do not leave the button falsely active.
-- Confirm the one-line dictionary word input accepts pasted words or short phrases, normalizes whitespace, and shows a local demo dictionary card after Explain or Enter.
-- Confirm the side panel dictionary Explain flow does not send the pasted word to the backend or store it.
-- Confirmed selected text is processed locally and capped.
+- Confirm the one-line dictionary word input accepts one English word, rejects phrases or sentences before a backend request, and shows a backend dictionary card after Explain or Enter.
+- Confirm the side panel dictionary Explain flow sends only the validated word to the deployed Clearead dictionary backend and does not store it.
+- Confirmed selected text is capped, validated as one English word, and only then sent to the deployed Clearead dictionary backend after the user clicks the context menu item.
 - Recent dictionary UI target: selected text opens a large card with Simple meaning, Word parts, Meaning from parts, pronunciation, and close controls.
 - Confirm that the dictionary card does not include a Save action.
 - Confirm dictionary card stays compact, uses a speech-bubble tail near the selected word, supports two or more word-part rows, and closes when clicking outside the card.
+- Confirm the right-click dictionary card shows a Looking up state before the backend result replaces it.
 
 Icons and branding:
 
@@ -146,6 +148,7 @@ Chrome Store readiness regression:
 - Confirm no static content scripts.
 - Confirm no text, selected text, or page content is stored.
 - Confirm pasted text network calls only go to the deployed Clearead backend after Summary is run.
+- Confirm dictionary network calls send only a validated one-word `{ "word": string }` request to the deployed Clearead backend after Explain, Enter, or the right-click menu item.
 
 ## Known Current Gaps
 

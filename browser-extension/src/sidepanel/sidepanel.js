@@ -2,8 +2,8 @@ import {
   CLEAREAD_WEBSITE_URL,
   MAX_TEXT_CHARS,
 } from "../shared/config.js";
-import { requestSummary } from "../services/backend-api.js";
-import { explainLocalTerm, normaliseLookupTerm } from "../services/local-dictionary.js";
+import { requestDictionary, requestSummary } from "../services/backend-api.js";
+import { normaliseLookupTerm, validateLookupWord } from "../services/local-dictionary.js";
 
 const sourceText = document.querySelector("#source-text");
 const wordCount = document.querySelector("#word-count");
@@ -51,6 +51,7 @@ let isLoading = false;
 let isPageToolLoading = false;
 let isPageToolStateSyncing = false;
 let isDictionaryToggleLoading = false;
+let isDictionaryLookupLoading = false;
 let activeFontMode = "original";
 let activeRulerMode = "none";
 let isDictionaryEnabled = false;
@@ -224,6 +225,13 @@ function setDictionaryToggleLoading(nextLoading) {
   dictionaryToggleButton.disabled = nextLoading;
 }
 
+function setDictionaryLookupLoading(nextLoading) {
+  isDictionaryLookupLoading = nextLoading;
+  dictionaryTermInput.disabled = nextLoading;
+  dictionaryExplainButton.disabled = nextLoading;
+  dictionaryExplainButton.textContent = nextLoading ? "Looking up..." : "Explain";
+}
+
 function updateCountsAndValidation() {
   const text = sourceText.value;
   const words = countWords(text);
@@ -268,34 +276,72 @@ function appendTextElement(parent, tagName, className, text) {
   return element;
 }
 
-function getDictionaryPartTheme(type) {
+function appendSvgNode(parent, tagName, attributes) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+
+  Object.entries(attributes).forEach(([name, value]) => {
+    node.setAttribute(name, value);
+  });
+
+  parent.appendChild(node);
+  return node;
+}
+
+function appendDictionarySpeakerIcon(parent) {
+  const svg = appendSvgNode(parent, "svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 15 15",
+    fill: "none",
+    "aria-hidden": "true",
+  });
+  appendSvgNode(svg, "path", {
+    d: "M2 5H4.5L7.5 2.5v10L4.5 10H2V5z",
+    fill: "currentColor",
+  });
+  appendSvgNode(svg, "path", {
+    d: "M10 4a5 5 0 0 1 0 7",
+    stroke: "currentColor",
+    "stroke-width": "1.4",
+    "stroke-linecap": "round",
+  });
+  appendSvgNode(svg, "path", {
+    d: "M11.5 6a2.5 2.5 0 0 1 0 3",
+    stroke: "currentColor",
+    "stroke-width": "1.4",
+    "stroke-linecap": "round",
+  });
+}
+
+function getDictionaryPartClass(type) {
   const normalizedType = String(type || "").toLowerCase();
 
   if (normalizedType.includes("prefix")) {
-    return {
-      background: "#fee2e2",
-      color: "#9f1239",
-    };
+    return "prefix";
   }
 
   if (normalizedType.includes("root")) {
-    return {
-      background: "#dbeafe",
-      color: "#1d4ed8",
-    };
+    return "root";
   }
 
   if (normalizedType.includes("suffix")) {
-    return {
-      background: "#dcfce7",
-      color: "#15803d",
-    };
+    return "suffix";
   }
 
-  return {
-    background: "#e2e8f0",
-    color: "#334155",
-  };
+  if (normalizedType.includes("infix")) {
+    return "infix";
+  }
+
+  return "";
+}
+
+function formatDictionaryPartType(type) {
+  return String(type || "part")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ") || "Part";
 }
 
 function speakDictionaryTerm(term) {
@@ -331,18 +377,27 @@ function appendDictionaryWordParts(parent, wordParts) {
   table.className = "dictionary-parts-table";
 
   wordParts.forEach((wordPart) => {
-    const theme = getDictionaryPartTheme(wordPart.type);
+    const typeClass = getDictionaryPartClass(wordPart.type);
     const row = document.createElement("div");
-    row.className = "dictionary-part-row";
+    row.className = typeClass
+      ? `dictionary-part-row dictionary-part-row--${typeClass}`
+      : "dictionary-part-row";
 
-    const partLabel = appendTextElement(row, "span", "dictionary-part", wordPart.part);
-    partLabel.style.background = theme.background;
+    appendTextElement(row, "span", "dictionary-part", wordPart.part);
+    appendTextElement(
+      row,
+      "span",
+      "dictionary-part-meaning",
+      wordPart.meaning || "No meaning returned."
+    );
 
-    appendTextElement(row, "span", "dictionary-part-meaning", wordPart.meaning);
-
-    const typeBadge = appendTextElement(row, "span", "dictionary-part-type", wordPart.type);
-    typeBadge.style.background = theme.background;
-    typeBadge.style.color = theme.color;
+    const typeBadge = appendTextElement(
+      row,
+      "span",
+      typeClass ? `dictionary-part-type dictionary-part-type--${typeClass}` : "dictionary-part-type",
+      formatDictionaryPartType(wordPart.type)
+    );
+    typeBadge.setAttribute("aria-label", `Word part type: ${formatDictionaryPartType(wordPart.type)}`);
 
     table.appendChild(row);
   });
@@ -364,21 +419,44 @@ function renderDictionaryCard(explanation) {
   speakButton.type = "button";
   speakButton.className = "dictionary-speak-button";
   speakButton.setAttribute("aria-label", `Hear ${explanation.term || "selected word"}`);
-  speakButton.textContent = "\uD83D\uDD0A";
+  appendDictionarySpeakerIcon(speakButton);
   speakButton.addEventListener("click", () => {
     speakDictionaryTerm(explanation.term || "");
   });
   header.appendChild(speakButton);
   card.appendChild(header);
 
-  appendDictionarySection(card, "Simple meaning", explanation.simpleMeaning || "demo demo demo");
-  appendDictionaryWordParts(card, Array.isArray(explanation.wordParts) ? explanation.wordParts : []);
+  if (explanation.hasResult === false) {
+    appendDictionarySection(
+      card,
+      "Result",
+      explanation.noResultMessage ||
+        "No dictionary result was returned for this word. Try another word or use the full Clearead website."
+    );
+    dictionaryResult.appendChild(card);
+    dictionaryResult.hidden = false;
+    return;
+  }
 
-  const divider = document.createElement("div");
-  divider.className = "dictionary-divider";
-  card.appendChild(divider);
+  appendDictionarySection(
+    card,
+    "Simple meaning",
+    explanation.simpleMeaning || "No simple meaning was returned."
+  );
 
-  appendDictionarySection(card, "Meaning from parts", explanation.meaningFromParts || "demo demo demo");
+  const wordParts = Array.isArray(explanation.wordParts) ? explanation.wordParts : [];
+
+  if (wordParts.length > 0) {
+    appendDictionaryWordParts(card, wordParts);
+  } else {
+    appendDictionarySection(card, "Word parts", "No word parts were returned.");
+  }
+
+  appendDictionarySection(
+    card,
+    "Meaning from parts",
+    explanation.meaningFromParts || "No word-part explanation was returned."
+  );
 
   dictionaryResult.appendChild(card);
   dictionaryResult.hidden = false;
@@ -405,35 +483,47 @@ function hideResult() {
   resultEmpty.textContent = "Summary will appear here.";
 }
 
+function getOverallSummaryText(data) {
+  const overallSummary = data?.overallSummary;
+
+  if (overallSummary && typeof overallSummary === "object") {
+    const text = String(overallSummary.text || "").trim();
+
+    if (text) {
+      return text;
+    }
+  }
+
+  const blocks = Array.isArray(data?.blocks) ? data.blocks : [];
+  const fallbackBlock = blocks.find((block) => String(block?.summary || "").trim());
+
+  if (fallbackBlock) {
+    return String(fallbackBlock.summary || "").trim();
+  }
+
+  return "";
+}
+
 function renderSummaryResult(data) {
   clearElement(resultContent);
   resultPanel.hidden = false;
 
-  const blocks = Array.isArray(data.blocks) ? data.blocks : [];
+  const summaryText = getOverallSummaryText(data);
 
-  if (blocks.length === 0) {
+  if (!summaryText) {
     appendTextElement(
       resultContent,
       "p",
       "empty-state",
       "No summary was returned."
     );
-  }
-
-  blocks.forEach((block) => {
+  } else {
     const card = document.createElement("article");
-    card.className = "block-card";
+    card.className = "block-card overall-summary-card";
 
-    appendTextElement(card, "h3", "block-heading", "Summary");
-    appendTextElement(
-      card,
-      "p",
-      "summary-text",
-      block.summary || "No summary was returned."
-    );
-
+    appendTextElement(card, "p", "summary-text", summaryText);
     resultContent.appendChild(card);
-  });
+  }
 
   resultEmpty.hidden = true;
   resultContent.hidden = false;
@@ -632,7 +722,7 @@ async function loadDictionaryEnabledState() {
     updateDictionaryButtonState(response.enabled);
     setDictionaryStatus(
       response.enabled ? "success" : "neutral",
-      response.enabled ? "On for selected text." : "Off for right-clicks."
+      response.enabled ? "On for selected words." : "Off for right-clicks."
     );
   } catch (error) {
     updateDictionaryButtonState(false);
@@ -671,7 +761,7 @@ async function updateDictionaryEnabledState() {
     updateDictionaryButtonState(response.enabled);
     setDictionaryStatus(
       response.enabled ? "success" : "neutral",
-      response.enabled ? "On for selected text." : "Off for right-clicks."
+      response.enabled ? "On for selected words." : "Off for right-clicks."
     );
   } catch (error) {
     updateDictionaryButtonState(previousEnabled);
@@ -692,32 +782,38 @@ function normalizeDictionaryTermInput() {
   }
 }
 
-function explainDictionaryTerm() {
-  const term = normaliseLookupTerm(dictionaryTermInput.value);
+async function explainDictionaryTerm() {
+  if (isDictionaryLookupLoading) {
+    return;
+  }
 
-  if (!term) {
+  const validation = validateLookupWord(dictionaryTermInput.value);
+
+  if (!validation.ok) {
     hideDictionaryResult();
-    setDictionaryStatus("error", "Paste one word or short phrase first.");
+    setDictionaryStatus("error", validation.message || "Paste one English word first.");
     dictionaryTermInput.focus();
     return;
   }
 
-  dictionaryTermInput.value = term;
-  const explanation = explainLocalTerm(term);
+  dictionaryTermInput.value = validation.word;
+  setDictionaryLookupLoading(true);
+  hideDictionaryResult();
+  setDictionaryStatus("loading", "Looking up...");
 
-  if (!explanation.ok) {
+  try {
+    const explanation = await requestDictionary(validation.word);
+    renderDictionaryCard(explanation);
+    setDictionaryStatus(
+      explanation.hasResult === false ? "neutral" : "success",
+      explanation.hasResult === false ? "No dictionary result found." : "Explanation shown."
+    );
+  } catch (error) {
     hideDictionaryResult();
-    setDictionaryStatus("error", explanation.message || "Could not explain this word.");
-    return;
+    setDictionaryStatus("error", error.message || "Dictionary is unavailable. Try again.");
+  } finally {
+    setDictionaryLookupLoading(false);
   }
-
-  renderDictionaryCard(explanation);
-  setDictionaryStatus(
-    "success",
-    explanation.source === "demo-placeholder"
-      ? "Example explanation shown."
-      : "Explanation shown."
-  );
 }
 
 function isComposingText(event) {

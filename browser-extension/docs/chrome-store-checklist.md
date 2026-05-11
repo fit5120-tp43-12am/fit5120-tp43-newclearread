@@ -35,7 +35,7 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 ## Privacy And Data Flow
 
 - [x] Pasted text is sent only after the user runs Summary.
-- [x] Pasted text is sent to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text`.
+- [x] Pasted text is sent to `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/plugin/summary`.
 - [x] Text is not sent automatically while typing.
 - [x] Webpage content is not read automatically. Page tools run only after user activation.
 - [x] Page tools do not send webpage content to the backend.
@@ -43,7 +43,7 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 - [x] Page tools run only after the user activates Clearead from the toolbar popup and opens the side panel for that page or clicks a side panel page-tool control.
 - [x] Right-click dictionary is off by default and appears only after the user enables it with the side panel Right-click lookup button.
 - [x] Selected-word lookup reads only Chrome-provided selected text after the user clicks the Clearead right-click menu item.
-- [x] Selected-word lookup is processed locally and is not sent to the Clearead backend.
+- [x] Selected-word lookup is validated as one English word before being sent to the Clearead backend dictionary route.
 - [x] Selected-word lookup is not stored.
 - [x] Right-click lookup button state is stored only as a `chrome.storage.session` boolean and does not include selected text.
 - [x] Recent page activation state is stored only as tab/window/time metadata in `chrome.storage.session` and does not include page content.
@@ -51,8 +51,8 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 - [x] Pasted text is not saved by the extension.
 - [x] Page-tool state is not persisted across page reloads.
 - [x] No analytics are included.
-- [x] The extension itself does not perform AI processing or call OpenAI, third-party AI APIs, analytics services, or remote dictionary services.
-- [x] The website frontend and extension both use the shared Clearead backend processing route.
+- [x] The extension itself does not perform AI processing or call OpenAI, third-party AI APIs, analytics services, or remote dictionary services directly.
+- [x] The website frontend and extension both use the shared Clearead backend for Summary and Dictionary requests.
 - [x] Website links open only after user click and are not used for background data transfer.
 - [x] API keys and secrets for any server-side model services must stay on the backend side and must not be stored in the extension.
 - [ ] Create user-facing privacy policy before store submission.
@@ -66,9 +66,9 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 - [x] Summary is implemented against the existing Clearead backend endpoint.
 - [x] Readable font support is implemented for user-triggered active-page use.
 - [x] Reading ruler support is implemented for user-triggered active-page use.
-- [x] Selected-word lookup is implemented as local demo placeholder data only until a backend dictionary function exists.
-- [x] Summary uses the shared `/api/process-text` route and renders the returned summary text.
-- [x] General text-to-speech, file upload, remote dictionary service, automatic page scanning, and static content scripts are not claimed as implemented extension features.
+- [x] Selected-word lookup is implemented against the existing Clearead backend dictionary route for validated one-word requests.
+- [x] Summary uses the shared `/api/plugin/summary` route and renders the returned full-document summary text.
+- [x] General text-to-speech, file upload, sentence-level dictionary lookup, automatic page scanning, and static content scripts are not claimed as implemented extension features.
 - [x] Add extension icons in 16, 32, 48, and 128 pixel sizes.
 - [x] Package OpenDyslexic WOFF2 files and the SIL Open Font License text for the OpenDyslexic font mode.
 - [ ] Complete final brand review for icon artwork before store submission.
@@ -86,7 +86,7 @@ This checklist tracks review concerns for the Clearead extension. It is a develo
 - [ ] Test that selecting Lens keeps the current Font/Ruler state visible and shows a separate Lens tip below it.
 - [ ] Test Lens on one complex media-heavy webpage and confirm it either remains usable or says: "Lens stopped on this dynamic page. Try Highlight or Line guide."
 - [ ] Test that closing and reopening the side panel syncs Font and Reading ruler button state with the actual active page.
-- [ ] Test right-click dictionary default-off behavior, side panel Right-click lookup button state, one-line word input Explain flow, demo dictionary card fields, pronunciation button, no Save action, and disabling again on normal webpages.
+- [ ] Test right-click dictionary default-off behavior, side panel Right-click lookup button state, one-line word input Explain flow, backend dictionary card fields, one-word validation, pronunciation button, no Save action, and disabling again on normal webpages.
 - [ ] Test Open website links from the popup and side panel.
 - [ ] Test restricted pages such as `chrome://extensions` for the message: "Chrome blocks tools on this page. Try another webpage."
 - [ ] Test direct PDF, DOCX, DOC, or TXT file URLs for the message: "File pages may not support page tools. Click Open website to upload the file."

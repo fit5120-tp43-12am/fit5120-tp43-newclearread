@@ -20,26 +20,31 @@ Pasted text is sent when the user runs Summary. It is not sent automatically whi
 
 When Summary is clicked, the side panel sends:
 
-- Endpoint: `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text`
+- Endpoint: `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/plugin/summary`
 - Request body: `{ "text": string }`
 - Text source: the text manually pasted into the side panel
 - Purpose: ask the Clearead backend to segment and summarize the pasted text into plain-English reading support output
 
 The side panel displays only:
 
-- `blocks[].summary`
+- `overallSummary.text`
 
-The backend response can include extra fields such as key points, notice, fallback status, and original text, but those extra fields are not rendered in the result panel.
+The backend response can include extra fields such as `overallSummary.heading` and processing stats, but those extra fields are not rendered in the result panel.
 
 ## Selected-Word Lookup
 
 The right-click dictionary menu is off by default. The side panel includes a Right-click lookup button that turns blue with a check only when the background service worker confirms the menu is enabled. When the user turns it on, the service worker creates the selected-text menu item for normal `http` and `https` webpages. When the user turns it off, the service worker removes that menu item.
 
-When the enabled user right-clicks a webpage selection and clicks the Clearead dictionary menu item, Chrome passes the selected text to the service worker as `info.selectionText`. The service worker normalizes whitespace, trims it, and caps it at 80 characters.
+When the enabled user right-clicks a webpage selection and clicks the Clearead dictionary menu item, Chrome passes the selected text to the service worker as `info.selectionText`. The service worker normalizes whitespace, trims it, caps it at 80 characters, and confirms it is one English word before any backend request.
 
-The selected text is then used locally to build a demo dictionary response with Simple meaning, Word parts, and Meaning from parts fields. These fields currently contain placeholder demo content until a stable backend dictionary function exists. The service worker injects the local packaged page-tool script only when needed so it can render the dictionary card on the clicked page.
+Valid selected-word lookups are sent to the deployed Clearead backend dictionary route:
 
-Selected text is not sent to the Clearead backend, not sent to any third party, not stored, and not used to read surrounding page content. No lookup runs automatically while the user selects text. The side panel also has a one-line word input; when the user clicks Explain or presses Enter, the current build uses that word locally to build the same demo dictionary response shape. The pasted word is not sent to the backend and is not stored. The dictionary card has a local pronunciation button and no Save action. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, which keeps the menu stable while the browser session is active and is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
+- Endpoint: `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/dictionary`
+- Request body: `{ "word": string }`
+- Text source: the one selected word or the one word typed into the side panel dictionary input
+- Purpose: ask the Clearead backend for a simple meaning and word-part explanation
+
+The service worker injects the local packaged page-tool script only when needed so it can render the dictionary card on the clicked page. The selected word is not stored, and no surrounding page content is read. Sentence or phrase selections are rejected locally before a dictionary request. No lookup runs automatically while the user selects text. The side panel also has a one-line word input; when the user clicks Explain or presses Enter, the same one-word validation and backend dictionary route are used. The dictionary card has a local pronunciation button and no Save action. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, which keeps the menu stable while the browser session is active and is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
 
 ## Page Tools
 
@@ -57,9 +62,9 @@ If a normal webpage fails because Clearead does not currently have temporary `ac
 
 ## Backend-Side Processing
 
-The extension sends pasted text only to the shared Clearead backend endpoint. The website frontend and extension both use the same backend processing route. The extension itself does not perform AI processing or call OpenAI, third-party AI APIs, analytics services, or remote dictionary services.
+The extension sends pasted Summary text and explicit one-word dictionary lookups only to the shared Clearead backend origin. The website frontend and extension both use the same backend services for these user-triggered requests. The extension itself does not perform AI processing or call OpenAI, third-party AI APIs, analytics services, or remote dictionary services directly.
 
-After the request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. API keys and secrets for those services, if any, belong on the backend side and must not be stored in the extension.
+After a Summary request reaches the Clearead backend, the plugin summary route performs the full-document summary flow only. It does not need the website block segmentation or block-level summary result for the extension. After a dictionary request reaches the Clearead backend, the backend performs the existing dictionary word-breakdown flow. API keys and secrets for those services, if any, belong on the backend side and must not be stored in the extension.
 
 The deployed backend origin is currently the Azure backend URL found in workflow config. The deployed website origin is currently `https://clearead.azurewebsites.net/`. Before release, the final production backend origin, website origin, backend retention and logging behavior, user-facing privacy policy wording, and Chrome Web Store data disclosure still need review.
 
@@ -69,7 +74,7 @@ Open website links in the popup and side panel point to `https://clearead.azurew
 
 ## Storage
 
-The extension does not save pasted text or selected text. It uses `chrome.storage.session` only for session state: one right-click dictionary enabled boolean and a recent page activation tab/window/time record used to keep page-tool state sync stable across Manifest V3 service worker sleep. It does not use `chrome.storage.local`, `chrome.storage.sync`, localStorage, indexedDB, cookies, or a custom cache for pasted content, selected text, page content, summaries, dictionary results, or page-tool preferences. Page-tool button state is synchronized by querying the current active page, not by storing page content or preferences.
+The extension does not save pasted text, selected text, or dictionary words. It uses `chrome.storage.session` only for session state: one right-click dictionary enabled boolean and a recent page activation tab/window/time record used to keep page-tool state sync stable across Manifest V3 service worker sleep. It does not use `chrome.storage.local`, `chrome.storage.sync`, localStorage, indexedDB, cookies, or a custom cache for pasted content, selected text, page content, summaries, dictionary results, or page-tool preferences. Page-tool button state is synchronized by querying the current active page, not by storing page content or preferences.
 
 ## Secrets And Remote Code
 
@@ -103,7 +108,7 @@ Clearead requests `storage` so it can use `chrome.storage.session` for one boole
 
 ### `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`
 
-Clearead requests this narrow host permission so the extension side panel can send user-submitted pasted text to the shared Clearead backend for Summary.
+Clearead requests this narrow host permission so the extension can send user-submitted pasted text for Summary and explicit one-word dictionary lookups to the shared Clearead backend.
 
 This permission is limited to the deployed backend origin currently used for the shared Clearead service. It is not a permission to read webpages.
 

@@ -31,7 +31,7 @@ This is a development log for the Clearead browser extension. It supports review
 - `scripting`: injects the packaged page-tool script only for the active page after user action.
 - `contextMenus`: creates one opt-in selected-text right-click dictionary item.
 - `storage`: uses `chrome.storage.session` only for session state: one dictionary enabled boolean and a recent page activation tab/window/time record.
-- `host_permissions`: limited to `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*` so the side panel can submit pasted text to the Clearead backend.
+- `host_permissions`: limited to `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*` so the extension can submit pasted Summary text and explicit one-word dictionary lookups to the Clearead backend.
 
 Permissions intentionally not requested:
 
@@ -48,10 +48,10 @@ Pasted summary text:
 - The user manually pastes text into the side panel.
 - Nothing is sent while the user types.
 - Text is sent only after the user runs Summary.
-- The request goes to `POST /api/process-text` on the deployed Clearead backend.
-- The side panel renders only summary text.
+- The request goes to `POST /api/plugin/summary` on the deployed Clearead backend.
+- The side panel renders only the returned full-document summary text.
 - Extra backend fields such as original text or fallback details are not displayed.
-- The extension itself does not call OpenAI, third-party AI services, analytics, or remote dictionary services.
+- The extension itself does not call OpenAI, third-party AI services, analytics, or remote dictionary services directly.
 
 Backend processing:
 
@@ -77,12 +77,12 @@ Right-click dictionary:
 - The user must enable the Right-click lookup button in the side panel before the context menu item appears.
 - It appears only for selected text on normal `http` and `https` webpages.
 - Chrome provides `info.selectionText` only after the user clicks the Clearead menu item.
-- The selected text is normalized, capped at 80 characters, and processed locally.
-- The current response uses local demo placeholder fields: Simple meaning, Word parts, and Meaning from parts.
+- The selected text is normalized, capped at 80 characters, and validated as one English word before any backend request.
+- Valid selected-word lookups call the deployed Clearead backend dictionary route and render Simple meaning, Word parts, and Meaning from parts.
 - The current dictionary card has no Save action and does not store selected terms.
-- The one-line side panel dictionary word input builds a local demo response only after Explain or Enter; the pasted word is not sent to the backend or stored in the current build.
-- A future backend dictionary function must be documented before any selected text is sent to the backend.
-- Selected text is not sent to the backend and is not stored.
+- The one-line side panel dictionary word input uses the same one-word validation and backend dictionary route only after Explain or Enter.
+- Phrase and sentence selections are rejected locally before a dictionary request.
+- Selected words are sent only after explicit lookup and are not stored.
 - `chrome.storage.session` stores only whether the menu is enabled in the current browser session and a recent page activation tab/window/time record for page-tool state sync.
 
 Website link:

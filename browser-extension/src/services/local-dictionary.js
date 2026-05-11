@@ -1,5 +1,5 @@
 const MAX_LOOKUP_TERM_CHARS = 80;
-const DICTIONARY_DEMO_TEXT = "demo demo demo";
+const SINGLE_LOOKUP_WORD_PATTERN = /^[a-z]+(?:['-][a-z]+)*$/i;
 
 export function normaliseLookupTerm(term) {
   return String(term || "")
@@ -8,45 +8,34 @@ export function normaliseLookupTerm(term) {
     .slice(0, MAX_LOOKUP_TERM_CHARS);
 }
 
-export function createDemoWordParts() {
-  return [
-    {
-      part: "demo",
-      meaning: DICTIONARY_DEMO_TEXT,
-      type: "Prefix",
-    },
-    {
-      part: "demo",
-      meaning: DICTIONARY_DEMO_TEXT,
-      type: "Root",
-    },
-    {
-      part: "demo",
-      meaning: DICTIONARY_DEMO_TEXT,
-      type: "Suffix",
-    },
-  ];
+function stripEdgePunctuation(term) {
+  return term.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, "");
 }
 
-export function explainLocalTerm(term) {
-  const normalizedTerm = normaliseLookupTerm(term);
+export function normaliseLookupWord(term) {
+  return stripEdgePunctuation(normaliseLookupTerm(term)).toLowerCase();
+}
 
-  if (!normalizedTerm) {
+export function validateLookupWord(term) {
+  const word = normaliseLookupWord(term);
+
+  if (!word) {
     return {
       ok: false,
-      term: "",
-      message: "Select one word or short phrase first.",
+      word: "",
+      message: "Paste one English word first.",
     };
   }
 
-  return {
-    ok: true,
-    term: normalizedTerm,
-    simpleMeaning: DICTIONARY_DEMO_TEXT,
-    wordParts: createDemoWordParts(),
-    meaningFromParts: DICTIONARY_DEMO_TEXT,
-    source: "demo-placeholder",
-  };
+  if (word.length > MAX_LOOKUP_TERM_CHARS || !SINGLE_LOOKUP_WORD_PATTERN.test(word)) {
+    return {
+      ok: false,
+      word,
+      message: "Use one English word only, not a sentence.",
+    };
+  }
+
+  return { ok: true, word };
 }
 
 export { MAX_LOOKUP_TERM_CHARS };

@@ -335,7 +335,7 @@ requireValue(
 );
 requireValue(
   existsSync(join(root, "src", "services", "local-dictionary.js")),
-  "The local selected-word dictionary service module must exist."
+  "The dictionary input validation module must exist."
 );
 requireValue(
   existsSync(join(root, "src", "content", "page-tools.js")),

@@ -556,85 +556,120 @@ h2 {
 }
 
 .dictionary-card {
-  display: grid;
-  gap: 14px;
-  border: 1px solid #e5eaf3;
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
-  padding: 14px;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.04),
+    0 12px 40px rgba(0, 0, 0, 0.10),
+    0 2px 0 rgba(255, 255, 255, 0.8) inset;
+  overflow: hidden;
 }
 
 .dictionary-card-header {
   display: flex;
   align-items: center;
   gap: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 18px 18px 14px 20px;
 }
 
 .dictionary-term {
   flex: 1 1 auto;
   min-width: 0;
-  color: #101828;
-  font-size: 1.25rem;
-  font-weight: 850;
-  line-height: 1.2;
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.15;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
 .dictionary-speak-button {
   display: inline-flex;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 1px solid #e4e9f2;
+  border: 0;
   border-radius: 999px;
-  background: #ffffff;
-  color: #2563eb;
-  font-size: 1rem;
-  font-weight: 800;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+  background: transparent;
+  color: #6366f1;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dictionary-speak-button:hover {
+  background: #e0e7ff;
+  color: #4f46e5;
 }
 
 .dictionary-card-section {
   display: grid;
   gap: 8px;
+  border-bottom: 1px solid #f8fafc;
+  padding: 14px 20px;
+}
+
+.dictionary-card-section:last-child {
+  border-bottom: 0;
 }
 
 .dictionary-section-title {
-  color: #667085;
-  font-size: 0.82rem;
+  color: #94a3b8;
+  font-size: 0.66rem;
   font-weight: 800;
+  letter-spacing: 0.1em;
   line-height: 1.25;
+  margin: 0;
+  text-transform: uppercase;
 }
 
 .dictionary-section-body {
-  color: #172033;
-  font-size: 0.92rem;
-  line-height: 1.45;
+  color: #1e293b;
+  font-size: 0.91rem;
+  line-height: 1.7;
+  margin: 0;
 }
 
 .dictionary-parts-table {
-  display: grid;
-  overflow: hidden;
-  border: 1px solid #e4e9f2;
-  border-radius: 12px;
-  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .dictionary-part-row {
-  display: grid;
-  min-height: 38px;
-  grid-template-columns: 68px minmax(0, 1fr) 52px;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 10px;
+  border-left: 3px solid transparent;
+  border-radius: 10px;
+  padding: 9px 12px;
 }
 
-.dictionary-part-row + .dictionary-part-row {
-  border-top: 1px solid #e4e9f2;
+.dictionary-part-row--prefix {
+  border-left-color: #fda4af;
+  background: #fff1f2;
+}
+
+.dictionary-part-row--root {
+  border-left-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.dictionary-part-row--suffix {
+  border-left-color: #86efac;
+  background: #f0fdf4;
+}
+
+.dictionary-part-row--infix {
+  border-left-color: #d8b4fe;
+  background: #faf5ff;
 }
 
 .dictionary-part,
@@ -650,24 +685,52 @@ h2 {
 }
 
 .dictionary-part {
-  color: #172033;
-  font-size: 0.76rem;
+  flex: 0 1 86px;
+  min-width: 46px;
+  max-width: 96px;
+  color: #0f172a;
+  font-size: 0.81rem;
 }
 
 .dictionary-part-meaning {
-  color: #172033;
-  font-size: 0.82rem;
-  line-height: 1.35;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #475569;
+  font-size: 0.81rem;
+  line-height: 1.5;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
 .dictionary-part-type {
-  font-size: 0.68rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #0f172a;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.dictionary-divider {
-  height: 1px;
-  background: #e4e9f2;
+.dictionary-part-type--prefix {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+.dictionary-part-type--root {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.dictionary-part-type--suffix {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.dictionary-part-type--infix {
+  background: #ede9fe;
+  color: #7c3aed;
 }
 
 .status-neutral {
@@ -704,6 +767,11 @@ h2 {
   border-radius: 12px;
   background: #fafbff;
   padding: 12px;
+}
+
+.overall-summary-card {
+  border-color: #d6e3ff;
+  background: #f8fbff;
 }
 
 .block-heading {

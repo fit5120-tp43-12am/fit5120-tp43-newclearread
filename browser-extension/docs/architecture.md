@@ -7,8 +7,8 @@
 - `src/sidepanel/`: plain HTML, CSS, and JavaScript for the pasted-text summary workflow, page-tool controls, right-click dictionary button, one-line dictionary word input, and the full website link.
 - `src/content/page-tools.js`: local packaged script that is programmatically injected into the active tab only after the user clicks a page-tool control or the Clearead dictionary context menu item.
 - `src/shared/config.js`: shared extension constants, including `MAX_TEXT_CHARS`, the backend base URL, website URL, and endpoint paths.
-- `src/services/backend-api.js`: backend API adapter for the summary request.
-- `src/services/local-dictionary.js`: local demo placeholder response reference for selected-word lookup. The runtime lookup logic is packaged locally and does not make network requests.
+- `src/services/backend-api.js`: backend API adapter for the summary request and side panel dictionary request.
+- `src/services/local-dictionary.js`: one-word dictionary input validation helpers shared by the side panel dictionary flow.
 - `src/popup/`: small toolbar popup that activates Clearead for the current page before opening the side panel and also links to the full Clearead website.
 - `src/styles/`: reserved for shared styling.
 - `public/icons/`: packaged extension icon PNG assets for 16, 32, 48, and 128 pixel contexts.
@@ -28,7 +28,7 @@ The extension uses these Manifest V3 pieces:
 - `background.service_worker`: points to the extension service worker. It is kept as a classic worker so Chrome reloads do not depend on service-worker module parsing.
 - `side_panel.default_path`: points Chrome to the side panel HTML file.
 - `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and session-only state for the Right-click lookup button plus recent page activation tracking.
-- `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the side panel extension page to call the shared Clearead backend for Summary.
+- `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the extension to call the shared Clearead backend for Summary and explicit one-word Dictionary lookup.
 - `web_accessible_resources`: exposes only the packaged OpenDyslexic WOFF2 files to normal `http` and `https` pages so injected readable-font CSS can load the local font files.
 
 No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used.
@@ -45,8 +45,8 @@ Opening `https://clearead.azurewebsites.net/` is a normal external link from ext
 6. The user manually pastes text into the textarea.
 7. The side panel counts words and characters locally.
 8. Empty input and text over 50,000 characters are rejected before any backend request.
-9. When the user runs Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/process-text` with `{ "text": string }`.
-10. The result panel renders only the returned summary text above the Page tools section.
+9. When the user runs Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/plugin/summary` with `{ "text": string }`.
+10. The result panel renders the returned `overallSummary.text` above the Page tools section. It does not display `overallSummary.heading`.
 11. Backend validation and network failures are shown in the side panel as error states.
 
 Text is not sent automatically while typing, and page content is not read automatically.
@@ -79,16 +79,18 @@ The page-tool script is not registered in `manifest.json` as a static content sc
 2. The user opens the side panel and turns on the Right-click lookup button.
 3. `src/sidepanel/sidepanel.js` sends `clearead:set-dictionary-enabled` to `src/background/service-worker.js`.
 4. The service worker stores only the enabled boolean in `chrome.storage.session` and creates the selected-text context menu item for normal `http` and `https` webpages.
-5. The user selects one word or a short phrase on a normal webpage.
+5. The user selects one English word on a normal webpage.
 6. The user right-clicks the selection and clicks Explain with Clearead.
-7. The service worker reads only `info.selectionText`, normalizes whitespace, caps it at 80 characters, and builds the current local demo dictionary response.
-8. The helper returns the future backend-shaped fields `simpleMeaning`, `wordParts`, and `meaningFromParts`, currently filled with placeholder demo content.
+7. The service worker reads only `info.selectionText`, normalizes whitespace, caps it at 80 characters, and confirms it is one English word.
+8. If the selection is a phrase, sentence, or unsupported token, the content script shows a dictionary card message asking the user to select one English word.
 9. The service worker injects `src/content/page-tools.js` into the clicked tab if needed.
-10. The service worker sends a `show-dictionary-popover` command with the local explanation.
-11. The content script renders a Clearead-owned dictionary card near the current selection, or in a safe viewport position if no selection rectangle is available.
-12. When the user turns the side panel Right-click lookup button off, the service worker removes the Clearead context menu item.
+10. For valid words, the service worker first sends a `show-dictionary-popover` command with a loading explanation so the page card says Looking up.
+11. The service worker sends `POST /api/dictionary` to the deployed Clearead backend with `{ "word": string }`.
+12. The service worker adapts the backend response fields into the extension card shape and sends another `show-dictionary-popover` command with the final explanation.
+13. The content script renders a Clearead-owned dictionary card near the current selection, or in a safe viewport position if no selection rectangle is available.
+14. When the user turns the side panel Right-click lookup button off, the service worker removes the Clearead context menu item.
 
-Selected text is processed locally in the extension only after the user clicks the Clearead menu item. It is not sent to the Clearead backend, not stored, and not expanded into surrounding page content. The side panel word input is one line; clicking Explain or pressing Enter builds the same local demo dictionary response card inside the panel without sending or storing the word. The current card includes a local pronunciation button and no Save action. The context menu is limited with `documentUrlPatterns` for normal webpages and is not backed by static content scripts or broad host permissions. The dictionary enabled boolean is saved in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep but is cleared when the extension is disabled, reloaded, updated, or when the browser restarts. A recent page activation tab/window/time record is also saved in `chrome.storage.session` so page-tool state sync can recover after service worker sleep without storing page content.
+Selected text is sent to the Clearead backend only after the user clicks the Clearead menu item and only if the selected text validates as one English word. It is not stored and is not expanded into surrounding page content. The side panel word input is one line; clicking Explain or pressing Enter uses the same one-word validation and `POST /api/dictionary` route, then renders the returned dictionary card inside the panel without storing the word. The current card includes a local pronunciation button and no Save action. The context menu is limited with `documentUrlPatterns` for normal webpages and is not backed by static content scripts or broad host permissions. The dictionary enabled boolean is saved in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep but is cleared when the extension is disabled, reloaded, updated, or when the browser restarts. A recent page activation tab/window/time record is also saved in `chrome.storage.session` so page-tool state sync can recover after service worker sleep without storing page content.
 
 ## Page Tool Behaviors
 
@@ -108,35 +110,30 @@ For unexpected page-tool failures, the fallback message is: "This page is not su
 
 ## Backend Contract
 
-The deployed backend origin is currently `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net`, the Azure backend URL found in workflow config. The expected summary route is:
+The deployed backend origin is currently `https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net`, the Azure backend URL found in workflow config. The expected extension summary route is:
 
 - Method: `POST`
-- Path: `/api/process-text`
+- Path: `/api/plugin/summary`
 - Request body: `{ "text": string }`
 - Backend limit: `MAX_TEXT_CHARS = 50000`
 
-The response shape is defined by `TextResponse` in `backend/models/schemas.py`:
+The response shape returned by the plugin summary route is:
 
 ```text
 {
-  notice: string,
-  usedFallback: boolean,
-  fallbackReason: string,
-  segmentation: object,
-  blocks: [
-    {
-      id: number,
-      originalText: string,
-      summary: string,
-      keyPoints: string[]
-    }
-  ]
+  overallSummary: {
+    heading: string,
+    text: string
+  },
+  processingStats: object
 }
 ```
 
-The extension currently displays only `blocks[].summary` from this response in the side panel Result section. It does not render `keyPoints`, `originalText`, fallback details, or segmentation data.
+The extension displays only `overallSummary.text` from this response in the side panel Result section. It does not render `overallSummary.heading` or processing stats.
 
-After the extension request reaches the Clearead backend, the backend performs the existing processing pipeline: segmentation or chunking, configured model service processing, GPT/API fallback if configured, and backend algorithm fallback if needed. Any API keys or secrets for those services belong on the backend side and must not be stored in extension files. Selected-word lookup does not use this backend route. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
+After the extension Summary request reaches the Clearead backend, the plugin summary route performs the full-document summary flow only. It does not need the website block segmentation or block-level summary result for the extension. Dictionary requests use the existing backend dictionary route and word-breakdown flow. Any API keys or secrets for those services belong on the backend side and must not be stored in extension files. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
+
+Because the background service worker is intentionally kept as a classic worker, the backend dictionary URL is duplicated in `src/background/service-worker.js` while side panel API calls use `src/shared/config.js`. If the backend origin changes, update both places and rerun the extension validator.
 
 ## Website Origin
 
@@ -148,4 +145,6 @@ This is separate from the deployed backend API origin. It is used only for user-
 
 ## Summary Status
 
-Summary uses the deployed Clearead reading processing route: `POST /api/process-text`. The side panel sends `{ "text": string }` to the shared backend only after the user runs Summary, then renders the returned `blocks[].summary` text.
+Summary uses the deployed Clearead plugin summary route: `POST /api/plugin/summary`. The side panel sends `{ "text": string }` to the shared backend only after the user runs Summary, then renders the returned full-document `overallSummary.text`.
+
+Dictionary uses the deployed Clearead dictionary route: `POST /api/dictionary`. The extension sends `{ "word": string }` only after the side panel input or right-click selected text validates as one English word. The returned `word`, `simpleMeaning`, `wordParts`, and `meaningFromParts` fields are adapted into the extension dictionary card shape.

@@ -6,5 +6,6 @@ export const BACKEND_API_BASE_URL =
 export const CLEAREAD_WEBSITE_URL = "https://clearead.azurewebsites.net/";
 
 export const API_ENDPOINTS = Object.freeze({
-  processText: "/api/process-text",
+  dictionary: "/api/dictionary",
+  pluginSummary: "/api/plugin/summary",
 });

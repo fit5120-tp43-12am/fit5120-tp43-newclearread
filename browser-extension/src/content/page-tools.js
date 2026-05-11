@@ -1066,45 +1066,124 @@
     return element;
   }
 
+  function appendSvgNode(parent, tagName, attributes) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+
+    Object.entries(attributes).forEach(([name, value]) => {
+      node.setAttribute(name, value);
+    });
+
+    parent.appendChild(node);
+    return node;
+  }
+
+  function appendDictionarySpeakerIcon(parent) {
+    const svg = appendSvgNode(parent, "svg", {
+      width: "15",
+      height: "15",
+      viewBox: "0 0 15 15",
+      fill: "none",
+      "aria-hidden": "true",
+    });
+    appendSvgNode(svg, "path", {
+      d: "M2 5H4.5L7.5 2.5v10L4.5 10H2V5z",
+      fill: "currentColor",
+    });
+    appendSvgNode(svg, "path", {
+      d: "M10 4a5 5 0 0 1 0 7",
+      stroke: "currentColor",
+      "stroke-width": "1.4",
+      "stroke-linecap": "round",
+    });
+    appendSvgNode(svg, "path", {
+      d: "M11.5 6a2.5 2.5 0 0 1 0 3",
+      stroke: "currentColor",
+      "stroke-width": "1.4",
+      "stroke-linecap": "round",
+    });
+  }
+
+  function appendDictionaryCloseIcon(parent) {
+    const svg = appendSvgNode(parent, "svg", {
+      width: "12",
+      height: "12",
+      viewBox: "0 0 12 12",
+      fill: "none",
+      "aria-hidden": "true",
+    });
+    appendSvgNode(svg, "path", {
+      d: "M1.5 1.5l9 9M10.5 1.5l-9 9",
+      stroke: "currentColor",
+      "stroke-width": "1.8",
+      "stroke-linecap": "round",
+    });
+  }
+
   function getDictionaryPartTheme(type) {
     const normalizedType = String(type || "").toLowerCase();
 
     if (normalizedType.includes("prefix")) {
       return {
-        background: "#fee2e2",
-        color: "#9f1239",
+        rowBackground: "#fff1f2",
+        rowBorder: "#fda4af",
+        badgeBackground: "#ffe4e6",
+        badgeColor: "#e11d48",
       };
     }
 
     if (normalizedType.includes("root")) {
       return {
-        background: "#dbeafe",
-        color: "#1d4ed8",
+        rowBackground: "#eff6ff",
+        rowBorder: "#93c5fd",
+        badgeBackground: "#dbeafe",
+        badgeColor: "#1d4ed8",
       };
     }
 
     if (normalizedType.includes("suffix")) {
       return {
-        background: "#dcfce7",
-        color: "#15803d",
+        rowBackground: "#f0fdf4",
+        rowBorder: "#86efac",
+        badgeBackground: "#dcfce7",
+        badgeColor: "#15803d",
+      };
+    }
+
+    if (normalizedType.includes("infix")) {
+      return {
+        rowBackground: "#faf5ff",
+        rowBorder: "#d8b4fe",
+        badgeBackground: "#ede9fe",
+        badgeColor: "#7c3aed",
       };
     }
 
     return {
-      background: "#e2e8f0",
-      color: "#334155",
+      rowBackground: "transparent",
+      rowBorder: "transparent",
+      badgeBackground: "transparent",
+      badgeColor: "#0f172a",
     };
+  }
+
+  function formatDictionaryPartType(type) {
+    return String(type || "part")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+      .join(" ") || "Part";
   }
 
   function normalizeDictionaryWordParts(explanation) {
     if (Array.isArray(explanation?.wordParts) && explanation.wordParts.length > 0) {
       return explanation.wordParts.map((part) => {
         return {
-          part: part?.part || "demo",
-          meaning: part?.meaning || "demo demo demo",
+          part: part?.part || part?.form || "",
+          meaning: part?.meaning || "",
           type: part?.type || "Part",
         };
-      });
+      }).filter((part) => part.part || part.meaning);
     }
 
     if (Array.isArray(explanation?.parts) && explanation.parts.length > 0) {
@@ -1112,55 +1191,43 @@
         const [wordPart, ...meaningParts] = String(part).split(":");
 
         return {
-          part: wordPart.trim() || "demo",
-          meaning: meaningParts.join(":").trim() || "demo demo demo",
+          part: wordPart.trim(),
+          meaning: meaningParts.join(":").trim(),
           type: "Part",
         };
-      });
+      }).filter((part) => part.part || part.meaning);
     }
 
-    return [
-      {
-        part: "demo",
-        meaning: "demo demo demo",
-        type: "Prefix",
-      },
-      {
-        part: "demo",
-        meaning: "demo demo demo",
-        type: "Root",
-      },
-      {
-        part: "demo",
-        meaning: "demo demo demo",
-        type: "Suffix",
-      },
-    ];
+    return [];
   }
 
   function appendDictionarySection(parent, heading, bodyText) {
     const section = document.createElement("section");
     Object.assign(section.style, {
       display: "grid",
-      gap: "10px",
+      gap: "8px",
+      padding: "14px 20px",
+      borderBottom: "1px solid #f8fafc",
     });
 
     const title = appendPopoverText(section, "h3", "clearead-dictionary-section-title", heading);
     Object.assign(title.style, {
       margin: "0",
-      color: "#667085",
-      fontSize: "13px",
+      color: "#94a3b8",
+      fontSize: "10.5px",
       fontWeight: "800",
       lineHeight: "1.25",
+      letterSpacing: "0.1em",
+      textTransform: "uppercase",
     });
 
     if (bodyText) {
       const body = appendPopoverText(section, "p", "clearead-dictionary-section-body", bodyText);
       Object.assign(body.style, {
         margin: "0",
-        color: "#172033",
-        fontSize: "15px",
-        lineHeight: "1.45",
+        color: "#1e293b",
+        fontSize: "14.5px",
+        lineHeight: "1.7",
       });
     }
 
@@ -1170,80 +1237,105 @@
 
   function appendDictionaryWordParts(parent, wordParts) {
     const section = appendDictionarySection(parent, "Word parts");
-    const table = document.createElement("div");
-    Object.assign(table.style, {
-      display: "grid",
-      overflow: "hidden",
-      border: "1px solid #e4e9f2",
-      borderRadius: "12px",
-      background: "#ffffff",
+    const list = document.createElement("div");
+    Object.assign(list.style, {
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
     });
 
-    wordParts.forEach((wordPart, index) => {
+    wordParts.forEach((wordPart) => {
       const theme = getDictionaryPartTheme(wordPart.type);
-      const row = document.createElement("div");
-      Object.assign(row.style, {
-        display: "grid",
-        gridTemplateColumns: "68px minmax(0, 1fr) 52px",
+      const item = document.createElement("div");
+      Object.assign(item.style, {
+        display: "flex",
         alignItems: "center",
-        gap: "8px",
-        minHeight: "38px",
-        padding: "6px 8px",
-        borderTop: index === 0 ? "0" : "1px solid #e4e9f2",
+        gap: "10px",
+        borderLeft: `3px solid ${theme.rowBorder}`,
+        borderRadius: "10px",
+        background: theme.rowBackground,
+        padding: "9px 12px",
       });
 
-      const partLabel = appendPopoverText(row, "span", "clearead-dictionary-part", wordPart.part);
+      const partLabel = appendPopoverText(item, "span", "clearead-dictionary-part", wordPart.part);
       Object.assign(partLabel.style, {
         display: "inline-flex",
         alignItems: "center",
-        justifyContent: "center",
-        minHeight: "28px",
-        borderRadius: "7px",
-        background: theme.background,
-        color: "#172033",
-        fontSize: "12px",
+        flex: "0 1 86px",
+        minWidth: "46px",
+        maxWidth: "96px",
+        color: "#0f172a",
+        fontSize: "13px",
         fontWeight: "800",
         lineHeight: "1.2",
         overflowWrap: "anywhere",
       });
 
       const meaning = appendPopoverText(
-        row,
+        item,
         "span",
         "clearead-dictionary-part-meaning",
-        wordPart.meaning
+        wordPart.meaning || "No meaning returned."
       );
       Object.assign(meaning.style, {
-        color: "#172033",
+        flex: "1 1 auto",
+        minWidth: "0",
+        color: "#475569",
         fontSize: "13px",
-        lineHeight: "1.35",
+        lineHeight: "1.5",
         overflowWrap: "anywhere",
       });
 
       const typeBadge = appendPopoverText(
-        row,
+        item,
         "span",
         "clearead-dictionary-part-type",
-        wordPart.type
+        formatDictionaryPartType(wordPart.type)
       );
       Object.assign(typeBadge.style, {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: "24px",
-        borderRadius: "7px",
-        background: theme.background,
-        color: theme.color,
-        fontSize: "11px",
+        flex: "0 0 auto",
+        borderRadius: "999px",
+        background: theme.badgeBackground,
+        color: theme.badgeColor,
+        fontSize: "10.5px",
         fontWeight: "800",
         lineHeight: "1.2",
-        overflowWrap: "anywhere",
+        letterSpacing: "0.06em",
+        padding: "3px 9px",
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
       });
 
-      table.appendChild(row);
+      list.appendChild(item);
     });
 
-    section.appendChild(table);
+    section.appendChild(list);
+  }
+
+  function appendDictionaryMessage(parent, text, color = "#94a3b8") {
+    const message = appendPopoverText(parent, "p", "clearead-dictionary-message", text);
+    Object.assign(message.style, {
+      margin: "0",
+      padding: "20px",
+      color,
+      fontSize: "13px",
+      fontWeight: "600",
+      lineHeight: "1.5",
+    });
+
+    return message;
+  }
+
+  function removeLastDictionarySectionBorder(parent) {
+    const sections = parent.querySelectorAll("section");
+    const lastSection = sections[sections.length - 1];
+
+    if (lastSection) {
+      lastSection.style.borderBottom = "0";
+    }
   }
 
   function speakDictionaryTerm(term) {
@@ -1271,18 +1363,19 @@
       position: "fixed",
       top: "12px",
       left: "12px",
-      width: "min(360px, calc(100vw - 24px))",
+      width: "min(340px, calc(100vw - 24px))",
       maxHeight: "min(460px, calc(100vh - 24px))",
-      overflow: "auto",
+      overflow: "hidden",
       zIndex: "2147483647",
-      border: "1px solid #e4e9f2",
-      borderRadius: "14px",
+      border: "1px solid #e2e8f0",
+      borderRadius: "18px",
       background: "#ffffff",
-      boxShadow: "0 14px 34px rgba(15, 23, 42, 0.15)",
-      color: "#172033",
+      boxShadow:
+        "0 4px 6px rgba(0, 0, 0, 0.04), 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 0 rgba(255, 255, 255, 0.8) inset",
+      color: "#0f172a",
       fontFamily: "Arial, Verdana, Calibri, sans-serif",
       lineHeight: "1.45",
-      padding: "18px 18px 20px",
+      padding: "0",
       visibility: "hidden",
     });
 
@@ -1291,7 +1384,8 @@
       display: "flex",
       alignItems: "center",
       gap: "8px",
-      marginBottom: "14px",
+      padding: "18px 18px 14px 20px",
+      borderBottom: "1px solid #f1f5f9",
     });
 
     const term = appendPopoverText(
@@ -1304,9 +1398,9 @@
       margin: "0",
       flex: "1 1 auto",
       minWidth: "0",
-      color: "#101828",
-      fontSize: "21px",
-      fontWeight: "850",
+      color: "#0f172a",
+      fontSize: "22px",
+      fontWeight: "800",
       lineHeight: "1.15",
       letterSpacing: "0",
       overflowWrap: "anywhere",
@@ -1315,21 +1409,20 @@
     const speakerButton = document.createElement("button");
     speakerButton.type = "button";
     speakerButton.setAttribute("aria-label", `Hear ${explanation?.term || "selected word"}`);
-    speakerButton.textContent = "\uD83D\uDD0A";
+    appendDictionarySpeakerIcon(speakerButton);
     Object.assign(speakerButton.style, {
       display: explanation?.ok ? "inline-flex" : "none",
       alignItems: "center",
       justifyContent: "center",
-      width: "34px",
-      height: "34px",
+      width: "32px",
+      height: "32px",
       flex: "0 0 auto",
-      border: "1px solid #e4e9f2",
+      border: "0",
       borderRadius: "999px",
-      background: "#ffffff",
-      boxShadow: "0 8px 20px rgba(37, 99, 235, 0.12)",
-      color: "#2563eb",
+      background: "transparent",
+      color: "#6366f1",
       cursor: "pointer",
-      font: "700 16px/1 Arial, Verdana, sans-serif",
+      padding: "0",
     });
     speakerButton.addEventListener("click", () => {
       speakDictionaryTerm(explanation?.term || "");
@@ -1340,17 +1433,20 @@
     const closeButton = document.createElement("button");
     closeButton.type = "button";
     closeButton.setAttribute("aria-label", "Close Clearead dictionary");
-    closeButton.textContent = "x";
+    appendDictionaryCloseIcon(closeButton);
     Object.assign(closeButton.style, {
-      width: "32px",
-      height: "32px",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "28px",
+      height: "28px",
       flex: "0 0 auto",
       border: "0",
       borderRadius: "999px",
       background: "transparent",
       color: "#98a2b3",
       cursor: "pointer",
-      font: "400 25px/1 Arial, Verdana, sans-serif",
+      padding: "0",
     });
     closeButton.addEventListener("click", () => {
       removeDictionaryPopover();
@@ -1358,40 +1454,58 @@
     header.appendChild(closeButton);
     popover.appendChild(header);
 
-    if (!explanation?.ok) {
-      appendPopoverText(
-        popover,
-        "p",
-        "clearead-dictionary-message",
-        explanation?.message || "Select one word or a short phrase on the page, then try again."
+    const body = document.createElement("div");
+    Object.assign(body.style, {
+      display: "flex",
+      flexDirection: "column",
+      maxHeight: "min(394px, calc(100vh - 90px))",
+      overflowY: "auto",
+    });
+    popover.appendChild(body);
+
+    if (explanation?.loading) {
+      appendDictionaryMessage(body, explanation.message || "Looking up...");
+    } else if (!explanation?.ok) {
+      appendDictionaryMessage(
+        body,
+        explanation?.message || "Select one English word on the page, then try again.",
+        "#475569"
       );
+    } else if (explanation.hasResult === false) {
+      appendDictionarySection(
+        body,
+        "Result",
+        explanation.noResultMessage ||
+          "No dictionary result was returned for this word. Try another word or use the full Clearead website."
+      );
+      removeLastDictionarySectionBorder(body);
     } else {
       const content = document.createElement("div");
       Object.assign(content.style, {
-        display: "grid",
-        gap: "14px",
+        display: "flex",
+        flexDirection: "column",
       });
 
       appendDictionarySection(
         content,
         "Simple meaning",
-        explanation.simpleMeaning || explanation.meaning || "demo demo demo"
+        explanation.simpleMeaning || explanation.meaning || "No simple meaning was returned."
       );
-      appendDictionaryWordParts(content, normalizeDictionaryWordParts(explanation));
+      const wordParts = normalizeDictionaryWordParts(explanation);
 
-      const divider = document.createElement("div");
-      Object.assign(divider.style, {
-        height: "1px",
-        background: "#e4e9f2",
-      });
-      content.appendChild(divider);
+      if (wordParts.length > 0) {
+        appendDictionaryWordParts(content, wordParts);
+      } else {
+        appendDictionarySection(content, "Word parts", "No word parts were returned.");
+      }
 
       appendDictionarySection(
         content,
         "Meaning from parts",
-        explanation.meaningFromParts || "demo demo demo"
+        explanation.meaningFromParts || "No word-part explanation was returned."
       );
-      popover.appendChild(content);
+      removeLastDictionarySectionBorder(content);
+      body.appendChild(content);
     }
 
     requirePageContainer().appendChild(popover);
@@ -1432,9 +1546,7 @@
 
     return {
       ok: true,
-      message: explanation?.source === "demo-placeholder"
-        ? "Example card shown."
-        : "Dictionary card shown.",
+      message: "Dictionary card shown.",
     };
   }
 
