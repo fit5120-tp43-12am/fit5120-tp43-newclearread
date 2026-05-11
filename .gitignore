@@ -39,5 +39,9 @@ ai/lora_training/**/*.jsonl
 # OS
 .DS_Store
 
+# Dev tools
+.claude/
+WORKLOG.md
+
 # Local development artifacts
 *.docx
