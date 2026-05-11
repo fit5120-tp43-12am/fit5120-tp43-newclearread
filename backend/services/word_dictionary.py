@@ -238,26 +238,24 @@ def analyze_word_with_openai(word: str) -> WordBreakdownResponse:
     max_tokens = int(os.getenv("OPENAI_MAX_TOKENS", "900"))
 
     try:
-        completion = client.beta.chat.completions.parse(
+        response = client.responses.parse(
             model=model,
-            temperature=0,
-            max_tokens=max_tokens,
-            messages=[
+            max_output_tokens=max_tokens,
+            input=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": json.dumps({"word": word})},
             ],
-            response_format=WordBreakdownResponse,
+            text_format=WordBreakdownResponse,
         )
-        message = completion.choices[0].message
-        refusal = getattr(message, "refusal", None)
+        refusal = getattr(response, "refusal", None)
         if refusal:
             logger.warning("Structured output refusal: %s", refusal)
             return _api_unavailable_response(word)
-        if message.parsed is None:
+        if response.output_parsed is None:
             logger.warning("Structured output returned no parsed payload")
             return _api_unavailable_response(word)
         parsed = set_processing_metadata(
-            message.parsed,
+            response.output_parsed,
             source="openai",
             model=model,
             used_fallback=False,
