@@ -208,15 +208,25 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <section class="section-dict">
       <div class="container">
         <div class="dict-panel">
+
+          <!-- Alphabet backdrop — covers the whole panel, fades right toward the text -->
+          <div class="dict-visual-alpha" aria-hidden="true">
+            <span style="top:-8%;   left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
+            <span style="top:-6%;   left:42%;  font-size:130px; transform:rotate(12deg)">A</span>
+            <span style="top:26%;   left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
+            <span style="top:22%;   left:44%;  font-size:118px; transform:rotate(-14deg)">N</span>
+            <span style="top:54%;   left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
+            <span style="top:52%;   left:40%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <span style="bottom:-12%;left:-2%;  font-size:140px; transform:rotate(18deg)">S</span>
+            <span style="bottom:-10%;left:38%;  font-size:155px; transform:rotate(-8deg)">Y</span>
+          </div>
+          <!-- Gradient fade — transparent left → white right, covers right half of panel -->
+          <div class="dict-visual-fade" aria-hidden="true"></div>
+
           <div class="dict-inner">
 
             <!-- Left: visual mock of the popup -->
             <div class="dict-visual" aria-hidden="true">
-              <!-- Faded alphabet backdrop -->
-              <div class="dict-visual-alpha">
-                <span>A</span><span>B</span><span>C</span>
-                <span>D</span><span>E</span><span>F</span>
-              </div>
 
               <!-- Mock popup card -->
               <div class="dict-mock-card">
@@ -672,6 +682,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   padding: 80px 0 96px;
 }
 .dict-panel {
+  position: relative;
   background: rgba(255,255,255,0.62);
   border: 1px solid rgba(255,255,255,0.85);
   border-radius: 28px;
@@ -696,15 +707,32 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   justify-content: center;
   min-height: 320px;
 }
+/* Alphabet confined to left half of panel only */
 .dict-visual-alpha {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  gap: 4px; pointer-events: none; user-select: none; overflow: hidden;
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 50%;
+  pointer-events: none; user-select: none;
+  overflow: hidden;
 }
 .dict-visual-alpha span {
-  font-size: clamp(52px, 8vw, 88px);
+  position: absolute;
   font-weight: 900; letter-spacing: -0.02em;
-  color: rgba(99,102,241,0.06); line-height: 1; flex-shrink: 0;
+  color: rgba(99,102,241,0.08); line-height: 1;
+}
+/* Fades letters only in the left half — stops at 50% so right text is unaffected */
+.dict-visual-fade {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 50%;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 50%,
+    rgba(255,255,255,0.7) 75%,
+    rgba(255,255,255,1) 100%
+  );
 }
 .dict-mock-card {
   position: relative; z-index: 1;
