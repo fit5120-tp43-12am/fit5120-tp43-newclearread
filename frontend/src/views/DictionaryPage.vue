@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useGlobalDict } from '../composables/useGlobalDict'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
@@ -13,6 +13,7 @@ const result      = ref(null)
 const loading     = ref(false)
 const errorMsg    = ref('')
 const searched    = ref(false)
+const resultRef   = ref(null)   // template ref for the result card
 
 // ── TTS ───────────────────────────────────────────────────────────────────────
 const ttsPlaying = ref(false)
@@ -53,6 +54,9 @@ async function handleSearch() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.detail || 'Word not found.')
     result.value = data
+    // Scroll result into view after DOM updates
+    await nextTick()
+    resultRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (err) {
     errorMsg.value = err.message || 'Something went wrong. Please try again.'
   } finally {
@@ -251,7 +255,7 @@ function loadSaved(entry) {
         </div>
 
         <!-- Result card -->
-        <div v-else-if="result" class="result-card">
+        <div v-else-if="result" class="result-card" ref="resultRef">
 
           <!-- Card header: word + TTS + Save -->
           <div class="result-header">
