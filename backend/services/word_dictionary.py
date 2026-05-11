@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
 logger = logging.getLogger(__name__)
 
 MorphemeType = Literal["prefix", "base word", "root", "suffix", "combining form"]
+DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 
 
 class WordPart(BaseModel):
@@ -174,7 +175,7 @@ def _api_unavailable_response(word: str) -> WordBreakdownResponse:
             parts=[],
         ),
         source="fallback",
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        model=os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL),
         used_fallback=True,
     )
 
@@ -233,7 +234,7 @@ def analyze_word_with_openai(word: str) -> WordBreakdownResponse:
         return _api_unavailable_response(word)
 
     client = _client_for_key(api_key)
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    model = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
     max_tokens = int(os.getenv("OPENAI_MAX_TOKENS", "900"))
 
     try:

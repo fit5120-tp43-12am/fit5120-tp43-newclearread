@@ -472,7 +472,7 @@ Segment:
 
         client = OpenAI()
         response = client.chat.completions.create(
-            model=os.getenv("OPENAI_SUMMARY_MODEL", "gpt-4.1-mini"),
+            model=os.getenv("OPENAI_SUMMARY_MODEL", "gpt-5.4-mini"),
             messages=[
                 {
                     "role": "system",
@@ -776,7 +776,7 @@ def preprocess_text(
     keep_references: bool = False,
     debug: bool = False,
     enrich_with_llm: bool = True,
-    llm_model: str = "gpt-4.1-mini",
+    llm_model: str = "gpt-5.4-mini",
     llm_concurrency: int = 5,
     llm_max_retries: int = 1,
 ) -> dict:
@@ -985,7 +985,7 @@ async def call_llm_for_segments_batch(
 
 async def enrich_segments_with_llm(
     segments: list[dict],
-    model: str = "gpt-4.1-mini",
+    model: str = "gpt-5.4-mini",
     concurrency: int = 5,
     max_retries: int = 3,
 ) -> list[dict]:

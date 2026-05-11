@@ -367,7 +367,7 @@ def _enrich_section_cards(segments: list[dict]) -> list[dict]:
     async def run_enrichment() -> list[dict]:
         return await enrich_segments_with_llm(
             enrichment_segments,
-            model=os.getenv("CLEARREAD_SECTION_CARD_MODEL", "gpt-4.1-mini"),
+            model=os.getenv("CLEARREAD_SECTION_CARD_MODEL", "gpt-5.4-mini"),
             concurrency=_env_int("CLEARREAD_SECTION_CARD_CONCURRENCY", 5),
             max_retries=_env_int("CLEARREAD_SECTION_CARD_MAX_RETRIES", 1),
         )
