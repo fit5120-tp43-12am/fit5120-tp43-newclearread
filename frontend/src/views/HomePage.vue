@@ -204,6 +204,135 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       </div><!-- container -->
     </section>
 
+    <!-- ── Dictionary feature promo ── -->
+    <section class="section-dict">
+      <div class="container">
+        <div class="dict-panel">
+          <div class="dict-inner">
+
+            <!-- Left: visual mock of the popup -->
+            <div class="dict-visual" aria-hidden="true">
+              <!-- Faded alphabet backdrop -->
+              <div class="dict-visual-alpha">
+                <span>A</span><span>B</span><span>C</span>
+                <span>D</span><span>E</span><span>F</span>
+              </div>
+
+              <!-- Mock popup card -->
+              <div class="dict-mock-card">
+                <!-- Header -->
+                <div class="dict-mock-header">
+                  <span class="dict-mock-word">understand</span>
+                  <div class="dict-mock-actions">
+                    <span class="dict-mock-btn dict-mock-btn--tts">
+                      <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+                        <path d="M2 5H4.5L7.5 2.5v10L4.5 10H2V5z" fill="#6366f1"/>
+                        <path d="M10 4a5 5 0 0 1 0 7" stroke="#6366f1" stroke-width="1.4" stroke-linecap="round"/>
+                      </svg>
+                    </span>
+                    <span class="dict-mock-btn dict-mock-btn--star">
+                      <svg width="12" height="12" viewBox="0 0 13 13" fill="none">
+                        <path d="M6.5 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L6.5 9 3 10.5l.6-3.2L1.2 5l3.3-.5z"
+                          fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Simple meaning -->
+                <div class="dict-mock-section">
+                  <div class="dict-mock-label">Simple meaning</div>
+                  <p class="dict-mock-meaning">To know the meaning or nature of something clearly.</p>
+                </div>
+
+                <!-- Word parts -->
+                <div class="dict-mock-section">
+                  <div class="dict-mock-label">Word parts</div>
+                  <div class="dict-mock-parts">
+                    <div class="dict-mock-part dict-mock-part--prefix">
+                      <span class="dict-mock-form">under-</span>
+                      <span class="dict-mock-desc">below, beneath</span>
+                      <span class="dict-mock-badge dict-mock-badge--prefix">Prefix</span>
+                    </div>
+                    <div class="dict-mock-part dict-mock-part--root">
+                      <span class="dict-mock-form">stand</span>
+                      <span class="dict-mock-desc">to be in a position</span>
+                      <span class="dict-mock-badge dict-mock-badge--root">Root</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Dblclick hint pill -->
+                <div class="dict-mock-hint">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="5" stroke="#6366f1" stroke-width="1.2"/>
+                    <path d="M6 4v3M6 8.5v.2" stroke="#6366f1" stroke-width="1.2" stroke-linecap="round"/>
+                  </svg>
+                  Double-click any word to look it up
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: text content -->
+            <div class="dict-text">
+              <p class="eyebrow">Built-in Dictionary</p>
+              <h2 class="section-title">Understand every word,<br>right where you read</h2>
+              <p class="dict-desc">
+                Stuck on a word? Just double-click it — anywhere on the site.
+                Clearead breaks it into prefixes, roots, and suffixes so you can
+                understand not just this word, but every word built the same way.
+              </p>
+              <ul class="dict-bullets">
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Plain-English definition — no jargon
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Word parts: prefix, root, and suffix explained
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Save words to review later on the Dictionary page
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Listen to the pronunciation with one tap
+                </li>
+              </ul>
+              <RouterLink to="/dictionary" class="btn-dict">
+                Open Dictionary
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </RouterLink>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Footer ── -->
     <footer class="footer">
       <div class="container footer-inner">
@@ -534,6 +663,140 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .preview-caption {
   font-size: 12.5px; color: #9ca3af;
   font-weight: 500; margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DICTIONARY PROMO SECTION
+   ═══════════════════════════════════════════════════════ */
+.section-dict {
+  padding: 80px 0 96px;
+}
+.dict-panel {
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 28px;
+  box-shadow: 0 4px 32px rgba(99,102,241,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  overflow: hidden;
+  padding: 52px 56px;
+}
+.dict-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+/* ── Visual mock ── */
+.dict-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+.dict-visual-alpha {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: 4px; pointer-events: none; user-select: none; overflow: hidden;
+}
+.dict-visual-alpha span {
+  font-size: clamp(52px, 8vw, 88px);
+  font-weight: 900; letter-spacing: -0.02em;
+  color: rgba(99,102,241,0.06); line-height: 1; flex-shrink: 0;
+}
+.dict-mock-card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 320px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 16px 48px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+.dict-mock-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 16px 12px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.dict-mock-word {
+  font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em;
+}
+.dict-mock-actions { display: flex; align-items: center; gap: 6px; }
+.dict-mock-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #f8fafc;
+}
+.dict-mock-section {
+  padding: 12px 18px;
+  border-bottom: 1px solid #f8fafc;
+}
+.dict-mock-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;
+}
+.dict-mock-meaning {
+  font-size: 13.5px; line-height: 1.6; color: #1e293b; margin: 0;
+}
+.dict-mock-parts { display: flex; flex-direction: column; gap: 6px; }
+.dict-mock-part {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+.dict-mock-part--prefix { background: #fff1f2; border-left-color: #fda4af; }
+.dict-mock-part--root   { background: #eff6ff; border-left-color: #93c5fd; }
+.dict-mock-form { font-size: 12px; font-weight: 800; color: #0f172a; min-width: 40px; flex-shrink: 0; }
+.dict-mock-desc { flex: 1; font-size: 12px; color: #475569; }
+.dict-mock-badge {
+  font-size: 9.5px; font-weight: 800; padding: 2px 7px;
+  border-radius: 999px; letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+}
+.dict-mock-badge--prefix { background: #ffe4e6; color: #e11d48; }
+.dict-mock-badge--root   { background: #dbeafe; color: #1d4ed8; }
+.dict-mock-hint {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 18px;
+  font-size: 11.5px; color: #6366f1; font-weight: 600;
+  background: #f5f3ff;
+}
+
+/* ── Text side ── */
+.dict-text { display: flex; flex-direction: column; gap: 20px; }
+.dict-desc {
+  font-size: 16px; line-height: 1.75; color: #4b5563; margin: 0;
+}
+.dict-bullets {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.dict-bullets li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 15px; color: #374151; line-height: 1.5;
+}
+.btn-dict {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 26px; border-radius: 999px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff; font-size: 15px; font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(99,102,241,0.30);
+  transition: transform 0.15s, box-shadow 0.2s;
+  align-self: flex-start;
+}
+.btn-dict:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(99,102,241,0.38);
+}
+
+@media (max-width: 860px) {
+  .section-dict { padding: 64px 0; }
+  .dict-panel { padding: 36px 24px; border-radius: 20px; }
+  .dict-inner { grid-template-columns: 1fr; gap: 36px; }
+  .dict-visual { order: -1; min-height: 260px; }
+  .dict-mock-card { max-width: 280px; }
 }
 
 /* ═══════════════════════════════════════════════════════
