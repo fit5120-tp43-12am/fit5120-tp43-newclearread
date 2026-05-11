@@ -6,9 +6,39 @@
  * Shown when the user double-clicks any word anywhere on the site.
  * State is shared via useGlobalDict() composable (singleton refs).
  */
+import { ref } from 'vue'
 import { useGlobalDict } from '../composables/useGlobalDict'
 
 const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlobalDict()
+
+// ── Drag logic ────────────────────────────────────────────────────────────────
+const dragging = ref(false)
+let dragOffsetX = 0
+let dragOffsetY = 0
+
+function onDragStart(e) {
+  if (!dictPopup.value) return
+  dragging.value = true
+  dragOffsetX = e.clientX - dictPopup.value.x
+  dragOffsetY = e.clientY - dictPopup.value.y
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', onDragEnd)
+}
+
+function onDragMove(e) {
+  if (!dragging.value || !dictPopup.value) return
+  const CARD_W = 340
+  const CARD_H = 80  // minimum visible strip
+  const newX = Math.max(0, Math.min(e.clientX - dragOffsetX, window.innerWidth  - CARD_W))
+  const newY = Math.max(0, Math.min(e.clientY - dragOffsetY, window.innerHeight - CARD_H))
+  dictPopup.value = { ...dictPopup.value, x: newX, y: newY }
+}
+
+function onDragEnd() {
+  dragging.value = false
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+}
 </script>
 
 <template>
@@ -16,7 +46,7 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
     <div
       v-if="dictPopup"
       class="dict-backdrop"
-      @click.self="closeDictPopup"
+      @click.self="!dragging && closeDictPopup()"
     >
       <div
         class="dict-card"
@@ -24,8 +54,8 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
         @click.stop
       >
 
-        <!-- Header: word + TTS + close -->
-        <div class="dict-header">
+        <!-- Header: word + TTS + close (drag handle) -->
+        <div class="dict-header" @mousedown.prevent="onDragStart" :class="{ 'dict-header--dragging': dragging }">
           <h3 class="dict-word">{{ dictPopup.word }}</h3>
           <div class="dict-header-actions">
             <button class="dict-tts-btn" title="Listen" @click="speakDictWord()">
@@ -85,11 +115,11 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
               <div
                 v-for="part in dictPopup.data.wordParts"
                 :key="part.form + part.type"
-                :class="['dict-part-row', `dict-part-row--${part.type?.toLowerCase()}`]"
+                :class="['dict-part-row', `dict-part-row--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]"
               >
                 <span class="dict-part-form">{{ part.form }}</span>
                 <span class="dict-part-meaning">{{ part.meaning }}</span>
-                <span :class="['dict-part-badge', `dict-part-badge--${part.type?.toLowerCase()}`]">
+                <span :class="['dict-part-badge', `dict-part-badge--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]">
                   {{ part.type }}
                 </span>
               </div>
@@ -109,14 +139,15 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
 </template>
 
 <style scoped>
-/* Transparent full-screen layer — catches outside clicks */
+/* Transparent full-screen layer — catches outside clicks to close popup */
 .dict-backdrop {
   position: fixed; inset: 0;
-  z-index: 9000;          /* above everything, including modals */
-  pointer-events: none;   /* let clicks pass through the backdrop… */
+  z-index: 9000;
+  pointer-events: all;    /* catches clicks outside the card */
+  cursor: default;
 }
 .dict-card {
-  pointer-events: all;    /* …but not through the card itself */
+  pointer-events: all;
   position: fixed;
   width: 340px;
   background: #fff;
@@ -129,13 +160,17 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
   overflow: hidden;
 }
 
-/* Header */
+/* Header — doubles as drag handle */
 .dict-header {
   display: flex; align-items: center;
   padding: 18px 18px 14px 20px;
   border-bottom: 1px solid #f1f5f9;
   gap: 8px;
+  cursor: grab;
+  user-select: none;
 }
+.dict-header--dragging { cursor: grabbing; }
+.dict-header:active { cursor: grabbing; }
 .dict-word {
   flex: 1;
   font-size: 22px; font-weight: 800;
@@ -218,10 +253,12 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
   padding: 9px 12px; border-radius: 10px;
   border-left: 3px solid transparent;
 }
-.dict-part-row--prefix  { background: #fff1f2; border-left-color: #fda4af; }
-.dict-part-row--root    { background: #eff6ff; border-left-color: #93c5fd; }
-.dict-part-row--suffix  { background: #f0fdf4; border-left-color: #86efac; }
-.dict-part-row--infix   { background: #faf5ff; border-left-color: #d8b4fe; }
+.dict-part-row--prefix         { background: #fff1f2; border-left-color: #fda4af; }
+.dict-part-row--root           { background: #eff6ff; border-left-color: #93c5fd; }
+.dict-part-row--suffix         { background: #f0fdf4; border-left-color: #86efac; }
+.dict-part-row--infix          { background: #faf5ff; border-left-color: #d8b4fe; }
+.dict-part-row--base-word      { background: #fff7ed; border-left-color: #fdba74; }
+.dict-part-row--combining-form { background: #ecfeff; border-left-color: #67e8f9; }
 
 .dict-part-form    { font-size: 13px; font-weight: 800; color: #0f172a; min-width: 46px; flex-shrink: 0; }
 .dict-part-meaning { flex: 1; font-size: 13px; line-height: 1.5; color: #475569; }
@@ -233,10 +270,12 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
   letter-spacing: 0.06em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0;
 }
-.dict-part-badge--prefix { background: #ffe4e6; color: #e11d48; }
-.dict-part-badge--root   { background: #dbeafe; color: #1d4ed8; }
-.dict-part-badge--suffix { background: #dcfce7; color: #15803d; }
-.dict-part-badge--infix  { background: #ede9fe; color: #7c3aed; }
+.dict-part-badge--prefix         { background: #ffe4e6; color: #e11d48; }
+.dict-part-badge--root           { background: #dbeafe; color: #1d4ed8; }
+.dict-part-badge--suffix         { background: #dcfce7; color: #15803d; }
+.dict-part-badge--infix          { background: #ede9fe; color: #7c3aed; }
+.dict-part-badge--base-word      { background: #ffedd5; color: #c2410c; }
+.dict-part-badge--combining-form { background: #cffafe; color: #0e7490; }
 
 /* Meaning from parts */
 .dict-parts-meaning {

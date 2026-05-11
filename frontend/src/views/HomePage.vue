@@ -10,14 +10,17 @@ import { ref, onMounted, onUnmounted } from 'vue'
 const scrolled  = ref(false)
 // menuOpen controls whether the mobile slide-down nav drawer is visible.
 const menuOpen  = ref(false)
+// ref to the features section for smooth scroll
+const featuresSection = ref(null)
 
 // Simple scroll handler — called ~60× per second during scrolling.
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
+function scrollToFeatures() {
+  featuresSection.value?.scrollIntoView({ behavior: 'smooth' })
+}
+
 // onMounted / onUnmounted are Vue lifecycle hooks.
-// We attach the scroll listener after the component is in the DOM, and REMOVE it when
-// the user navigates away — failing to remove it would cause a memory leak because the
-// callback would keep running on a component that no longer exists.
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
@@ -40,8 +43,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           Clearead
         </RouterLink>
         <ul class="nav-links">
-          <li><RouterLink to="/"         class="nav-link nav-link--active">Home</RouterLink></li>
-          <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
+          <li><RouterLink to="/"           class="nav-link nav-link--active">Home</RouterLink></li>
+          <li><RouterLink to="/reading"    class="nav-link">Reading Support</RouterLink></li>
           <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
@@ -60,8 +63,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- Mobile nav -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/"           class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"    class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
@@ -92,18 +95,18 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </RouterLink>
-          <RouterLink to="/dyslexia" class="btn-ghost">
-            Learn About Dyslexia
-          </RouterLink>
-          <RouterLink to="/training" class="btn-ghost">
-            Try Training Game
-          </RouterLink>
         </div>
+
+        <button class="scroll-down" @click="scrollToFeatures" aria-label="Scroll to features">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </section>
 
     <!-- ── Features ── -->
-    <section class="section-features">
+    <section class="section-features" ref="featuresSection">
       <div class="container">
         <p class="eyebrow">What Clearead does</p>
         <h2 class="section-title">Three ways Clearead helps</h2>
@@ -211,14 +214,22 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
           <!-- Alphabet backdrop — covers the whole panel, fades right toward the text -->
           <div class="dict-visual-alpha" aria-hidden="true">
-            <span style="top:-8%;   left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
-            <span style="top:-6%;   left:42%;  font-size:130px; transform:rotate(12deg)">A</span>
-            <span style="top:26%;   left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
-            <span style="top:22%;   left:44%;  font-size:118px; transform:rotate(-14deg)">N</span>
-            <span style="top:54%;   left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
-            <span style="top:52%;   left:40%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <!-- left column -->
+            <span style="top:-8%;    left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
+            <span style="top:10%;    left:18%;  font-size:120px; transform:rotate(10deg)">F</span>
+            <span style="top:26%;    left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
+            <span style="top:38%;    left:20%;  font-size:130px; transform:rotate(16deg)">J</span>
+            <span style="top:54%;    left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
+            <span style="top:70%;    left:14%;  font-size:125px; transform:rotate(-20deg)">K</span>
             <span style="bottom:-12%;left:-2%;  font-size:140px; transform:rotate(18deg)">S</span>
-            <span style="bottom:-10%;left:38%;  font-size:155px; transform:rotate(-8deg)">Y</span>
+            <!-- right column (fills the area beside the card) -->
+            <span style="top:-6%;    left:55%;  font-size:130px; transform:rotate(12deg)">A</span>
+            <span style="top:12%;    left:72%;  font-size:110px; transform:rotate(-16deg)">T</span>
+            <span style="top:22%;    left:55%;  font-size:118px; transform:rotate(-14deg)">N</span>
+            <span style="top:38%;    left:68%;  font-size:112px; transform:rotate(14deg)">P</span>
+            <span style="top:52%;    left:55%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <span style="top:68%;    left:70%;  font-size:118px; transform:rotate(18deg)">V</span>
+            <span style="bottom:-10%;left:55%;  font-size:155px; transform:rotate(-8deg)">Y</span>
           </div>
           <!-- Gradient fade — transparent left → white right, covers right half of panel -->
           <div class="dict-visual-fade" aria-hidden="true"></div>
@@ -357,8 +368,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Understand Dyslexia</RouterLink>
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
@@ -504,13 +514,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .btn-start {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 26px;
-  background: #2563eb; color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff;
   font-size: 15px; font-weight: 600;
   border-radius: 999px; text-decoration: none;
   box-shadow: 0 6px 20px rgba(37,99,235,0.3);
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-.btn-start:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,99,235,0.35); }
+.btn-start:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,99,235,0.35); }
 .btn-ghost {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 24px;
@@ -521,6 +531,32 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   transition: background 0.2s, transform 0.15s;
 }
 .btn-ghost:hover { background: rgba(255,255,255,0.9); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+/* ── Scroll-down arrow ── */
+.scroll-down {
+  display: flex; align-items: center; justify-content: center;
+  width: 52px; height: 52px;
+  margin: 56px auto 0;
+  background: rgba(255,255,255,0.75);
+  border: 2px solid rgba(99,102,241,0.3);
+  border-radius: 999px;
+  color: #4f46e5;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(99,102,241,0.15);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  animation: bounce 2s ease-in-out infinite;
+}
+.scroll-down:hover {
+  background: rgba(255,255,255,1);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.25);
+  animation: none;
+  transform: translateY(4px);
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(9px); }
+}
 
 /* ── Shared layout ── */
 .container {
@@ -588,14 +624,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .btn-features-start {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 28px;
-  background: #2563eb; color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff;
   font-size: 15px; font-weight: 600;
   border-radius: 999px; text-decoration: none;
   box-shadow: 0 6px 20px rgba(37,99,235,0.3);
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 .btn-features-start:hover {
-  background: #1d4ed8;
+  opacity: 0.92;
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(37,99,235,0.35);
 }
