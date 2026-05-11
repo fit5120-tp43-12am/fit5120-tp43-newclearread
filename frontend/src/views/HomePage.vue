@@ -214,14 +214,22 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
           <!-- Alphabet backdrop — covers the whole panel, fades right toward the text -->
           <div class="dict-visual-alpha" aria-hidden="true">
-            <span style="top:-8%;   left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
-            <span style="top:-6%;   left:42%;  font-size:130px; transform:rotate(12deg)">A</span>
-            <span style="top:26%;   left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
-            <span style="top:22%;   left:44%;  font-size:118px; transform:rotate(-14deg)">N</span>
-            <span style="top:54%;   left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
-            <span style="top:52%;   left:40%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <!-- left column -->
+            <span style="top:-8%;    left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
+            <span style="top:10%;    left:18%;  font-size:120px; transform:rotate(10deg)">F</span>
+            <span style="top:26%;    left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
+            <span style="top:38%;    left:20%;  font-size:130px; transform:rotate(16deg)">J</span>
+            <span style="top:54%;    left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
+            <span style="top:70%;    left:14%;  font-size:125px; transform:rotate(-20deg)">K</span>
             <span style="bottom:-12%;left:-2%;  font-size:140px; transform:rotate(18deg)">S</span>
-            <span style="bottom:-10%;left:38%;  font-size:155px; transform:rotate(-8deg)">Y</span>
+            <!-- right column (fills the area beside the card) -->
+            <span style="top:-6%;    left:55%;  font-size:130px; transform:rotate(12deg)">A</span>
+            <span style="top:12%;    left:72%;  font-size:110px; transform:rotate(-16deg)">T</span>
+            <span style="top:22%;    left:55%;  font-size:118px; transform:rotate(-14deg)">N</span>
+            <span style="top:38%;    left:68%;  font-size:112px; transform:rotate(14deg)">P</span>
+            <span style="top:52%;    left:55%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <span style="top:68%;    left:70%;  font-size:118px; transform:rotate(18deg)">V</span>
+            <span style="bottom:-10%;left:55%;  font-size:155px; transform:rotate(-8deg)">Y</span>
           </div>
           <!-- Gradient fade — transparent left → white right, covers right half of panel -->
           <div class="dict-visual-fade" aria-hidden="true"></div>
