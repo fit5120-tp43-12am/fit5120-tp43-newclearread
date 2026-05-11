@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useGlobalDict } from '../composables/useGlobalDict'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
@@ -7,14 +8,14 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:800
 const menuOpen = ref(false)
 
 // ── Search state ─────────────────────────────────────────────────────────────
-const query       = ref('')          // text in the search input
-const result      = ref(null)        // { word, simpleMeaning, wordParts, meaningFromParts }
+const query       = ref('')
+const result      = ref(null)
 const loading     = ref(false)
 const errorMsg    = ref('')
-const searched    = ref(false)       // true after first search attempt
+const searched    = ref(false)
 
 // ── TTS ───────────────────────────────────────────────────────────────────────
-const ttsPlaying  = ref(false)
+const ttsPlaying = ref(false)
 
 function speakWord() {
   if (!result.value) return
@@ -66,26 +67,23 @@ function handleKeydown(e) {
 const hasWordParts        = computed(() => result.value?.wordParts?.length > 0)
 const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
 
+// ── Saved words — shared via composable (same storage as global popup) ────────
+const {
+  savedWords,
+  removeSaved,
+  clearAllSaved,
+  relativeDate,
+} = useGlobalDict()
 
-// ── Saved words (localStorage) ────────────────────────────────────────────────
-// Each entry: { word, simpleMeaning, wordParts, meaningFromParts, savedAt }
-const SAVED_KEY  = 'clearead-dict-saved'
-
-function loadSavedWords() {
-  try { return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]') }
-  catch { return [] }
-}
-
-const savedWords = ref(loadSavedWords())
-
-/** Is the current result already in the saved list? */
+/** Is the current search result already saved? */
 const isSaved = computed(() =>
   result.value ? savedWords.value.some(w => w.word === result.value.word) : false
 )
 
-/** Save or unsave the current result word. */
+/** Save or unsave the current search result. */
 function toggleSave() {
   if (!result.value) return
+  const SAVED_KEY = 'clearead-dict-saved'
   if (isSaved.value) {
     savedWords.value = savedWords.value.filter(w => w.word !== result.value.word)
   } else {
@@ -97,39 +95,14 @@ function toggleSave() {
   localStorage.setItem(SAVED_KEY, JSON.stringify(savedWords.value))
 }
 
-/** Remove one entry from the saved list. */
-function removeSaved(word) {
-  savedWords.value = savedWords.value.filter(w => w.word !== word)
-  localStorage.setItem(SAVED_KEY, JSON.stringify(savedWords.value))
-}
-
-/** Clear every saved word. */
-function clearAllSaved() {
-  savedWords.value = []
-  localStorage.removeItem(SAVED_KEY)
-}
-
-/** Load a saved entry back into the result card. */
+/** Load a saved entry back into the search result card. */
 function loadSaved(entry) {
-  result.value   = entry
-  query.value    = entry.word
-  searched.value = true
-  errorMsg.value = ''
+  result.value     = entry
+  query.value      = entry.word
+  searched.value   = true
+  errorMsg.value   = ''
   ttsPlaying.value = false
   window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-/** Human-readable relative date label. */
-function relativeDate(iso) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1)   return 'Just now'
-  if (mins < 60)  return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24)   return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 7)   return `${days}d ago`
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 </script>
 

@@ -8,7 +8,7 @@
  */
 import { useGlobalDict } from '../composables/useGlobalDict'
 
-const { dictPopup, speakDictWord, closeDictPopup } = useGlobalDict()
+const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlobalDict()
 </script>
 
 <template>
@@ -33,6 +33,21 @@ const { dictPopup, speakDictWord, closeDictPopup } = useGlobalDict()
                 <path d="M2 5H4.5L7.5 2.5v10L4.5 10H2V5z" fill="currentColor"/>
                 <path d="M10 4a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                 <path d="M11.5 6a2.5 2.5 0 0 1 0 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <!-- Save / unsave button — only shown when result data is loaded -->
+            <button
+              v-if="dictPopup.data && !dictPopup.loading"
+              :class="['dict-save-btn', { 'dict-save-btn--saved': isSaved }]"
+              :title="isSaved ? 'Remove from saved' : 'Save word'"
+              @click="toggleSave"
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path
+                  d="M6.5 1.5l1.5 3 3.3.5-2.4 2.3.6 3.2L6.5 9 3 10.5l.6-3.2L1.2 5l3.3-.5z"
+                  :fill="isSaved ? 'currentColor' : 'none'"
+                  stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"
+                />
               </svg>
             </button>
             <button class="dict-close-btn" title="Close" @click="closeDictPopup">
@@ -137,6 +152,18 @@ const { dictPopup, speakDictWord, closeDictPopup } = useGlobalDict()
   transition: background 0.15s, color 0.15s;
 }
 .dict-tts-btn:hover { background: #e0e7ff; color: #4f46e5; }
+
+/* Save button */
+.dict-save-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  color: #94a3b8;
+  transition: background 0.15s, color 0.15s;
+}
+.dict-save-btn:hover { background: #fef9c3; color: #ca8a04; }
+.dict-save-btn--saved { color: #f59e0b; }
+.dict-save-btn--saved:hover { background: #fee2e2; color: #ef4444; }
 
 /* Close button */
 .dict-close-btn {

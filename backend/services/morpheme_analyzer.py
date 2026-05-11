@@ -18,6 +18,10 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 import onnxruntime as ort
+from dotenv import load_dotenv
+
+# Load .env so RAPIDAPI_KEY is available even when this module is imported first
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 import requests
 
 from .morpheme_utils import (
