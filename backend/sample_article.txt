@@ -236,12 +236,12 @@ Centers for Disease Control and Prevention. 2023 Youth Risk Behavior Survey Resu
 
 Centers for Disease Control and Prevention. Youth Mental Health: The Numbers. ([][5])
 
-[1]: https://www.who.int/news-room/fact-sheets/detail/mental-health-strengthening-our-response?utm_source=chatgpt.com "Mental health"
-[2]: https://www.who.int/news-room/fact-sheets/detail/mental-disorders?utm_source=chatgpt.com "Mental disorders"
-[3]: https://www.who.int/health-topics/mental-health?utm_source=chatgpt.com "Mental health"
-[4]: https://www.cdc.gov/yrbs/results/2023-yrbs-results.html?utm_source=chatgpt.com "2023 Youth Risk Behavior Survey Results"
-[5]: https://www.cdc.gov/healthy-youth/mental-health/mental-health-numbers.html?utm_source=chatgpt.com "Youth Mental Health: The Numbers"
-[6]: https://www.who.int/publications/i/item/9789240049338?utm_source=chatgpt.com "World mental health report: Transforming mental health for all"
+[1]: https://www.who.int/news-room/fact-sheets/detail/mental-health-strengthening-our-response "Mental health"
+[2]: https://www.who.int/news-room/fact-sheets/detail/mental-disorders "Mental disorders"
+[3]: https://www.who.int/health-topics/mental-health "Mental health"
+[4]: https://www.cdc.gov/yrbs/results/2023-yrbs-results.html "2023 Youth Risk Behavior Survey Results"
+[5]: https://www.cdc.gov/healthy-youth/mental-health/mental-health-numbers.html "Youth Mental Health: The Numbers"
+[6]: https://www.who.int/publications/i/item/9789240049338 "World mental health report: Transforming mental health for all"
 
 Mental health is one of the most important parts of human life. It shapes how people think, feel, study, work, build relationships, and deal with stress. In the past, many people treated mental health as a private issue. They often believed that it only mattered when someone had a serious mental illness. Today, this view is changing. More people understand that mental health is not only about illness. It is also about daily well-being, emotional balance, resilience, and the ability to live a meaningful life.
 

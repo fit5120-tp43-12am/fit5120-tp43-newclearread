@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Clearead",
+  "description": "A side panel reading support workflow for summarising pasted text and applying page reading tools with Clearead.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "32": "public/icons/icon-32.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Open Clearead",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "public/icons/icon-16.png",
+      "32": "public/icons/icon-32.png",
+      "48": "public/icons/icon-48.png",
+      "128": "public/icons/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
+  },
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "public/fonts/OpenDyslexic-Regular.woff2",
+        "public/fonts/OpenDyslexic-Bold.woff2",
+        "public/fonts/OpenDyslexic-Italic.woff2",
+        "public/fonts/OpenDyslexic-BoldItalic.woff2"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ]
+}
