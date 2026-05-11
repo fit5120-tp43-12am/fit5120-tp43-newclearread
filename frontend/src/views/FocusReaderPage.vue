@@ -654,10 +654,10 @@ onUnmounted(() => {
         </RouterLink>
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
-          <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
+          <li></li>
           <li><RouterLink to="/training"   class="nav-link nav-link--active">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
-          <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -674,10 +674,10 @@ onUnmounted(() => {
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li></li>
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
-        <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li></li>
       </ul>
     </div>
 
@@ -994,9 +994,7 @@ onUnmounted(() => {
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Understand Dyslexia</RouterLink>
-          <RouterLink to="/training" class="footer-link">Training</RouterLink>
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
