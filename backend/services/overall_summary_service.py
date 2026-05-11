@@ -9,7 +9,7 @@ from pydantic import BaseModel
 BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(BACKEND_ENV_PATH)
 
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gpt-5.4-mini"
 DEFAULT_MAX_CHARS = 50000
 DEFAULT_TIMEOUT_SECONDS = 30
 
