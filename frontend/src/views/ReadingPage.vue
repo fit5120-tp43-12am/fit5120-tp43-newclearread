@@ -123,7 +123,7 @@ const modalShowOriginal = ref(true)
 function openSection(block) {
   stopAudio()
   activeSection.value = block
-  modalShowOriginal.value = true   // always start expanded
+  modalShowOriginal.value = false  // hidden by default; user can expand
 }
 
 /** Closes the section detail modal and stops any playing TTS. */
@@ -2845,9 +2845,7 @@ kbd {
   gap: 14px;
   padding: 28px 22px 28px 30px;
   min-width: 0;
-  overflow: hidden;
-  /* No cursor/user-select on the whole column — text body must be selectable
-     for the global dictionary double-click to work. */
+  overflow-y: auto;   /* allow scrolling when original text is long */
   cursor: default;
   user-select: text;
 }
@@ -2865,27 +2863,27 @@ kbd {
 .modal-orig-col--collapsed:hover  { background: #eef2ff; }
 .modal-orig-col--collapsed:active { background: #e0e7ff; transform: scale(0.97); }
 
-/* Label row — the interactive toggle when expanded */
+/* Label row — styled as a clear toggle button */
 .modal-orig-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
+  gap: 6px;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: #4f46e5;
   white-space: nowrap;
   flex-shrink: 0;
-  /* Label is the click target when expanded */
   cursor: pointer;
   user-select: none;
-  border-radius: 6px;
-  padding: 4px 6px;
-  margin: -4px -6px;
-  transition: background 0.15s, color 0.15s;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  align-self: flex-start;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.modal-orig-label:hover { background: rgba(99,102,241,0.08); color: #3730a3; }
+.modal-orig-label:hover { background: #e0e7ff; border-color: #a5b4fc; color: #3730a3; }
 
 /* Collapsed: rotate the whole label block vertically */
 .modal-orig-col--collapsed .modal-orig-label {
@@ -2895,13 +2893,16 @@ kbd {
   gap: 6px;
 }
 
-/* Original text body */
+/* Original text body — scrollable when content overflows */
 .modal-orig-text {
   font-size: 14px;
   line-height: 1.78;
   color: #1e293b;
   margin: 0;
   cursor: text;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
 }
 
 /* Plain vertical divider */
