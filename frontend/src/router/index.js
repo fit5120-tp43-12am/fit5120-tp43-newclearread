@@ -7,15 +7,17 @@ import HomePage        from '../views/HomePage.vue'
 import DyslexiaPage   from '../views/DyslexiaPage.vue'
 import ReadingPage     from '../views/ReadingPage.vue'
 import FocusReaderPage from '../views/FocusReaderPage.vue'
-import DictionaryPage  from '../views/DictionaryPage.vue'
+import DictionaryPage    from '../views/DictionaryPage.vue'
+import PrivacyPolicyPage from '../views/PrivacyPolicyPage.vue'
 
 // Each route object maps one URL path to one page component.
 const routes = [
-  { path: '/',           name: 'Home',           component: HomePage },        // landing page
-  { path: '/dyslexia',   name: 'Dyslexia',       component: DyslexiaPage },   // info + charts
-  { path: '/reading',    name: 'Read Easier',    component: ReadingPage },    // AI simplify + TTS
-  { path: '/training',   name: 'Focus Reader',   component: FocusReaderPage },// letter-training game
-  { path: '/dictionary', name: 'Dictionary',     component: DictionaryPage }, // word lookup
+  { path: '/',               name: 'Home',           component: HomePage },        // landing page
+  { path: '/dyslexia',       name: 'Dyslexia',       component: DyslexiaPage },   // info + charts
+  { path: '/reading',        name: 'Read Easier',    component: ReadingPage },    // AI simplify + TTS
+  { path: '/training',       name: 'Focus Reader',   component: FocusReaderPage },// letter-training game
+  { path: '/dictionary',     name: 'Dictionary',     component: DictionaryPage }, // word lookup
+  { path: '/privacy-policy', name: 'Privacy Policy', component: PrivacyPolicyPage }, // privacy policy
 ]
 
 const router = createRouter({
