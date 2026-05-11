@@ -152,6 +152,15 @@ function closeDictPopup() {
   window.speechSynthesis?.cancel()
 }
 
+/**
+ * Any component can call this to signal "a modal just closed".
+ * The dictionary popup will close automatically.
+ * Usage: document.dispatchEvent(new CustomEvent('clearead:modal-closed'))
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('clearead:modal-closed', closeDictPopup)
+}
+
 // ── Export ────────────────────────────────────────────────────────────────────
 export function useGlobalDict() {
   return {

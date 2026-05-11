@@ -130,6 +130,8 @@ function openSection(block) {
 function closeSection() {
   stopAudio()
   activeSection.value = null
+  // Close the global dictionary popup whenever this modal closes
+  window.dispatchEvent(new CustomEvent('clearead:modal-closed'))
 }
 
 

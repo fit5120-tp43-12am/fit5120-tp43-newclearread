@@ -109,14 +109,15 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
 </template>
 
 <style scoped>
-/* Transparent full-screen layer — catches outside clicks */
+/* Transparent full-screen layer — catches outside clicks to close popup */
 .dict-backdrop {
   position: fixed; inset: 0;
-  z-index: 9000;          /* above everything, including modals */
-  pointer-events: none;   /* let clicks pass through the backdrop… */
+  z-index: 9000;
+  pointer-events: all;    /* catches clicks outside the card */
+  cursor: default;
 }
 .dict-card {
-  pointer-events: all;    /* …but not through the card itself */
+  pointer-events: all;
   position: fixed;
   width: 340px;
   background: #fff;
