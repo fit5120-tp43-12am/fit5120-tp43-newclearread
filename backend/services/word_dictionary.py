@@ -1,13 +1,4 @@
-"""Portable FastAPI feature block for learner-friendly English word breakdown.
-
-This module is designed to be copied into another FastAPI project with minimal
-changes. It bundles:
-- request / response schemas
-- input validation
-- a lightweight affix dictionary
-- OpenAI Structured Outputs integration
-- a ready-to-mount API router
-"""
+"""Learner-friendly English word breakdown backed by OpenAI Structured Outputs."""
 
 from __future__ import annotations
 
@@ -17,20 +8,10 @@ import os
 import re
 from typing import Literal
 
-from fastapi import APIRouter
 from openai import OpenAI
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 logger = logging.getLogger(__name__)
-
-router = APIRouter()
-
-
-class WordBreakdownRequest(BaseModel):
-    """Request body for analyzing a single English word."""
-
-    word: str = Field(..., description="Single English word to analyze")
-
 
 MorphemeType = Literal["prefix", "base word", "root", "suffix", "combining form"]
 
@@ -53,7 +34,7 @@ class WordPart(BaseModel):
 
 
 class WordBreakdownResponse(BaseModel):
-    """Structured response returned by the Word Helper endpoint."""
+    """Structured response returned by the word dictionary service."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -100,7 +81,6 @@ _openai_client_key: str | None = None
 
 def _client_for_key(api_key: str) -> OpenAI:
     """Reuse one OpenAI client per API key to avoid repeated setup overhead."""
-
     global _openai_client, _openai_client_key
     if _openai_client is None or _openai_client_key != api_key:
         _openai_client = OpenAI(api_key=api_key)
@@ -109,14 +89,12 @@ def _client_for_key(api_key: str) -> OpenAI:
 
 
 def _strip_cjk(text: str) -> str:
-    """Remove CJK characters to keep exported learner text English-only."""
-
+    """Remove CJK characters to keep learner-facing text English-only."""
     return _CJK_RE.sub("", text).strip()
 
 
 def _lookup_affix(display_or_label: str) -> str | None:
     """Look up a short fallback gloss for common prefixes and suffixes."""
-
     part = display_or_label.strip()
     if not part:
         return None
@@ -127,9 +105,8 @@ def _lookup_affix(display_or_label: str) -> str | None:
     return None
 
 
-def validate_single_english_word(raw: str) -> tuple[str | None, str | None]:
+def _validate_single_english_word(raw: str) -> tuple[str | None, str | None]:
     """Validate and normalize the incoming word input."""
-
     word = (raw or "").strip()
     if not word:
         return None, "Please enter one English word."
@@ -143,9 +120,8 @@ def validate_single_english_word(raw: str) -> tuple[str | None, str | None]:
     return word, None
 
 
-def invalid_input_response(original_raw: str, warning: str) -> WordBreakdownResponse:
+def _invalid_input_response(original_raw: str, warning: str) -> WordBreakdownResponse:
     """Return a safe, schema-valid response for invalid user input."""
-
     display = (original_raw or "").strip() or "(empty)"
     return WordBreakdownResponse(
         word=display,
@@ -155,9 +131,8 @@ def invalid_input_response(original_raw: str, warning: str) -> WordBreakdownResp
     )
 
 
-def api_unavailable_response(word: str) -> WordBreakdownResponse:
+def _api_unavailable_response(word: str) -> WordBreakdownResponse:
     """Return a safe fallback when OpenAI is unavailable or parsing fails."""
-
     return WordBreakdownResponse(
         word=word,
         can_split=False,
@@ -168,7 +143,6 @@ def api_unavailable_response(word: str) -> WordBreakdownResponse:
 
 def _enrich_parts(parts: list[WordPart]) -> list[WordPart]:
     """Fill empty part meanings with lightweight local affix hints when possible."""
-
     enriched: list[WordPart] = []
     for part in parts:
         meaning = part.meaning
@@ -181,7 +155,6 @@ def _enrich_parts(parts: list[WordPart]) -> list[WordPart]:
 
 def _sanitize(resp: WordBreakdownResponse) -> WordBreakdownResponse:
     """Clean learner-facing text before sending it back to the caller."""
-
     return WordBreakdownResponse(
         word=resp.word,
         can_split=resp.can_split,
@@ -202,7 +175,6 @@ def _finalize_response(
     resp: WordBreakdownResponse, input_word: str
 ) -> WordBreakdownResponse:
     """Normalize the final model output and apply local post-processing."""
-
     if resp.word != input_word:
         resp = resp.model_copy(update={"word": input_word})
     resp = resp.model_copy(update={"parts": _enrich_parts(resp.parts)})
@@ -211,19 +183,16 @@ def _finalize_response(
 
 def analyze_word_with_openai(word: str) -> WordBreakdownResponse:
     """Call OpenAI Structured Outputs and return a validated response model."""
-
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.warning("OPENAI_API_KEY is not set")
-        return api_unavailable_response(word)
+        return _api_unavailable_response(word)
 
     client = _client_for_key(api_key)
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     max_tokens = int(os.getenv("OPENAI_MAX_TOKENS", "900"))
 
     try:
-        # Native Structured Outputs: the SDK derives a strict schema from the
-        # Pydantic model and returns `message.parsed` on success.
         completion = client.beta.chat.completions.parse(
             model=model,
             temperature=0,
@@ -238,28 +207,26 @@ def analyze_word_with_openai(word: str) -> WordBreakdownResponse:
         refusal = getattr(message, "refusal", None)
         if refusal:
             logger.warning("Structured output refusal: %s", refusal)
-            return api_unavailable_response(word)
+            return _api_unavailable_response(word)
         if message.parsed is None:
             logger.warning("Structured output returned no parsed payload")
-            return api_unavailable_response(word)
+            return _api_unavailable_response(word)
         parsed = message.parsed
     except Exception as exc:
         logger.exception("OpenAI structured output failed: %s", exc)
-        return api_unavailable_response(word)
+        return _api_unavailable_response(word)
 
     try:
         return _finalize_response(parsed, word)
     except ValidationError:
         logger.warning("Final validation failed")
-        return api_unavailable_response(word)
+        return _api_unavailable_response(word)
 
 
-@router.post("/word-breakdown", response_model=WordBreakdownResponse)
-def word_breakdown(body: WordBreakdownRequest) -> WordBreakdownResponse:
-    """API endpoint for the exported Word Helper feature."""
-
-    normalized, err = validate_single_english_word(body.word)
+def lookup_word_breakdown(raw: str) -> WordBreakdownResponse:
+    """Validate input, then return a safe word breakdown response."""
+    normalized, err = _validate_single_english_word(raw)
     if err:
-        return invalid_input_response(body.word, err)
+        return _invalid_input_response(raw, err)
     assert normalized is not None
     return analyze_word_with_openai(normalized)
