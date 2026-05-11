@@ -115,11 +115,11 @@ function onDragEnd() {
               <div
                 v-for="part in dictPopup.data.wordParts"
                 :key="part.form + part.type"
-                :class="['dict-part-row', `dict-part-row--${part.type?.toLowerCase()}`]"
+                :class="['dict-part-row', `dict-part-row--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]"
               >
                 <span class="dict-part-form">{{ part.form }}</span>
                 <span class="dict-part-meaning">{{ part.meaning }}</span>
-                <span :class="['dict-part-badge', `dict-part-badge--${part.type?.toLowerCase()}`]">
+                <span :class="['dict-part-badge', `dict-part-badge--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]">
                   {{ part.type }}
                 </span>
               </div>
@@ -253,10 +253,12 @@ function onDragEnd() {
   padding: 9px 12px; border-radius: 10px;
   border-left: 3px solid transparent;
 }
-.dict-part-row--prefix  { background: #fff1f2; border-left-color: #fda4af; }
-.dict-part-row--root    { background: #eff6ff; border-left-color: #93c5fd; }
-.dict-part-row--suffix  { background: #f0fdf4; border-left-color: #86efac; }
-.dict-part-row--infix   { background: #faf5ff; border-left-color: #d8b4fe; }
+.dict-part-row--prefix         { background: #fff1f2; border-left-color: #fda4af; }
+.dict-part-row--root           { background: #eff6ff; border-left-color: #93c5fd; }
+.dict-part-row--suffix         { background: #f0fdf4; border-left-color: #86efac; }
+.dict-part-row--infix          { background: #faf5ff; border-left-color: #d8b4fe; }
+.dict-part-row--base-word      { background: #fff7ed; border-left-color: #fdba74; }
+.dict-part-row--combining-form { background: #ecfeff; border-left-color: #67e8f9; }
 
 .dict-part-form    { font-size: 13px; font-weight: 800; color: #0f172a; min-width: 46px; flex-shrink: 0; }
 .dict-part-meaning { flex: 1; font-size: 13px; line-height: 1.5; color: #475569; }
@@ -268,10 +270,12 @@ function onDragEnd() {
   letter-spacing: 0.06em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0;
 }
-.dict-part-badge--prefix { background: #ffe4e6; color: #e11d48; }
-.dict-part-badge--root   { background: #dbeafe; color: #1d4ed8; }
-.dict-part-badge--suffix { background: #dcfce7; color: #15803d; }
-.dict-part-badge--infix  { background: #ede9fe; color: #7c3aed; }
+.dict-part-badge--prefix         { background: #ffe4e6; color: #e11d48; }
+.dict-part-badge--root           { background: #dbeafe; color: #1d4ed8; }
+.dict-part-badge--suffix         { background: #dcfce7; color: #15803d; }
+.dict-part-badge--infix          { background: #ede9fe; color: #7c3aed; }
+.dict-part-badge--base-word      { background: #ffedd5; color: #c2410c; }
+.dict-part-badge--combining-form { background: #cffafe; color: #0e7490; }
 
 /* Meaning from parts */
 .dict-parts-meaning {
