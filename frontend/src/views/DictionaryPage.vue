@@ -68,6 +68,8 @@ function handleKeydown(e) {
   if (e.key === 'Enter') handleSearch()
 }
 
+// Only show word parts when there is a real morpheme breakdown
+// (i.e. more than one part, OR a single part that is not just "base word")
 const hasWordParts        = computed(() => result.value?.wordParts?.length > 0)
 const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
 
@@ -312,11 +314,11 @@ function loadSaved(entry) {
               <div
                 v-for="part in result.wordParts"
                 :key="part.form + part.type"
-                :class="['result-part-row', `result-part-row--${part.type?.toLowerCase()}`]"
+                :class="['result-part-row', `result-part-row--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]"
               >
                 <span class="result-part-form">{{ part.form }}</span>
                 <span class="result-part-meaning">{{ part.meaning }}</span>
-                <span :class="['result-part-badge', `result-part-badge--${part.type?.toLowerCase()}`]">
+                <span :class="['result-part-badge', `result-part-badge--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]">
                   {{ part.type }}
                 </span>
               </div>
@@ -752,9 +754,12 @@ function loadSaved(entry) {
   padding: 12px 14px; border-radius: 12px;
   border-left: 3px solid transparent;
 }
-.result-part-row--prefix { background: rgba(255,241,242,0.9); border-left-color: #fda4af; }
-.result-part-row--root   { background: rgba(239,246,255,0.9); border-left-color: #93c5fd; }
-.result-part-row--suffix { background: rgba(240,253,244,0.9); border-left-color: #86efac; }
+.result-part-row--prefix         { background: #fff1f2; border-left-color: #fda4af; }
+.result-part-row--root           { background: #eff6ff; border-left-color: #93c5fd; }
+.result-part-row--suffix         { background: #f0fdf4; border-left-color: #86efac; }
+.result-part-row--infix          { background: #faf5ff; border-left-color: #d8b4fe; }
+.result-part-row--base-word      { background: #fff7ed; border-left-color: #fdba74; }
+.result-part-row--combining-form { background: #ecfeff; border-left-color: #67e8f9; }
 .result-part-row--infix  { background: rgba(250,245,255,0.9); border-left-color: #d8b4fe; }
 .result-part-form { font-size: 14px; font-weight: 800; color: #0f172a; min-width: 54px; flex-shrink: 0; }
 .result-part-meaning { flex: 1; font-size: 14px; line-height: 1.5; color: #475569; }
@@ -762,9 +767,12 @@ function loadSaved(entry) {
   font-size: 11px; font-weight: 800; padding: 4px 11px; border-radius: 999px;
   letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0;
 }
-.result-part-badge--prefix { background: #ffe4e6; color: #e11d48; }
-.result-part-badge--root   { background: #dbeafe; color: #1d4ed8; }
-.result-part-badge--suffix { background: #dcfce7; color: #15803d; }
+.result-part-badge--prefix         { background: #ffe4e6; color: #e11d48; }
+.result-part-badge--root           { background: #dbeafe; color: #1d4ed8; }
+.result-part-badge--suffix         { background: #dcfce7; color: #15803d; }
+.result-part-badge--infix          { background: #ede9fe; color: #7c3aed; }
+.result-part-badge--base-word      { background: #ffedd5; color: #c2410c; }
+.result-part-badge--combining-form { background: #cffafe; color: #0e7490; }
 .result-part-badge--infix  { background: #ede9fe; color: #7c3aed; }
 .result-parts-meaning { font-size: 15px; line-height: 1.78; color: #334155; margin: 0; font-style: italic; }
 
