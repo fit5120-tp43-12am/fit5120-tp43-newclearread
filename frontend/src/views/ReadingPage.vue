@@ -1455,6 +1455,20 @@ function dismissDictHint() {
       </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="footer-left">
+          <span class="footer-logo">Clearead</span>
+          <p class="footer-tagline">Built for minds that think differently.</p>
+        </div>
+        <nav class="footer-links">
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
+        </nav>
+        <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
+      </div>
+    </footer>
+
   </div>
 </template>
 
@@ -3078,4 +3092,24 @@ kbd {
    The .spin keyframe below is still needed for the loading spinners on this page. */
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Footer ── */
+.footer {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  padding: 52px 0;
+}
+.footer-inner {
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 24px;
+}
+.footer-left { display: flex; flex-direction: column; gap: 4px; }
+.footer-logo { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.footer-tagline { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0; }
+.footer-links { display: flex; gap: 28px; }
+.footer-link {
+  font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s;
+}
+.footer-link:hover { color: #fff; }
+.footer-copy { font-size: 13px; color: rgba(255,255,255,0.35); margin: 0; }
 </style>
