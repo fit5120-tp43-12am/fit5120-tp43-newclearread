@@ -158,14 +158,6 @@ function loadSaved(entry) {
 
     <!-- ── Hero header ── -->
     <header class="hero">
-      <!-- Decorative faded alphabet strip — typographic, not an icon -->
-      <div class="hero-alpha" aria-hidden="true">
-        <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span>
-        <span>F</span><span>G</span><span>H</span><span>I</span><span>J</span>
-        <span>K</span><span>L</span><span>M</span><span>N</span><span>O</span>
-        <span>P</span><span>Q</span><span>R</span><span>S</span><span>T</span>
-        <span>U</span><span>V</span><span>W</span><span>X</span><span>Y</span><span>Z</span>
-      </div>
 
       <div class="hero-content">
         <p class="hero-eyebrow">Word Lookup</p>
