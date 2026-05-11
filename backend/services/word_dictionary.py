@@ -9,7 +9,7 @@ import re
 from typing import Literal
 
 from openai import OpenAI
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,12 @@ class WordBreakdownResponse(BaseModel):
     simple_meaning: str = Field(..., description="Short English meaning of the word.")
     parts: list[WordPart] = Field(default_factory=list)
 
+    _source: str = PrivateAttr(default="openai")
+    _model: str | None = PrivateAttr(default=None)
+    _used_fallback: bool = PrivateAttr(default=False)
 
-_ONE_ENGLISH_WORD = re.compile(r"^[A-Za-z]+$")
+
+_ONE_ENGLISH_WORD = re.compile(r"^[A-Za-z]+(?:['-][A-Za-z]+)*$")
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 
 PREFIXES: dict[str, str] = {
@@ -73,7 +77,8 @@ Rules:
 3. Never split process into pro + cess.
 4. Use only English.
 5. Keep meanings short and learner-friendly.
-6. If the word is best treated as a whole, set can_split=false and return one base word part matching the whole word."""
+6. The input may include apostrophes or hyphens, such as don't or well-being.
+7. If the word is best treated as a whole, set can_split=false and return one base word part matching the whole word."""
 
 _openai_client: OpenAI | None = None
 _openai_client_key: str | None = None
@@ -105,17 +110,40 @@ def _lookup_affix(display_or_label: str) -> str | None:
     return None
 
 
+def set_processing_metadata(
+    resp: WordBreakdownResponse,
+    *,
+    source: str,
+    model: str | None,
+    used_fallback: bool,
+) -> WordBreakdownResponse:
+    """Attach server-side processing metadata without changing the model schema."""
+    resp._source = source
+    resp._model = model
+    resp._used_fallback = used_fallback
+    return resp
+
+
+def get_processing_metadata(resp: WordBreakdownResponse) -> dict:
+    """Return metadata that can be exposed in API responses."""
+    return {
+        "source": resp._source,
+        "model": resp._model,
+        "usedFallback": resp._used_fallback,
+    }
+
+
 def _validate_single_english_word(raw: str) -> tuple[str | None, str | None]:
     """Validate and normalize the incoming word input."""
     word = (raw or "").strip()
     if not word:
         return None, "Please enter one English word."
     if len(word) > 50:
-        return None, "Word is too long (maximum 50 letters)."
+        return None, "Word is too long (maximum 50 characters)."
     if not _ONE_ENGLISH_WORD.fullmatch(word):
         return (
             None,
-            "Only one English word is allowed: no spaces, digits, punctuation, or non-English letters.",
+            "Only one English word is allowed: letters may include internal apostrophes or hyphens, but no spaces, digits, or other punctuation.",
         )
     return word, None
 
@@ -123,21 +151,31 @@ def _validate_single_english_word(raw: str) -> tuple[str | None, str | None]:
 def _invalid_input_response(original_raw: str, warning: str) -> WordBreakdownResponse:
     """Return a safe, schema-valid response for invalid user input."""
     display = (original_raw or "").strip() or "(empty)"
-    return WordBreakdownResponse(
-        word=display,
-        can_split=False,
-        simple_meaning=warning,
-        parts=[],
+    return set_processing_metadata(
+        WordBreakdownResponse(
+            word=display,
+            can_split=False,
+            simple_meaning=warning,
+            parts=[],
+        ),
+        source="invalid_input",
+        model=None,
+        used_fallback=True,
     )
 
 
 def _api_unavailable_response(word: str) -> WordBreakdownResponse:
     """Return a safe fallback when OpenAI is unavailable or parsing fails."""
-    return WordBreakdownResponse(
-        word=word,
-        can_split=False,
-        simple_meaning="Word analysis is temporarily unavailable. Please try again later.",
-        parts=[],
+    return set_processing_metadata(
+        WordBreakdownResponse(
+            word=word,
+            can_split=False,
+            simple_meaning="Word analysis is temporarily unavailable. Please try again later.",
+            parts=[],
+        ),
+        source="fallback",
+        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        used_fallback=True,
     )
 
 
@@ -155,7 +193,7 @@ def _enrich_parts(parts: list[WordPart]) -> list[WordPart]:
 
 def _sanitize(resp: WordBreakdownResponse) -> WordBreakdownResponse:
     """Clean learner-facing text before sending it back to the caller."""
-    return WordBreakdownResponse(
+    sanitized = WordBreakdownResponse(
         word=resp.word,
         can_split=resp.can_split,
         simple_meaning=_strip_cjk(resp.simple_meaning),
@@ -168,6 +206,12 @@ def _sanitize(resp: WordBreakdownResponse) -> WordBreakdownResponse:
             )
             for part in resp.parts
         ],
+    )
+    return set_processing_metadata(
+        sanitized,
+        source=resp._source,
+        model=resp._model,
+        used_fallback=resp._used_fallback,
     )
 
 
@@ -211,7 +255,12 @@ def analyze_word_with_openai(word: str) -> WordBreakdownResponse:
         if message.parsed is None:
             logger.warning("Structured output returned no parsed payload")
             return _api_unavailable_response(word)
-        parsed = message.parsed
+        parsed = set_processing_metadata(
+            message.parsed,
+            source="openai",
+            model=model,
+            used_fallback=False,
+        )
     except Exception as exc:
         logger.exception("OpenAI structured output failed: %s", exc)
         return _api_unavailable_response(word)
