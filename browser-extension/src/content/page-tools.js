@@ -23,9 +23,16 @@
   const LENS_CLONE_REFRESH_THROTTLE_MS = 260;
   const LENS_SCROLL_MUTATION_GRACE_MS = 900;
   const LENS_MUTATION_SAFETY_WINDOW_MS = 2500;
-  const LENS_MUTATION_SAFETY_LIMIT = 120;
+  const LENS_MUTATION_SAFETY_LIMIT = 160;
+  const LENS_MAX_CLONE_ELEMENTS = 7000;
+  const LENS_MAX_DOCUMENT_EDGE_PX = 60000;
+  const LENS_MAX_DOCUMENT_AREA_PX = 90000000;
   const LENS_SAFETY_MESSAGE =
     "Lens stopped on this dynamic page. Try Highlight or Line guide.";
+  const LENS_COMPLEX_PAGE_MESSAGE =
+    "Lens may be too slow on this page. Try Highlight or Line guide.";
+  const LENS_START_FAILED_MESSAGE =
+    "Lens could not start on this page. Try Highlight or Line guide.";
   const OPEN_DYSLEXIC_FONT_FAMILY = "CleareadOpenDyslexic";
   const DEFAULT_LIGHT_PAGE_THEME = Object.freeze({
     name: "light",
@@ -131,7 +138,7 @@
   function requirePageContainer() {
     const container = getContainer();
     if (!container) {
-      throw new Error("Page tools are not available here.");
+      throw new Error("Page tools are unavailable here.");
     }
     return container;
   }
@@ -433,15 +440,15 @@
       return;
     }
 
-    const structuralMutationWeight = getLensStructuralMutationWeight(pageMutations);
+    const mutationWeight = getLensMutationWeight(pageMutations);
 
     const mutationLooksScrollDriven =
       getNow() - lastLensScrollAt <= LENS_SCROLL_MUTATION_GRACE_MS;
 
     if (
-      structuralMutationWeight > 0 &&
+      mutationWeight > 0 &&
       !mutationLooksScrollDriven &&
-      shouldTurnOffLensForRapidPageChanges(structuralMutationWeight)
+      shouldTurnOffLensForRapidPageChanges(mutationWeight)
     ) {
       setPageToolNotice("error", LENS_SAFETY_MESSAGE);
       disableReadingRuler();
@@ -472,6 +479,16 @@
       });
 
       return weight + changedElements.length;
+    }, 0);
+  }
+
+  function getLensMutationWeight(mutations) {
+    return mutations.reduce((weight, mutation) => {
+      if (mutation.type === "childList") {
+        return weight + Math.max(1, getLensStructuralMutationWeight([mutation]));
+      }
+
+      return weight + 1;
     }, 0);
   }
 
@@ -572,6 +589,38 @@
       document.body?.scrollHeight || 0,
       window.innerHeight
     );
+  }
+
+  function getLensPageComplexity() {
+    const container = getContainer();
+    const width = getDocumentWidth();
+    const height = getDocumentHeight();
+    const elementCount = container?.getElementsByTagName?.("*")?.length || 0;
+
+    return {
+      elementCount,
+      width,
+      height,
+      area: width * height,
+    };
+  }
+
+  function getLensReadinessMessage() {
+    if (!document.body) {
+      return LENS_START_FAILED_MESSAGE;
+    }
+
+    const complexity = getLensPageComplexity();
+    if (
+      complexity.elementCount > LENS_MAX_CLONE_ELEMENTS ||
+      complexity.width > LENS_MAX_DOCUMENT_EDGE_PX ||
+      complexity.height > LENS_MAX_DOCUMENT_EDGE_PX ||
+      complexity.area > LENS_MAX_DOCUMENT_AREA_PX
+    ) {
+      return LENS_COMPLEX_PAGE_MESSAGE;
+    }
+
+    return "";
   }
 
   function cleanLensClone(clone, pageTheme) {
@@ -829,11 +878,46 @@
       return disableReadingRuler();
     }
 
+    if (normalisedMode === "lens") {
+      const readinessMessage = getLensReadinessMessage();
+
+      if (readinessMessage) {
+        removeReadingRulerElement();
+        activeRulerMode = "none";
+        setPageToolNotice("error", readinessMessage);
+        return {
+          ok: true,
+          rulerMode: "none",
+          noticeType: "error",
+          message: readinessMessage,
+        };
+      }
+    }
+
     removeReadingRulerElement();
     activeRulerMode = normalisedMode;
 
-    const ruler = buildReadingRuler(normalisedMode);
-    requirePageContainer().appendChild(ruler);
+    let ruler;
+    try {
+      ruler = buildReadingRuler(normalisedMode);
+      requirePageContainer().appendChild(ruler);
+    } catch (error) {
+      removeReadingRulerElement();
+      activeRulerMode = "none";
+
+      if (normalisedMode === "lens") {
+        setPageToolNotice("error", LENS_START_FAILED_MESSAGE);
+        return {
+          ok: true,
+          rulerMode: "none",
+          noticeType: "error",
+          message: LENS_START_FAILED_MESSAGE,
+        };
+      }
+
+      throw error;
+    }
+
     rulerMoveHandler = (event) => setRulerPosition(event.clientX, event.clientY);
     document.addEventListener("pointermove", rulerMoveHandler, { passive: true });
 
@@ -1582,7 +1666,7 @@
     } catch (error) {
       sendResponse({
         ok: false,
-        message: error.message || "Page tools are not available here.",
+        message: error.message || "Page tools are unavailable here.",
       });
     }
 

@@ -1,125 +1,110 @@
 # Privacy And Permissions
 
-## Current Data Collection
+This document explains the Clearead browser extension data flow and permission use.
 
-The extension handles text that the user manually pastes into the Clearead side panel for summary and selected text that the user explicitly asks Clearead to look up from the opt-in right-click menu.
+## Data Handled By The Extension
 
-The page tools can modify the currently active webpage after the user activates Clearead from the toolbar popup and clicks a side panel control. The dictionary context menu is off by default. After the user enables it in the side panel, it can read only the selected text supplied by Chrome after the user clicks the Clearead right-click menu item.
+The extension handles data for user-triggered reading support features:
 
-The popup and side panel can open the full Clearead website at `https://clearead.azurewebsites.net/` when the user clicks Open website. This is a normal browser link, not a background data transfer.
+- Pasted text entered manually into the side panel for Summary.
+- One English word entered in the side panel Word box or selected through the opt-in right-click Dictionary menu.
+- Active-page DOM access used locally for visible page tools such as readable fonts, Highlight, Lens, and Line guide.
+- Session state for the right-click lookup toggle, recent page activation metadata, and short dictionary error notices.
 
-The extension does not collect browsing history, analytics, account information, cookies, files, screenshots, or telemetry. Page tools may inspect or clone the active page DOM locally inside the current tab only to apply visible reading support tools. That page content is not sent to the Clearead backend, not sent to third parties, and not stored.
-
-## Does Pasted Text Leave The Browser?
-
-Yes, but only after a clear user action.
-
-Pasted text is sent when the user runs Summary. It is not sent automatically while the user types, and the extension does not read webpage content automatically.
+Page tools may inspect or clone the active page DOM locally inside the current tab. Lens uses a local non-interactive clone so it can show magnified content under the pointer.
 
 ## Summary Request
 
-When Summary is clicked, the side panel sends:
+Summary runs after the user clicks Summary or presses Enter in the side panel text box.
 
 - Endpoint: `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/plugin/summary`
 - Request body: `{ "text": string }`
-- Text source: the text manually pasted into the side panel
-- Purpose: ask the Clearead backend to segment and summarize the pasted text into plain-English reading support output
+- Text source: text manually pasted into the side panel
+- Purpose: return a concise reading-support summary
+- Rendered response field: `overallSummary.text`
 
-The side panel displays only:
+## Dictionary Lookup
 
-- `overallSummary.text`
-
-The backend response can include extra fields such as `overallSummary.heading` and processing stats, but those extra fields are not rendered in the result panel.
-
-## Selected-Word Lookup
-
-The right-click dictionary menu is off by default. The side panel includes a Right-click lookup button that turns blue with a check only when the background service worker confirms the menu is enabled. When the user turns it on, the service worker creates the selected-text menu item for normal `http` and `https` webpages. When the user turns it off, the service worker removes that menu item.
-
-When the enabled user right-clicks a webpage selection and clicks the Clearead dictionary menu item, Chrome passes the selected text to the service worker as `info.selectionText`. The service worker normalizes whitespace, trims it, caps it at 80 characters, and confirms it is one English word before any backend request.
-
-Valid selected-word lookups are sent to the deployed Clearead backend dictionary route:
+Dictionary lookup runs after the user requests one word explanation through the side panel Word box or the enabled right-click menu.
 
 - Endpoint: `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/dictionary`
 - Request body: `{ "word": string }`
-- Text source: the one selected word or the one word typed into the side panel dictionary input
-- Purpose: ask the Clearead backend for a simple meaning and word-part explanation
+- Text source: one typed or selected English word
+- Purpose: return a simple meaning and word-part explanation
 
-The service worker injects the local packaged page-tool script only when needed so it can render the dictionary card on the clicked page. The selected word is not stored, and no surrounding page content is read. Sentence or phrase selections are rejected locally before a dictionary request. No lookup runs automatically while the user selects text. The side panel also has a one-line word input; when the user clicks Explain or presses Enter, the same one-word validation and backend dictionary route are used. The dictionary card has a local pronunciation button and no Save action. The only dictionary state saved is the enabled boolean in `chrome.storage.session`, which keeps the menu stable while the browser session is active and is cleared when the extension is disabled, reloaded, updated, or when the browser restarts.
+The right-click menu starts disabled. When enabled, Chrome provides `info.selectionText` after the user clicks "Explain with Clearead". The service worker trims the selected text, caps it at 50 characters, validates it as one English word, and then sends the lookup request. Phrase and sentence selections receive local guidance.
+
+The side panel Word box uses the same validation and backend route after the user clicks Explain or presses Enter.
 
 ## Page Tools
 
-Page tools run only after the user opens the toolbar popup and clicks Open Clearead for this page. The side panel may query the active page to sync button state, and user clicks on page-tool controls can apply or remove visible tools.
+Page tools run after the user opens Clearead for the current page and chooses a tool in the side panel.
 
-For the Font chooser and Reading ruler chooser, the extension service worker queries the active tab, rejects known restricted browser pages, and uses `chrome.scripting.executeScript` to inject the local packaged file `src/content/page-tools.js` into the active tab. The script adds or removes Clearead-owned style and overlay elements.
+- Readable fonts inject one Clearead-owned style tag.
+- Highlight and Line guide inject one Clearead-owned overlay.
+- Lens injects one Clearead-owned local magnifier overlay.
+- Original font and No ruler remove the Clearead-owned page changes.
 
-Readable font and reading ruler tools do not call the backend, do not send page content anywhere, do not read selected text, do not persist settings, and do not run automatically on every page. The reading ruler is local to the current page and disappears when toggled off or when the page reloads. Lens mode clones the current page DOM into a local, non-interactive overlay in the same tab, refreshes that clone after ordinary webpage DOM changes such as dropdown menus, removes scripts, inline event handlers, form actions, and embedded media sources from that clone, and enlarges the area under the pointer. Lens is intended for text pages. If a dynamic page changes too rapidly, Lens stops and shows: "Lens stopped on this dynamic page. Try Highlight or Line guide." The cloned content stays in the current page DOM only, is not stored, and is not sent anywhere.
+Lens is intended for text pages. It removes scripts, inline event handlers, form actions, and embedded media sources from its local clone. When a page is too large or changes too rapidly, Lens stops and guides the user to Highlight or Line guide.
 
-Unsupported pages are expected. Chrome blocks extension scripting on `chrome://`, `edge://`, `about:`, Chrome Web Store pages, extension pages, some PDF viewers, and other restricted contexts. The side panel shows a friendly unsupported-page error for these cases where possible.
+For direct PDF, DOCX, DOC, or TXT file URLs, the side panel guides users to the full Clearead website upload flow.
 
-For direct PDF, DOCX, DOC, or TXT file URLs, the side panel guides the user to the full Clearead website upload flow. The extension still does not read or upload the file automatically; the user must click Open website and upload the file there.
+For browser-restricted pages such as `chrome://`, `edge://`, `about:`, extension pages, Chrome Web Store pages, and some browser PDF viewers, the side panel shows an unsupported-page message.
 
-If a normal webpage fails because Clearead does not currently have temporary `activeTab` access, the side panel shows: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page." This keeps the explanation accurate without adding broader permissions.
+For fresh active-tab access needs on ordinary webpages, the side panel says: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
 
-## Backend-Side Processing
+## Backend Processing
 
-The extension sends pasted Summary text and explicit one-word dictionary lookups only to the shared Clearead backend origin. The website frontend and extension both use the same backend services for these user-triggered requests. The extension itself does not perform AI processing or call OpenAI, third-party AI APIs, analytics services, or remote dictionary services directly.
+The extension sends Summary text and Dictionary words to the shared Clearead backend origin listed above. The website frontend and the extension both use the shared backend services for these user-triggered requests.
 
-After a Summary request reaches the Clearead backend, the plugin summary route performs the full-document summary flow only. It does not need the website block segmentation or block-level summary result for the extension. After a dictionary request reaches the Clearead backend, the backend performs the existing dictionary word-breakdown flow. API keys and secrets for those services, if any, belong on the backend side and must not be stored in the extension.
+The backend may use Clearead-configured server-side model providers, including OpenAI, to generate summaries and word explanations. API keys and model credentials belong on the backend side.
 
-The deployed backend origin is currently the Azure backend URL found in workflow config. The deployed website origin is currently `https://clearead.azurewebsites.net/`. Before release, the final production backend origin, website origin, backend retention and logging behavior, user-facing privacy policy wording, and Chrome Web Store data disclosure still need review.
+The deployed backend origin is currently the Azure backend URL found in workflow config. The deployed website origin is currently `https://clearead.azurewebsites.net/`. Before release, the team should confirm production backend origin, backend retention behavior, public privacy policy wording, and Chrome Web Store data disclosure.
 
 ## Website Link
 
-Open website links in the popup and side panel point to `https://clearead.azurewebsites.net/`. The extension does not request host permission for this website because opening a user-clicked link does not require permission to read or change that website.
+Open website links in the popup and side panel point to `https://clearead.azurewebsites.net/`. The link opens as a normal user-clicked browser tab.
 
 ## Storage
 
-The extension does not save pasted text, selected text, or dictionary words. It uses `chrome.storage.session` only for session state: one right-click dictionary enabled boolean and a recent page activation tab/window/time record used to keep page-tool state sync stable across Manifest V3 service worker sleep. It does not use `chrome.storage.local`, `chrome.storage.sync`, localStorage, indexedDB, cookies, or a custom cache for pasted content, selected text, page content, summaries, dictionary results, or page-tool preferences. Page-tool button state is synchronized by querying the current active page, not by storing page content or preferences.
+The extension uses `chrome.storage.session` for:
 
-## Secrets And Remote Code
+- The right-click Dictionary enabled boolean.
+- Recent tab/window/time metadata for page-tool state sync.
+- Short dictionary error notices after right-click lookup failures.
 
-The extension does not include API keys, access tokens, secrets, analytics IDs, or private credentials.
+Chrome clears session storage when the extension is disabled, reloaded, updated, or when the browser restarts.
 
-All side panel and page-tool code is packaged locally with the extension. The extension does not load remote executable JavaScript, use `eval`, or inject remote scripts into webpages.
+## Packaged Code And Assets
 
-The OpenDyslexic font mode uses local WOFF2 font files packaged with the extension under `public/fonts/`. These files are exposed as web-accessible font resources only so the injected page style can load the font on normal webpages. This does not expose user text or executable code.
+All extension UI, scripts, icons, and OpenDyslexic WOFF2 files are packaged locally. The OpenDyslexic font files are declared as web-accessible resources so injected page CSS can load them on normal webpages.
 
 ## Current Permissions
 
 ### `sidePanel`
 
-Clearead requests `sidePanel` so it can use Chrome's side panel API and open the reading support panel when the user clicks the popup activation button.
+Clearead uses Chrome's side panel API for the reading support panel.
 
 ### `activeTab`
 
-Clearead requests `activeTab` so a user action can grant temporary access to the current tab for page tools. This avoids requesting access to every website.
+Clearead uses temporary current-tab access after user action for page reading tools.
 
 ### `scripting`
 
-Clearead requests `scripting` so it can programmatically inject the local packaged page-tool script into the active tab only after the user opens Clearead for the page and uses or syncs page tools.
+Clearead uses programmatic injection for the local packaged page-tool script after user action.
 
 ### `contextMenus`
 
-Clearead requests `contextMenus` so it can add one opt-in selected-text right-click menu item: Explain with Clearead. The item is created only after the user enables the side panel Right-click lookup button, and it is limited to selection context on normal `http` and `https` webpages. Selected text is read only when the user clicks that Clearead menu item.
+Clearead uses one opt-in selected-text right-click item: Explain with Clearead.
 
 ### `storage`
 
-Clearead requests `storage` so it can use `chrome.storage.session` for one boolean: whether the user enabled the right-click dictionary menu in the current browser session. Pasted text, selected text, page content, summaries, and page-tool state are not stored.
+Clearead uses `chrome.storage.session` for the current-session feature state listed above.
 
 ### `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`
 
-Clearead requests this narrow host permission so the extension can send user-submitted pasted text for Summary and explicit one-word dictionary lookups to the shared Clearead backend.
+Clearead uses this backend host permission for Summary and Dictionary requests.
 
-This permission is limited to the deployed backend origin currently used for the shared Clearead service. It is not a permission to read webpages.
+## Permission Scope
 
-## Permissions Not Requested
-
-Clearead does not request:
-
-- `<all_urls>`
-- broad host permissions
-- `tabs`
-- clipboard permissions
-- static `content_scripts`
-
-Future permissions should be added only if an implemented feature has a clear need and matching documentation.
+The current manifest permission set is limited to the side panel UI, temporary active-tab page tools, local script injection, one opt-in context menu, current-session feature state, packaged font loading, and the deployed Clearead backend.

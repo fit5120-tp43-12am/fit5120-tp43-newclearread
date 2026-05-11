@@ -6,6 +6,8 @@ logs
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+browser-extension/dist/
+browser-extension/node_modules/
 
 # Python backend and bytecode
 backend/venv/
@@ -37,9 +39,5 @@ ai/lora_training/**/*.jsonl
 # OS
 .DS_Store
 
-# Claude Code (local only)
-.claude/
-
-# Local work logs (do not publish)
-frontend/WORKLOG.md
+# Local development artifacts
 *.docx

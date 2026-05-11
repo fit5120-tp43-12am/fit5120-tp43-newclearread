@@ -58,7 +58,7 @@ backend/
 ├── repositories/     # Database access
 ├── utils/            # Utilities
 │
-└── venv/             # Virtual environment (do not commit,this is already added to .gitignore.)
+└── venv/             # Local virtual environment
 
 ## Simple explanation:
 routes: API endpoints
@@ -79,7 +79,7 @@ frontend/
 │   └── main.js       
 │
 ├── public/
-├── node_modules/     # do not commit
+├── node_modules/     # Local dependencies
 └── vite.config.js
 
 ## Frontend & Backend

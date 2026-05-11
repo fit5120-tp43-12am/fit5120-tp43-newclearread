@@ -2,7 +2,7 @@
 
 Last updated: 2026-05-11
 
-This is a development testing log for the Clearead browser extension. It records validation commands, manual checks, known gaps, and regression items. It is not a final QA sign-off.
+This development testing log records validation commands, manual checks, known gaps, and regression items for the Clearead browser extension.
 
 ## Standard Local Checks
 
@@ -25,8 +25,8 @@ rg -n "<all_urls>|\\*://\\*/\\*|content_scripts|chrome\\.storage\\.local|chrome\
 
 Notes:
 
-- `npm run validate` is defined, but the local PowerShell environment previously did not have `npm` on PATH, so the equivalent `node scripts/validate-extension.js` command has been used.
-- `git diff --check` may show Windows line-ending warnings. Those are not whitespace errors.
+- `npm run validate` is defined. The equivalent `node scripts/validate-extension.js` command is useful in PowerShell environments where `npm` is outside PATH.
+- `git diff --check` may show Windows line-ending warnings. Treat those warnings as line-ending noise after confirming there are no whitespace error lines.
 
 ## Validator Coverage
 
@@ -40,9 +40,9 @@ The validation script currently checks:
 - Required packaged icons and PNG dimensions.
 - Allowed extension permissions only.
 - Narrow deployed backend host permission only.
-- No static `content_scripts`.
+- Static `content_scripts` absence.
 - Required local source files.
-- Classic background service worker without static `import` or `export`.
+- Classic background service worker syntax.
 - Common unsafe source patterns, including HTML string injection APIs, `eval`, `new Function`, remote JavaScript URLs, non-session extension storage, localStorage, and credential-like names.
 
 ## Manual Chrome Checks Performed
@@ -51,7 +51,7 @@ Foundation:
 
 - Loaded `browser-extension/` as an unpacked extension.
 - Confirmed side panel could open.
-- Confirmed Phase 1 placeholder workflow loaded.
+- Confirmed Phase 1 initial workflow loaded.
 
 Text processing workflow:
 
@@ -82,12 +82,12 @@ Dictionary:
 - Confirmed right-click dictionary is default-off.
 - Confirmed enabling the side panel Right-click lookup button creates the selected-text context menu item.
 - Confirmed disabling removes the context menu item.
-- Confirm Right-click lookup button state is loaded from the real background/session state, and failed updates do not leave the button falsely active.
+- Confirm Right-click lookup button state is loaded from the real background/session state, and failed updates keep the button aligned with background state.
 - Confirm the one-line dictionary word input accepts one English word, rejects phrases or sentences before a backend request, and shows a backend dictionary card after Explain or Enter.
-- Confirm the side panel dictionary Explain flow sends only the validated word to the deployed Clearead dictionary backend and does not store it.
+- Confirm the side panel dictionary Explain flow sends only the validated word to the deployed Clearead dictionary backend.
 - Confirmed selected text is capped, validated as one English word, and only then sent to the deployed Clearead dictionary backend after the user clicks the context menu item.
 - Recent dictionary UI target: selected text opens a large card with Simple meaning, Word parts, Meaning from parts, pronunciation, and close controls.
-- Confirm that the dictionary card does not include a Save action.
+- Confirm that the dictionary card omits Save.
 - Confirm dictionary card stays compact, uses a speech-bubble tail near the selected word, supports two or more word-part rows, and closes when clicking outside the card.
 - Confirm the right-click dictionary card shows a Looking up state before the backend result replaces it.
 
@@ -113,7 +113,7 @@ Side panel state sync:
 - With Lens active, navigate within the same tab, such as from Unit to Grades on a learning site, and confirm the side panel changes back to No ruler if the page removed the Lens overlay.
 - Click No ruler and confirm the overlay disappears and the button state changes.
 - Confirm Highlight and Line guide keep the whole ruler rectangle transparent, use blue top/bottom borders with blue glow fading outward, and dim the page outside the ruler slightly.
-- On a dark-background webpage, confirm Highlight and Line guide remain visible and Lens keeps the page's dark surface instead of turning into a white panel.
+- On a dark-background webpage, confirm Highlight and Line guide remain visible and Lens preserves the page's dark surface.
 - Reload the extension while a page tool is visible, then reopen Clearead from the toolbar popup and confirm state sync recovers from the existing page DOM.
 - Open the side panel without a current page connection and confirm it says: "In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
 - Open a direct PDF, DOCX, DOC, or TXT file URL and confirm it says: "File pages may not support page tools. Click Open website to upload the file."
@@ -123,10 +123,10 @@ Lens regression:
 - Reload the extension and refresh the target webpage before testing.
 - Select Lens.
 - Confirm the magnifier follows the pointer horizontally and vertically.
-- Confirm the magnifier does not show extracted multi-line text or duplicated rows.
+- Confirm the magnifier shows a single local magnified page view.
 - Confirm Lens remains readable on dark-background webpages.
 - Confirm ordinary webpage dropdown menus remain visible inside Lens after the menu opens.
-- Confirm it does not block page clicks because the overlay uses `pointer-events: none`.
+- Confirm page clicks pass through the overlay because it uses `pointer-events: none`.
 - Confirm disabling the ruler removes the lens overlay.
 - Test after scrolling halfway down a long page.
 - Confirm the Reading ruler section says: "Best on text pages. If Lens looks blank, try Highlight or Line guide."
@@ -139,25 +139,25 @@ Background service worker regression:
 - Clear extension errors.
 - Reload the extension.
 - Confirm no new `Cannot use import statement outside a module` error appears.
-- Confirm `service-worker.js` starts as a classic worker without static imports.
+- Confirm `service-worker.js` starts with classic worker syntax.
 
 Chrome Store readiness regression:
 
-- Confirm no broad host permissions.
-- Confirm no remote executable code.
-- Confirm no static content scripts.
-- Confirm no text, selected text, or page content is stored.
+- Confirm host permissions stay narrow.
+- Confirm executable code is packaged locally.
+- Confirm page-tool injection remains programmatic.
+- Confirm storage contains only session state.
 - Confirm pasted text network calls only go to the deployed Clearead backend after Summary is run.
 - Confirm dictionary network calls send only a validated one-word `{ "word": string }` request to the deployed Clearead backend after Explain, Enter, or the right-click menu item.
 
 ## Known Current Gaps
 
-- Final Chrome Web Store listing text has not been written.
-- Final public privacy policy has not been written.
+- Chrome Web Store listing and privacy field text exists in `docs/chrome-store-submission.md`; final dashboard copy/paste review is still pending.
+- Public privacy policy text exists in `docs/privacy-policy.md`; public hosting URL is still pending.
 - Backend retention/logging behavior still needs confirmation.
-- Lens usability still needs more manual testing across different websites.
-- No automated browser test suite exists for the unpacked extension UI.
-- No final packaged ZIP audit has been completed.
+- Lens has manual smoke-test coverage from the release review pass; broader cross-site regression testing is still recommended.
+- Automated browser test coverage for the unpacked extension UI remains future work.
+- Final packaged ZIP audit remains pending.
 
 ## Test Evidence Locations
 

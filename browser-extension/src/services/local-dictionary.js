@@ -1,4 +1,4 @@
-const MAX_LOOKUP_TERM_CHARS = 80;
+const MAX_LOOKUP_TERM_CHARS = 50;
 const SINGLE_LOOKUP_WORD_PATTERN = /^[a-z]+(?:['-][a-z]+)*$/i;
 
 export function normaliseLookupTerm(term) {

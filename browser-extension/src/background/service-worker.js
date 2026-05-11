@@ -1,4 +1,4 @@
-const MAX_LOOKUP_TERM_CHARS = 80;
+const MAX_LOOKUP_TERM_CHARS = 50;
 const BACKEND_API_BASE_URL =
   "https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net";
 const DICTIONARY_ENDPOINT = "/api/dictionary";
@@ -193,10 +193,12 @@ const OPEN_SIDE_PANEL_REQUEST_TYPE = "clearead:open-side-panel";
 const MARK_PAGE_ACTIVATION_REQUEST_TYPE = "clearead:mark-page-activation";
 const SET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:set-dictionary-enabled";
 const GET_DICTIONARY_ENABLED_REQUEST_TYPE = "clearead:get-dictionary-enabled";
+const DICTIONARY_NOTICE_TYPE = "clearead:dictionary-notice";
 const PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE = "clearead:page-tool-state-maybe-changed";
 const PAGE_TOOL_SCRIPT = "src/content/page-tools.js";
 const DICTIONARY_CONTEXT_MENU_ID = "clearead-explain-selection";
 const DICTIONARY_ENABLED_STORAGE_KEY = "cleareadDictionaryEnabled";
+const DICTIONARY_NOTICE_STORAGE_KEY = "cleareadDictionaryNotice";
 const PAGE_TOOL_ACTIVATION_STORAGE_KEY = "cleareadPageToolActivation";
 const NORMAL_PAGE_URL_PATTERNS = ["http://*/*", "https://*/*"];
 const BROWSER_RESTRICTED_PAGE_MESSAGE =
@@ -206,7 +208,7 @@ const FILE_PAGE_MESSAGE =
 const ACTIVE_TAB_ACCESS_MESSAGE =
   "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page.";
 const GENERIC_PAGE_TOOL_MESSAGE =
-  "This page is not supported. Try a text page or click Clearead again.";
+  "Clearead tools are unavailable on this page. Try a text page or click Clearead again.";
 const PAGE_TOOL_RECONNECT_MESSAGE =
   "Not connected. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page.";
 const RECENT_PAGE_ACTIVATION_MS = 120000;
@@ -331,6 +333,65 @@ async function writeDictionaryEnabled(enabled) {
   await chrome.storage.session.set({
     [DICTIONARY_ENABLED_STORAGE_KEY]: Boolean(enabled),
   });
+}
+
+function notifyDictionaryNotice(notice) {
+  chrome.runtime.sendMessage(
+    {
+      type: DICTIONARY_NOTICE_TYPE,
+      notice,
+    },
+    () => {
+      chrome.runtime.lastError;
+    }
+  );
+}
+
+function ignoreChromeActionResult(possiblePromise) {
+  possiblePromise?.catch?.(() => {});
+}
+
+function showDictionaryFailureBadge() {
+  ignoreChromeActionResult(chrome.action.setBadgeBackgroundColor({ color: "#dc2626" }));
+  ignoreChromeActionResult(chrome.action.setBadgeText({ text: "!" }));
+  ignoreChromeActionResult(chrome.action.setTitle({ title: "Clearead dictionary needs attention" }));
+
+  globalThis.setTimeout(() => {
+    ignoreChromeActionResult(chrome.action.setBadgeText({ text: "" }));
+    ignoreChromeActionResult(chrome.action.setTitle({ title: "Open Clearead" }));
+  }, 6000);
+}
+
+async function writeDictionaryNotice(type, message) {
+  const notice = {
+    type: type || "error",
+    message,
+    createdAt: Date.now(),
+  };
+
+  await chrome.storage.session.set({
+    [DICTIONARY_NOTICE_STORAGE_KEY]: notice,
+  });
+  notifyDictionaryNotice(notice);
+
+  if (notice.type === "error") {
+    showDictionaryFailureBadge();
+  }
+}
+
+async function readAndClearDictionaryNotice() {
+  const storedValues = await chrome.storage.session.get(DICTIONARY_NOTICE_STORAGE_KEY);
+  const notice = storedValues[DICTIONARY_NOTICE_STORAGE_KEY];
+  await chrome.storage.session.remove(DICTIONARY_NOTICE_STORAGE_KEY);
+
+  if (!notice?.message) {
+    return null;
+  }
+
+  return {
+    type: notice.type || "error",
+    message: notice.message,
+  };
 }
 
 function removeDictionaryContextMenu() {
@@ -498,7 +559,8 @@ function isMissingContentScriptError(error) {
   const normalizedMessage = String(error?.message || "").toLowerCase();
 
   return (
-    normalizedMessage.includes("receiving end does not exist") ||
+    (normalizedMessage.includes("receiving end") &&
+      normalizedMessage.includes("exist")) ||
     normalizedMessage.includes("could not establish connection") ||
     normalizedMessage.includes("no receiving end")
   );
@@ -627,7 +689,7 @@ async function handlePageToolRequest(message) {
         }
 
         throw new Error(
-          injectedResponse?.message || "Page tools are not available here."
+          injectedResponse?.message || "Page tools are unavailable here."
         );
       }
 
@@ -645,7 +707,7 @@ async function handlePageToolRequest(message) {
         return existingResponse;
       }
 
-      throw new Error(existingResponse?.message || "Page tools are not available here.");
+      throw new Error(existingResponse?.message || "Page tools are unavailable here.");
     } catch (error) {
       if (!isMissingContentScriptError(error)) {
         throw error;
@@ -667,7 +729,7 @@ async function handlePageToolRequest(message) {
     const response = await sendPageToolCommand(tab.id, message);
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Page tools are not available here.");
+      throw new Error(response?.message || "Page tools are unavailable here.");
     }
 
     return response;
@@ -727,7 +789,7 @@ async function showDictionaryPopover(tab, selectedText) {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Dictionary is not available here.");
+      throw new Error(response?.message || "Dictionary is unavailable here.");
     }
   } catch (error) {
     throw new Error(normalisePageToolError(error, tab));
@@ -774,10 +836,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === GET_DICTIONARY_ENABLED_REQUEST_TYPE) {
     syncDictionaryContextMenuFromSession()
-      .then((enabled) => {
+      .then(async (enabled) => {
+        const notice = await readAndClearDictionaryNotice();
         sendResponse({
           ok: true,
           enabled,
+          ...(notice ? { notice } : {}),
         });
       })
       .catch((error) => {
@@ -846,6 +910,16 @@ chrome.runtime.onStartup.addListener(() => {
   });
 });
 
+function getDictionaryContextMenuFailureMessage(error) {
+  const message = String(error?.message || "").trim();
+
+  if (message && message !== GENERIC_PAGE_TOOL_MESSAGE) {
+    return message;
+  }
+
+  return "Dictionary did not work on this page. Try one English word on a normal webpage, or use the Word box in Clearead.";
+}
+
 async function handleDictionaryContextMenuClick(info, tab) {
   if (info.menuItemId !== DICTIONARY_CONTEXT_MENU_ID) {
     return;
@@ -865,6 +939,10 @@ async function handleDictionaryContextMenuClick(info, tab) {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   handleDictionaryContextMenuClick(info, tab).catch((error) => {
     console.error("Clearead could not show the dictionary popover.", error);
+    writeDictionaryNotice(
+      "error",
+      getDictionaryContextMenuFailureMessage(error)
+    ).catch(() => {});
   });
 });
 

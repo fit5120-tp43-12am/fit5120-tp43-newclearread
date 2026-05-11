@@ -25,15 +25,15 @@ The extension uses these Manifest V3 pieces:
 - `action.default_title`: gives the toolbar action a clear title.
 - `action.default_popup`: points to the small activation popup.
 - `action.default_icon`: points the toolbar action to the same local packaged icon set.
-- `background.service_worker`: points to the extension service worker. It is kept as a classic worker so Chrome reloads do not depend on service-worker module parsing.
+- `background.service_worker`: points to the extension service worker. It uses classic-worker syntax for stable Chrome reload behavior.
 - `side_panel.default_path`: points Chrome to the side panel HTML file.
 - `permissions: ["sidePanel", "activeTab", "scripting", "contextMenus", "storage"]`: allows the side panel API, temporary active-tab access after user action, programmatic injection of local page-tool code, an opt-in right-click selected-text dictionary menu item, and session-only state for the Right-click lookup button plus recent page activation tracking.
 - `host_permissions: ["https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*"]`: allows the extension to call the shared Clearead backend for Summary and explicit one-word Dictionary lookup.
 - `web_accessible_resources`: exposes only the packaged OpenDyslexic WOFF2 files to normal `http` and `https` pages so injected readable-font CSS can load the local font files.
 
-No static `content_scripts`, `tabs`, clipboard permissions, broad host permissions, or remote executable code are used.
+The manifest surface is limited to the popup, side panel, classic service worker, local programmatic page-tool injection, packaged assets, session state, the opt-in context menu, and the deployed Clearead backend host permission.
 
-Opening `https://clearead.azurewebsites.net/` is a normal external link from extension UI. It does not require a website host permission and does not let the extension inspect that website tab.
+Opening `https://clearead.azurewebsites.net/` uses a normal user-clicked external link from extension UI. The website tab remains a regular Chrome tab outside extension inspection.
 
 ## Summary Flow
 
@@ -46,10 +46,10 @@ Opening `https://clearead.azurewebsites.net/` is a normal external link from ext
 7. The side panel counts words and characters locally.
 8. Empty input and text over 50,000 characters are rejected before any backend request.
 9. When the user runs Summary, `src/services/backend-api.js` sends `POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/plugin/summary` with `{ "text": string }`.
-10. The result panel renders the returned `overallSummary.text` above the Page tools section. It does not display `overallSummary.heading`.
+10. The result panel renders the returned `overallSummary.text` above the Page tools section.
 11. Backend validation and network failures are shown in the side panel as error states.
 
-Text is not sent automatically while typing, and page content is not read automatically.
+Text leaves the browser only when the user runs Summary. Page-tool behavior starts only after explicit user activation.
 
 ## Website Link Flow
 
@@ -57,7 +57,7 @@ Text is not sent automatically while typing, and page content is not read automa
 2. The link target comes from `CLEAREAD_WEBSITE_URL` in `src/shared/config.js`.
 3. The current website URL is `https://clearead.azurewebsites.net/`, verified from the frontend Azure Web App workflow.
 4. The browser opens the website as a normal tab after the user clicks the link.
-5. The extension does not inject scripts into that tab unless the user separately activates Clearead on that page and clicks a page tool.
+5. Page-tool injection on the website follows the same separate Clearead activation and page-tool click flow as any other normal webpage.
 
 ## Page Tools Flow
 
@@ -71,7 +71,7 @@ Text is not sent automatically while typing, and page content is not read automa
 8. The injected script applies or removes Clearead-owned page elements and returns a status message to the side panel.
 9. If Chrome rejects scripting, the service worker classifies the error as a browser-restricted page, a temporary active-tab access problem, or a generic page-tool failure before sending the message back to the side panel.
 
-The page-tool script is not registered in `manifest.json` as a static content script. It is packaged locally and runs only after clear user actions: activating Clearead from the popup, then opening the side panel for that page or clicking a side panel page-tool control. It does not send page text to the backend, persist settings, or scan pages automatically. Lens mode builds a local non-interactive clone of the current page DOM inside the same tab so it can render a magnified view; that local clone is refreshed after page DOM changes such as dropdown menus, and scripts, inline event handlers, form actions, and embedded media sources are removed from the clone. Lens is scoped to text-page support. If a page changes too frequently while Lens is active, the content script turns Lens off and returns: "Lens stopped on this dynamic page. Try Highlight or Line guide."
+The page-tool script is packaged locally and injected programmatically after clear user actions: activating Clearead from the popup, then opening the side panel for that page or clicking a side panel page-tool control. Page-tool work stays local to the active page. Lens mode builds a local non-interactive clone of the current page DOM inside the same tab so it can render a magnified view; that local clone is refreshed after page DOM changes such as dropdown menus, and scripts, inline event handlers, form actions, and embedded media sources are removed from the clone. Lens is scoped to text-page support. If a page changes too frequently while Lens is active, the content script turns Lens off and returns: "Lens stopped on this dynamic page. Try Highlight or Line guide."
 
 ## Right-Click Dictionary Flow
 
@@ -81,7 +81,7 @@ The page-tool script is not registered in `manifest.json` as a static content sc
 4. The service worker stores only the enabled boolean in `chrome.storage.session` and creates the selected-text context menu item for normal `http` and `https` webpages.
 5. The user selects one English word on a normal webpage.
 6. The user right-clicks the selection and clicks Explain with Clearead.
-7. The service worker reads only `info.selectionText`, normalizes whitespace, caps it at 80 characters, and confirms it is one English word.
+7. The service worker reads only `info.selectionText`, normalizes whitespace, caps it at 50 characters, and confirms it is one English word.
 8. If the selection is a phrase, sentence, or unsupported token, the content script shows a dictionary card message asking the user to select one English word.
 9. The service worker injects `src/content/page-tools.js` into the clicked tab if needed.
 10. For valid words, the service worker first sends a `show-dictionary-popover` command with a loading explanation so the page card says Looking up.
@@ -90,13 +90,13 @@ The page-tool script is not registered in `manifest.json` as a static content sc
 13. The content script renders a Clearead-owned dictionary card near the current selection, or in a safe viewport position if no selection rectangle is available.
 14. When the user turns the side panel Right-click lookup button off, the service worker removes the Clearead context menu item.
 
-Selected text is sent to the Clearead backend only after the user clicks the Clearead menu item and only if the selected text validates as one English word. It is not stored and is not expanded into surrounding page content. The side panel word input is one line; clicking Explain or pressing Enter uses the same one-word validation and `POST /api/dictionary` route, then renders the returned dictionary card inside the panel without storing the word. The current card includes a local pronunciation button and no Save action. The context menu is limited with `documentUrlPatterns` for normal webpages and is not backed by static content scripts or broad host permissions. The dictionary enabled boolean is saved in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep but is cleared when the extension is disabled, reloaded, updated, or when the browser restarts. A recent page activation tab/window/time record is also saved in `chrome.storage.session` so page-tool state sync can recover after service worker sleep without storing page content.
+Selected text is sent to the Clearead backend only after the user clicks the Clearead menu item and only if the selected text validates as one English word. The lookup uses only the selected word supplied by Chrome. The side panel word input is one line; clicking Explain or pressing Enter uses the same one-word validation and `POST /api/dictionary` route, then renders the returned dictionary card inside the panel. The current card includes a local pronunciation button and omits Save. The context menu is limited with `documentUrlPatterns` for normal webpages and uses programmatic injection after user action. The dictionary enabled boolean is saved in `chrome.storage.session`, so the menu can survive Manifest V3 service worker sleep and resets when the extension is disabled, reloaded, updated, or when the browser restarts. A recent page activation tab/window/time record is also saved in `chrome.storage.session` so page-tool state sync can recover after service worker sleep while page content remains local to the tab.
 
 ## Page Tool Behaviors
 
-Readable font adds one removable style tag with id `clearead-readable-style`. The style targets common text containers such as `body`, `main`, `article`, `section`, paragraphs, list items, headings, labels, tables, links, inline spans, and form controls. The side panel offers Original, Verdana, OpenDyslexic, and Calibri. OpenDyslexic loads from packaged local WOFF2 font files, not from a remote font service. Choosing a readable font also increases line height, word spacing, and letter spacing so the change is visible and easier to scan. Choosing Original removes only this Clearead-owned style tag.
+Readable font adds one removable style tag with id `clearead-readable-style`. The style targets common text containers such as `body`, `main`, `article`, `section`, paragraphs, list items, headings, labels, tables, links, inline spans, and form controls. The side panel offers Original, Verdana, OpenDyslexic, and Calibri. OpenDyslexic loads from packaged local WOFF2 font files. Choosing a readable font also increases line height, word spacing, and letter spacing so the change is visible and easier to scan. Choosing Original removes only this Clearead-owned style tag.
 
-Reading ruler adds one overlay element with id `clearead-reading-ruler-v2` and removes older `clearead-reading-ruler` overlays if found. The side panel offers No ruler, Highlight, Lens, and Line guide. The active ruler is fixed-position, pointer-following, visually dims the rest of the page, and uses `pointer-events: none` so page clicks can pass through. Lens follows the pointer horizontally and vertically, showing a local magnified clone of the page area under the pointer. While Lens is active, a local mutation observer marks the clone for throttled refresh when ordinary webpage DOM changes. A safety threshold turns Lens off on pages that trigger too many DOM changes in a short window, such as some animated or media-heavy pages. The side panel also warns: "Best on text pages. If Lens looks blank, try Highlight or Line guide." Choosing No ruler removes the overlay and listeners. The active font and ruler are not persisted across page reloads, but the side panel can query the current active page to keep its buttons aligned with the actual page state.
+Reading ruler adds one overlay element with id `clearead-reading-ruler-v2` and removes older `clearead-reading-ruler` overlays if found. The side panel offers No ruler, Highlight, Lens, and Line guide. The active ruler is fixed-position, pointer-following, visually dims the rest of the page, and uses `pointer-events: none` so page clicks can pass through. Lens follows the pointer horizontally and vertically, showing a local magnified clone of the page area under the pointer. While Lens is active, a local mutation observer marks the clone for throttled refresh when ordinary webpage DOM changes. A safety threshold turns Lens off on pages that trigger too many DOM changes in a short window, such as some animated or media-heavy pages. The side panel also warns: "Best on text pages. If Lens looks blank, try Highlight or Line guide." Choosing No ruler removes the overlay and listeners. The active font and ruler are page-local state, and the side panel can query the current active page to keep its buttons aligned with the actual page state.
 
 ## Unsupported Pages
 
@@ -106,7 +106,7 @@ For direct PDF, DOCX, DOC, or TXT file URLs, the expected side panel message is:
 
 Normal webpages can also fail if Chrome has not granted Clearead temporary `activeTab` access for the current page. In that case, the expected side panel message is: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
 
-For unexpected page-tool failures, the fallback message is: "This page is not supported. Try a text page or click Clearead again."
+For unexpected page-tool failures, the fallback message is: "Clearead tools are unavailable on this page. Try a text page or click Clearead again."
 
 ## Backend Contract
 
@@ -129,9 +129,9 @@ The response shape returned by the plugin summary route is:
 }
 ```
 
-The extension displays only `overallSummary.text` from this response in the side panel Result section. It does not render `overallSummary.heading` or processing stats.
+The extension displays only `overallSummary.text` from this response in the side panel Result section.
 
-After the extension Summary request reaches the Clearead backend, the plugin summary route performs the full-document summary flow only. It does not need the website block segmentation or block-level summary result for the extension. Dictionary requests use the existing backend dictionary route and word-breakdown flow. Any API keys or secrets for those services belong on the backend side and must not be stored in extension files. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
+After the extension Summary request reaches the Clearead backend, the plugin summary route performs the full-document summary flow for the extension. Dictionary requests use the existing backend dictionary route and word-breakdown flow. API keys or secrets for those services belong on the backend side. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
 
 Because the background service worker is intentionally kept as a classic worker, the backend dictionary URL is duplicated in `src/background/service-worker.js` while side panel API calls use `src/shared/config.js`. If the backend origin changes, update both places and rerun the extension validator.
 

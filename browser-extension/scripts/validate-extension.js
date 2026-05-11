@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { extname, join, relative } from "node:path";
 
 const root = process.cwd();
 const manifestPath = join(root, "manifest.json");
@@ -28,17 +28,7 @@ const requiredFontPaths = Object.freeze([
   "public/fonts/OpenDyslexic-Italic.woff2",
   "public/fonts/OpenDyslexic-BoldItalic.woff2",
 ]);
-const sourceFilesToScan = Object.freeze([
-  "src/background/service-worker.js",
-  "src/content/page-tools.js",
-  "src/popup/popup.html",
-  "src/popup/popup.js",
-  "src/services/backend-api.js",
-  "src/services/local-dictionary.js",
-  "src/shared/config.js",
-  "src/sidepanel/sidepanel.html",
-  "src/sidepanel/sidepanel.js",
-]);
+const sourceFileExtensionsToScan = new Set([".css", ".html", ".js"]);
 const forbiddenSourcePatterns = Object.freeze([
   {
     pattern: /\b(?:innerHTML|outerHTML|insertAdjacentHTML)\b/,
@@ -46,11 +36,11 @@ const forbiddenSourcePatterns = Object.freeze([
   },
   {
     pattern: /\beval\s*\(/,
-    message: "eval() is not allowed in extension source.",
+    message: "eval() is blocked in extension source.",
   },
   {
     pattern: /\bnew\s+Function\b/,
-    message: "new Function() is not allowed in extension source.",
+    message: "new Function() is blocked in extension source.",
   },
   {
     pattern: /\blocalStorage\b/,
@@ -62,11 +52,19 @@ const forbiddenSourcePatterns = Object.freeze([
   },
   {
     pattern: /<script[^>]+src=["']https?:\/\//i,
-    message: "Remote script tags are not allowed.",
+    message: "Remote script tags are blocked.",
   },
   {
     pattern: /https?:\/\/[^\s"'<>]+\.js\b/i,
-    message: "Remote JavaScript URLs are not allowed.",
+    message: "Remote JavaScript URLs are blocked.",
+  },
+  {
+    pattern: /@import\s+(?:url\()?["']?https?:\/\//i,
+    message: "Remote CSS imports are blocked.",
+  },
+  {
+    pattern: /url\(["']?https?:\/\//i,
+    message: "Remote CSS assets are blocked in packaged extension UI.",
   },
   {
     pattern: /\b(?:api[_-]?key|access[_-]?token|secret|password)\b/i,
@@ -78,6 +76,54 @@ function requireValue(condition, message) {
   if (!condition) {
     errors.push(message);
   }
+}
+
+function toRelativePath(filePath) {
+  return relative(root, filePath).replace(/\\/g, "/");
+}
+
+function collectSourceFiles(directoryPath) {
+  if (!existsSync(directoryPath)) {
+    return [];
+  }
+
+  const files = [];
+
+  for (const entryName of readdirSync(directoryPath)) {
+    const entryPath = join(directoryPath, entryName);
+    const stats = statSync(entryPath);
+
+    if (stats.isDirectory()) {
+      files.push(...collectSourceFiles(entryPath));
+      continue;
+    }
+
+    if (stats.isFile() && sourceFileExtensionsToScan.has(extname(entryPath))) {
+      files.push(toRelativePath(entryPath));
+    }
+  }
+
+  return files.sort();
+}
+
+function extractStringConst(source, constName) {
+  const match = source.match(new RegExp(`const\\s+${constName}\\s*=\\s*["']([^"']+)["']`));
+  return match?.[1] || "";
+}
+
+function extractExportedStringConst(source, constName) {
+  const match = source.match(new RegExp(`export\\s+const\\s+${constName}\\s*=\\s*["']([^"']+)["']`));
+  return match?.[1] || "";
+}
+
+function extractNumberConst(source, constName) {
+  const match = source.match(new RegExp(`const\\s+${constName}\\s*=\\s*(\\d+)`));
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function extractExportedNumberConst(source, constName) {
+  const match = source.match(new RegExp(`export\\s+const\\s+${constName}\\s*=\\s*(\\d+)`));
+  return match ? Number.parseInt(match[1], 10) : null;
 }
 
 function isBroadHostPermission(pattern) {
@@ -210,6 +256,72 @@ function validateSourceFile(filePath) {
   }
 }
 
+function validateSharedConstants() {
+  const sharedConfigPath = join(root, "src", "shared", "config.js");
+  const serviceWorkerPath = join(root, "src", "background", "service-worker.js");
+  const localDictionaryPath = join(root, "src", "services", "local-dictionary.js");
+  const sidePanelHtmlPath = join(root, "src", "sidepanel", "sidepanel.html");
+
+  if (
+    !existsSync(sharedConfigPath) ||
+    !existsSync(serviceWorkerPath) ||
+    !existsSync(localDictionaryPath) ||
+    !existsSync(sidePanelHtmlPath)
+  ) {
+    return;
+  }
+
+  const sharedConfigSource = readFileSync(sharedConfigPath, "utf8");
+  const serviceWorkerSource = readFileSync(serviceWorkerPath, "utf8");
+  const localDictionarySource = readFileSync(localDictionaryPath, "utf8");
+  const sidePanelHtml = readFileSync(sidePanelHtmlPath, "utf8");
+
+  const sharedBackendUrl = extractExportedStringConst(
+    sharedConfigSource,
+    "BACKEND_API_BASE_URL"
+  );
+  const serviceWorkerBackendUrl = extractStringConst(
+    serviceWorkerSource,
+    "BACKEND_API_BASE_URL"
+  );
+
+  requireValue(
+    sharedBackendUrl && sharedBackendUrl === serviceWorkerBackendUrl,
+    "The side panel and background service worker must use the same backend base URL."
+  );
+
+  const localDictionaryMax = extractNumberConst(
+    localDictionarySource,
+    "MAX_LOOKUP_TERM_CHARS"
+  );
+  const serviceWorkerDictionaryMax = extractNumberConst(
+    serviceWorkerSource,
+    "MAX_LOOKUP_TERM_CHARS"
+  );
+  const dictionaryInputMax = Number.parseInt(
+    sidePanelHtml.match(/id="dictionary-term"[\s\S]*?maxlength="(\d+)"/)?.[1] || "",
+    10
+  );
+
+  requireValue(
+    Number.isInteger(localDictionaryMax) &&
+      localDictionaryMax === serviceWorkerDictionaryMax &&
+      localDictionaryMax === dictionaryInputMax,
+    "Dictionary word length limits must match in local validation, service worker, and side panel input."
+  );
+
+  const maxSummaryChars = extractExportedNumberConst(sharedConfigSource, "MAX_TEXT_CHARS");
+  const summaryInputMax = Number.parseInt(
+    sidePanelHtml.match(/id="source-text"[\s\S]*?maxlength="(\d+)"/)?.[1] || "",
+    10
+  );
+
+  requireValue(
+    Number.isInteger(maxSummaryChars) && maxSummaryChars === summaryInputMax,
+    "Summary text length limit must match shared config and side panel input."
+  );
+}
+
 requireValue(manifest.manifest_version === 3, "manifest_version must be 3.");
 requireValue(manifest.name, "manifest.name is required.");
 requireValue(manifest.version, "manifest.version is required.");
@@ -279,7 +391,7 @@ if (Array.isArray(manifest.host_permissions)) {
   for (const permission of manifest.host_permissions) {
     requireValue(
       !isBroadHostPermission(permission),
-      `Broad host permission is not allowed: ${permission}.`
+      `Broad host permission is blocked: ${permission}.`
     );
     requireValue(
       allowedHostPermissions.has(permission),
@@ -346,9 +458,14 @@ requireValue(
   "The popup activation script must exist."
 );
 
+const sourceFilesToScan = collectSourceFiles(join(root, "src"));
+requireValue(sourceFilesToScan.length > 0, "Extension source files must be present.");
+
 for (const sourceFile of sourceFilesToScan) {
   validateSourceFile(sourceFile);
 }
+
+validateSharedConstants();
 
 if (errors.length > 0) {
   console.error("Extension validation failed:");

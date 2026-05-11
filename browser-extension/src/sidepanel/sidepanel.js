@@ -32,6 +32,7 @@ const SIDE_PANEL_FONT_CLASSES = [
   "font-mode-calibri",
 ];
 const PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE = "clearead:page-tool-state-maybe-changed";
+const DICTIONARY_NOTICE_TYPE = "clearead:dictionary-notice";
 const PAGE_TOOL_STATE_SYNC_DEBOUNCE_MS = 180;
 const PAGE_TOOL_STATE_WATCH_INTERVAL_MS = 2000;
 const FONT_MODE_LABELS = Object.freeze({
@@ -616,7 +617,7 @@ async function runPageTool(action, loadingMessage, payload = {}) {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Tool is not available here.");
+      throw new Error(response?.message || "Tool is unavailable here.");
     }
 
     setPageToolsStatus(response.noticeType || "success", response.message || "Done.");
@@ -625,7 +626,7 @@ async function runPageTool(action, loadingMessage, payload = {}) {
     setPageToolsStatus(
       "error",
       error.message ||
-        "This page is not supported. Try a text page or click Clearead again."
+        "Clearead tools are unavailable on this page. Try a text page or click Clearead again."
     );
     return null;
   } finally {
@@ -677,7 +678,7 @@ async function syncPageToolState() {
     });
 
     if (!response?.ok) {
-      throw new Error(response?.message || "Page tools are not available here.");
+      throw new Error(response?.message || "Page tools are unavailable here.");
     }
 
     if (response.syncUnavailable) {
@@ -720,10 +721,15 @@ async function loadDictionaryEnabledState() {
     }
 
     updateDictionaryButtonState(response.enabled);
-    setDictionaryStatus(
-      response.enabled ? "success" : "neutral",
-      response.enabled ? "On for selected words." : "Off for right-clicks."
-    );
+
+    if (response.notice?.message) {
+      setDictionaryStatus(response.notice.type || "error", response.notice.message);
+    } else {
+      setDictionaryStatus(
+        response.enabled ? "success" : "neutral",
+        response.enabled ? "On for selected words." : "Off for right-clicks."
+      );
+    }
   } catch (error) {
     updateDictionaryButtonState(false);
     setDictionaryStatus(
@@ -888,6 +894,10 @@ openWebsiteLink.href = CLEAREAD_WEBSITE_URL;
 chrome.runtime.onMessage.addListener((message) => {
   if (message?.type === PAGE_TOOL_STATE_MAYBE_CHANGED_TYPE) {
     schedulePageToolStateSync();
+  }
+
+  if (message?.type === DICTIONARY_NOTICE_TYPE && message.notice?.message) {
+    setDictionaryStatus(message.notice.type || "error", message.notice.message);
   }
 
   return false;
