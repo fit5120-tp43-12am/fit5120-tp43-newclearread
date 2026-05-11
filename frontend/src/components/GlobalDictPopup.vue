@@ -6,9 +6,39 @@
  * Shown when the user double-clicks any word anywhere on the site.
  * State is shared via useGlobalDict() composable (singleton refs).
  */
+import { ref } from 'vue'
 import { useGlobalDict } from '../composables/useGlobalDict'
 
 const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlobalDict()
+
+// ── Drag logic ────────────────────────────────────────────────────────────────
+const dragging = ref(false)
+let dragOffsetX = 0
+let dragOffsetY = 0
+
+function onDragStart(e) {
+  if (!dictPopup.value) return
+  dragging.value = true
+  dragOffsetX = e.clientX - dictPopup.value.x
+  dragOffsetY = e.clientY - dictPopup.value.y
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', onDragEnd)
+}
+
+function onDragMove(e) {
+  if (!dragging.value || !dictPopup.value) return
+  const CARD_W = 340
+  const CARD_H = 80  // minimum visible strip
+  const newX = Math.max(0, Math.min(e.clientX - dragOffsetX, window.innerWidth  - CARD_W))
+  const newY = Math.max(0, Math.min(e.clientY - dragOffsetY, window.innerHeight - CARD_H))
+  dictPopup.value = { ...dictPopup.value, x: newX, y: newY }
+}
+
+function onDragEnd() {
+  dragging.value = false
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+}
 </script>
 
 <template>
@@ -16,7 +46,7 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
     <div
       v-if="dictPopup"
       class="dict-backdrop"
-      @click.self="closeDictPopup"
+      @click.self="!dragging && closeDictPopup()"
     >
       <div
         class="dict-card"
@@ -24,8 +54,8 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
         @click.stop
       >
 
-        <!-- Header: word + TTS + close -->
-        <div class="dict-header">
+        <!-- Header: word + TTS + close (drag handle) -->
+        <div class="dict-header" @mousedown.prevent="onDragStart" :class="{ 'dict-header--dragging': dragging }">
           <h3 class="dict-word">{{ dictPopup.word }}</h3>
           <div class="dict-header-actions">
             <button class="dict-tts-btn" title="Listen" @click="speakDictWord()">
@@ -130,13 +160,17 @@ const { dictPopup, speakDictWord, closeDictPopup, isSaved, toggleSave } = useGlo
   overflow: hidden;
 }
 
-/* Header */
+/* Header — doubles as drag handle */
 .dict-header {
   display: flex; align-items: center;
   padding: 18px 18px 14px 20px;
   border-bottom: 1px solid #f1f5f9;
   gap: 8px;
+  cursor: grab;
+  user-select: none;
 }
+.dict-header--dragging { cursor: grabbing; }
+.dict-header:active { cursor: grabbing; }
 .dict-word {
   flex: 1;
   font-size: 22px; font-weight: 800;
