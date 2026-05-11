@@ -42,8 +42,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link nav-link--active">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Understand Dyslexia</RouterLink></li>
-          <li><RouterLink to="/training" class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
+          <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -61,8 +62,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
         <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
-        <li><RouterLink to="/training" class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
+        <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
       </ul>
     </div>
 
@@ -200,6 +202,151 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       </div><!-- training-inner -->
       </div><!-- training-panel -->
       </div><!-- container -->
+    </section>
+
+    <!-- ── Dictionary feature promo ── -->
+    <section class="section-dict">
+      <div class="container">
+        <div class="dict-panel">
+
+          <!-- Alphabet backdrop — covers the whole panel, fades right toward the text -->
+          <div class="dict-visual-alpha" aria-hidden="true">
+            <span style="top:-8%;   left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
+            <span style="top:-6%;   left:42%;  font-size:130px; transform:rotate(12deg)">A</span>
+            <span style="top:26%;   left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
+            <span style="top:22%;   left:44%;  font-size:118px; transform:rotate(-14deg)">N</span>
+            <span style="top:54%;   left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
+            <span style="top:52%;   left:40%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <span style="bottom:-12%;left:-2%;  font-size:140px; transform:rotate(18deg)">S</span>
+            <span style="bottom:-10%;left:38%;  font-size:155px; transform:rotate(-8deg)">Y</span>
+          </div>
+          <!-- Gradient fade — transparent left → white right, covers right half of panel -->
+          <div class="dict-visual-fade" aria-hidden="true"></div>
+
+          <div class="dict-inner">
+
+            <!-- Left: animated double-click guide -->
+            <div class="dict-visual" aria-hidden="true">
+
+              <!-- Step 1: text passage with target word -->
+              <div class="demo-scene">
+
+                <!-- Text card -->
+                <div class="demo-text-card">
+                  <p class="demo-passage">
+                    Often hard to
+                    <span class="demo-target-word">comprehend</span>
+                    complex terms.
+                  </p>
+                  <!-- Hint label -->
+                  <p class="demo-hint-label">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                      <circle cx="6" cy="6" r="5" stroke="#6366f1" stroke-width="1.3"/>
+                      <path d="M6 4v3M6 8.5v.2" stroke="#6366f1" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    Double-click any word to look it up
+                  </p>
+                </div>
+
+                <!-- Animated cursor -->
+                <div class="demo-cursor">
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <path d="M4 2l14 9-7 1-4 7z" fill="white" stroke="#4f46e5" stroke-width="1.5" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+
+                <!-- Double-click ripple (fires twice) -->
+                <div class="demo-ripple demo-ripple--1"></div>
+                <div class="demo-ripple demo-ripple--2"></div>
+
+                <!-- Popup card that slides in after double-click -->
+                <div class="demo-popup">
+                  <div class="demo-popup-header">
+                    <span class="demo-popup-word">comprehend</span>
+                    <span class="demo-popup-star">★</span>
+                  </div>
+                  <div class="demo-popup-section">
+                    <div class="demo-popup-label">Simple meaning</div>
+                    <p class="demo-popup-meaning">To understand something fully and clearly.</p>
+                  </div>
+                  <div class="demo-popup-section">
+                    <div class="demo-popup-label">Word parts</div>
+                    <div class="demo-popup-parts">
+                      <div class="demo-popup-part demo-popup-part--prefix">
+                        <span class="demo-popup-form">com-</span>
+                        <span class="demo-popup-desc">together</span>
+                        <span class="demo-popup-badge demo-popup-badge--prefix">Prefix</span>
+                      </div>
+                      <div class="demo-popup-part demo-popup-part--root">
+                        <span class="demo-popup-form">prehend</span>
+                        <span class="demo-popup-desc">to grasp</span>
+                        <span class="demo-popup-badge demo-popup-badge--root">Root</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Right: text content -->
+            <div class="dict-text">
+              <p class="eyebrow">Built-in Dictionary</p>
+              <h2 class="section-title">Understand every word,<br>right where you read</h2>
+              <p class="dict-desc">
+                Stuck on a word? Just double-click it — anywhere on the site.
+                Clearead breaks it into prefixes, roots, and suffixes so you can
+                understand not just this word, but every word built the same way.
+              </p>
+              <ul class="dict-bullets">
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Plain-English definition — no jargon
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Word parts: prefix, root, and suffix explained
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Save words to review later on the Dictionary page
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Listen to the pronunciation with one tap
+                </li>
+              </ul>
+              <RouterLink to="/dictionary" class="btn-dict">
+                Open Dictionary
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </RouterLink>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ── Footer ── -->
@@ -532,6 +679,335 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .preview-caption {
   font-size: 12.5px; color: #9ca3af;
   font-weight: 500; margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DICTIONARY PROMO SECTION
+   ═══════════════════════════════════════════════════════ */
+.section-dict {
+  padding: 80px 0 96px;
+}
+.dict-panel {
+  position: relative;
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 28px;
+  box-shadow: 0 4px 32px rgba(99,102,241,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  overflow: hidden;
+  padding: 52px 56px;
+}
+.dict-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+/* ── Visual mock ── */
+.dict-visual {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 310px;
+}
+/* Alphabet confined to left half of panel only */
+.dict-visual-alpha {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 50%;
+  pointer-events: none; user-select: none;
+  overflow: hidden;
+}
+.dict-visual-alpha span {
+  position: absolute;
+  font-weight: 900; letter-spacing: -0.02em;
+  color: rgba(99,102,241,0.08); line-height: 1;
+}
+/* Fades letters only in the left half — stops at 50% so right text is unaffected */
+.dict-visual-fade {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 50%;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 50%,
+    rgba(255,255,255,0.7) 75%,
+    rgba(255,255,255,1) 100%
+  );
+}
+.dict-mock-card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 320px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 16px 48px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+.dict-mock-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 16px 12px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.dict-mock-word {
+  font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em;
+}
+.dict-mock-actions { display: flex; align-items: center; gap: 6px; }
+.dict-mock-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #f8fafc;
+}
+.dict-mock-section {
+  padding: 12px 18px;
+  border-bottom: 1px solid #f8fafc;
+}
+.dict-mock-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;
+}
+.dict-mock-meaning {
+  font-size: 13.5px; line-height: 1.6; color: #1e293b; margin: 0;
+}
+.dict-mock-parts { display: flex; flex-direction: column; gap: 6px; }
+.dict-mock-part {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+.dict-mock-part--prefix { background: #fff1f2; border-left-color: #fda4af; }
+.dict-mock-part--root   { background: #eff6ff; border-left-color: #93c5fd; }
+.dict-mock-form { font-size: 12px; font-weight: 800; color: #0f172a; min-width: 40px; flex-shrink: 0; }
+.dict-mock-desc { flex: 1; font-size: 12px; color: #475569; }
+.dict-mock-badge {
+  font-size: 9.5px; font-weight: 800; padding: 2px 7px;
+  border-radius: 999px; letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+}
+.dict-mock-badge--prefix { background: #ffe4e6; color: #e11d48; }
+.dict-mock-badge--root   { background: #dbeafe; color: #1d4ed8; }
+.dict-mock-hint {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 18px;
+  font-size: 11.5px; color: #6366f1; font-weight: 600;
+  background: #f5f3ff;
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATED DEMO SCENE (double-click guide)
+   ═══════════════════════════════════════════════════════ */
+.demo-scene {
+  position: relative;
+  width: 100%;
+  /* tall enough to show popup below the text card; no clip so popup isn't cut */
+  height: 310px;
+}
+
+/* ── Text card ──
+   Fixed width + centered so "comprehend" lands at a predictable x/y.
+   At 280px card → 244px content area; "Often hard to " (14 chars ≈ 95px)
+   + "comprehend" bold (~84px) = 179px — all on ONE line.
+   comprehend centre ≈ left: 95+42+18 = 155px from card left.
+   card left in a ~436px column = (436-280)/2 = 78px from scene left.
+   → comprehend centre in scene ≈ x: 78+155 = 233px, y: 16+16+12 = 44px */
+.demo-text-card {
+  position: absolute;
+  top: 16px;
+  left: 50%; transform: translateX(-50%);
+  width: 280px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  z-index: 2;
+}
+.demo-passage {
+  font-size: 14px; line-height: 1.72;
+  color: #374151; margin: 0 0 10px;
+}
+.demo-target-word {
+  font-weight: 800; color: #4f46e5;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(99,102,241,0.45);
+}
+.demo-hint-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: #6366f1; font-weight: 600;
+  margin: 0;
+  animation: demo-hint-pulse 7s ease-in-out infinite;
+}
+
+/* ── Cursor — starts bottom-right, glides up to "comprehend" ──
+   Target: scene x≈233 y≈44; cursor tip is top-left of SVG, so
+   translate(223px, 34px) puts the tip near the word centre. */
+.demo-cursor {
+  position: absolute;
+  top: 0; left: 0;
+  width: 22px; height: 22px;
+  pointer-events: none; z-index: 10;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25));
+  animation: demo-cursor-travel 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Ripples — centred on "comprehend" in the scene ── */
+.demo-ripple {
+  position: absolute;
+  top: 44px; left: 233px;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 2px solid #6366f1;
+  pointer-events: none; z-index: 8;
+  opacity: 0;
+}
+.demo-ripple--1 { animation: demo-ripple-burst 7s ease-out infinite; }
+.demo-ripple--2 { animation: demo-ripple-burst 7s ease-out 0.28s infinite; }
+
+/* ── Popup card — appears below the word, fully inside 300px scene ──
+   top: 90px gives ~210px for popup (header+2 sections ≈ 155px, fits OK).
+   left aligned with card left edge (78px) for a natural feel. */
+.demo-popup {
+  position: absolute;
+  top: 95px; left: 50%; transform-origin: top center;
+  width: 248px;
+  margin-left: -124px;   /* centre under comprehend */
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 14px 42px rgba(0,0,0,0.13);
+  overflow: hidden;
+  z-index: 9;
+  opacity: 0;
+  animation: demo-popup-appear 7s cubic-bezier(0.34, 1.3, 0.64, 1) infinite;
+}
+.demo-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.demo-popup-word {
+  font-size: 18px; font-weight: 800;
+  color: #0f172a; letter-spacing: -0.03em;
+}
+.demo-popup-star {
+  font-size: 15px; color: #f59e0b;
+}
+.demo-popup-section {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f8fafc;
+}
+.demo-popup-section:last-child { border-bottom: none; }
+.demo-popup-label {
+  font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #94a3b8; margin-bottom: 6px;
+}
+.demo-popup-meaning {
+  font-size: 12.5px; line-height: 1.6; color: #1e293b; margin: 0;
+}
+.demo-popup-parts { display: flex; flex-direction: column; gap: 5px; }
+.demo-popup-part {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 9px; border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+.demo-popup-part--prefix { background: #fff1f2; border-left-color: #fda4af; }
+.demo-popup-part--root   { background: #eff6ff; border-left-color: #93c5fd; }
+.demo-popup-form  { font-size: 11px; font-weight: 800; color: #0f172a; min-width: 44px; flex-shrink: 0; }
+.demo-popup-desc  { flex: 1; font-size: 11px; color: #475569; }
+.demo-popup-badge {
+  font-size: 9px; font-weight: 800;
+  padding: 2px 6px; border-radius: 999px;
+  letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+}
+.demo-popup-badge--prefix { background: #ffe4e6; color: #e11d48; }
+.demo-popup-badge--root   { background: #dbeafe; color: #1d4ed8; }
+
+/* ── Keyframes ── */
+
+/* Cursor: starts bottom-right, glides to comprehend at ≈(223px, 34px).
+   280px-wide card centred in ~436px column → card left ≈ 78px.
+   "Often hard to " ≈ 95px + 18px padding → comprehend starts at x≈191px;
+   half-word-width ≈ 42px → centre x≈233px. Cursor tip offset: -10px → 223px. */
+@keyframes demo-cursor-travel {
+  0%        { transform: translate(330px, 230px); opacity: 0; }
+  6%        { opacity: 1; }
+  26%       { transform: translate(223px, 34px); }   /* arrives at word */
+  28%       { transform: translate(223px, 34px); }   /* pause */
+  30%       { transform: translate(221px, 32px); }   /* click 1 press */
+  31%       { transform: translate(223px, 34px); }   /* release */
+  33%       { transform: translate(221px, 32px); }   /* click 2 press */
+  34%       { transform: translate(223px, 34px); }   /* release */
+  76%       { transform: translate(223px, 34px); opacity: 1; }
+  86%       { transform: translate(223px, 34px); opacity: 0; }
+  100%      { transform: translate(330px, 230px); opacity: 0; }
+}
+
+/* Ripple burst — fires at ~29–38% of the 7s loop */
+@keyframes demo-ripple-burst {
+  0%, 29%   { transform: scale(0); opacity: 0; }
+  30%       { transform: scale(0); opacity: 0.75; }
+  38%       { transform: scale(3.2); opacity: 0; }
+  100%      { transform: scale(0); opacity: 0; }
+}
+
+/* Popup: pops in at 40%, stays until 78%, then fades out */
+@keyframes demo-popup-appear {
+  0%, 39%   { opacity: 0; transform: translateY(10px) scale(0.92); }
+  46%       { opacity: 1; transform: translateY(0)    scale(1); }
+  76%       { opacity: 1; transform: translateY(0)    scale(1); }
+  86%       { opacity: 0; transform: translateY(-5px) scale(0.96); }
+  100%      { opacity: 0; transform: translateY(10px) scale(0.92); }
+}
+
+/* Hint label subtle pulse */
+@keyframes demo-hint-pulse {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+/* ── Text side ── */
+.dict-text { display: flex; flex-direction: column; gap: 20px; }
+.dict-desc {
+  font-size: 16px; line-height: 1.75; color: #4b5563; margin: 0;
+}
+.dict-bullets {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.dict-bullets li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 15px; color: #374151; line-height: 1.5;
+}
+.btn-dict {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 26px; border-radius: 999px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff; font-size: 15px; font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(99,102,241,0.30);
+  transition: transform 0.15s, box-shadow 0.2s;
+  align-self: flex-start;
+}
+.btn-dict:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(99,102,241,0.38);
+}
+
+@media (max-width: 860px) {
+  .section-dict { padding: 64px 0; }
+  .dict-panel { padding: 36px 24px; border-radius: 20px; }
+  .dict-inner { grid-template-columns: 1fr; gap: 36px; }
+  .dict-visual { order: -1; min-height: 260px; }
+  .demo-scene { height: 260px; }
+  .demo-popup { width: 210px; }
 }
 
 /* ═══════════════════════════════════════════════════════

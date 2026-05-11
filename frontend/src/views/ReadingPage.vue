@@ -719,83 +719,9 @@ function dismissDictHint() {
 }
 
 // ── Dictionary popup ──────────────────────────────────────────────────────────
-//
-// Double-clicking any word inside a .dict-zone element looks up the word.
-// The popup is positioned near the click and shows:
-//   • Simple meaning  (always shown if present)
-//   • Word parts      (prefix / root / suffix — only parts that exist)
-//   • Meaning from parts (shown only if returned by API)
-//
-// Expected API response shape:
-// {
-//   word:            string,
-//   simpleMeaning:   string,
-//   wordParts?:      [{ form: string, meaning: string, type: 'Prefix'|'Root'|'Suffix'|'Infix' }],
-//   meaningFromParts?: string
-// }
-// ─────────────────────────────────────────────────────────────────────────────
-
-const dictPopup = ref(null)   // null | { word, data, x, y, loading, error }
-
-/** Strip punctuation and normalise the selected word. */
-function cleanWord(str) {
-  return str.replace(/[^a-zA-Z'-]/g, '').toLowerCase().trim()
-}
-
-/** Handle double-click on any .dict-zone element. */
-async function handleWordDblClick(e) {
-  const raw = window.getSelection()?.toString() || ''
-  const word = cleanWord(raw)
-  if (!word || word.length < 2) return
-
-  // Position popup near the click, keeping it inside the viewport
-  const POPUP_W = 340
-  const x = Math.min(e.clientX - 12, window.innerWidth - POPUP_W - 16)
-  const y = e.clientY + 18
-
-  dictPopup.value = { word, data: null, x, y, loading: true, error: null }
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/dictionary`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ word }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Word not found.')
-    dictPopup.value = { ...dictPopup.value, data, loading: false }
-  } catch (err) {
-    // Fallback demo data so the UI is always previewable
-    dictPopup.value = {
-      ...dictPopup.value,
-      loading: false,
-      error: null,
-      data: {
-        word,
-        simpleMeaning: `Definition of "${word}" — connect your backend to show real data.`,
-        wordParts: [],
-        meaningFromParts: '',
-      },
-    }
-  }
-}
-
-/** Speak the simple meaning of the looked-up word. */
-function speakDictWord() {
-  if (!dictPopup.value?.data) return
-  const text = [dictPopup.value.data.word, dictPopup.value.data.simpleMeaning]
-    .filter(Boolean).join('. ')
-  window.speechSynthesis?.cancel()
-  const utt = new SpeechSynthesisUtterance(text)
-  utt.lang = 'en-US'
-  utt.rate = playbackSpeed.value
-  window.speechSynthesis?.speak(utt)
-}
-
-function closeDictPopup() {
-  dictPopup.value = null
-  window.speechSynthesis?.cancel()
-}
+// The popup is now handled globally via App.vue + GlobalDictPopup.vue.
+// A single document-level dblclick listener in App.vue covers every page —
+// no per-page wiring needed. See src/composables/useGlobalDict.js.
 </script>
 
 
@@ -830,8 +756,9 @@ function closeDictPopup() {
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link nav-link--active">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Understand Dyslexia</RouterLink></li>
-          <li><RouterLink to="/training" class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
+          <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
         </ul>
 
         <!-- Hamburger icon — only visible on small screens -->
@@ -851,8 +778,9 @@ function closeDictPopup() {
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
         <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
-        <li><RouterLink to="/training" class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
+        <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
       </ul>
     </div>
 
@@ -1003,8 +931,8 @@ function closeDictPopup() {
               <!-- Large document-level heading -->
               <h2 class="overall-heading">{{ overallSummary?.heading }}</h2>
 
-              <!-- Supporting body paragraph — double-click any word to look it up -->
-              <p class="overall-body dict-zone" @dblclick="handleWordDblClick">{{ overallSummary?.text }}</p>
+              <!-- Supporting body paragraph — double-click any word to look it up (global handler) -->
+              <p class="overall-body">{{ overallSummary?.text }}</p>
 
               <!-- Audio bar: always visible, consistent with section modal controls -->
               <div class="overall-audio-row">
@@ -1090,13 +1018,17 @@ function closeDictPopup() {
           ══════════════════════════════════════════════════════════════ -->
           <div class="stage-tree">
 
-            <!-- Bridge: thin rule + "N Sections" label + thin rule -->
-            <div class="sections-bridge" aria-hidden="true">
-              <div class="sections-bridge-line"></div>
-              <span class="sections-bridge-label">
-                {{ result.blocks?.length || 0 }} Sections
-              </span>
-              <div class="sections-bridge-line"></div>
+            <!-- Vertical connector: flows from overview card → pill label → sections grid -->
+            <div class="stage-connector" aria-hidden="true">
+              <div class="stage-connector-line stage-connector-line--top"></div>
+              <div class="stage-connector-pill">
+                <!-- Down-arrow icon -->
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M6.5 2v9M3 8l3.5 3L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{{ result.blocks?.length || 0 }} Sections</span>
+              </div>
+              <div class="stage-connector-line stage-connector-line--bottom"></div>
             </div>
 
             <!--
@@ -1202,13 +1134,17 @@ function closeDictPopup() {
           <div :class="['modal-body', { 'modal-body--orig-hidden': !modalShowOriginal }]">
 
             <!-- Left column: original text -->
-            <!-- Clicking the column always toggles expand/collapse -->
+            <!-- Only the label row (right-side arrow area) toggles expand/collapse.
+                 The text body is NOT a click target so users can freely double-click
+                 words to open the dictionary without triggering a collapse. -->
+            <!-- When collapsed the whole column is a click target (slim strip, easy to miss otherwise).
+                 When expanded only the label row toggles collapse — text body stays free for dblclick. -->
             <div
               :class="['modal-orig-col', { 'modal-orig-col--collapsed': !modalShowOriginal }]"
-              @click="modalShowOriginal = !modalShowOriginal"
+              @click="!modalShowOriginal ? modalShowOriginal = true : null"
             >
-              <!-- Label block — acts as the visual toggle indicator -->
-              <div class="modal-orig-label">
+              <!-- Label row — clicking this always toggles (expanded or collapsed) -->
+              <div class="modal-orig-label" @click.stop="modalShowOriginal = !modalShowOriginal" role="button" :aria-expanded="modalShowOriginal">
                 <span>Original Text</span>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path
@@ -1218,8 +1154,8 @@ function closeDictPopup() {
                 </svg>
               </div>
 
-              <!-- Original text body — double-click any word to look it up -->
-              <p v-if="modalShowOriginal" class="modal-orig-text dict-zone" @dblclick="handleWordDblClick">
+              <!-- Original text body — double-click any word to look it up (global handler) -->
+              <p v-if="modalShowOriginal" class="modal-orig-text">
                 {{ activeSection.originalText || 'Original text not available.' }}
               </p>
             </div>
@@ -1233,7 +1169,7 @@ function closeDictPopup() {
               <!-- Summary section -->
               <div class="modal-right-section">
                 <div class="modal-col-label">Summary</div>
-                <p class="modal-summary-text dict-zone" @dblclick="handleWordDblClick">{{ activeSection.summary || 'Summary not available.' }}</p>
+                <p class="modal-summary-text">{{ activeSection.summary || 'Summary not available.' }}</p>
               </div>
 
               <!-- Key Points section -->
@@ -1391,90 +1327,8 @@ function closeDictPopup() {
     </Transition>
 
 
-    <!-- ── Dictionary popup ── -->
-    <!-- Appears on double-click of any word inside a .dict-zone element -->
-    <Transition name="dict-pop">
-      <div
-        v-if="dictPopup"
-        class="dict-backdrop"
-        @click.self="closeDictPopup"
-      >
-        <div
-          class="dict-card"
-          :style="{ left: dictPopup.x + 'px', top: dictPopup.y + 'px' }"
-          @click.stop
-        >
-
-          <!-- Header: word title + TTS + close -->
-          <div class="dict-header">
-            <h3 class="dict-word">{{ dictPopup.word }}</h3>
-            <div class="dict-header-actions">
-              <button class="dict-tts-btn" title="Listen" @click="speakDictWord">
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                  <path d="M2 5H4.5L7.5 2.5v10L4.5 10H2V5z" fill="currentColor"/>
-                  <path d="M10 4a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                  <path d="M11.5 6a2.5 2.5 0 0 1 0 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-              </button>
-              <button class="dict-close-btn" title="Close" @click="closeDictPopup">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Loading state -->
-          <div v-if="dictPopup.loading" class="dict-loading">
-            <svg class="spin" width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <circle cx="9" cy="9" r="7" stroke="#c7d2fe" stroke-width="2.5" stroke-dasharray="28 14" stroke-linecap="round"/>
-            </svg>
-            <span>Looking up…</span>
-          </div>
-
-          <!-- Error state -->
-          <div v-else-if="dictPopup.error" class="dict-error">
-            {{ dictPopup.error }}
-          </div>
-
-          <!-- Content: dynamic sections -->
-          <div v-else-if="dictPopup.data" class="dict-body">
-
-            <!-- Simple meaning — always shown if present -->
-            <div v-if="dictPopup.data.simpleMeaning" class="dict-section">
-              <div class="dict-section-label">Simple meaning</div>
-              <p class="dict-simple-meaning">{{ dictPopup.data.simpleMeaning }}</p>
-            </div>
-
-            <!-- Word parts — only rendered if the array has items -->
-            <div v-if="dictPopup.data.wordParts?.length" class="dict-section">
-              <div class="dict-section-label">Word parts</div>
-              <div class="dict-parts">
-                <div
-                  v-for="part in dictPopup.data.wordParts"
-                  :key="part.form + part.type"
-                  :class="['dict-part-row', `dict-part-row--${part.type?.toLowerCase()}`]"
-                >
-                  <span class="dict-part-form">{{ part.form }}</span>
-                  <span class="dict-part-meaning">{{ part.meaning }}</span>
-                  <span :class="['dict-part-badge', `dict-part-badge--${part.type?.toLowerCase()}`]">
-                    {{ part.type }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Meaning from parts — only shown if present -->
-            <div v-if="dictPopup.data.meaningFromParts" class="dict-section dict-section--last">
-              <div class="dict-section-label">Meaning from parts</div>
-              <p class="dict-parts-meaning">{{ dictPopup.data.meaningFromParts }}</p>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-    </Transition>
+    <!-- Dictionary popup is now rendered globally in App.vue via GlobalDictPopup.vue
+         and triggered by the document-level dblclick listener in useGlobalDict.js -->
 
 
     <!-- ── Fixed bottom input bar ── -->
@@ -2560,14 +2414,14 @@ kbd {
 ───────────────────────────────────────── */
 .stage-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
 .stage-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 14px;
-  font-size: 10.5px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 18px;
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
   border-radius: 999px;
 }
-.stage-pill--green { color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; }
-.stage-pill--blue  { color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; }
+.stage-pill--green { color: #15803d; background: #f0fdf4; border: 1.5px solid #86efac; }
+.stage-pill--blue  { color: #4338ca; background: #eef2ff; border: 1.5px solid #c7d2fe; }
 .stage-pill-count  { font-size: 12px; color: #9ca3af; font-weight: 500; }
 
 
@@ -2720,6 +2574,7 @@ kbd {
 .stage-tree {
   display: flex;
   flex-direction: column;
+  align-items: center;   /* so connector pill centres within full-width container */
   gap: 0;
   padding: 0 0 64px;
   max-width: 1100px;
@@ -2728,27 +2583,40 @@ kbd {
 }
 
 /* ─────────────────────────────────────────
-   Bridge: "N Sections" label with horizontal
-   rules on each side, connecting overview ↔ grid
+   Vertical connector: flows overview → N Sections pill → grid
 ───────────────────────────────────────── */
-.sections-bridge {
+.stage-connector {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 36px 0 28px;
+  padding: 0;
+  gap: 0;
 }
-.sections-bridge-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e0e7ff 40%, #e0e7ff 60%, transparent);
+
+/* Thin vertical lines above and below the pill */
+.stage-connector-line {
+  width: 2px;
+  background: linear-gradient(to bottom, #c7d2fe, #ddd6fe);
+  border-radius: 2px;
 }
-.sections-bridge-label {
-  flex-shrink: 0;
-  font-size: 11px;
+.stage-connector-line--top    { height: 32px; }
+.stage-connector-line--bottom { height: 28px; }
+
+/* The pill badge in the centre */
+.stage-connector-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  font-size: 13.5px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #a5b4fc;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.10);
   white-space: nowrap;
 }
 
@@ -2759,6 +2627,7 @@ kbd {
   A soft background + border draws the eye to the group as a whole.
 */
 .tree-container {
+  width: 100%;                /* fill stage-tree even when parent uses align-items: center */
   border: 1.5px solid #e0e7ff;
   border-radius: 20px;
   padding: 20px;
@@ -2975,29 +2844,26 @@ kbd {
   padding: 28px 22px 28px 30px;
   min-width: 0;
   overflow: hidden;
-  cursor: pointer;
-  transition: background 0.18s ease;
-  user-select: none;
+  /* No cursor/user-select on the whole column — text body must be selectable
+     for the global dictionary double-click to work. */
+  cursor: default;
+  user-select: text;
 }
-.modal-orig-col:hover { background: #f8fafc; }
-.modal-orig-col:active { background: #f0f4ff; }
 
-/* Collapsed state */
+/* Collapsed state — entire column is the click target, so restore pointer */
 .modal-orig-col--collapsed {
   align-items: center;
   justify-content: center;
   padding: 28px 8px;
   background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.18s ease;
 }
-.modal-orig-col--collapsed:hover {
-  background: #eef2ff;
-}
-.modal-orig-col--collapsed:active {
-  background: #e0e7ff;
-  transform: scale(0.97);
-}
+.modal-orig-col--collapsed:hover  { background: #eef2ff; }
+.modal-orig-col--collapsed:active { background: #e0e7ff; transform: scale(0.97); }
 
-/* Label row — shows text + chevron icon */
+/* Label row — the interactive toggle when expanded */
 .modal-orig-label {
   display: flex;
   align-items: center;
@@ -3009,8 +2875,15 @@ kbd {
   color: #4f46e5;
   white-space: nowrap;
   flex-shrink: 0;
+  /* Label is the click target when expanded */
+  cursor: pointer;
+  user-select: none;
+  border-radius: 6px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  transition: background 0.15s, color 0.15s;
 }
-.modal-orig-col:hover .modal-orig-label { color: #3730a3; }
+.modal-orig-label:hover { background: rgba(99,102,241,0.08); color: #3730a3; }
 
 /* Collapsed: rotate the whole label block vertically */
 .modal-orig-col--collapsed .modal-orig-label {
@@ -3198,168 +3071,8 @@ kbd {
 }
 
 
-/* ─────────────────────────────────────────
-   Dictionary popup
-   Triggered by double-clicking a word inside
-   any .dict-zone element.
-───────────────────────────────────────── */
-
-/* Hint cursor on hoverable text zones */
-.dict-zone { cursor: text; }
-.dict-zone::selection { background: #ddd6fe; }
-
-/* Transparent full-screen layer to catch outside clicks */
-.dict-backdrop {
-  position: fixed; inset: 0;
-  z-index: 400;
-  pointer-events: none;   /* let clicks pass through the backdrop… */
-}
-.dict-card {
-  pointer-events: all;    /* …but not through the card itself */
-  position: fixed;
-  width: 340px;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow:
-    0 0 0 1px rgba(99, 102, 241, 0.08),
-    0 8px 32px rgba(0, 0, 0, 0.14),
-    0 32px 64px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  z-index: 401;
-}
-
-/* Header row */
-.dict-header {
-  display: flex; align-items: center;
-  padding: 18px 18px 14px 20px;
-  border-bottom: 1px solid #f1f5f9;
-  gap: 8px;
-}
-.dict-word {
-  flex: 1;
-  font-size: 22px; font-weight: 800;
-  color: #0f172a; letter-spacing: -0.03em; margin: 0;
-}
-.dict-header-actions { display: flex; align-items: center; gap: 6px; }
-
-/* TTS button */
-.dict-tts-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 50%;
-  background: #f1f5f9; border: none;
-  color: #64748b; cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.dict-tts-btn:hover { background: #e0e7ff; color: #4f46e5; }
-
-/* Close button */
-.dict-close-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 50%;
-  background: none; border: none;
-  color: #94a3b8; cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.dict-close-btn:hover { background: #fee2e2; color: #ef4444; }
-
-/* Loading */
-.dict-loading {
-  display: flex; align-items: center; gap: 10px;
-  padding: 20px; color: #94a3b8; font-size: 13px; font-weight: 500;
-}
-
-/* Error */
-.dict-error {
-  padding: 16px 20px;
-  font-size: 13px; color: #ef4444;
-}
-
-/* Body */
-.dict-body {
-  display: flex; flex-direction: column;
-  max-height: 60vh; overflow-y: auto;
-}
-
-/* Section block */
-.dict-section {
-  padding: 14px 20px;
-  border-bottom: 1px solid #f8fafc;
-}
-.dict-section--last { border-bottom: none; }
-
-.dict-section-label {
-  font-size: 10.5px; font-weight: 800;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: #4f46e5; margin-bottom: 8px;
-}
-
-/* Simple meaning text */
-.dict-simple-meaning {
-  font-size: 14.5px; line-height: 1.7;
-  color: #1e293b; margin: 0;
-}
-
-/* Word parts list */
-.dict-parts { display: flex; flex-direction: column; gap: 8px; }
-
-.dict-part-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  border-left: 3px solid transparent;
-}
-.dict-part-row--prefix  { background: #fff1f2; border-left-color: #fda4af; }
-.dict-part-row--root    { background: #eff6ff; border-left-color: #93c5fd; }
-.dict-part-row--suffix  { background: #f0fdf4; border-left-color: #86efac; }
-.dict-part-row--infix   { background: #faf5ff; border-left-color: #d8b4fe; }
-
-.dict-part-form {
-  font-size: 13px; font-weight: 800;
-  color: #0f172a; min-width: 46px; flex-shrink: 0;
-}
-.dict-part-meaning {
-  flex: 1; font-size: 13px; line-height: 1.5; color: #475569;
-}
-
-/* Type badge */
-.dict-part-badge {
-  font-size: 10.5px; font-weight: 800;
-  padding: 3px 9px; border-radius: 999px;
-  letter-spacing: 0.04em;
-  white-space: nowrap; flex-shrink: 0;
-}
-.dict-part-badge--prefix  { background: #ffe4e6; color: #e11d48; }
-.dict-part-badge--root    { background: #dbeafe; color: #1d4ed8; }
-.dict-part-badge--suffix  { background: #dcfce7; color: #15803d; }
-.dict-part-badge--infix   { background: #ede9fe; color: #7c3aed; }
-
-/* Meaning from parts */
-.dict-parts-meaning {
-  font-size: 13.5px; line-height: 1.7;
-  color: #334155; margin: 0; font-style: italic;
-}
-
-/* Pop-in transition */
-.dict-pop-enter-active {
-  transition: opacity 0.18s ease;
-}
-.dict-pop-leave-active {
-  transition: opacity 0.14s ease;
-}
-.dict-pop-enter-from,
-.dict-pop-leave-to { opacity: 0; }
-
-.dict-pop-enter-active .dict-card {
-  animation: dict-card-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
-}
-@keyframes dict-card-in {
-  from { transform: scale(0.88) translateY(8px); opacity: 0; }
-  to   { transform: scale(1) translateY(0);      opacity: 1; }
-}
-
-/* Spin utility (reused for loading) */
+/* Dictionary popup CSS lives in GlobalDictPopup.vue — rendered once at App root.
+   The .spin keyframe below is still needed for the loading spinners on this page. */
 .spin { animation: spin 0.9s linear infinite; }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>

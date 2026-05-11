@@ -4,8 +4,15 @@
 // Its two responsibilities:
 //   1. Auth gate: show a login form until the user enters the correct credentials.
 //   2. After login: render the global AccessibilityToolbar + the current page via <RouterView>.
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AccessibilityToolbar from './components/AccessibilityToolbar.vue'
+import GlobalDictPopup from './components/GlobalDictPopup.vue'
+import { useGlobalDict } from './composables/useGlobalDict'
+
+// ── Global double-click dictionary ────────────────────────────────────────────
+// Registers one dblclick listener on document so any word on any page can be
+// looked up without each page needing its own handler.
+const { handleWordDblClick, closeDictPopup } = useGlobalDict()
 
 // ── Auth gate constants ───────────────────────────────────────────────────────
 // This project is a coursework demo, so a simple hardcoded password is sufficient.
@@ -51,6 +58,18 @@ onMounted(() => {
   // On page load, check whether this session was already authenticated (e.g. after a refresh).
   // If the flag is present, skip straight to the app without showing the login form again.
   isAuthenticated.value = sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true'
+
+  // Global double-click: works on every page once the user is authenticated
+  document.addEventListener('dblclick', handleWordDblClick)
+
+  // Pressing Escape closes the popup
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDictPopup()
+  })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('dblclick', handleWordDblClick)
 })
 </script>
 
@@ -67,6 +86,9 @@ onMounted(() => {
     <AccessibilityToolbar />
     <!-- RouterView swaps in the matching page component based on the URL (see router/index.js). -->
     <RouterView />
+    <!-- Global dictionary popup — floats above every page.
+         Triggered by double-clicking any word anywhere on the site. -->
+    <GlobalDictPopup />
   </template>
 
   <div v-else class="auth-gate">
