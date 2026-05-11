@@ -14,6 +14,7 @@ BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(BACKEND_ENV_PATH)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 # Keep this switch so the service can be forced into local fallback mode during testing.
 USE_AI = True
 
@@ -446,7 +447,7 @@ def use_openai(text: str):
         with _without_dead_local_proxies():
             client = OpenAI(api_key=OPENAI_API_KEY)
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL),
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
             )
