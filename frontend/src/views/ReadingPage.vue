@@ -1,3 +1,13 @@
+<script>
+const readingPageMemory = {
+  mode: 'idle',
+  result: null,
+  inputText: '',
+  uploadedFileText: '',
+  uploadedFileName: '',
+}
+</script>
+
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
@@ -29,16 +39,212 @@ const textareaRef = ref(null)     // ref to the textarea DOM element for auto-re
 // The page can be in one of three states at any time
 const mode = ref('idle')   // 'idle' | 'loading' | 'result'
 
-// Holds the processed result returned by the backend
-// Expected shape:
+// Holds the processed result returned by the backend.
+//
+// ── Expected shape (iteration3 updated API) ──────────────────────────────────
 // {
-//   blocks: [
-//     { id: 1, originalText: '...', summary: '...', keyPoints: ['...', '...'] },
+//   title: '...'                   (optional) article title shown as tree root node
+//   overallSummary: {              (NEW in iteration3 — backend must provide this)
+//     heading: '...',              large heading shown in Stage 1 card
+//     text:    '...'               paragraph text shown in Stage 1 card
+//   },
+//   blocks: [                      array of sections/paragraphs
+//     {
+//       id:           1,           section number
+//       title:        '...',       (NEW) section name shown as tree node label
+//       subtitle:     '...',       (NEW) one-line description shown under node label
+//       originalText: '...',       original text from the article (kept for backward compat)
+//       summary:      '...',       plain-English summary shown in the detail modal
+//       keyPoints:    ['...', '...'] bullet points shown in the detail modal
+//     },
 //     ...
 //   ],
 //   notice: '...' (optional)
 // }
+//
+// Backward-compatibility notes:
+//   - If overallSummary is missing, we fall back to the first block's summary.
+//   - If block.title is missing, we show "Section {id}" as the node label.
+// ─────────────────────────────────────────────────────────────────────────────
 const result = ref(null)
+
+function saveReadingState() {
+  readingPageMemory.mode = result.value && mode.value === 'result' ? 'result' : 'idle'
+  readingPageMemory.result = result.value
+  readingPageMemory.inputText = inputText.value
+  readingPageMemory.uploadedFileText = uploadedFileText.value
+  readingPageMemory.uploadedFileName = uploadedFileName.value
+}
+
+function restoreReadingState() {
+  inputText.value        = typeof readingPageMemory.inputText === 'string' ? readingPageMemory.inputText : ''
+  uploadedFileText.value = typeof readingPageMemory.uploadedFileText === 'string' ? readingPageMemory.uploadedFileText : ''
+  uploadedFileName.value = typeof readingPageMemory.uploadedFileName === 'string' ? readingPageMemory.uploadedFileName : ''
+
+  if (readingPageMemory.result && readingPageMemory.mode === 'result') {
+    result.value = readingPageMemory.result
+    mode.value   = 'result'
+    feedback.value = { type: 'success', message: 'Text processed successfully.' }
+  }
+}
+
+function clearReadingState() {
+  readingPageMemory.mode = 'idle'
+  readingPageMemory.result = null
+  readingPageMemory.inputText = ''
+  readingPageMemory.uploadedFileText = ''
+  readingPageMemory.uploadedFileName = ''
+}
+
+
+// ── Overall summary (computed from backend response) ──────────────────────────
+// Backend should provide result.overallSummary directly (iteration3 API).
+// Falls back to the first block's data for compatibility with older responses.
+const overallSummary = computed(() => {
+  if (!result.value) return null
+  if (result.value.overallSummary) return result.value.overallSummary
+  const first = result.value.blocks?.[0]
+  return first
+    ? { heading: first.title || 'Summary', text: first.summary || '' }
+    : null
+})
+
+
+// ── Section detail modal ──────────────────────────────────────────────────────
+// activeSection holds the block the user clicked in the tree.
+// null = modal closed; a block object = modal open showing that section.
+const activeSection = ref(null)
+
+// Whether the original-text left column is expanded (true) or collapsed (false).
+// Resets to expanded each time the modal opens.
+const modalShowOriginal = ref(true)
+
+/** Opens the section detail modal for the given block. Stops TTS first. */
+function openSection(block) {
+  stopAudio()
+  activeSection.value = block
+  modalShowOriginal.value = true   // always start expanded
+}
+
+/** Closes the section detail modal and stops any playing TTS. */
+function closeSection() {
+  stopAudio()
+  activeSection.value = null
+}
+
+
+// ── Demo data ─────────────────────────────────────────────────────────────────
+// Sample data that matches the exact shape the backend will return.
+// Used by loadDemo() so the new UI can be previewed without a real API call.
+// When the backend is updated to return overallSummary + block titles,
+// the real data will flow through exactly the same code paths.
+const DEMO_RESULT = {
+  title: 'Clearead – Iteration 1 Analysis and Design Plan',
+  overallSummary: {
+    heading: 'Making academic reading easier for students with dyslexia.',
+    text: 'This report presents the analysis and design plan for Iteration 1 of Clearead. It aims to help Australian university students with dyslexia by turning dense academic texts into clearer, more structured, and more accessible formats.',
+  },
+  blocks: [
+    {
+      id: 1, title: 'Introduction', subtitle: 'Background and context',
+      originalText: 'Clearead was designed to help students with dyslexia navigate university-level reading.',
+      summary: 'Clearead was designed to help university students with dyslexia who struggle with dense academic texts. The project grew out of research showing that 1 in 5 Australians has dyslexia, yet most academic platforms offer no reading support.',
+      keyPoints: ['1 in 5 Australians are affected by dyslexia.', 'Academic platforms rarely offer reading accessibility tools.', 'Clearead aims to bridge this gap for university students.'],
+    },
+    {
+      id: 2, title: 'Problem Definition', subtitle: 'Understanding the challenge',
+      originalText: 'Dense academic text is a significant barrier for students with dyslexia.',
+      summary: 'Dense academic text is a significant barrier for students with dyslexia. Complex sentence structures, unfamiliar vocabulary, and lack of structure make it difficult to understand and engage with the content.',
+      keyPoints: ['Academic texts are written for a general audience, not students with dyslexia.', 'Long sentences and complex words increase cognitive load.', 'Students may spend more time reading but retain less.', 'There is a lack of accessible tools for university academic reading.'],
+    },
+    {
+      id: 3, title: 'Target Audience', subtitle: 'Who we are designing for',
+      originalText: 'The primary users are Australian university students aged 18 to 22.',
+      summary: 'The primary users are Australian university students aged 18 to 22 who have been diagnosed with dyslexia or experience reading difficulties.',
+      keyPoints: ['Age range: 18–22 years old.', 'Enrolled in Australian universities.', 'Diagnosed with dyslexia or experiencing reading difficulties.', 'Regular users of digital academic content.'],
+    },
+    {
+      id: 4, title: 'Design Goals', subtitle: 'What we aim to achieve',
+      originalText: 'Clearead aims to reduce cognitive load and improve reading comprehension.',
+      summary: 'Clearead aims to reduce cognitive load, improve reading comprehension, and provide a calm, structured reading experience that adapts to the needs of dyslexic users.',
+      keyPoints: ['Reduce cognitive load through chunked, summarised content.', 'Provide multiple reading modes: visual and audio.', 'Use dyslexia-friendly typography and colour schemes.', 'Enable users to control reading speed and text size.'],
+    },
+    {
+      id: 5, title: 'Approach & Solution', subtitle: 'How we will solve it',
+      originalText: 'The solution involves an AI-powered text processing pipeline.',
+      summary: 'The solution involves an AI-powered text processing pipeline that breaks long documents into manageable sections, generates plain-English summaries, and provides audio playback for each section.',
+      keyPoints: ['AI pipeline segments text into logical blocks.', 'Each block receives a plain-English summary.', 'Text-to-speech is available for every section.', 'Users can adjust font, size, and colour for accessibility.'],
+    },
+    {
+      id: 6, title: 'Evaluation Plan', subtitle: 'How we will test and improve',
+      originalText: 'The evaluation plan includes user testing with dyslexic university students.',
+      summary: 'The evaluation plan includes user testing with dyslexic university students, measuring reading comprehension scores, and gathering qualitative feedback on the usability of the tool.',
+      keyPoints: ['User testing with 5–8 participants with dyslexia.', 'Pre/post comprehension tests to measure improvement.', 'Qualitative interviews to gather usability feedback.', 'Iterative improvements based on test results.'],
+    },
+    {
+      id: 7, title: 'Risks & Considerations', subtitle: 'Potential risks and limitations',
+      originalText: 'Key risks include AI summarisation inaccuracies and browser compatibility issues.',
+      summary: 'Key risks include AI summarisation inaccuracies, browser compatibility issues with text-to-speech, and the challenge of designing for the broad spectrum of dyslexia experiences.',
+      keyPoints: ['AI may occasionally produce inaccurate summaries.', 'Text-to-speech support varies across browsers.', 'Dyslexia affects individuals differently — no one-size-fits-all solution.', 'Privacy considerations for uploaded document content.'],
+    },
+    {
+      id: 8, title: 'Next Steps', subtitle: 'What happens next',
+      originalText: 'The next iteration will focus on refining the AI summarisation model.',
+      summary: 'The next iteration will focus on refining the AI summarisation model, expanding accessibility settings, and conducting a second round of user testing with a larger participant group.',
+      keyPoints: ['Refine AI model based on evaluation feedback.', 'Add more accessibility customisation options.', 'Conduct second round of user testing.', 'Prepare for public beta release.'],
+    },
+  ],
+}
+
+/**
+ * Loads demo data so the redesigned UI can be previewed without a backend call.
+ * Mirrors the exact shape POST /api/process-text will return in iteration3.
+ */
+function loadDemo() {
+  stopAudio()
+  result.value      = DEMO_RESULT
+  mode.value        = 'result'
+  activeSection.value = null
+  saveReadingState()
+}
+
+
+// ── Overall Summary playback ──────────────────────────────────────────────────
+// We use block ID 0 as a virtual sentinel for the overall summary card.
+// Real block IDs from the backend start at 1, so 0 is safe.
+const OVERALL_SUMMARY_ID = 0
+
+/**
+ * Plays (or pauses / resumes) the overall summary using TTS.
+ * Reuses the same playback state machine as individual block playback.
+ */
+async function playOverallSummary() {
+  if (!overallSummary.value) return
+
+  // Build the text: heading + body paragraph joined as a sentence
+  const text = [overallSummary.value.heading, overallSummary.value.text]
+    .filter(Boolean).join('. ')
+
+  const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
+
+  // Toggle play/pause if already active
+  if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
+  if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
+
+  // Stop whatever is currently playing and start fresh
+  stopAudio()
+  activeBlockId.value   = OVERALL_SUMMARY_ID
+  activeBlockType.value = 'summary'
+  playbackState.value   = 'playing'
+
+  try {
+    await requestTTS(text)
+    if (activeBlockId.value === OVERALL_SUMMARY_ID) stopAudio()
+  } catch (err) {
+    console.error('[TTS] Overall summary playback error:', err)
+    stopAudio()
+  }
+}
 
 
 // Helper: count words in a string
@@ -308,6 +514,11 @@ function autoResize() {
   el.style.height = Math.min(el.scrollHeight, 180) + 'px'   // cap at 180px
 }
 watch(inputText, () => nextTick(autoResize))
+watch(
+  [mode, result, inputText, uploadedFileText, uploadedFileName],
+  saveReadingState,
+  { deep: true },
+)
 
 
 // ── Submit / process text ─────────────────────────────────────────────────────
@@ -364,6 +575,7 @@ function handleBackToInput() {
   feedback.value       = null
   expandedBlocks.value = new Set()
   clampedBlocks.value  = {}
+  clearReadingState()
 }
 
 
@@ -375,6 +587,7 @@ function handleClear() {
   uploadedFileName.value = ''
   feedback.value         = null
   clearTimeout(feedbackTimer)
+  saveReadingState()
   nextTick(autoResize)
 }
 
@@ -475,6 +688,7 @@ function onKeydown(e) {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
+  restoreReadingState()
   window.addEventListener('scroll', onScroll)
   nextTick(autoResize)
 
@@ -493,6 +707,21 @@ onUnmounted(() => {
     window.speechSynthesis.cancel()
   }
 })
+
+
+// ── Dictionary hint (dismissible, persisted to localStorage) ─────────────────
+const DICT_HINT_KEY = 'clearead-dict-hint-dismissed'
+const dictHintVisible = ref(localStorage.getItem(DICT_HINT_KEY) !== 'true')
+
+function dismissDictHint() {
+  dictHintVisible.value = false
+  localStorage.setItem(DICT_HINT_KEY, 'true')
+}
+
+// ── Dictionary popup ──────────────────────────────────────────────────────────
+// The popup is now handled globally via App.vue + GlobalDictPopup.vue.
+// A single document-level dblclick listener in App.vue covers every page —
+// no per-page wiring needed. See src/composables/useGlobalDict.js.
 </script>
 
 
@@ -527,8 +756,9 @@ onUnmounted(() => {
         <ul class="nav-links">
           <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
           <li><RouterLink to="/reading"  class="nav-link nav-link--active">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Understand Dyslexia</RouterLink></li>
-          <li><RouterLink to="/training" class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
+          <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
         </ul>
 
         <!-- Hamburger icon — only visible on small screens -->
@@ -548,14 +778,15 @@ onUnmounted(() => {
       <ul class="mobile-nav-links">
         <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
         <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
-        <li><RouterLink to="/training" class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
+        <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
       </ul>
     </div>
 
 
     <!-- ── Main reading area ── -->
-    <main class="reading-area">
+    <main :class="['reading-area', { 'reading-area--no-bar': mode === 'result' }]">
       <div :class="['reading-inner', { 'reading-inner--wide': mode === 'result' }]">
 
         <!-- ── STATE: idle — welcome / how-to screen ── -->
@@ -609,6 +840,12 @@ onUnmounted(() => {
             <span>to submit quickly</span>
           </p>
 
+          <!-- Demo CTA: lets users preview the full UI without real content -->
+          <div class="demo-cta">
+            <span class="demo-cta-text">Want to see how it looks?</span>
+            <button class="btn-demo" @click="loadDemo">Try Demo →</button>
+          </div>
+
         </div>
 
 
@@ -641,7 +878,12 @@ onUnmounted(() => {
         </div>
 
 
-        <!-- ── STATE: result — two-column block display ── -->
+        <!-- ── STATE: result — 3-stage guided reading flow ── -->
+        <!--
+          Stage 1: Overall Summary Card  — green, centered, with TTS play button
+          Stage 2: Section Tree          — root node → trunk → clickable section cards
+          Stage 3: Section Detail Modal  — opens when a tree card is clicked
+        -->
         <div v-else-if="mode === 'result' && result" class="result-state">
 
           <!-- Top status bar: success notice + back button -->
@@ -661,289 +903,410 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <!--
-            ── Audio Control Toolbar ──────────────────────────────────────────
-            Always visible in result mode so users can configure voice/speed
-            before or during playback. Playback controls are disabled when idle.
-          -->
-          <div class="audio-toolbar">
+          <!-- ══════════════════════════════════════════════════════════════
+               STAGE 1 · Overall Summary
+               Fills the full viewport. Reader sees ONLY this section on load.
+               A bouncing arrow at the bottom prompts scrolling to Stage 2.
+          ══════════════════════════════════════════════════════════════ -->
+          <div class="stage-summary">
 
-            <!-- Left: status label — shows idle hint or now-playing info -->
-            <div class="at-info">
-              <div class="at-icon">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M2 5.5h2.5l3-3v11l-3-3H2V5.5z" fill="#2563eb"/>
-                  <path d="M11 4.5a5 5 0 0 1 0 7M13 2.5a8 8 0 0 1 0 11" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+            <!-- Small pill label at the top -->
+            <div class="stage-header">
+              <span class="stage-pill stage-pill--green">
+                <!-- Green dot -->
+                <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                  <circle cx="3.5" cy="3.5" r="3.5" fill="currentColor"/>
                 </svg>
-              </div>
-              <div>
-                <div class="at-title">Audio</div>
-                <div class="at-status">
-                  <template v-if="playbackState === 'idle'">Press Play on any block to listen</template>
-                  <template v-else>
-                    Block {{ activeBlockId }}
-                    · {{ activeBlockType === 'summary' ? 'Summary' : 'Original' }}
-                    <span v-if="playbackState === 'paused'" class="at-paused-tag">· Paused</span>
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <!-- Playback controls — disabled when nothing is playing -->
-            <div class="at-actions">
-              <button
-                class="at-btn"
-                :class="{ 'at-btn--primary': playbackState === 'playing' }"
-                :disabled="playbackState === 'idle'"
-                @click="playbackState === 'playing' ? pauseAudio() : resumeAudio()"
-              >
-                <svg v-if="playbackState === 'playing'" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                  <rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/>
-                </svg>
-                <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M4 2.5l8 4.5-8 4.5V2.5z" fill="currentColor"/>
-                </svg>
-                {{ playbackState === 'playing' ? 'Pause' : 'Resume' }}
-              </button>
-
-              <button class="at-btn" :disabled="playbackState === 'idle'" @click="replayBlock">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M11 7A4 4 0 1 1 7 3M11 3v4H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Replay
-              </button>
-            </div>
-
-            <!-- Speed selector -->
-            <div class="at-control">
-              <label class="at-label">Speed</label>
-              <select v-model="playbackSpeed" class="at-select">
-                <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
-              </select>
-            </div>
-
-            <!-- Voice selector — applies to the next Play press -->
-            <div class="at-control">
-              <label class="at-label">Voice</label>
-              <select v-model="selectedVoice" class="at-select">
-                <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
-              </select>
-            </div>
-
-            <!-- Volume slider -->
-            <div class="at-control at-volume">
-              <label class="at-label">Volume</label>
-              <input
-                type="range"
-                v-model="volume"
-                min="0" max="100" step="1"
-                class="at-slider"
-                :aria-label="`Volume: ${volume}%`"
-              />
-              <span class="at-vol-num">{{ volume }}%</span>
-            </div>
-
-            <!-- Stop button — only enabled when playing or paused -->
-            <button
-              class="at-btn-stop"
-              :disabled="playbackState === 'idle'"
-              @click="stopAudio"
-              title="Stop playback"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
-              </svg>
-              Stop
-            </button>
-
-          </div>
-
-          <!--
-            Two-column layout.
-            Structure: one sticky header row + one grid row per block.
-            Left and right cards share the same row, so they always align in height.
-          -->
-          <!-- result-grid--orig-hidden collapses the left column to a 72px strip -->
-          <div :class="['result-grid', { 'result-grid--orig-hidden': !showOriginal }]">
-
-            <!-- ── Sticky column headers ── -->
-            <div class="result-grid-header">
-
-              <!-- Left header: acts as a toggle button to show/hide the original-text column -->
-              <button
-                class="col-header col-orig-toggle"
-                @click="showOriginal = !showOriginal"
-                :title="showOriginal ? 'Hide original text' : 'Show original text'"
-                :aria-label="showOriginal ? 'Hide original text' : 'Show original text'"
-              >
-                <!-- Expanded state: label + collapse-left chevron (no decorative icon) -->
-                <template v-if="showOriginal">
-                  Original Text
-                  <!-- Left-pointing chevron = "click to collapse" -->
-                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <path d="M8.5 2.5L4 6.5l4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </template>
-                <!-- Collapsed state: right-pointing chevron + rotated label -->
-                <template v-else>
-                  <svg class="col-toggle-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <path d="M4.5 2.5L9 6.5l-4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span class="col-orig-label-vert">Original</span>
-                </template>
-              </button>
-
-              <!-- Right column header — no decorative icon -->
-              <div class="col-header">
-                Summary &amp; Key Points
-              </div>
+                Overview
+              </span>
             </div>
 
             <!--
-              One row per block — left card (2fr) + right card (3fr) sit in the same grid row,
-              so align-items: stretch makes both cards equal height automatically.
+              Main card: white background with green left-accent border.
+              Play button is part of the card flow (below the body text),
+              not absolutely positioned, so it reads naturally.
             -->
-            <div
-              v-for="block in result.blocks"
-              :key="block.id"
-              class="block-row"
-            >
+            <div class="overall-card">
 
-              <!-- ── Left card: original text (collapsible) ── -->
-              <!--
-                When showOriginal is false this card is a narrow strip.
-                Clicking the strip sets showOriginal = true to reveal the full column.
-                When showOriginal is true the card behaves like the original layout.
-              -->
-              <div :class="['block-card', 'block-card--left', { 'block-card--active': activeBlockId === block.id }]">
+              <!-- Large document-level heading -->
+              <h2 class="overall-heading">{{ overallSummary?.heading }}</h2>
 
-                <!-- Collapsed strip — click to expand the original column -->
-                <div v-if="!showOriginal" class="orig-strip-hint" @click="showOriginal = true">
-                  <!-- Right-pointing expand icon -->
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M4.5 2L9 6l-4.5 4" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <!-- Rotated block label so it reads bottom-to-top in the strip -->
-                  <span class="orig-strip-label">B{{ block.id }}</span>
-                </div>
+              <!-- Supporting body paragraph — double-click any word to look it up (global handler) -->
+              <p class="overall-body">{{ overallSummary?.text }}</p>
 
-                <!-- Expanded — full original-text card content -->
-                <template v-else>
+              <!-- Audio bar: always visible, consistent with section modal controls -->
+              <div class="overall-audio-row">
 
-                  <!-- Card header: block label (click to collapse) + play button -->
-                  <div class="block-card-header">
-                    <!-- Clicking the label collapses the original column back -->
-                    <button class="block-label block-label--collapse" @click="showOriginal = false" :title="`Block ${block.id} — click to hide original`">
-                      Block {{ block.id }}
-                      <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                        <path d="M6 1.5L3 4.5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                    </button>
+                <!-- Primary play/pause/resume pill button -->
+                <button class="overall-play-pill" @click="playOverallSummary">
+                  <!-- Playing: waveform bars + Pause -->
+                  <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    Pause
+                  </template>
+                  <!-- Paused: resume -->
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Resume
+                  </template>
+                  <!-- Idle: play -->
+                  <template v-else>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Listen to Overview
+                  </template>
+                </button>
 
-                    <!-- Play / Pause button for this specific block -->
-                    <button class="btn-play" @click="playBlock(block.id)" :aria-label="`Play Block ${block.id}`">
-                      <!-- Animated waveform bars when this block is playing -->
-                      <span v-if="activeBlockId === block.id && playbackState === 'playing'" class="play-badge play-badge--playing">
-                        <span class="wave-bar"></span>
-                        <span class="wave-bar"></span>
-                        <span class="wave-bar"></span>
-                        Now Playing…
-                      </span>
-                      <!-- Paused state indicator -->
-                      <span v-else-if="activeBlockId === block.id && playbackState === 'paused'" class="play-badge play-badge--paused">
-                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                          <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                          <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                        </svg>
-                        Paused
-                      </span>
-                      <!-- Default: play icon + label -->
-                      <span v-else class="play-badge play-badge--idle">
-                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                          <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
-                        </svg>
-                        Play
-                      </span>
-                    </button>
-                  </div>
+                <!-- Icon-only secondary controls -->
+                <div class="overall-icon-btns">
 
-                  <!-- Original text — clamped by default, expandable via Read more -->
-                  <p
-                    :ref="el => checkClamp(el, block.id)"
-                    :class="['block-text', 'block-text--small', { 'block-text--clamped': !isExpanded(block.id) }]"
-                  >
-                    {{ block.originalText }}
-                  </p>
-
-                  <!-- Read more / Show less toggle — only when text actually overflows -->
+                  <!-- Stop -->
                   <button
-                    v-if="clampedBlocks[block.id] || isExpanded(block.id)"
-                    class="btn-toggle"
-                    @click="toggleBlock(block.id)"
+                    class="overall-icon-btn"
+                    :disabled="activeBlockId !== OVERALL_SUMMARY_ID || playbackState === 'idle'"
+                    title="Stop"
+                    @click="stopAudio"
                   >
-                    {{ isExpanded(block.id) ? 'Show less ↑' : 'Read more ↓' }}
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2.5" y="2.5" width="9" height="9" rx="2" fill="currentColor"/>
+                    </svg>
                   </button>
 
-                </template>
+                  <!-- Restart -->
+                  <button
+                    class="overall-icon-btn"
+                    title="Restart from beginning"
+                    @click="stopAudio(); playOverallSummary()"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2.5 7a4.5 4.5 0 1 1 1 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                      <path d="M2.5 10.5V7H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+
+                </div>
+
+                <!-- Thin separator -->
+                <div class="overall-audio-sep"></div>
+
+                <!-- Voice + Speed selects -->
+                <div class="overall-audio-settings">
+                  <select v-model="selectedVoice" class="overall-audio-select" title="Voice">
+                    <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                  </select>
+                  <select v-model="playbackSpeed" class="overall-audio-select overall-audio-select--narrow" title="Speed">
+                    <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                  </select>
+                </div>
+
               </div>
 
-              <!-- ── Right card: summary + key points ── -->
-              <div :class="['block-card', 'block-card--right', { 'block-card--active': activeBlockId === block.id && activeBlockType === 'summary' }]">
+            </div><!-- /overall-card -->
 
-                <!-- Card header: block label + play button (plays summary + key points) -->
-                <div class="block-card-header">
-                  <div class="block-label">Block {{ block.id }}</div>
+          </div><!-- /stage-summary -->
 
-                  <button class="btn-play" @click="playBlock(block.id, 'summary')" :aria-label="`Play summary of Block ${block.id}`">
-                    <span v-if="activeBlockId === block.id && activeBlockType === 'summary' && playbackState === 'playing'" class="play-badge play-badge--playing">
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      <span class="wave-bar"></span>
-                      Now Playing…
-                    </span>
-                    <span v-else-if="activeBlockId === block.id && activeBlockType === 'summary' && playbackState === 'paused'" class="play-badge play-badge--paused">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <rect x="2" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                        <rect x="6.5" y="1.5" width="2.5" height="8" rx="0.8" fill="currentColor"/>
-                      </svg>
-                      Paused
-                    </span>
-                    <span v-else class="play-badge play-badge--idle">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <path d="M2.5 1.5l7 4-7 4V1.5z" fill="currentColor"/>
-                      </svg>
-                      Play
-                    </span>
-                  </button>
+
+          <!-- ══════════════════════════════════════════════════════════════
+               STAGE 2 · Section Grid
+               A bridge label connects the overview to the section cards.
+               Clicking a card opens the Stage 3 detail modal.
+          ══════════════════════════════════════════════════════════════ -->
+          <div class="stage-tree">
+
+            <!-- Vertical connector: flows from overview card → pill label → sections grid -->
+            <div class="stage-connector" aria-hidden="true">
+              <div class="stage-connector-line stage-connector-line--top"></div>
+              <div class="stage-connector-pill">
+                <!-- Down-arrow icon -->
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M6.5 2v9M3 8l3.5 3L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{{ result.blocks?.length || 0 }} Sections</span>
+              </div>
+              <div class="stage-connector-line stage-connector-line--bottom"></div>
+            </div>
+
+            <!--
+              Sections container: a single bordered box that groups ALL cards.
+              This makes clear that every card is a parallel sibling — no hierarchy implied.
+              Inside, cards are laid out in a simple grid with no branch lines.
+            -->
+            <div class="tree-container">
+            <div class="tree-nodes">
+              <div
+                v-for="block in result.blocks"
+                :key="block.id"
+                class="tree-node"
+                role="button"
+                tabindex="0"
+                :aria-label="`Open section ${block.id}: ${block.title || ''}`"
+                @click="openSection(block)"
+                @keydown.enter.space.prevent="openSection(block)"
+              >
+                <!-- Section number circle badge -->
+                <div class="tree-node-num">{{ block.id }}</div>
+
+                <!-- Section title and subtitle -->
+                <div class="tree-node-content">
+                  <div class="tree-node-title">{{ block.title || `Section ${block.id}` }}</div>
+                  <div v-if="block.subtitle" class="tree-node-subtitle">{{ block.subtitle }}</div>
                 </div>
 
-                <div class="summary-section">
-                  <!-- Section label — no icon, plain text -->
-                  <div class="section-title">Summary</div>
-                  <p class="summary-text">
-                    {{ block.summary || 'Summary is not available.' }}
-                  </p>
-                </div>
+                <!-- Right-arrow: visual cue that the card is clickable -->
+                <svg class="tree-node-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 7h8M7 3.5l3.5 3.5L7 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div><!-- /tree-nodes -->
+            </div><!-- /tree-container -->
 
-                <div class="keypoints-section">
-                  <!-- Section label — no icon, plain text -->
-                  <div class="section-title">Key Points</div>
-                  <p v-if="!block.keyPoints || block.keyPoints.length === 0" class="fallback-text">
-                    No key points available.
-                  </p>
-                  <ul v-else class="keypoints-list">
-                    <li v-for="(pt, i) in block.keyPoints" :key="i">{{ pt }}</li>
-                  </ul>
-                </div>
+          </div><!-- /stage-tree -->
+
+        </div><!-- /result-state -->
+
+      </div><!-- /reading-inner -->
+    </main>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         STAGE 3 · Section Detail Modal
+         Opens when the user clicks a section card in the tree.
+         Contains: section title/subtitle, 2-column body (summary + key points),
+         and compact TTS audio controls.
+         Clicking the semi-transparent backdrop closes the modal.
+    ══════════════════════════════════════════════════════════════════════ -->
+    <Transition name="modal-fade">
+      <div
+        v-if="activeSection"
+        class="modal-backdrop"
+        role="dialog"
+        :aria-label="`Section ${activeSection.id} – ${activeSection.title || 'detail'}`"
+        @click.self="closeSection"
+      >
+        <div class="modal-panel">
+
+          <!-- ── Modal header ── -->
+          <div class="modal-header">
+
+            <!-- Circular section number badge -->
+            <div class="modal-section-num">{{ activeSection.id }}</div>
+
+            <!-- Title + subtitle -->
+            <div class="modal-title-group">
+              <h3 class="modal-title">{{ activeSection.title || `Section ${activeSection.id}` }}</h3>
+              <p v-if="activeSection.subtitle" class="modal-subtitle">{{ activeSection.subtitle }}</p>
+            </div>
+
+            <!-- Close button (×) -->
+            <button class="modal-close-btn" @click="closeSection" aria-label="Close section detail">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- ── Dictionary hint bar — shown once, dismissed permanently ── -->
+          <Transition name="hint-slide">
+            <div v-if="dictHintVisible" class="dict-hint-bar">
+              <!-- Book icon -->
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" class="dict-hint-icon">
+                <rect x="2" y="1.5" width="11" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                <path d="M5 5h5M5 7.5h5M5 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M2 1.5h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <span class="dict-hint-text">
+                <strong>Dictionary:</strong> double-click any word in the text to look it up instantly.
+              </span>
+              <button class="dict-hint-close" @click="dismissDictHint" aria-label="Dismiss hint">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </Transition>
+
+          <!-- ── Modal body: Original text (left, collapsible) | Summary + Key Points (right) ── -->
+          <div :class="['modal-body', { 'modal-body--orig-hidden': !modalShowOriginal }]">
+
+            <!-- Left column: original text -->
+            <!-- Only the label row (right-side arrow area) toggles expand/collapse.
+                 The text body is NOT a click target so users can freely double-click
+                 words to open the dictionary without triggering a collapse. -->
+            <!-- When collapsed the whole column is a click target (slim strip, easy to miss otherwise).
+                 When expanded only the label row toggles collapse — text body stays free for dblclick. -->
+            <div
+              :class="['modal-orig-col', { 'modal-orig-col--collapsed': !modalShowOriginal }]"
+              @click="!modalShowOriginal ? modalShowOriginal = true : null"
+            >
+              <!-- Label row — clicking this always toggles (expanded or collapsed) -->
+              <div class="modal-orig-label" @click.stop="modalShowOriginal = !modalShowOriginal" role="button" :aria-expanded="modalShowOriginal">
+                <span>Original Text</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path
+                    :d="modalShowOriginal ? 'M2 4l4 4 4-4' : 'M4 2l4 4-4 4'"
+                    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+
+              <!-- Original text body — double-click any word to look it up (global handler) -->
+              <p v-if="modalShowOriginal" class="modal-orig-text">
+                {{ activeSection.originalText || 'Original text not available.' }}
+              </p>
+            </div>
+
+            <!-- Plain divider -->
+            <div class="modal-divider"></div>
+
+            <!-- Right column: Summary and Key Points stacked -->
+            <div class="modal-col">
+
+              <!-- Summary section -->
+              <div class="modal-right-section">
+                <div class="modal-col-label">Summary</div>
+                <p class="modal-summary-text">{{ activeSection.summary || 'Summary not available.' }}</p>
+              </div>
+
+              <!-- Key Points section -->
+              <div class="modal-right-section">
+                <div class="modal-col-label">Key Points</div>
+                <p v-if="!activeSection.keyPoints?.length" class="modal-fallback">
+                  No key points available.
+                </p>
+                <ul v-else class="modal-keypoints">
+                  <li v-for="(pt, i) in activeSection.keyPoints" :key="i">{{ pt }}</li>
+                </ul>
               </div>
 
             </div>
-          </div>
-        </div>
 
-      </div>
-    </main>
+          </div><!-- /modal-body -->
+
+          <!-- ── Modal audio bar ── -->
+          <div class="modal-audio">
+
+            <!-- Status indicator -->
+            <div class="modal-audio-status">
+              <template v-if="activeBlockId === activeSection.id && playbackState === 'playing'">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="modal-audio-label">Playing…</span>
+              </template>
+              <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <rect x="2" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
+                  <rect x="8" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
+                </svg>
+                <span class="modal-audio-label" style="color:#f59e0b">Paused</span>
+              </template>
+              <template v-else>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M1.5 4H4l3-2.5v9L4 8H1.5V4z" fill="#4f46e5"/>
+                  <path d="M9 3.5a4 4 0 0 1 0 6" stroke="#4f46e5" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                <span class="modal-audio-label">Audio</span>
+              </template>
+            </div>
+
+            <div class="modal-audio-sep"></div>
+
+            <!-- Playback buttons: Play/Pause · Stop · Restart -->
+            <div class="modal-audio-btns">
+
+              <!-- Play / Pause / Resume -->
+              <button
+                class="modal-audio-btn modal-audio-btn--primary"
+                @click="
+                  activeBlockId === activeSection.id && playbackState === 'playing'
+                    ? pauseAudio()
+                    : activeBlockId === activeSection.id && playbackState === 'paused'
+                      ? resumeAudio()
+                      : playBlock(activeSection.id, 'summary')
+                "
+              >
+                <template v-if="activeBlockId === activeSection.id && playbackState === 'playing'">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <rect x="2" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                    <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                  </svg>
+                  Pause
+                </template>
+                <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                  </svg>
+                  Resume
+                </template>
+                <template v-else>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                  </svg>
+                  Play
+                </template>
+              </button>
+
+              <!-- Stop -->
+              <button
+                class="modal-audio-btn"
+                :disabled="activeBlockId !== activeSection.id || playbackState === 'idle'"
+                @click="stopAudio"
+                title="Stop"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+                </svg>
+                Stop
+              </button>
+
+              <!-- Restart from beginning -->
+              <button
+                class="modal-audio-btn"
+                title="Restart from beginning"
+                @click="playBlock(activeSection.id, 'summary')"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M2 9V6h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Restart
+              </button>
+
+            </div>
+
+            <div class="modal-audio-sep"></div>
+
+            <!-- Settings: Voice + Speed -->
+            <div class="modal-audio-settings">
+
+              <!-- Voice selector -->
+              <div class="modal-audio-ctrl">
+                <label class="modal-audio-ctrl-label">Voice</label>
+                <select v-model="selectedVoice" class="modal-audio-select">
+                  <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                </select>
+              </div>
+
+              <!-- Speed selector -->
+              <div class="modal-audio-ctrl">
+                <label class="modal-audio-ctrl-label">Speed</label>
+                <select v-model="playbackSpeed" class="modal-audio-select">
+                  <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                </select>
+              </div>
+
+            </div>
+
+          </div><!-- /modal-audio -->
+
+        </div><!-- /modal-panel -->
+      </div><!-- /modal-backdrop -->
+    </Transition><!-- /modal-fade -->
 
 
     <!-- ── Full-page drag-and-drop overlay ── -->
@@ -964,9 +1327,13 @@ onUnmounted(() => {
     </Transition>
 
 
+    <!-- Dictionary popup is now rendered globally in App.vue via GlobalDictPopup.vue
+         and triggered by the document-level dblclick listener in useGlobalDict.js -->
+
+
     <!-- ── Fixed bottom input bar ── -->
-    <!-- Always visible at the bottom; contains the textarea and action buttons -->
-    <div class="bottom-bar">
+    <!-- Hidden in result mode so the reading area has full focus -->
+    <div v-if="mode !== 'result'" class="bottom-bar">
       <div class="bottom-bar-inner">
 
         <!-- Feedback strip: shows loading / success / error messages -->
@@ -1175,6 +1542,8 @@ onUnmounted(() => {
   padding: 32px 0 210px;
   overflow-y: auto;
 }
+/* In result mode the bottom bar is hidden — remove the bottom clearance */
+.reading-area--no-bar { padding-bottom: 40px; }
 
 /* Narrow width for idle/loading; full-width for results */
 .reading-inner {
@@ -1184,7 +1553,7 @@ onUnmounted(() => {
   transition: max-width 0.3s ease;
 }
 .reading-inner--wide {
-  max-width: 1200px;  /* expand to full width when showing two-column result */
+  max-width: 1100px;  /* wider in result mode to give the 4-column tree room */
 }
 
 
@@ -1335,9 +1704,11 @@ kbd {
 
 
 /* ─────────────────────────────────────────
-   Result state
+   Result state — gap is now 0; each stage
+   manages its own spacing internally.
+   (Overridden again in the NEW STYLES block below.)
 ───────────────────────────────────────── */
-.result-state { display: flex; flex-direction: column; gap: 16px; }
+.result-state { display: flex; flex-direction: column; gap: 0; }
 
 /* Top bar: success badge + back-to-input button */
 .result-topbar {
@@ -2002,4 +2373,706 @@ kbd {
   .bar-hint  { display: none; }  /* hide hint row to save space */
   .drag-card { padding: 36px 28px; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ITERATION 3 — 3-stage guided reading flow
+   Premium, calm design for dyslexia-friendly reading.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────
+   Demo CTA banner in idle state
+───────────────────────────────────────── */
+.demo-cta {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 24px; padding: 14px 20px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid #bfdbfe; border-radius: 12px;
+  max-width: 520px; width: 100%;
+}
+.demo-cta-text { font-size: 13.5px; color: #4b5563; flex: 1; }
+.btn-demo {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; font-size: 13px; font-weight: 700; color: #2563eb;
+  background: #fff; border: 1.5px solid #bfdbfe; border-radius: 999px;
+  cursor: pointer; transition: all 0.18s; white-space: nowrap; font-family: inherit;
+}
+.btn-demo:hover {
+  background: #eff6ff; border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.14); transform: translateY(-1px);
+}
+
+
+/* ─────────────────────────────────────────
+   Result state — no gap; stages are full-page
+───────────────────────────────────────── */
+.result-state { display: flex; flex-direction: column; gap: 0; }
+
+
+/* ─────────────────────────────────────────
+   Stage pill labels (OVERVIEW / SECTIONS)
+───────────────────────────────────────── */
+.stage-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.stage-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 18px;
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: 999px;
+}
+.stage-pill--green { color: #15803d; background: #f0fdf4; border: 1.5px solid #86efac; }
+.stage-pill--blue  { color: #4338ca; background: #eef2ff; border: 1.5px solid #c7d2fe; }
+.stage-pill-count  { font-size: 12px; color: #9ca3af; font-weight: 500; }
+
+
+/* ─────────────────────────────────────────
+   STAGE 1 — Overall Summary hero card
+   Natural height — flows directly into the section grid below.
+───────────────────────────────────────── */
+.stage-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 740px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 48px 0 0;
+}
+
+/*
+  Main card: white background, green left accent border.
+  No coloured fill — white feels cleaner and more premium.
+  Three layers of shadow for natural depth.
+*/
+.overall-card {
+  background: #ffffff;
+  border: 1px solid #e8f5e9;
+  border-left: 4px solid #22c55e;
+  border-radius: 20px;
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    0 20px 56px rgba(0, 0, 0, 0.05);
+}
+
+/* Large, impactful heading */
+.overall-heading {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0a0a0a;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* Comfortable body text */
+.overall-body {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #4b5563;
+  margin: 0;
+}
+
+/*
+  Audio control row: thin top separator, then play button + optional speed.
+  The play button is part of the card flow — below the body text —
+  so the reading hierarchy feels natural.
+*/
+/* ── Overview card audio bar ── */
+.overall-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #f0fdf4;
+  flex-wrap: wrap;
+}
+
+/* Primary pill: Play / Pause / Resume */
+.overall-play-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px;
+  font-size: 14px; font-weight: 700; color: #fff;
+  background: #16a34a;
+  border: none; border-radius: 999px;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.32);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  white-space: nowrap;
+}
+.overall-play-pill:hover {
+  background: #15803d;
+  box-shadow: 0 6px 22px rgba(22, 163, 74, 0.42);
+  transform: translateY(-1px);
+}
+.overall-play-pill:active { transform: translateY(0); }
+
+/* Icon-only Stop + Restart buttons grouped together */
+.overall-icon-btns {
+  display: flex; align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.overall-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: none; border: none;
+  color: #94a3b8; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.overall-icon-btn:not(:last-child) { border-right: 1px solid #e2e8f0; }
+.overall-icon-btn:hover:not(:disabled) { background: #f0fdf4; color: #16a34a; }
+.overall-icon-btn:active:not(:disabled) { background: #dcfce7; }
+.overall-icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Thin vertical separator */
+.overall-audio-sep {
+  width: 1px; height: 22px;
+  background: #e2e8f0; flex-shrink: 0;
+}
+
+/* Voice + Speed selects pushed to the right */
+.overall-audio-settings {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+.overall-audio-select {
+  padding: 7px 12px;
+  font-size: 12.5px; font-weight: 600; color: #374151;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; outline: none; font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: auto;
+}
+.overall-audio-select:hover { background: #f0fdf4; border-color: #86efac; }
+.overall-audio-select:focus { border-color: #4ade80; background: #fff; }
+.overall-audio-select--narrow { width: 72px; }
+
+/* White waveform bars on the green pill */
+.wave-bar--white {
+  display: inline-block;
+  width: 3px; height: 11px;
+  background: #fff; border-radius: 2px;
+  animation: wave 0.9s ease-in-out infinite;
+}
+.wave-bar--white:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar--white:nth-child(3) { animation-delay: 0.30s; }
+
+
+/* ─────────────────────────────────────────
+   STAGE 2 — Section Grid
+   Flows naturally below the overview card.
+   The bridge label visually connects the two.
+───────────────────────────────────────── */
+.stage-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* so connector pill centres within full-width container */
+  gap: 0;
+  padding: 0 0 64px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────
+   Vertical connector: flows overview → N Sections pill → grid
+───────────────────────────────────────── */
+.stage-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  gap: 0;
+}
+
+/* Thin vertical lines above and below the pill */
+.stage-connector-line {
+  width: 2px;
+  background: linear-gradient(to bottom, #c7d2fe, #ddd6fe);
+  border-radius: 2px;
+}
+.stage-connector-line--top    { height: 32px; }
+.stage-connector-line--bottom { height: 28px; }
+
+/* The pill badge in the centre */
+.stage-connector-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.10);
+  white-space: nowrap;
+}
+
+/*
+  Container box — wraps ALL section cards in one visual unit.
+  This makes it unmistakably clear that every card is a peer,
+  NOT a child of another card.
+  A soft background + border draws the eye to the group as a whole.
+*/
+.tree-container {
+  width: 100%;                /* fill stage-tree even when parent uses align-items: center */
+  border: 1.5px solid #e0e7ff;
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(160deg, #fafbff 0%, #f5f4ff 100%);
+  box-shadow: 0 2px 16px rgba(99, 102, 241, 0.06);
+}
+
+/* Grid of section cards inside the container */
+.tree-nodes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  /* No position: relative or padding-top needed — branch lines are gone */
+}
+
+/* No crossbar pseudo-element */
+.tree-nodes::before { display: none; }
+
+/* Individual section card */
+.tree-node {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 18px 18px 16px 20px;
+  background: #fff;
+  border: 1px solid #eef0f8;
+  border-left: 3px solid #e0e7ff;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: border-left-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.tree-node:hover {
+  border-left-color: #6366f1;
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.13);
+  transform: translateY(-3px);
+}
+.tree-node:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+
+/* No branch-line pseudo-element per card */
+.tree-node::before { display: none; }
+
+/* Number badge */
+.tree-node-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 800; color: #4338ca;
+  background: #eef2ff;
+  align-self: flex-start;
+}
+.tree-node-content { flex: 1; }
+.tree-node-title {
+  font-size: 13.5px; font-weight: 700; color: #0f172a;
+  line-height: 1.3; margin-bottom: 4px;
+}
+.tree-node-subtitle { font-size: 12px; color: #64748b; line-height: 1.45; }
+
+/* Right arrow: click hint */
+.tree-node-arrow {
+  color: #cbd5e1;
+  transition: color 0.15s, transform 0.15s;
+  align-self: flex-end; margin-top: auto;
+}
+.tree-node:hover .tree-node-arrow { color: #6366f1; transform: translateX(4px); }
+
+/* Responsive grid */
+@media (max-width: 1000px) {
+  .tree-nodes { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px) {
+  .tree-nodes { grid-template-columns: repeat(2, 1fr); }
+  .stage-tree { padding: 0 0 40px; }
+  .tree-container { padding: 14px; }
+}
+@media (max-width: 440px) {
+  .tree-nodes { grid-template-columns: 1fr; }
+}
+
+
+/* ─────────────────────────────────────────
+   STAGE 3 — Section Detail Modal
+   Full-screen backdrop + centred panel card.
+───────────────────────────────────────── */
+
+/* Dim backdrop with blur */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(8, 10, 18, 0.52);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+/* Panel card */
+.modal-panel {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.04),
+    0 24px 80px rgba(0, 0, 0, 0.24);
+  max-width: 1100px; width: 100%;
+  max-height: 96vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* Modal header */
+.modal-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+/* Circular section number */
+.modal-section-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
+  font-size: 17px; font-weight: 800; color: #4338ca;
+  background: #eef2ff; border: 2px solid #c7d2fe;
+}
+
+.modal-title-group { flex: 1; min-width: 0; }
+.modal-title {
+  font-size: 21px; font-weight: 800; color: #0f172a;
+  letter-spacing: -0.025em; margin: 0 0 5px; line-height: 1.3;
+}
+.modal-subtitle { font-size: 13.5px; color: #374151; margin: 0; line-height: 1.45; }
+
+/* Close button */
+.modal-close-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: #f8fafc; border: none; border-radius: 999px;
+  color: #94a3b8; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.modal-close-btn:hover { background: #f1f5f9; color: #0f172a; }
+
+/* ── Dictionary usage hint bar ──
+   Shown once inside the modal, just below the header.
+   Dismissed permanently via localStorage.                */
+.dict-hint-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px 9px 24px;
+  background: #eef2ff;
+  border-bottom: 1px solid #c7d2fe;
+  flex-shrink: 0;
+}
+.dict-hint-icon {
+  flex-shrink: 0;
+  color: #6366f1;
+}
+.dict-hint-text {
+  flex: 1;
+  font-size: 12.5px;
+  color: #4338ca;
+  line-height: 1.5;
+}
+.dict-hint-text strong {
+  font-weight: 800;
+  color: #4338ca;
+}
+.dict-hint-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: #818cf8;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.dict-hint-close:hover {
+  background: #c7d2fe;
+  color: #3730a3;
+}
+
+/* Slide-down enter / slide-up leave */
+.hint-slide-enter-active { transition: max-height 0.28s ease, opacity 0.22s ease; overflow: hidden; }
+.hint-slide-leave-active { transition: max-height 0.22s ease, opacity 0.18s ease; overflow: hidden; }
+.hint-slide-enter-from   { max-height: 0; opacity: 0; }
+.hint-slide-enter-to     { max-height: 80px; opacity: 1; }
+.hint-slide-leave-from   { max-height: 80px; opacity: 1; }
+.hint-slide-leave-to     { max-height: 0; opacity: 0; }
+
+/* Modal body: 3-column grid — original (collapsible) | divider | summary+keypoints */
+.modal-body {
+  display: grid;
+  grid-template-columns: 2fr auto 3fr;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  transition: grid-template-columns 0.25s ease;
+}
+
+/* Collapsed state: original column shrinks to a readable strip */
+.modal-body--orig-hidden {
+  grid-template-columns: 110px auto 1fr;
+}
+
+/* ── Left column: original text ── */
+.modal-orig-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 22px 28px 30px;
+  min-width: 0;
+  overflow: hidden;
+  /* No cursor/user-select on the whole column — text body must be selectable
+     for the global dictionary double-click to work. */
+  cursor: default;
+  user-select: text;
+}
+
+/* Collapsed state — entire column is the click target, so restore pointer */
+.modal-orig-col--collapsed {
+  align-items: center;
+  justify-content: center;
+  padding: 28px 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.18s ease;
+}
+.modal-orig-col--collapsed:hover  { background: #eef2ff; }
+.modal-orig-col--collapsed:active { background: #e0e7ff; transform: scale(0.97); }
+
+/* Label row — the interactive toggle when expanded */
+.modal-orig-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #4f46e5;
+  white-space: nowrap;
+  flex-shrink: 0;
+  /* Label is the click target when expanded */
+  cursor: pointer;
+  user-select: none;
+  border-radius: 6px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  transition: background 0.15s, color 0.15s;
+}
+.modal-orig-label:hover { background: rgba(99,102,241,0.08); color: #3730a3; }
+
+/* Collapsed: rotate the whole label block vertically */
+.modal-orig-col--collapsed .modal-orig-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  flex-direction: column-reverse;
+  gap: 6px;
+}
+
+/* Original text body */
+.modal-orig-text {
+  font-size: 14px;
+  line-height: 1.78;
+  color: #1e293b;
+  margin: 0;
+  cursor: text;
+}
+
+/* Plain vertical divider */
+.modal-divider {
+  width: 1px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* ── Right column: Summary + Key Points ── */
+.modal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 30px 28px 0;
+  min-width: 0;
+}
+
+/* Sub-section group */
+.modal-right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Column label (ORIGINAL TEXT / SUMMARY / KEY POINTS) */
+.modal-col-label {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase; color: #4f46e5;
+}
+
+/* Vertical divider */
+.modal-divider { width: 1px; background: #f1f5f9; margin: 28px 24px; flex-shrink: 0; }
+
+/* Summary text */
+.modal-summary-text { font-size: 15px; line-height: 1.8; color: #1e293b; margin: 0; }
+
+/* Key points list */
+.modal-keypoints { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.modal-keypoints li {
+  font-size: 14px; line-height: 1.65; color: #334155;
+  padding-left: 16px; position: relative;
+}
+.modal-keypoints li::before { content: '●'; position: absolute; left: 0; color: #818cf8; font-size: 8px; top: 6px; }
+
+.modal-fallback { font-size: 13px; color: #94a3b8; font-style: italic; margin: 0; }
+
+/* ── Audio bar ── */
+.modal-audio {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 24px;
+  background: #fafafa;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+/* Status: waveform / paused / idle icon + label */
+.modal-audio-status {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: #64748b; font-weight: 600;
+  min-width: 90px;
+}
+.modal-audio-label { font-size: 12px; color: #64748b; }
+
+/* Thin vertical separator between groups */
+.modal-audio-sep {
+  width: 1px; height: 22px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0 16px;
+}
+
+/* Playback button group */
+.modal-audio-btns {
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* Individual control button */
+.modal-audio-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px;
+  font-size: 12.5px; font-weight: 700;
+  background: #fff; color: #374151;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.modal-audio-btn:hover:not(:disabled) {
+  background: #f1f5f9; border-color: #cbd5e1; color: #0f172a;
+  transform: translateY(-1px);
+}
+.modal-audio-btn:active:not(:disabled) { transform: translateY(0); }
+.modal-audio-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Primary play button */
+.modal-audio-btn--primary {
+  background: #4f46e5; border-color: #4f46e5; color: #fff;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.28);
+}
+.modal-audio-btn--primary:hover:not(:disabled) {
+  background: #4338ca; border-color: #4338ca;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.38);
+}
+
+/* Settings group: Voice + Speed */
+.modal-audio-settings {
+  display: flex; align-items: center; gap: 12px;
+  margin-left: auto;
+}
+
+/* Individual labeled control (Voice / Speed) */
+.modal-audio-ctrl {
+  display: flex; align-items: center; gap: 6px;
+}
+.modal-audio-ctrl-label {
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em; color: #94a3b8;
+  white-space: nowrap;
+}
+.modal-audio-select {
+  padding: 5px 10px; font-size: 12px; font-weight: 600; color: #374151;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  cursor: pointer; outline: none; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.modal-audio-select:focus { border-color: #818cf8; }
+
+/* Mobile modal */
+@media (max-width: 680px) {
+  /* Stack columns vertically on small screens */
+  .modal-body,
+  .modal-body--orig-hidden {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .modal-orig-col { padding: 20px 20px 0; }
+  .modal-orig-col--collapsed { padding: 12px 20px; align-items: flex-start; }
+  .modal-orig-col--collapsed .modal-orig-label { writing-mode: initial; transform: none; flex-direction: row; }
+  .modal-col { padding: 0 20px 20px; }
+  .modal-divider { width: auto; height: 1px; }
+  .modal-panel { border-radius: 18px; max-height: 93vh; }
+  .modal-header { padding: 20px 22px 16px; }
+  .modal-audio { padding: 14px 22px; }
+  .overall-card { padding: 24px 20px; }
+  .overall-heading { font-size: 22px; }
+  .stage-summary { padding: 28px 0 0; }
+}
+
+
+/* ─────────────────────────────────────────
+   Modal fade + scale-in transition
+───────────────────────────────────────── */
+.modal-fade-enter-active { transition: opacity 0.22s ease; }
+.modal-fade-leave-active { transition: opacity 0.18s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+
+.modal-fade-enter-active .modal-panel {
+  animation: modal-pop 0.24s cubic-bezier(0.34, 1.38, 0.64, 1);
+}
+@keyframes modal-pop {
+  from { transform: scale(0.93) translateY(12px); }
+  to   { transform: scale(1) translateY(0); }
+}
+
+
+/* Dictionary popup CSS lives in GlobalDictPopup.vue — rendered once at App root.
+   The .spin keyframe below is still needed for the loading spinners on this page. */
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
