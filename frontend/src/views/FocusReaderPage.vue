@@ -19,7 +19,7 @@
  */
 
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { playBackendTTS, stopBackendTTS, pauseBackendTTS, resumeBackendTTS } from '../composables/useBackendTts'
+import { playBackendTTS, stopBackendTTS, pauseBackendTTS, resumeBackendTTS, preloadBackendTTS } from '../composables/useBackendTts'
 
 // ── Navbar scroll shadow ──────────────────────────────────────────────────────
 const scrolled = ref(false)
@@ -277,6 +277,43 @@ function playBeep(type) {
 }
 
 // ── Speech cue via backend TTS ────────────────────────────────────────────────
+
+/**
+ * Plan B fallback: use the browser's built-in SpeechSynthesis when the backend
+ * TTS fails (network error, quota exceeded, etc.).
+ * Browser speech is instant — no network round-trip — so the audio cue always
+ * plays even if the backend is unavailable.
+ */
+function speakWithBrowser(text) {
+  try {
+    if (!window.speechSynthesis) throw new Error('unavailable')
+    window.speechSynthesis.cancel()          // stop any previous browser utterance
+    const utt = new SpeechSynthesisUtterance(text)
+    utt.rate   = 0.8
+    utt.volume = 0.9
+    window.speechSynthesis.speak(utt)
+  } catch {
+    // Both backend and browser TTS unavailable — fall back to visual label
+    ui.cueLabel   = text
+    ui.cueIsAudio = false
+  }
+}
+
+/**
+ * Plan A: silently pre-fetch TTS audio blobs for every word in the active pool
+ * the moment a new game starts. The composable caches blobs by (text, voice) key,
+ * so by the time the first audio cue round arrives the blob is ready in memory
+ * and playback starts instantly with no perceptible network delay.
+ */
+function preloadPoolAudio() {
+  const pool = settings.mode === 'mixed'
+    ? [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+    : [...(POOLS[settings.mode] || POOLS.letters)]
+  for (const word of pool) {
+    preloadBackendTTS(word, { voice: 'default-female', volume: 80 }).catch(() => {})
+  }
+}
+
 async function speakTarget() {
   if (!settings.sound) {
     ui.cueLabel  = G.target
@@ -286,9 +323,9 @@ async function speakTarget() {
   try {
     await playBackendTTS(G.target, { voice: 'default-female', speed: 0.75, volume: 80 })
   } catch (err) {
-    console.error('[TTS] FocusReader cue error:', err)
-    ui.cueLabel = G.target
-    ui.cueIsAudio = false
+    console.error('[TTS] FocusReader backend error — falling back to browser TTS:', err)
+    // Plan B: backend failed → browser speech synthesis as instant fallback
+    speakWithBrowser(G.target)
   }
 }
 
@@ -330,6 +367,7 @@ function resolveChoice(chip) {
   // Stop any in-flight or playing TTS from this round so it doesn't bleed
   // into the inter-round gap or the next round's audio cue
   stopBackendTTS()
+  window.speechSynthesis?.cancel()
   ui.cueIsAudio = false
 
   if (chip.isTarget) {
@@ -363,6 +401,7 @@ function missRound() {
   G.roundActive = false
   // Stop any in-flight or playing TTS so it doesn't carry over into the next round
   stopBackendTTS()
+  window.speechSynthesis?.cancel()
   ui.cueIsAudio = false
   G.misses++; G.streak = 0
   G.recent.push({ ok: false, rt: G.roundDuration })
@@ -464,6 +503,7 @@ function loadHistory() {
 // ── Session end ───────────────────────────────────────────────────────────────
 function finishSession(completed) {
   stopBackendTTS()          // stop any in-flight audio cue immediately
+  window.speechSynthesis?.cancel()
   cancelAnimationFrame(G.animId)
   if (!G.running) return
 
@@ -504,6 +544,11 @@ function startGame() {
 
   // Stop any audio from a previous game before a fresh start
   stopBackendTTS()
+  window.speechSynthesis?.cancel()
+
+  // Plan A: pre-fetch TTS blobs for every word in the active pool so audio
+  // cue rounds play instantly from cache instead of waiting on the network.
+  preloadPoolAudio()
 
   // Full reset for a fresh session
   Object.assign(G, {
@@ -664,6 +709,7 @@ onMounted(() => {
 onUnmounted(() => {
   cancelAnimationFrame(G.animId)
   stopBackendTTS()
+  window.speechSynthesis?.cancel()
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', onResize)
   document.removeEventListener('keydown', handleKey)
