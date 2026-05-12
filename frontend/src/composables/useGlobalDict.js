@@ -14,6 +14,7 @@
  */
 
 import { ref, computed } from 'vue'
+import { playBackendTTS, preloadBackendTTS, stopBackendTTS } from './useBackendTts'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
@@ -121,6 +122,7 @@ async function handleWordDblClick(e) {
     const data = await res.json()
     if (!res.ok) throw new Error(data.detail || 'Word not found.')
     dictPopup.value = { ...dictPopup.value, data, loading: false }
+    preloadDictAudio(data)
   } catch {
     dictPopup.value = {
       ...dictPopup.value,
@@ -133,23 +135,35 @@ async function handleWordDblClick(e) {
         meaningFromParts: '',
       },
     }
+    preloadDictAudio(dictPopup.value.data)
   }
 }
 
-function speakDictWord(rate = 1) {
+function getDictAudioText(data) {
+  return [data?.word, data?.simpleMeaning].filter(Boolean).join('. ')
+}
+
+function preloadDictAudio(data) {
+  const text = getDictAudioText(data)
+  if (!text) return
+  preloadBackendTTS(text, { voice: 'default-female', volume: 80 }).catch((err) => {
+    console.warn('[TTS] Dictionary popup preload failed:', err)
+  })
+}
+
+async function speakDictWord(rate = 1) {
   if (!dictPopup.value?.data) return
-  const text = [dictPopup.value.data.word, dictPopup.value.data.simpleMeaning]
-    .filter(Boolean).join('. ')
-  window.speechSynthesis?.cancel()
-  const utt = new SpeechSynthesisUtterance(text)
-  utt.lang = 'en-US'
-  utt.rate = rate
-  window.speechSynthesis?.speak(utt)
+  const text = getDictAudioText(dictPopup.value.data)
+  try {
+    await playBackendTTS(text, { voice: 'default-female', speed: rate, volume: 80 })
+  } catch (err) {
+    console.error('[TTS] Dictionary popup playback error:', err)
+  }
 }
 
 function closeDictPopup() {
   dictPopup.value = null
-  window.speechSynthesis?.cancel()
+  stopBackendTTS()
 }
 
 /**

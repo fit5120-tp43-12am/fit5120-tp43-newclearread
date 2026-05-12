@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { useGlobalDict } from '../composables/useGlobalDict'
+import { playBackendTTS, preloadBackendTTS, stopBackendTTS } from '../composables/useBackendTts'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
@@ -18,15 +19,30 @@ const resultRef   = ref(null)   // template ref for the result card
 // ── TTS ───────────────────────────────────────────────────────────────────────
 const ttsPlaying = ref(false)
 
-function speakWord() {
+function dictionaryAudioText(entry) {
+  return [entry?.word, entry?.simpleMeaning].filter(Boolean).join('. ')
+}
+
+function preloadDictionaryAudio(entry) {
+  const text = dictionaryAudioText(entry)
+  if (!text) return
+  preloadBackendTTS(text, { voice: 'default-female', volume: 80 }).catch((err) => {
+    console.warn('[TTS] Dictionary preload failed:', err)
+  })
+}
+
+async function speakWord() {
   if (!result.value) return
-  window.speechSynthesis?.cancel()
-  const text = [result.value.word, result.value.simpleMeaning].filter(Boolean).join('. ')
-  const utt = new SpeechSynthesisUtterance(text)
-  utt.lang = 'en-US'
+  stopBackendTTS()
+  const text = dictionaryAudioText(result.value)
   ttsPlaying.value = true
-  utt.onend = utt.onerror = () => { ttsPlaying.value = false }
-  window.speechSynthesis?.speak(utt)
+  try {
+    await playBackendTTS(text, { voice: 'default-female', speed: 1, volume: 80 })
+  } catch (err) {
+    console.error('[TTS] Dictionary playback error:', err)
+  } finally {
+    ttsPlaying.value = false
+  }
 }
 
 // ── Lookup ────────────────────────────────────────────────────────────────────
@@ -42,7 +58,7 @@ async function handleSearch() {
   errorMsg.value = ''
   result.value   = null
   searched.value = true
-  window.speechSynthesis?.cancel()
+  stopBackendTTS()
   ttsPlaying.value = false
 
   try {
@@ -54,6 +70,7 @@ async function handleSearch() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.detail || 'Word not found.')
     result.value = data
+    preloadDictionaryAudio(data)
     // Scroll result into view after DOM updates
     await nextTick()
     resultRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -108,6 +125,7 @@ function loadSaved(entry) {
   searched.value   = true
   errorMsg.value   = ''
   ttsPlaying.value = false
+  preloadDictionaryAudio(entry)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>

@@ -10,6 +10,14 @@ const readingPageMemory = {
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import {
+  pauseBackendTTS,
+  playBackendTTS,
+  preloadBackendTTS,
+  resumeBackendTTS,
+  setBackendTTSPlaybackRate,
+  stopBackendTTS,
+} from '../composables/useBackendTts'
 
 // Backend base URL from .env; falls back to localhost for local development
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
@@ -128,6 +136,7 @@ function openSection(block) {
   stopAudio()
   activeSection.value = block
   modalShowOriginal.value = false  // hidden by default; user can expand
+  preloadBlockAudio(block, 'summary')
 }
 
 /** Closes the section detail modal and stops any playing TTS. */
@@ -227,9 +236,7 @@ const OVERALL_SUMMARY_ID = 0
 async function playOverallSummary() {
   if (!overallSummary.value) return
 
-  // Build the text: heading + body paragraph joined as a sentence
-  const text = [overallSummary.value.heading, overallSummary.value.text]
-    .filter(Boolean).join('. ')
+  const text = getOverallAudioText()
 
   const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
 
@@ -241,7 +248,7 @@ async function playOverallSummary() {
   stopAudio()
   activeBlockId.value   = OVERALL_SUMMARY_ID
   activeBlockType.value = 'summary'
-  playbackState.value   = 'playing'
+  playbackState.value   = 'loading'
 
   try {
     await requestTTS(text)
@@ -303,7 +310,7 @@ const activeBlockId   = ref(null)
 const activeBlockType = ref('original')
 
 // Playback state machine
-const playbackState   = ref('idle')   // 'idle' | 'playing' | 'paused'
+const playbackState   = ref('idle')   // 'idle' | 'loading' | 'playing' | 'paused'
 
 // User-adjustable audio settings
 const playbackSpeed  = ref(1.0)      // multiplier: 0.75 / 1.0 / 1.25 / 1.5 / 2.0
@@ -314,104 +321,68 @@ const volume         = ref(70)       // 0–100
 const SPEED_OPTIONS  = [0.75, 1.0, 1.25, 1.5, 2.0]
 
 // Voice preference keys shown in the toolbar dropdown.
-// These are mapped to actual browser SpeechSynthesisVoice objects by getSelectedVoice().
+// These are mapped to OpenAI TTS voices by the backend.
 const VOICE_OPTIONS  = [
   { value: 'default-female', label: 'Default Female' },
   { value: 'default-male',   label: 'Default Male'   },
-  { value: 'calm-female',    label: 'Calm Female'    },
-  { value: 'clear-male',     label: 'Clear Male'     },
 ]
 
-// Browser voices loaded asynchronously via the Web Speech API
-const availableVoices = ref([])
+let preloadAudioTimer = null
+let preloadAudioToken = 0
 
-function loadVoices() {
-  if (!('speechSynthesis' in window)) return
-  availableVoices.value = window.speechSynthesis.getVoices()
+function getOverallAudioText() {
+  return overallSummary.value
+    ? [overallSummary.value.heading, overallSummary.value.text].filter(Boolean).join('. ')
+    : ''
+}
+
+function getBlockAudioText(block, textType = 'summary') {
+  if (!block) return ''
+  if (textType === 'original') return block.originalText || ''
+  const keyPoints = block.keyPoints?.length
+    ? 'Key points: ' + block.keyPoints.join('. ')
+    : ''
+  return [block.summary, keyPoints].filter(Boolean).join('. ')
+}
+
+function preloadTextAudio(text) {
+  const cleanText = String(text || '').trim()
+  if (!cleanText) return Promise.resolve(null)
+  return preloadBackendTTS(cleanText, {
+    voice: selectedVoice.value,
+    volume: volume.value,
+  }).catch((err) => {
+    console.warn('[TTS] Audio preload failed:', err)
+    return null
+  })
+}
+
+function preloadBlockAudio(block, textType = 'summary') {
+  return preloadTextAudio(getBlockAudioText(block, textType))
+}
+
+function scheduleAudioPreload() {
+  clearTimeout(preloadAudioTimer)
+  const token = ++preloadAudioToken
+  preloadAudioTimer = setTimeout(async () => {
+    if (token !== preloadAudioToken || mode.value !== 'result') return
+    await preloadTextAudio(getOverallAudioText())
+  }, 250)
 }
 
 /**
- * Returns the best matching SpeechSynthesisVoice for the user's preference.
- * Searches English voices by common name patterns for male / female voices.
- */
-function getSelectedVoice() {
-  // Only look at English voices
-  const en = availableVoices.value.filter(v => v.lang.startsWith('en'))
-  if (!en.length) return null
-
-  const pref = selectedVoice.value
-
-  if (pref === 'default-female' || pref === 'calm-female') {
-    // Common female voice name keywords across Windows / macOS / Chrome
-    return (
-      en.find(v => /zira|victoria|samantha|karen|moira|fiona|female|woman/i.test(v.name)) ||
-      en[0]
-    )
-  }
-
-  if (pref === 'default-male' || pref === 'clear-male') {
-    // Common male voice name keywords
-    return (
-      en.find(v => /david|mark|daniel|alex|james|george|male|man/i.test(v.name)) ||
-      en[0]
-    )
-  }
-
-  return en[0]
-}
-
-// ── TTS via Browser Web Speech API ───────────────────────────────────────────
-//
-// Uses the browser's built-in SpeechSynthesis — no backend required.
-// Works in Chrome, Edge, and Safari. Firefox support is partial.
-//
-// The Promise resolves ONLY when speech actually ends (onend).
-// Resolving early (before onend) would cause playBlock() to immediately
-// call stopAudio(), cancelling the speech before it finishes — the
-// original bug that made TTS appear broken.
-
-/**
- * Speak text using the Web Speech API.
+ * Speak text using backend OpenAI TTS.
  * Returns a Promise that resolves when the utterance naturally finishes,
  * or when it is cancelled programmatically (treated as a clean stop).
  */
 function requestTTS(text) {
-  return new Promise((resolve, reject) => {
-    if (!('speechSynthesis' in window)) {
-      reject(new Error('Text-to-speech is not supported in this browser.'))
-      return
-    }
-
-    const synth     = window.speechSynthesis
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang   = 'en-US'
-    utterance.rate   = playbackSpeed.value
-    utterance.volume = volume.value / 100
-
-    // Apply the selected browser voice (mapped from user preference to real voice object)
-    const voice = getSelectedVoice()
-    if (voice) utterance.voice = voice
-
-    // Resolve when speech ends naturally
-    utterance.onend = () => resolve('done')
-
-    // 'interrupted' / 'canceled' fire when stopAudio() calls speechSynthesis.cancel().
-    // Treat them as a normal clean stop, not an error.
-    utterance.onerror = (e) => {
-      if (e.error === 'interrupted' || e.error === 'canceled') {
-        resolve('cancelled')
-      } else {
-        console.warn('[TTS] Speech error:', e.error)
-        reject(new Error(e.error))
-      }
-    }
-
-    // ⚠️ Chrome bug: calling cancel() + speak() in the same synchronous block
-    // causes the new utterance to immediately receive an 'interrupted' error.
-    // stopAudio() already called cancel() before we get here, so we must NOT
-    // call cancel() again. We also defer speak() by 50 ms so Chrome has time
-    // to flush the previous cancellation before queuing the new utterance.
-    setTimeout(() => synth.speak(utterance), 50)
+  return playBackendTTS(text, {
+    voice: selectedVoice.value,
+    speed: playbackSpeed.value,
+    volume: volume.value,
+    onPlaybackStart: () => {
+      if (playbackState.value === 'loading') playbackState.value = 'playing'
+    },
   })
 }
 
@@ -439,19 +410,8 @@ async function playBlock(blockId, textType = 'original') {
   stopAudio()
   activeBlockId.value   = blockId
   activeBlockType.value = textType
-  playbackState.value   = 'playing'
-
-  // Build the text to speak depending on which card was clicked
-  let textToSpeak = ''
-  if (textType === 'original') {
-    textToSpeak = block.originalText
-  } else {
-    // Right card: read summary then key points as a flowing sentence
-    const kp = block.keyPoints?.length
-      ? 'Key points: ' + block.keyPoints.join('. ')
-      : ''
-    textToSpeak = [block.summary, kp].filter(Boolean).join('. ')
-  }
+  playbackState.value   = 'loading'
+  const textToSpeak = getBlockAudioText(block, textType)
 
   try {
     // Await speech completion — state resets to idle only after speech ends
@@ -466,13 +426,16 @@ async function playBlock(blockId, textType = 'original') {
 
 /** Pause the current playback. */
 function pauseAudio() {
-  if ('speechSynthesis' in window) window.speechSynthesis.pause()
+  pauseBackendTTS()
   playbackState.value = 'paused'
 }
 
 /** Resume a paused playback. */
 function resumeAudio() {
-  if ('speechSynthesis' in window) window.speechSynthesis.resume()
+  resumeBackendTTS().catch((err) => {
+    console.error('[TTS] Resume error:', err)
+    stopAudio()
+  })
   playbackState.value = 'playing'
 }
 
@@ -483,11 +446,33 @@ function replayBlock() {
 
 /** Stop all playback and reset to idle. */
 function stopAudio() {
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  stopBackendTTS()
   activeBlockId.value   = null
   activeBlockType.value = 'original'
   playbackState.value   = 'idle'
 }
+
+function restartActiveAudio() {
+  if (activeBlockId.value === null || playbackState.value === 'idle') return
+  const blockId = activeBlockId.value
+  const blockType = activeBlockType.value
+  if (blockId === OVERALL_SUMMARY_ID) {
+    playOverallSummary()
+  } else {
+    playBlock(blockId, blockType)
+  }
+}
+
+watch(selectedVoice, () => {
+  scheduleAudioPreload()
+  restartActiveAudio()
+})
+
+watch(playbackSpeed, (speed) => {
+  setBackendTTSPlaybackRate(speed)
+})
+
+watch(result, scheduleAudioPreload, { deep: true })
 
 
 // ── Feedback strip ────────────────────────────────────────────────────────────
@@ -739,21 +724,13 @@ onMounted(() => {
   restoreReadingState()
   window.addEventListener('scroll', onScroll)
   nextTick(autoResize)
-
-  // Load browser voices — they populate asynchronously after page load.
-  // voiceschanged fires once the list is ready (required in Chrome).
-  loadVoices()
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = loadVoices
-  }
 })
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   clearTimeout(feedbackTimer)
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = null
-    window.speechSynthesis.cancel()
-  }
+  clearTimeout(preloadAudioTimer)
+  preloadAudioToken += 1
+  stopAudio()
 })
 
 
@@ -996,6 +973,10 @@ function dismissDictHint() {
                     <span class="wave-bar wave-bar--white"></span>
                     <span class="wave-bar wave-bar--white"></span>
                     Pause
+                  </template>
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'">
+                    <span class="btn-spinner"></span>
+                    Generating audio
                   </template>
                   <!-- Paused: resume -->
                   <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
@@ -1256,6 +1237,10 @@ function dismissDictHint() {
                 <span class="wave-bar"></span>
                 <span class="modal-audio-label">Playing…</span>
               </template>
+              <template v-else-if="activeBlockId === activeSection.id && playbackState === 'loading'">
+                <span class="btn-spinner"></span>
+                <span class="modal-audio-label">Generating audio</span>
+              </template>
               <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <rect x="2" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
@@ -1294,6 +1279,10 @@ function dismissDictHint() {
                     <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
                   </svg>
                   Pause
+                </template>
+                <template v-else-if="activeBlockId === activeSection.id && playbackState === 'loading'">
+                  <span class="btn-spinner"></span>
+                  Generating
                 </template>
                 <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
 
@@ -8,6 +8,13 @@ MAX_TEXT_CHARS = 50000
 # Request body for plain text submitted by the frontend.
 class TextRequest(BaseModel):
     text: str
+
+
+class TTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=12000)
+    voice: str = "default-female"
+    speed: float = Field(1.0, ge=0.5, le=2.0)
+    volume: int = Field(70, ge=0, le=100)
 
 
 # Request body for uploaded files sent as base64 content.
