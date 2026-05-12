@@ -19,7 +19,7 @@
  */
 
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { playBackendTTS, stopBackendTTS } from '../composables/useBackendTts'
+import { playBackendTTS, stopBackendTTS, pauseBackendTTS, resumeBackendTTS } from '../composables/useBackendTts'
 
 // ── Navbar scroll shadow ──────────────────────────────────────────────────────
 const scrolled = ref(false)
@@ -456,6 +456,7 @@ function loadHistory() {
 
 // ── Session end ───────────────────────────────────────────────────────────────
 function finishSession(completed) {
+  stopBackendTTS()          // stop any in-flight audio cue immediately
   cancelAnimationFrame(G.animId)
   if (!G.running) return
 
@@ -494,6 +495,9 @@ function finishSession(completed) {
 function startGame() {
   if (G.running && G.paused) { resumeGame(); return }
 
+  // Stop any audio from a previous game before a fresh start
+  stopBackendTTS()
+
   // Full reset for a fresh session
   Object.assign(G, {
     running: true, paused: false, level: 1, score: 0,
@@ -512,6 +516,7 @@ function pauseGame() {
   if (!G.running || G.paused) return
   G.paused = true; isPaused.value = true
   cancelAnimationFrame(G.animId)
+  pauseBackendTTS()         // pause any audio cue that is currently playing
   ui.message = 'Paused. Press Resume to continue. (Shortcut: P)'
 }
 
@@ -520,6 +525,13 @@ function resumeGame() {
   ui.showOverlay = false
   G.roundStartedAt = performance.now()
   G.lastFrame      = performance.now()
+  // If we were in an audio cue round, resume the paused audio
+  if (ui.cueIsAudio) {
+    resumeBackendTTS().catch(() => {
+      // Audio already ended or unavailable — replay the cue for the player
+      speakTarget()
+    })
+  }
   loop(G.lastFrame)
 }
 
@@ -616,7 +628,8 @@ function handleKey(e) {
   const key = e.key.toLowerCase()
   if (key === 'escape') { closeGuide() }
   if (key === 'p' && G.running) { e.preventDefault(); G.paused ? resumeGame() : pauseGame() }
-  if (key === 'r' && G.cueMode === 'audio') { e.preventDefault(); speakTarget() }
+  // R replays audio cue only when game is actively running and the current round uses audio
+  if (key === 'r' && G.running && !G.paused && G.cueMode === 'audio') { e.preventDefault(); speakTarget() }
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -772,18 +785,30 @@ onUnmounted(() => {
         <!-- ⑥ Controls -->
         <div class="controls-row">
           <button
-            v-if="!isRunning || isPaused"
+            v-if="!isRunning"
             class="btn-start"
             @click="startGame"
-          >
-            {{ isPaused ? '▶ Resume' : (isRunning ? '↺ Restart' : '▶ Start') }}
-          </button>
+          >▶ Start</button>
+          <button
+            v-if="isRunning && isPaused"
+            class="btn-start"
+            @click="resumeGame"
+          >▶ Resume</button>
           <button
             v-if="isRunning && !isPaused"
             class="btn-pause"
             @click="pauseGame"
           >⏸ Pause</button>
-          <button class="btn-reset" @click="resetGame">Reset</button>
+          <button
+            v-if="isRunning"
+            class="btn-reset"
+            @click="resetGame"
+          >↺ Restart</button>
+          <button
+            v-if="!isRunning"
+            class="btn-reset"
+            @click="resetGame"
+          >Reset</button>
           <button class="btn-guide" @click="openGuide" aria-label="How to play">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
