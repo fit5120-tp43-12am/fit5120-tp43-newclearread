@@ -46,16 +46,17 @@
             <section class="policy-section">
               <h2>1. Overview</h2>
               <p>
-                Clearead is a web application and browser extension designed to support
-                university students with dyslexia. We are committed to protecting your
-                privacy. This policy explains what information we collect, how we use it,
-                and your rights.
+                Clearead is a reading support platform for university students with dyslexia.
+                It is available as a <strong>web application</strong> and as a
+                <strong>Chrome browser extension</strong>. We are committed to protecting your
+                privacy. This policy explains what information each product handles, how it
+                is used, and your rights.
               </p>
             </section>
 
             <section class="policy-section">
-              <h2>2. Information We Collect</h2>
-              <p>Clearead collects only the minimum information necessary to provide its services:</p>
+              <h2>2. Web Application — Information We Collect</h2>
+              <p>The Clearead web application collects only the minimum information needed to provide its services:</p>
               <ul>
                 <li>
                   <strong>Text you submit</strong> — When you use the Reading Support feature,
@@ -81,43 +82,126 @@
             </section>
 
             <section class="policy-section">
-              <h2>3. Information We Do Not Collect</h2>
+              <h2>3. Chrome Browser Extension — What It Does</h2>
+              <p>The Clearead Chrome extension (version 0.1.1 and later) is a side-panel reading support tool. It lets users:</p>
               <ul>
-                <li>We do not require you to create an account or log in.</li>
-                <li>We do not collect your name, email address, or any contact information.</li>
-                <li>We do not use cookies for tracking or advertising.</li>
-                <li>We do not sell or share your data with third parties for marketing purposes.</li>
+                <li>Paste text into the side panel and request a plain-English summary.</li>
+                <li>Look up one English word via the side panel or an opt-in right-click menu.</li>
+                <li>Apply local page reading tools — readable fonts (OpenDyslexic), Highlight, Lens, and Line guide — directly on any webpage.</li>
+                <li>Open the full Clearead website from a user-clicked link in the panel.</li>
               </ul>
             </section>
 
             <section class="policy-section">
-              <h2>4. Third-Party Services</h2>
-              <p>Clearead uses the following third-party services to deliver its features:</p>
+              <h2>4. Chrome Browser Extension — Data Handling</h2>
+              <p>The extension handles only the information needed for the reading support features listed above:</p>
               <ul>
                 <li>
-                  <strong>OpenAI / AI language model</strong> — Used to simplify and summarise
-                  text. Text you submit is sent to the AI API. Please refer to the provider's
-                  own privacy policy for details on data handling.
+                  <strong>Pasted text (Summary)</strong> — Text that you manually enter into the
+                  side panel and submit by clicking <em>Summary</em>. This text is sent to the
+                  Clearead backend to generate a concise reading-support summary and is
+                  <strong>not stored</strong> after the response is returned.
                 </li>
                 <li>
-                  <strong>RapidAPI / WordsAPI</strong> — Used to fetch plain-English word
-                  definitions. Only the word itself (no personal data) is sent.
+                  <strong>Dictionary word</strong> — One English word that you type into the
+                  side panel word box, or one selected word passed by Chrome when you click
+                  <em>Explain with Clearead</em> in the right-click menu. Words are validated
+                  locally (single word, 50-character limit) before being sent to the backend.
+                  Words are not retained after the response is returned.
+                </li>
+                <li>
+                  <strong>Page content (local page tools only)</strong> — When you use
+                  Highlight, Lens, or Line guide, the active page DOM may be inspected or
+                  cloned <em>locally inside the current tab</em>. No page content is sent
+                  to the backend or any remote server.
+                </li>
+                <li>
+                  <strong>Session state</strong> — The extension uses
+                  <code>chrome.storage.session</code> to remember whether the opt-in
+                  right-click menu is enabled, recent tab/window/time metadata for page-tool
+                  state sync, and short error notices if a lookup fails before the panel
+                  opens. Session storage is <strong>cleared automatically</strong> by Chrome
+                  when the extension is disabled, updated, or when the browser restarts.
                 </li>
               </ul>
-            </section>
-
-            <section class="policy-section">
-              <h2>5. Data Security</h2>
               <p>
-                All communication between your browser and our servers uses HTTPS encryption.
-                We do not store personal data on our servers. Data held in your browser's
-                <code>localStorage</code> is under your control and can be cleared at any time
-                through your browser settings.
+                Page reading tools (readable fonts, Highlight, Lens, Line guide) run entirely
+                locally in the browser. No page content is transmitted to any server.
               </p>
             </section>
 
             <section class="policy-section">
-              <h2>6. Children's Privacy</h2>
+              <h2>5. Chrome Browser Extension — Permissions</h2>
+              <p>The extension requests the following Chrome permissions, each used only for the stated purpose:</p>
+              <ul>
+                <li><strong>sidePanel</strong> — Displays the reading support panel alongside any webpage.</li>
+                <li><strong>activeTab</strong> — Grants temporary access to the current tab after the user opens Clearead for that page; used to inject local page-reading tools.</li>
+                <li><strong>scripting</strong> — Injects the locally packaged page-tool script into the active tab after user action.</li>
+                <li><strong>contextMenus</strong> — Adds one opt-in right-click item (<em>Explain with Clearead</em>) that the user can enable or disable from the side panel.</li>
+                <li><strong>storage</strong> — Accesses <code>chrome.storage.session</code> for the current-session state described above.</li>
+                <li>
+                  <strong>Host permission</strong> (<code>https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*</code>)
+                  — Required to send Summary and Dictionary requests to the Clearead backend API.
+                  No other host permissions are requested.
+                </li>
+              </ul>
+              <p>
+                The use of information received from Google APIs will adhere to the
+                <strong>Chrome Web Store User Data Policy</strong>, including the
+                <strong>Limited Use</strong> requirements.
+              </p>
+            </section>
+
+            <section class="policy-section">
+              <h2>6. Information We Do Not Collect</h2>
+              <ul>
+                <li>We do not require you to create an account or log in (web app or extension).</li>
+                <li>We do not collect your name, email address, or any contact information.</li>
+                <li>We do not use cookies for tracking or advertising.</li>
+                <li>We do not sell or share your data with third parties for marketing purposes.</li>
+                <li>The extension does not collect browsing history, tab URLs, or page content beyond what is needed to apply local page tools.</li>
+              </ul>
+            </section>
+
+            <section class="policy-section">
+              <h2>7. Third-Party Services &amp; AI Providers</h2>
+              <p>
+                Both the web application and the browser extension send Summary and Dictionary
+                requests to the shared Clearead backend. The backend may use server-side AI
+                providers, including <strong>OpenAI</strong>, to generate reading support
+                summaries and word explanations. API keys and model credentials are held
+                on the backend and are never exposed to the browser.
+              </p>
+              <ul>
+                <li>
+                  <strong>OpenAI</strong> — Used to simplify, summarise, and explain text.
+                  Please refer to OpenAI's own privacy policy for details on how they handle
+                  data sent to their API.
+                </li>
+                <li>
+                  <strong>RapidAPI / WordsAPI</strong> — Used by the web application to fetch
+                  plain-English word definitions. Only the word itself (no personal data) is sent.
+                </li>
+              </ul>
+            </section>
+
+            <section class="policy-section">
+              <h2>8. Data Security</h2>
+              <p>
+                All communication between your browser and our servers uses HTTPS encryption.
+                The extension also uses HTTPS for all backend requests. We do not store personal
+                data on our servers. Data held in your browser's <code>localStorage</code> or
+                <code>chrome.storage.session</code> is under your control and can be cleared
+                at any time through your browser or extension settings.
+              </p>
+              <p>
+                The OpenDyslexic fonts used by the extension's readable-font option are packaged
+                locally with the extension and are not fetched from any remote server.
+              </p>
+            </section>
+
+            <section class="policy-section">
+              <h2>9. Children's Privacy</h2>
               <p>
                 Clearead is intended for use by university students (18 years and older).
                 We do not knowingly collect any information from children under 13.
@@ -125,7 +209,7 @@
             </section>
 
             <section class="policy-section">
-              <h2>7. Changes to This Policy</h2>
+              <h2>10. Changes to This Policy</h2>
               <p>
                 We may update this Privacy Policy from time to time. Any changes will be
                 reflected on this page with an updated date. Continued use of Clearead
@@ -134,10 +218,11 @@
             </section>
 
             <section class="policy-section policy-section--last">
-              <h2>8. Contact</h2>
+              <h2>11. Contact</h2>
               <p>
                 If you have any questions about this Privacy Policy, please contact the
-                Clearead development team via the project repository on GitHub.
+                Clearead development team via the project repository on GitHub or through
+                the contact details provided in the Chrome Web Store listing.
               </p>
             </section>
 
