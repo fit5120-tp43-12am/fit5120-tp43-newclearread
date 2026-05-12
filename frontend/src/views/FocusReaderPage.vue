@@ -162,13 +162,20 @@ function getPool() {
  * Builds the label array for a round.
  * Guarantees the target appears once, fills remaining slots first with
  * confusable items, then random pool items.
+ *
+ * For specific modes (letters/chunks/words), distractors are drawn from
+ * that same pool so all chips stay in the same category — making the
+ * mode selection visually meaningful.
+ * For mixed mode, the full combined pool is used for variety.
  */
 function buildLabels(target, count) {
-  const pool  = [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+  const fillPool = settings.mode === 'mixed'
+    ? [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+    : [...(POOLS[settings.mode] || POOLS.letters)]
   const close = CONFUSABLES[target] || []
   const labels = [target, ...shuffle(close).slice(0, Math.min(3, close.length))]
   while (labels.length < count) {
-    const c = pick(pool)
+    const c = pick(fillPool)
     if (!labels.includes(c)) labels.push(c)
   }
   return shuffle(labels)
