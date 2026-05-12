@@ -240,7 +240,8 @@ async function playOverallSummary() {
 
   const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
 
-  // Toggle play/pause if already active
+  // Toggle play/pause if already active; do nothing while generating to avoid duplicate requests
+  if (isSame && playbackState.value === 'loading')  return
   if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
   if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
 
@@ -432,11 +433,14 @@ function pauseAudio() {
 
 /** Resume a paused playback. */
 function resumeAudio() {
-  resumeBackendTTS().catch((err) => {
-    console.error('[TTS] Resume error:', err)
-    stopAudio()
-  })
-  playbackState.value = 'playing'
+  // Set state only after the browser actually starts playing — if play() is rejected
+  // (e.g. autoplay policy, audio element gone) we catch it and fall back to full stop.
+  resumeBackendTTS()
+    .then(() => { playbackState.value = 'playing' })
+    .catch((err) => {
+      console.error('[TTS] Resume error:', err)
+      stopAudio()
+    })
 }
 
 /** Replay the currently active block (same side) from the beginning. */
@@ -1265,8 +1269,10 @@ function dismissDictHint() {
             <div class="modal-audio-btns">
 
               <!-- Play / Pause / Resume -->
+              <!-- Disabled while generating audio to prevent a duplicate TTS request -->
               <button
                 class="modal-audio-btn modal-audio-btn--primary"
+                :disabled="activeBlockId === activeSection.id && playbackState === 'loading'"
                 @click="
                   activeBlockId === activeSection.id && playbackState === 'playing'
                     ? pauseAudio()
@@ -1317,7 +1323,7 @@ function dismissDictHint() {
               <button
                 class="modal-audio-btn"
                 title="Restart from beginning"
-                @click="playBlock(activeSection.id, 'summary')"
+                @click="stopAudio(); playBlock(activeSection.id, 'summary')"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>

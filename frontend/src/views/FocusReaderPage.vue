@@ -537,6 +537,12 @@ function resumeGame() {
 
 function resetGame() {
   finishSession(false)
+  // Restore the exact initial UI so clicking ↺ Restart truly feels like
+  // "back to the beginning" — same overlay, cue label, and message as first load.
+  ui.cueLabel     = 'Ready'
+  ui.overlayTitle = 'Find the Right Circle'
+  ui.overlayBody  = 'Each round shows you a word or letter. Tap the moving circle that matches it — watch out for ones that look similar!'
+  ui.message      = 'Press Start, then tap the circle that matches the word shown above.'
 }
 
 // ── Canvas pointer handling ───────────────────────────────────────────────────
