@@ -83,77 +83,106 @@
 
             <section class="policy-section">
               <h2>3. Chrome Browser Extension — What It Does</h2>
-              <p>The Clearead Chrome extension (version 0.1.1 and later) is a side-panel reading support tool. It lets users:</p>
+              <p>The Clearead Chrome extension is a side-panel reading support tool. It lets users:</p>
               <ul>
-                <li>Paste text into the side panel and request a plain-English summary.</li>
-                <li>Look up one English word via the side panel or an opt-in right-click menu.</li>
-                <li>Apply local page reading tools — readable fonts (OpenDyslexic), Highlight, Lens, and Line guide — directly on any webpage.</li>
-                <li>Open the full Clearead website from a user-clicked link in the panel.</li>
+                <li>Paste text into the side panel and request a summary.</li>
+                <li>Apply local page reading tools, including readable fonts, Highlight, Lens, and Line guide.</li>
+                <li>Look up one English word using either the side panel word box or an opt-in right-click menu.</li>
+                <li>Open the full Clearead website from a user-clicked link.</li>
               </ul>
             </section>
 
             <section class="policy-section">
-              <h2>4. Chrome Browser Extension — Data Handling</h2>
-              <p>The extension handles only the information needed for the reading support features listed above:</p>
+              <h2>4. Chrome Browser Extension — Information Handled</h2>
+              <p>The extension handles only the information needed for these user-facing features:</p>
               <ul>
                 <li>
-                  <strong>Pasted text (Summary)</strong> — Text that you manually enter into the
-                  side panel and submit by clicking <em>Summary</em>. This text is sent to the
-                  Clearead backend to generate a concise reading-support summary and is
-                  <strong>not stored</strong> after the response is returned.
+                  <strong>Pasted text</strong> — Text that the user manually enters into the
+                  side panel and submits by clicking <em>Summary</em> or pressing Enter.
                 </li>
                 <li>
-                  <strong>Dictionary word</strong> — One English word that you type into the
-                  side panel word box, or one selected word passed by Chrome when you click
-                  <em>Explain with Clearead</em> in the right-click menu. Words are validated
-                  locally (single word, 50-character limit) before being sent to the backend.
-                  Words are not retained after the response is returned.
+                  <strong>Dictionary word</strong> — One English word that the user types into
+                  the side panel word box, or one selected word passed by Chrome after the user
+                  clicks the Clearead right-click menu item.
                 </li>
                 <li>
-                  <strong>Page content (local page tools only)</strong> — When you use
-                  Highlight, Lens, or Line guide, the active page DOM may be inspected or
-                  cloned <em>locally inside the current tab</em>. No page content is sent
-                  to the backend or any remote server.
+                  <strong>Page content used locally for page tools</strong> — The active page
+                  DOM may be inspected or cloned inside the current tab to apply visible reading
+                  tools. Lens uses a local, non-interactive clone inside the same tab so it can
+                  show magnified content under the pointer.
                 </li>
                 <li>
-                  <strong>Session state</strong> — The extension uses
-                  <code>chrome.storage.session</code> to remember whether the opt-in
-                  right-click menu is enabled, recent tab/window/time metadata for page-tool
-                  state sync, and short error notices if a lookup fails before the panel
-                  opens. Session storage is <strong>cleared automatically</strong> by Chrome
-                  when the extension is disabled, updated, or when the browser restarts.
+                  <strong>Session state</strong> — <code>chrome.storage.session</code> stores
+                  whether the opt-in right-click dictionary menu is enabled, plus recent
+                  tab/window/time metadata used to keep page-tool state in sync after the
+                  service worker sleeps.
                 </li>
               </ul>
+            </section>
+
+            <section class="policy-section">
+              <h2>5. Chrome Browser Extension — When Data Leaves The Browser</h2>
               <p>
-                Page reading tools (readable fonts, Highlight, Lens, Line guide) run entirely
-                locally in the browser. No page content is transmitted to any server.
+                Pasted text leaves the browser <strong>only when the user runs Summary</strong>.
+                The extension sends the submitted text to the Clearead backend:
+              </p>
+              <p><code>POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/plugin/summary</code></p>
+              <p>
+                Dictionary words leave the browser <strong>only when the user explicitly requests
+                a lookup</strong>. The extension sends the validated one-word lookup to the
+                Clearead backend:
+              </p>
+              <p><code>POST https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/api/dictionary</code></p>
+              <p>
+                Page-tool content stays in the browser. Readable fonts, Highlight, Lens, and
+                Line guide run locally in the active tab.
               </p>
             </section>
 
             <section class="policy-section">
-              <h2>5. Chrome Browser Extension — Permissions</h2>
+              <h2>6. Chrome Browser Extension — How Data Is Used</h2>
+              <p>Clearead uses submitted data only to provide the requested reading support result:</p>
+              <ul>
+                <li>Summary text is used to generate and return a concise reading-support summary.</li>
+                <li>Dictionary words are used to generate and return a simple meaning and word-part explanation.</li>
+                <li>Page DOM access is used locally to apply visible reading tools in the active tab.</li>
+                <li>Session state is used only to remember the current right-click dictionary toggle and keep page-tool button state accurate during the browser session.</li>
+              </ul>
+            </section>
+
+            <section class="policy-section">
+              <h2>7. Chrome Browser Extension — Storage &amp; Retention</h2>
+              <p>The extension uses <code>chrome.storage.session</code> only for:</p>
+              <ul>
+                <li>The current right-click dictionary enabled boolean.</li>
+                <li>Recent tab/window/time metadata used for page-tool state sync.</li>
+                <li>A short dictionary error notice if a right-click lookup fails before the side panel can display the message.</li>
+              </ul>
+              <p>
+                Session storage is cleared by Chrome when the extension is disabled, reloaded,
+                updated, or when the browser restarts.
+              </p>
+            </section>
+
+            <section class="policy-section">
+              <h2>8. Chrome Browser Extension — Permissions</h2>
               <p>The extension requests the following Chrome permissions, each used only for the stated purpose:</p>
               <ul>
                 <li><strong>sidePanel</strong> — Displays the reading support panel alongside any webpage.</li>
-                <li><strong>activeTab</strong> — Grants temporary access to the current tab after the user opens Clearead for that page; used to inject local page-reading tools.</li>
+                <li><strong>activeTab</strong> — Grants temporary access to the current tab after user action; used to inject local page-reading tools.</li>
                 <li><strong>scripting</strong> — Injects the locally packaged page-tool script into the active tab after user action.</li>
-                <li><strong>contextMenus</strong> — Adds one opt-in right-click item (<em>Explain with Clearead</em>) that the user can enable or disable from the side panel.</li>
-                <li><strong>storage</strong> — Accesses <code>chrome.storage.session</code> for the current-session state described above.</li>
+                <li><strong>contextMenus</strong> — Adds one opt-in right-click item that the user can enable or disable from the side panel.</li>
+                <li><strong>storage</strong> — Accesses <code>chrome.storage.session</code> for current-session feature state.</li>
                 <li>
                   <strong>Host permission</strong> (<code>https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/*</code>)
                   — Required to send Summary and Dictionary requests to the Clearead backend API.
                   No other host permissions are requested.
                 </li>
               </ul>
-              <p>
-                The use of information received from Google APIs will adhere to the
-                <strong>Chrome Web Store User Data Policy</strong>, including the
-                <strong>Limited Use</strong> requirements.
-              </p>
             </section>
 
             <section class="policy-section">
-              <h2>6. Information We Do Not Collect</h2>
+              <h2>9. Information We Do Not Collect</h2>
               <ul>
                 <li>We do not require you to create an account or log in (web app or extension).</li>
                 <li>We do not collect your name, email address, or any contact information.</li>
@@ -164,7 +193,7 @@
             </section>
 
             <section class="policy-section">
-              <h2>7. Third-Party Services &amp; AI Providers</h2>
+              <h2>10. Third-Party Services &amp; AI Providers</h2>
               <p>
                 Both the web application and the browser extension send Summary and Dictionary
                 requests to the shared Clearead backend. The backend may use server-side AI
@@ -186,22 +215,43 @@
             </section>
 
             <section class="policy-section">
-              <h2>8. Data Security</h2>
+              <h2>11. Data Security</h2>
               <p>
-                All communication between your browser and our servers uses HTTPS encryption.
-                The extension also uses HTTPS for all backend requests. We do not store personal
-                data on our servers. Data held in your browser's <code>localStorage</code> or
-                <code>chrome.storage.session</code> is under your control and can be cleared
-                at any time through your browser or extension settings.
+                The extension uses HTTPS for backend requests. Executable extension code is
+                packaged locally, and API keys stay on the backend. The OpenDyslexic fonts used
+                by the readable-font option are packaged locally with the extension.
               </p>
               <p>
-                The OpenDyslexic fonts used by the extension's readable-font option are packaged
-                locally with the extension and are not fetched from any remote server.
+                All communication between the web application and our servers also uses HTTPS.
+                Data held in your browser's <code>localStorage</code> or
+                <code>chrome.storage.session</code> is under your control and can be cleared
+                at any time through your browser or extension settings.
               </p>
             </section>
 
             <section class="policy-section">
-              <h2>9. Children's Privacy</h2>
+              <h2>12. Chrome Web Store Limited Use</h2>
+              <p>
+                The use of information received from Google APIs will adhere to the
+                <strong>Chrome Web Store User Data Policy</strong>, including the
+                <strong>Limited Use</strong> requirements.
+              </p>
+            </section>
+
+            <section class="policy-section">
+              <h2>13. User Choices</h2>
+              <p>Users can:</p>
+              <ul>
+                <li>Choose when to submit text for Summary.</li>
+                <li>Turn the right-click dictionary menu on or off from the side panel.</li>
+                <li>Avoid right-click lookup and use only the side panel word box.</li>
+                <li>Turn page tools off by choosing Original font and No ruler.</li>
+                <li>Remove the extension from Chrome at any time.</li>
+              </ul>
+            </section>
+
+            <section class="policy-section">
+              <h2>14. Children's Privacy</h2>
               <p>
                 Clearead is intended for use by university students (18 years and older).
                 We do not knowingly collect any information from children under 13.
@@ -209,7 +259,7 @@
             </section>
 
             <section class="policy-section">
-              <h2>10. Changes to This Policy</h2>
+              <h2>15. Changes to This Policy</h2>
               <p>
                 We may update this Privacy Policy from time to time. Any changes will be
                 reflected on this page with an updated date. Continued use of Clearead
@@ -218,11 +268,10 @@
             </section>
 
             <section class="policy-section policy-section--last">
-              <h2>11. Contact</h2>
+              <h2>16. Contact</h2>
               <p>
-                If you have any questions about this Privacy Policy, please contact the
-                Clearead development team via the project repository on GitHub or through
-                the contact details provided in the Chrome Web Store listing.
+                For privacy questions, use the contact details provided by the project owner
+                in the Chrome Web Store listing and the published Clearead website.
               </p>
             </section>
 
