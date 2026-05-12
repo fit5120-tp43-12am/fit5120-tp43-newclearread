@@ -19,6 +19,7 @@
  */
 
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { playBackendTTS, stopBackendTTS } from '../composables/useBackendTts'
 
 // ── Navbar scroll shadow ──────────────────────────────────────────────────────
 const scrolled = ref(false)
@@ -268,18 +269,20 @@ function playBeep(type) {
   } catch(e) { /* silently ignore if audio context unavailable */ }
 }
 
-// ── Speech synthesis ──────────────────────────────────────────────────────────
-function speakTarget() {
-  if (!settings.sound || !('speechSynthesis' in window)) {
-    // Fallback: show text when speech is unavailable
+// ── Speech cue via backend TTS ────────────────────────────────────────────────
+async function speakTarget() {
+  if (!settings.sound) {
     ui.cueLabel  = G.target
     ui.cueIsAudio = false
     return
   }
-  window.speechSynthesis.cancel()
-  const utt = new SpeechSynthesisUtterance(G.target)
-  utt.lang = 'en-US'; utt.rate = 0.68; utt.pitch = 1.05
-  window.speechSynthesis.speak(utt)
+  try {
+    await playBackendTTS(G.target, { voice: 'default-female', speed: 0.75, volume: 80 })
+  } catch (err) {
+    console.error('[TTS] FocusReader cue error:', err)
+    ui.cueLabel = G.target
+    ui.cueIsAudio = false
+  }
 }
 
 // ── Difficulty adaptation ─────────────────────────────────────────────────────
@@ -627,7 +630,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   cancelAnimationFrame(G.animId)
-  window.speechSynthesis?.cancel()
+  stopBackendTTS()
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', onResize)
   document.removeEventListener('keydown', handleKey)
