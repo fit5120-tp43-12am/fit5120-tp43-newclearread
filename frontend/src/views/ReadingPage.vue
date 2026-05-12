@@ -784,6 +784,7 @@ function dismissDictHint() {
           <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
 
         <!-- Hamburger icon — only visible on small screens -->
@@ -806,6 +807,7 @@ function dismissDictHint() {
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -1577,6 +1579,8 @@ function dismissDictHint() {
 }
 .nav-link:hover { color: #0d1117; background: rgba(0, 0, 0, 0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 /* Blue dot under the active page link */
 .nav-link--active::after {
   content: ''; position: absolute;

@@ -18,6 +18,7 @@
           <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext nav-link--active">Extension</RouterLink></li>
         </ul>
       </div>
     </nav>
@@ -421,6 +422,9 @@
   transition: color 0.2s, background 0.2s;
 }
 .nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
+.nav-link--active { color: #2563eb; background: rgba(37,99,235,0.08); }
 
 /* ── Shared layout ── */
 .container { max-width: 1040px; margin: 0 auto; padding: 0 36px; }
