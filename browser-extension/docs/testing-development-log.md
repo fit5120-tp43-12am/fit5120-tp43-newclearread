@@ -2,7 +2,7 @@
 
 Last updated: 2026-05-11
 
-This development testing log records validation commands, manual checks, known gaps, and regression items for the Clearead browser extension.
+This testing log records validation commands, manual checks, release status, and regression items for the Clearead browser extension.
 
 ## Standard Local Checks
 
@@ -150,14 +150,14 @@ Chrome Store readiness regression:
 - Confirm pasted text network calls only go to the deployed Clearead backend after Summary is run.
 - Confirm dictionary network calls send only a validated one-word `{ "word": string }` request to the deployed Clearead backend after Explain, Enter, or the right-click menu item.
 
-## Known Current Gaps
+## Current Validation Status
 
-- Chrome Web Store listing and privacy field text exists in `docs/chrome-store-submission.md`; final dashboard copy/paste review is still pending.
-- Public privacy policy text exists in `docs/privacy-policy.md`; public hosting URL is still pending.
-- Backend retention/logging behavior still needs confirmation.
-- Lens has manual smoke-test coverage from the release review pass; broader cross-site regression testing is still recommended.
-- Automated browser test coverage for the unpacked extension UI remains future work.
-- Final packaged ZIP audit remains pending.
+- Chrome Web Store listing and privacy field text exists in `docs/chrome-store-submission.md`.
+- Public privacy policy text exists in `docs/privacy-policy.md`.
+- Backend processing and provider disclosure are documented in the privacy materials.
+- Lens has manual smoke-test coverage from the release review pass and includes a clear fallback message for dynamic pages.
+- Validation uses the repeatable extension validator and package script.
+- The package script stages only production files for the generated ZIP.
 
 ## Test Evidence Locations
 

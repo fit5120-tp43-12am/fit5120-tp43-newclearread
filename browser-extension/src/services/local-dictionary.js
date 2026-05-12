@@ -1,11 +1,14 @@
 const MAX_LOOKUP_TERM_CHARS = 50;
 const SINGLE_LOOKUP_WORD_PATTERN = /^[a-z]+(?:['-][a-z]+)*$/i;
 
-export function normaliseLookupTerm(term) {
+function collapseLookupWhitespace(term) {
   return String(term || "")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, MAX_LOOKUP_TERM_CHARS);
+    .trim();
+}
+
+export function normaliseLookupTerm(term) {
+  return collapseLookupWhitespace(term).slice(0, MAX_LOOKUP_TERM_CHARS);
 }
 
 function stripEdgePunctuation(term) {
@@ -17,7 +20,7 @@ export function normaliseLookupWord(term) {
 }
 
 export function validateLookupWord(term) {
-  const word = normaliseLookupWord(term);
+  const word = stripEdgePunctuation(collapseLookupWhitespace(term)).toLowerCase();
 
   if (!word) {
     return {

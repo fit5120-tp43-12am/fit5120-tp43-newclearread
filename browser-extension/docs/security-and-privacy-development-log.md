@@ -56,8 +56,8 @@ Pasted summary text:
 Backend processing:
 
 - The extension and the website are two frontend clients for the same backend processing route.
-- Backend-side model calls, GPT fallback, algorithm fallback, API keys, logging, and retention must remain backend-side concerns.
-- Before release, backend retention/logging and the final privacy policy wording still need explicit confirmation.
+- Backend-side model calls, GPT fallback, algorithm fallback, API keys, logging, and retention are handled by the Clearead backend.
+- Privacy policy wording is maintained in `docs/privacy-policy.md`.
 
 Page tools:
 
@@ -77,7 +77,7 @@ Right-click dictionary:
 - The user must enable the Right-click lookup button in the side panel before the context menu item appears.
 - It appears only for selected text on normal `http` and `https` webpages.
 - Chrome provides `info.selectionText` only after the user clicks the Clearead menu item.
-- The selected text is normalized, capped at 50 characters, and validated as one English word before any backend request.
+- The selected text is normalized, checked against the 50-character lookup limit, and validated as one English word before any backend request.
 - Valid selected-word lookups call the deployed Clearead backend dictionary route and render Simple meaning, Word parts, and Meaning from parts.
 - The current dictionary card omits Save.
 - The one-line side panel dictionary word input uses the same one-word validation and backend dictionary route only after Explain or Enter.
@@ -106,14 +106,14 @@ Website link:
 - Recent state-sync work added a `get-page-tool-state` command so side panel buttons reflect the actual active page state after reopening.
 - Lens safety work added concise text-page guidance, clearer active-tab reconnection instructions, and a high-change safety cutoff for complex animated or media-heavy pages.
 
-## Open Release Risks
+## Release Review Status
 
-- Chrome Web Store privacy disclosure text exists in `docs/chrome-store-submission.md`; final dashboard review is still pending.
-- User-facing privacy policy text exists in `docs/privacy-policy.md`; final public hosting URL is still pending.
-- Backend data retention, logging, and subprocessors still need confirmation.
-- Final production backend origin may change before release.
-- Lens behavior has manual smoke-test coverage from the release review pass; broader cross-site regression testing remains recommended.
-- A repeatable package script now stages only production files; the final generated ZIP still needs audit before upload.
+- Chrome Web Store privacy disclosure text exists in `docs/chrome-store-submission.md`.
+- User-facing privacy policy text exists in `docs/privacy-policy.md`.
+- Backend processing and provider disclosure are documented in the privacy materials.
+- The current package uses the deployed backend origin documented in the manifest.
+- Lens behavior has manual smoke-test coverage from the release review pass and includes a clear fallback message for dynamic pages.
+- The package script stages only production files for the generated ZIP.
 
 ## Future Change Rules
 

@@ -1316,6 +1316,30 @@
       };
     }
 
+    if (
+      normalizedType.includes("base-word") ||
+      (normalizedType.includes("base") && normalizedType.includes("word"))
+    ) {
+      return {
+        rowBackground: "#fff7ed",
+        rowBorder: "#fdba74",
+        badgeBackground: "#ffedd5",
+        badgeColor: "#c2410c",
+      };
+    }
+
+    if (
+      normalizedType.includes("combining-form") ||
+      (normalizedType.includes("combining") && normalizedType.includes("form"))
+    ) {
+      return {
+        rowBackground: "#ecfeff",
+        rowBorder: "#67e8f9",
+        badgeBackground: "#cffafe",
+        badgeColor: "#0e7490",
+      };
+    }
+
     return {
       rowBackground: "transparent",
       rowBorder: "transparent",
@@ -1409,6 +1433,7 @@
         display: "flex",
         alignItems: "center",
         gap: "10px",
+        flexWrap: "nowrap",
         borderLeft: `3px solid ${theme.rowBorder}`,
         borderRadius: "10px",
         background: theme.rowBackground,
@@ -1423,14 +1448,15 @@
       Object.assign(partLabel.style, {
         display: "inline-flex",
         alignItems: "center",
-        flex: "0 1 86px",
+        flex: "0 0 auto",
         minWidth: "46px",
-        maxWidth: "96px",
         color: "#0f172a",
         fontSize: "13px",
         fontWeight: "800",
         lineHeight: "1.2",
-        overflowWrap: "anywhere",
+        overflowWrap: "normal",
+        whiteSpace: "nowrap",
+        wordBreak: "normal",
       });
 
       const meaning = appendPopoverText(
@@ -1530,7 +1556,7 @@
       position: "fixed",
       top: "12px",
       left: "12px",
-      width: "min(340px, calc(100vw - 24px))",
+      width: "min(380px, calc(100vw - 24px))",
       maxHeight: "min(460px, calc(100vh - 24px))",
       overflow: "hidden",
       zIndex: DICTIONARY_Z_INDEX,

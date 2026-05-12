@@ -708,6 +708,7 @@ h2 {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: nowrap;
   border-left: 3px solid transparent;
   border-radius: 10px;
   padding: 9px 12px;
@@ -733,6 +734,16 @@ h2 {
   background: #faf5ff;
 }
 
+.dictionary-part-row--base-word {
+  border-left-color: #fdba74;
+  background: #fff7ed;
+}
+
+.dictionary-part-row--combining-form {
+  border-left-color: #67e8f9;
+  background: #ecfeff;
+}
+
 .dictionary-part,
 .dictionary-part-type {
   display: inline-flex;
@@ -746,11 +757,13 @@ h2 {
 }
 
 .dictionary-part {
-  flex: 0 1 86px;
+  flex: 0 0 auto;
   min-width: 46px;
-  max-width: 96px;
   color: #0f172a;
   font-size: 0.81rem;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 .dictionary-part-meaning {
@@ -792,6 +805,16 @@ h2 {
 .dictionary-part-type--infix {
   background: #ede9fe;
   color: #7c3aed;
+}
+
+.dictionary-part-type--base-word {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.dictionary-part-type--combining-form {
+  background: #cffafe;
+  color: #0e7490;
 }
 
 .status-neutral {

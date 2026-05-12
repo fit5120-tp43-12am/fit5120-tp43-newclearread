@@ -1,6 +1,6 @@
 # Chrome Web Store Submission
 
-This document collects Chrome Web Store dashboard text for the Clearead extension. Review it against the final production build before copying it into the Developer Dashboard.
+This document collects Chrome Web Store dashboard text for the Clearead extension release.
 
 Official references checked on May 11, 2026:
 
@@ -118,13 +118,11 @@ Use the dashboard certification only if the final build still matches this state
 
 ### Privacy Policy URL
 
-Required before submission.
-
-Publish `docs/privacy-policy.md` on a public URL controlled by the project or university/team before filling this field.
+Use the public project privacy policy URL that publishes the text from `docs/privacy-policy.md`.
 
 ## Listing Assets
 
-Required before submission:
+Release asset set:
 
 - Store icon: 128x128 PNG. Current packaged file: `public/icons/icon-128.png`.
 - Screenshots: at least one, preferably up to five. Use 1280x800 or 640x400. Show actual extension UI.
