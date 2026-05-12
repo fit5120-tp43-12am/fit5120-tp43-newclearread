@@ -1015,18 +1015,6 @@ function dismissDictHint() {
                     </svg>
                   </button>
 
-                  <!-- Restart -->
-                  <button
-                    class="overall-icon-btn"
-                    title="Restart from beginning"
-                    @click="stopAudio(); playOverallSummary()"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M2.5 7a4.5 4.5 0 1 1 1 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                      <path d="M2.5 10.5V7H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </button>
-
                 </div>
 
                 <!-- Thin separator -->
