@@ -1,6 +1,6 @@
 (() => {
   const NAMESPACE = "CleareadPageTools";
-  const VERSION = "0.7.7";
+  const VERSION = "0.7.8";
   const MESSAGE_TYPE = "clearead:page-tool-command-v7";
   const STYLE_ID = "clearead-readable-style";
   const RULER_ID = "clearead-reading-ruler-v2";
@@ -8,6 +8,9 @@
   const DICTIONARY_POPOVER_ID = "clearead-dictionary-popover";
   const DICTIONARY_TAIL_ID = "clearead-dictionary-tail";
   const LENS_SOURCE_ATTRIBUTE = "data-clearead-lens-source";
+  const RULER_Z_INDEX = "2147483600";
+  const DICTIONARY_TAIL_Z_INDEX = "2147483646";
+  const DICTIONARY_Z_INDEX = "2147483647";
   const LENS_ZOOM = 1.45;
   const LENS_EMBEDDED_RESOURCE_SELECTOR =
     "iframe, video, audio, canvas, object, embed, source, track";
@@ -51,21 +54,27 @@
       border: "1px solid rgba(37, 99, 235, 0.46)",
       edgeGlow:
         "0 -14px 20px -16px rgba(37, 99, 235, 0.6), 0 14px 20px -16px rgba(37, 99, 235, 0.6), 0 0 0 9999px rgba(15, 23, 42, 0.18)",
+      lineBackdrop: "rgba(37, 99, 235, 0.05)",
+      lineDimming: "0 0 0 9999px rgba(15, 23, 42, 0.16)",
       lensBorder: "1px solid rgba(37, 99, 235, 0.35)",
       lensShadow:
         "0 0 0 9999px rgba(15, 23, 42, 0.16), 0 14px 38px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.78)",
-      lineColor: "rgba(37, 99, 235, 0.58)",
-      lineShadow: "0 1px 0 rgba(255, 255, 255, 0.55)",
+      lineColor: "rgba(37, 99, 235, 0.96)",
+      lineShadow:
+        "0 0 0 1px rgba(255, 255, 255, 0.92), 0 0 16px rgba(37, 99, 235, 0.64)",
     },
     dark: {
       border: "2px solid rgba(147, 197, 253, 0.92)",
       edgeGlow:
         "0 -18px 30px -16px rgba(96, 165, 250, 0.95), 0 18px 30px -16px rgba(96, 165, 250, 0.95), 0 0 0 9999px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(255, 255, 255, 0.24)",
+      lineBackdrop: "rgba(147, 197, 253, 0.10)",
+      lineDimming: "0 0 0 9999px rgba(0, 0, 0, 0.24)",
       lensBorder: "2px solid rgba(147, 197, 253, 0.9)",
       lensShadow:
         "0 0 0 9999px rgba(0, 0, 0, 0.28), 0 16px 42px rgba(96, 165, 250, 0.32), 0 0 20px rgba(96, 165, 250, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16)",
       lineColor: "rgba(191, 219, 254, 0.98)",
-      lineShadow: "0 0 12px rgba(96, 165, 250, 0.75)",
+      lineShadow:
+        "0 0 0 1px rgba(15, 23, 42, 0.52), 0 0 18px rgba(96, 165, 250, 0.86)",
     },
   });
   const FONT_MODES = Object.freeze({
@@ -230,6 +239,12 @@
 
   function getRulerVisualTheme(pageTheme) {
     return RULER_VISUAL_THEMES[pageTheme.name] || RULER_VISUAL_THEMES.light;
+  }
+
+  function setImportantStyles(element, styles) {
+    Object.entries(styles).forEach(([property, value]) => {
+      element.style.setProperty(property, value, "important");
+    });
   }
 
   function removeReadableFontStyle() {
@@ -677,6 +692,11 @@
       pointerEvents: "none",
       transformOrigin: "0 0",
     });
+    setImportantStyles(clone, {
+      background: pageTheme.background,
+      "background-color": pageTheme.background,
+      color: pageTheme.text,
+    });
 
     cleanLensClone(clone, pageTheme);
     return clone;
@@ -695,6 +715,11 @@
       color: pageTheme.text,
       colorScheme: pageTheme.name,
       contain: "layout style paint",
+    });
+    setImportantStyles(viewport, {
+      background: pageTheme.background,
+      "background-color": pageTheme.background,
+      color: pageTheme.text,
     });
 
     source.setAttribute(LENS_SOURCE_ATTRIBUTE, "true");
@@ -720,10 +745,33 @@
     if (ruler) {
       ruler.dataset.cleareadPageTheme = pageTheme.name;
       ruler.style.background = pageTheme.background;
+      setImportantStyles(ruler, {
+        background: pageTheme.background,
+        "background-color": pageTheme.background,
+      });
     }
     source.replaceChildren(createLensPageClone(pageTheme));
     lensCloneDirty = false;
     lastLensCloneRefreshAt = getNow();
+  }
+
+  function getDocumentPointFromViewportPoint(clientX, clientY) {
+    const rootRect = document.documentElement?.getBoundingClientRect?.();
+    const visualViewport = globalThis.visualViewport;
+    const viewportOffsetX = visualViewport?.offsetLeft || 0;
+    const viewportOffsetY = visualViewport?.offsetTop || 0;
+
+    if (rootRect && Number.isFinite(rootRect.left) && Number.isFinite(rootRect.top)) {
+      return {
+        x: clientX + viewportOffsetX - rootRect.left,
+        y: clientY + viewportOffsetY - rootRect.top,
+      };
+    }
+
+    return {
+      x: window.scrollX + viewportOffsetX + clientX,
+      y: window.scrollY + viewportOffsetY + clientY,
+    };
   }
 
   function updateLensCloneSource(ruler, clientX, clientY) {
@@ -743,12 +791,11 @@
     }
 
     const rect = ruler.getBoundingClientRect();
-    const pageX = window.scrollX + clientX;
-    const pageY = window.scrollY + clientY;
+    const documentPoint = getDocumentPointFromViewportPoint(clientX, clientY);
     const focusX = Math.max(0, Math.min(rect.width, clientX - rect.left));
     const focusY = Math.max(0, Math.min(rect.height, clientY - rect.top));
-    const translateX = focusX - pageX * LENS_ZOOM;
-    const translateY = focusY - pageY * LENS_ZOOM;
+    const translateX = focusX - documentPoint.x * LENS_ZOOM;
+    const translateY = focusY - documentPoint.y * LENS_ZOOM;
 
     source.style.width = `${getDocumentWidth()}px`;
     source.style.minHeight = `${getDocumentHeight()}px`;
@@ -817,10 +864,13 @@
       width: "100vw",
       height: `${modeConfig.height}px`,
       pointerEvents: "none",
-      zIndex: "2147483647",
+      zIndex: RULER_Z_INDEX,
       transform: "translateY(40vh)",
       overflow: "hidden",
       willChange: "transform",
+    });
+    setImportantStyles(ruler, {
+      "z-index": RULER_Z_INDEX,
     });
 
     if (rulerMode === "highlight") {
@@ -829,6 +879,10 @@
         borderTop: visualTheme.border,
         borderBottom: visualTheme.border,
         boxShadow: visualTheme.edgeGlow,
+      });
+      setImportantStyles(ruler, {
+        background: "transparent",
+        "box-shadow": visualTheme.edgeGlow,
       });
     }
 
@@ -842,16 +896,26 @@
         background: pageTheme.background,
         boxShadow: visualTheme.lensShadow,
       });
+      setImportantStyles(ruler, {
+        background: pageTheme.background,
+        "background-color": pageTheme.background,
+        "box-shadow": visualTheme.lensShadow,
+        "z-index": RULER_Z_INDEX,
+      });
 
       ruler.appendChild(createLensCloneViewport(pageTheme));
     }
 
     if (rulerMode === "line") {
       Object.assign(ruler.style, {
-        background: "transparent",
-        borderTop: visualTheme.border,
-        borderBottom: visualTheme.border,
-        boxShadow: visualTheme.edgeGlow,
+        background: visualTheme.lineBackdrop,
+        borderTop: "0",
+        borderBottom: "0",
+        boxShadow: visualTheme.lineDimming,
+      });
+      setImportantStyles(ruler, {
+        background: visualTheme.lineBackdrop,
+        "box-shadow": visualTheme.lineDimming,
       });
 
       const centerLine = document.createElement("div");
@@ -860,10 +924,15 @@
         top: "50%",
         left: "0",
         right: "0",
-        height: "2px",
+        height: "4px",
         transform: "translateY(-50%)",
         background: visualTheme.lineColor,
         boxShadow: visualTheme.lineShadow,
+        borderRadius: "999px",
+      });
+      setImportantStyles(centerLine, {
+        background: visualTheme.lineColor,
+        "box-shadow": visualTheme.lineShadow,
       });
       ruler.appendChild(centerLine);
     }
@@ -1131,12 +1200,17 @@
       width: `${size}px`,
       height: `${size}px`,
       pointerEvents: "none",
-      zIndex: "2147483646",
+      zIndex: DICTIONARY_TAIL_Z_INDEX,
       border: "1px solid #e4e9f2",
       borderRadius: "5px 2px 5px 2px",
       background: "#ffffff",
       boxShadow: "0 10px 22px rgba(15, 23, 42, 0.08)",
       transform: "rotate(45deg)",
+    });
+    setImportantStyles(tail, {
+      background: "#ffffff",
+      "background-color": "#ffffff",
+      "z-index": DICTIONARY_TAIL_Z_INDEX,
     });
 
     requirePageContainer().appendChild(tail);
@@ -1340,6 +1414,10 @@
         background: theme.rowBackground,
         padding: "9px 12px",
       });
+      setImportantStyles(item, {
+        background: theme.rowBackground,
+        "background-color": theme.rowBackground,
+      });
 
       const partLabel = appendPopoverText(item, "span", "clearead-dictionary-part", wordPart.part);
       Object.assign(partLabel.style, {
@@ -1391,6 +1469,11 @@
         padding: "3px 9px",
         textTransform: "uppercase",
         whiteSpace: "nowrap",
+      });
+      setImportantStyles(typeBadge, {
+        background: theme.badgeBackground,
+        "background-color": theme.badgeBackground,
+        color: theme.badgeColor,
       });
 
       list.appendChild(item);
@@ -1450,7 +1533,7 @@
       width: "min(340px, calc(100vw - 24px))",
       maxHeight: "min(460px, calc(100vh - 24px))",
       overflow: "hidden",
-      zIndex: "2147483647",
+      zIndex: DICTIONARY_Z_INDEX,
       border: "1px solid #e2e8f0",
       borderRadius: "18px",
       background: "#ffffff",
@@ -1460,7 +1543,24 @@
       fontFamily: "Arial, Verdana, Calibri, sans-serif",
       lineHeight: "1.45",
       padding: "0",
+      isolation: "isolate",
+      mixBlendMode: "normal",
+      filter: "none",
+      backdropFilter: "none",
+      WebkitBackdropFilter: "none",
+      opacity: "1",
       visibility: "hidden",
+    });
+    setImportantStyles(popover, {
+      background: "#ffffff",
+      "background-color": "#ffffff",
+      color: "#0f172a",
+      "z-index": DICTIONARY_Z_INDEX,
+      "mix-blend-mode": "normal",
+      filter: "none",
+      "backdrop-filter": "none",
+      "-webkit-backdrop-filter": "none",
+      opacity: "1",
     });
 
     const header = document.createElement("div");
@@ -1470,6 +1570,11 @@
       gap: "8px",
       padding: "18px 18px 14px 20px",
       borderBottom: "1px solid #f1f5f9",
+      background: "#ffffff",
+    });
+    setImportantStyles(header, {
+      background: "#ffffff",
+      "background-color": "#ffffff",
     });
 
     const term = appendPopoverText(
@@ -1544,6 +1649,11 @@
       flexDirection: "column",
       maxHeight: "min(394px, calc(100vh - 90px))",
       overflowY: "auto",
+      background: "#ffffff",
+    });
+    setImportantStyles(body, {
+      background: "#ffffff",
+      "background-color": "#ffffff",
     });
     popover.appendChild(body);
 
