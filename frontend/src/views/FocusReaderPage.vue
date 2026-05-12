@@ -19,7 +19,7 @@
  */
 
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { playBackendTTS, stopBackendTTS } from '../composables/useBackendTts'
+import { playBackendTTS, stopBackendTTS, pauseBackendTTS, resumeBackendTTS } from '../composables/useBackendTts'
 
 // ── Navbar scroll shadow ──────────────────────────────────────────────────────
 const scrolled = ref(false)
@@ -162,13 +162,20 @@ function getPool() {
  * Builds the label array for a round.
  * Guarantees the target appears once, fills remaining slots first with
  * confusable items, then random pool items.
+ *
+ * For specific modes (letters/chunks/words), distractors are drawn from
+ * that same pool so all chips stay in the same category — making the
+ * mode selection visually meaningful.
+ * For mixed mode, the full combined pool is used for variety.
  */
 function buildLabels(target, count) {
-  const pool  = [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+  const fillPool = settings.mode === 'mixed'
+    ? [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+    : [...(POOLS[settings.mode] || POOLS.letters)]
   const close = CONFUSABLES[target] || []
   const labels = [target, ...shuffle(close).slice(0, Math.min(3, close.length))]
   while (labels.length < count) {
-    const c = pick(pool)
+    const c = pick(fillPool)
     if (!labels.includes(c)) labels.push(c)
   }
   return shuffle(labels)
@@ -449,6 +456,7 @@ function loadHistory() {
 
 // ── Session end ───────────────────────────────────────────────────────────────
 function finishSession(completed) {
+  stopBackendTTS()          // stop any in-flight audio cue immediately
   cancelAnimationFrame(G.animId)
   if (!G.running) return
 
@@ -487,6 +495,9 @@ function finishSession(completed) {
 function startGame() {
   if (G.running && G.paused) { resumeGame(); return }
 
+  // Stop any audio from a previous game before a fresh start
+  stopBackendTTS()
+
   // Full reset for a fresh session
   Object.assign(G, {
     running: true, paused: false, level: 1, score: 0,
@@ -505,6 +516,7 @@ function pauseGame() {
   if (!G.running || G.paused) return
   G.paused = true; isPaused.value = true
   cancelAnimationFrame(G.animId)
+  pauseBackendTTS()         // pause any audio cue that is currently playing
   ui.message = 'Paused. Press Resume to continue. (Shortcut: P)'
 }
 
@@ -513,6 +525,13 @@ function resumeGame() {
   ui.showOverlay = false
   G.roundStartedAt = performance.now()
   G.lastFrame      = performance.now()
+  // If we were in an audio cue round, resume the paused audio
+  if (ui.cueIsAudio) {
+    resumeBackendTTS().catch(() => {
+      // Audio already ended or unavailable — replay the cue for the player
+      speakTarget()
+    })
+  }
   loop(G.lastFrame)
 }
 
@@ -609,7 +628,8 @@ function handleKey(e) {
   const key = e.key.toLowerCase()
   if (key === 'escape') { closeGuide() }
   if (key === 'p' && G.running) { e.preventDefault(); G.paused ? resumeGame() : pauseGame() }
-  if (key === 'r' && G.cueMode === 'audio') { e.preventDefault(); speakTarget() }
+  // R replays audio cue only when game is actively running and the current round uses audio
+  if (key === 'r' && G.running && !G.paused && G.cueMode === 'audio') { e.preventDefault(); speakTarget() }
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -661,6 +681,7 @@ onUnmounted(() => {
           <li><RouterLink to="/training"   class="nav-link nav-link--active">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -681,6 +702,7 @@ onUnmounted(() => {
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -763,18 +785,30 @@ onUnmounted(() => {
         <!-- ⑥ Controls -->
         <div class="controls-row">
           <button
-            v-if="!isRunning || isPaused"
+            v-if="!isRunning"
             class="btn-start"
             @click="startGame"
-          >
-            {{ isPaused ? '▶ Resume' : (isRunning ? '↺ Restart' : '▶ Start') }}
-          </button>
+          >▶ Start</button>
+          <button
+            v-if="isRunning && isPaused"
+            class="btn-start"
+            @click="resumeGame"
+          >▶ Resume</button>
           <button
             v-if="isRunning && !isPaused"
             class="btn-pause"
             @click="pauseGame"
           >⏸ Pause</button>
-          <button class="btn-reset" @click="resetGame">Reset</button>
+          <button
+            v-if="isRunning"
+            class="btn-reset"
+            @click="resetGame"
+          >↺ Restart</button>
+          <button
+            v-if="!isRunning"
+            class="btn-reset"
+            @click="resetGame"
+          >Reset</button>
           <button class="btn-guide" @click="openGuide" aria-label="How to play">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
@@ -1059,6 +1093,8 @@ onUnmounted(() => {
 }
 .nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 .nav-link--active::after {
   content: ''; position: absolute;
   bottom: -2px; left: 50%; transform: translateX(-50%);

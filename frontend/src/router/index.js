@@ -9,6 +9,7 @@ import ReadingPage     from '../views/ReadingPage.vue'
 import FocusReaderPage from '../views/FocusReaderPage.vue'
 import DictionaryPage    from '../views/DictionaryPage.vue'
 import PrivacyPolicyPage from '../views/PrivacyPolicyPage.vue'
+import ExtensionPage     from '../views/ExtensionPage.vue'
 
 // Each route object maps one URL path to one page component.
 const routes = [
@@ -18,6 +19,7 @@ const routes = [
   { path: '/training',       name: 'Focus Reader',   component: FocusReaderPage },// letter-training game
   { path: '/dictionary',     name: 'Dictionary',     component: DictionaryPage }, // word lookup
   { path: '/privacy-policy', name: 'Privacy Policy', component: PrivacyPolicyPage }, // privacy policy
+  { path: '/extension',      name: 'Extension',      component: ExtensionPage },  // chrome extension
 ]
 
 const router = createRouter({
