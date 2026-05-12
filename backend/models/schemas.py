@@ -43,7 +43,7 @@ class TextBlock(BaseModel):
 class TextProcessingStats(BaseModel):
     # Total time spent processing the request end to end.
     totalSeconds: float = 0.0
-    # Time spent generating the whole-document overview summary.
+    # Kept for compatibility; /process-text no longer generates the overview.
     overallSummarySeconds: float = 0.0
     # Time spent generating section card title/subtitle copy.
     sectionCardSeconds: float = 0.0
@@ -77,7 +77,7 @@ class TextResponse(BaseModel):
     fallbackReason: str
     # Explains whether block segmentation came from AI or local fallback.
     segmentation: Dict[str, Any]
-    # Short whole-document summary shown at the top of the result page.
+    # Kept for compatibility; the frontend now gets this from /api/plugin/summary.
     overallSummary: OverallSummary = Field(default_factory=OverallSummary)
     # Block list consumed directly by ReadingPage.vue.
     blocks: List[TextBlock]

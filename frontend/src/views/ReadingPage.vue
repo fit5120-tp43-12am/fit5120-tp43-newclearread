@@ -98,16 +98,20 @@ function clearReadingState() {
 
 
 // ── Overall summary (computed from backend response) ──────────────────────────
-// Backend should provide result.overallSummary directly (iteration3 API).
+// The overview is fetched first from the plugin summary endpoint.
 // Falls back to the first block's data for compatibility with older responses.
 const overallSummary = computed(() => {
   if (!result.value) return null
-  if (result.value.overallSummary) return result.value.overallSummary
+  const summary = result.value.overallSummary
+  if (summary?.heading || summary?.text) return summary
   const first = result.value.blocks?.[0]
   return first
     ? { heading: first.title || 'Summary', text: first.summary || '' }
     : null
 })
+
+const sectionProcessing = ref(false)
+let activeProcessRequestId = 0
 
 
 // ── Section detail modal ──────────────────────────────────────────────────────
@@ -527,7 +531,7 @@ watch(
 
 async function handleSubmit() {
   const textToProcess = processingText.value.trim()
-  if (!textToProcess || overLimit.value || mode.value === 'loading') return
+  if (!textToProcess || overLimit.value || mode.value === 'loading' || sectionProcessing.value) return
 
   // Clear the input box immediately after capturing the text.
   // We also directly reset the textarea DOM height so it collapses
@@ -542,39 +546,81 @@ async function handleSubmit() {
   await nextTick()
   autoResize()   // recalculate to the correct min height
 
-  showFeedback('loading', 'Processing your text…', 0)
+  showFeedback('loading', 'Generating overview first…', 0)
   stopAudio()                        // stop any playing audio before new submission
   mode.value           = 'loading'
+  result.value         = null
+  sectionProcessing.value = true
   expandedBlocks.value = new Set()
   clampedBlocks.value  = {}
+  const requestId = ++activeProcessRequestId
 
-  try {
-    // Send text to the backend and wait for the paragraph-breakdown response
-    const res = await fetch(`${API_BASE_URL}/api/process-text`, {
+  const fetchJson = async (path) => {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ text: textToProcess }),
     })
     const data = await res.json()
-
     if (!res.ok) throw new Error(data.detail || 'Processing failed.')
+    return data
+  }
 
-    // Store the result — the template will render blocks dynamically from data.blocks
-    result.value = data
-    mode.value   = 'result'
+  fetchJson('/api/plugin/summary')
+    .then((summaryData) => {
+      if (requestId !== activeProcessRequestId) return
+      result.value = {
+        ...(result.value || {}),
+        overallSummary: summaryData.overallSummary,
+        blocks: result.value?.blocks || [],
+      }
+      mode.value = 'result'
+      if (sectionProcessing.value) {
+        showFeedback('loading', 'Overview is ready. Building sections…', 0)
+      } else if (!result.value.blocks?.length) {
+        showFeedback('error', 'Sections could not be generated. The overview is still available.', 6000)
+      }
+    })
+    .catch((err) => {
+      if (requestId !== activeProcessRequestId) return
+      console.error('[summary] Plugin summary failed:', err)
+    })
+
+  try {
+    const data = await fetchJson('/api/process-text')
+    if (requestId !== activeProcessRequestId) return
+
+    const existingSummary = result.value?.overallSummary
+    result.value = {
+      ...data,
+      overallSummary: existingSummary?.heading || existingSummary?.text
+        ? existingSummary
+        : data.overallSummary,
+    }
+    mode.value = 'result'
+    sectionProcessing.value = false
     showFeedback('success', 'Text processed successfully.')
   } catch (err) {
-    mode.value = 'idle'
-    showFeedback('error', err.message || 'Something went wrong. Please try again.', 6000)
+    if (requestId !== activeProcessRequestId) return
+    sectionProcessing.value = false
+    if (result.value?.overallSummary) {
+      mode.value = 'result'
+      showFeedback('error', err.message || 'Sections could not be generated. The overview is still available.', 6000)
+    } else {
+      mode.value = 'idle'
+      showFeedback('error', err.message || 'Something went wrong. Please try again.', 6000)
+    }
   }
 }
 
 // Go back to the input screen without clearing the text
 function handleBackToInput() {
   stopAudio()                        // stop TTS before leaving result view
+  activeProcessRequestId += 1
   mode.value           = 'idle'
   result.value         = null
   feedback.value       = null
+  sectionProcessing.value = false
   expandedBlocks.value = new Set()
   clampedBlocks.value  = {}
   clearReadingState()
@@ -891,11 +937,14 @@ function dismissDictHint() {
           <!-- Top status bar: success notice + back button -->
           <div class="result-topbar">
             <div class="result-notice">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <svg v-if="sectionProcessing" class="spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="22 10" stroke-linecap="round"/>
+              </svg>
+              <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <circle cx="7" cy="7" r="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
                 <path d="M4 7l2.2 2.2 3.8-4.4" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Text processed successfully.
+              {{ sectionProcessing ? 'Overview ready. Building sections…' : (result.notice || 'Text processed successfully.') }}
             </div>
             <button class="btn-back" @click="handleBackToInput">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -1018,7 +1067,7 @@ function dismissDictHint() {
                A bridge label connects the overview to the section cards.
                Clicking a card opens the Stage 3 detail modal.
           ══════════════════════════════════════════════════════════════ -->
-          <div class="stage-tree">
+          <div v-if="sectionProcessing || result.blocks?.length" class="stage-tree">
 
             <!-- Vertical connector: flows from overview card → pill label → sections grid -->
             <div class="stage-connector" aria-hidden="true">
@@ -1028,7 +1077,7 @@ function dismissDictHint() {
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <path d="M6.5 2v9M3 8l3.5 3L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <span>{{ result.blocks?.length || 0 }} Sections</span>
+                <span>{{ sectionProcessing ? 'Building Sections' : `${result.blocks?.length || 0} Sections` }}</span>
               </div>
               <div class="stage-connector-line stage-connector-line--bottom"></div>
             </div>
@@ -1039,7 +1088,14 @@ function dismissDictHint() {
               Inside, cards are laid out in a simple grid with no branch lines.
             -->
             <div class="tree-container">
-            <div class="tree-nodes">
+            <div v-if="sectionProcessing" class="section-processing-card">
+              <span class="btn-spinner section-processing-spinner"></span>
+              <div>
+                <strong>Preparing section summaries</strong>
+                <p>The overview is ready, and the detailed reading support is still being generated.</p>
+              </div>
+            </div>
+            <div v-else class="tree-nodes">
               <div
                 v-for="block in result.blocks"
                 :key="block.id"
@@ -2649,6 +2705,35 @@ kbd {
   padding: 20px;
   background: linear-gradient(160deg, #fafbff 0%, #f5f4ff 100%);
   box-shadow: 0 2px 16px rgba(99, 102, 241, 0.06);
+}
+
+.section-processing-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 108px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #eef0f8;
+  border-radius: 14px;
+  color: #334155;
+}
+.section-processing-card strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f172a;
+  font-size: 14px;
+}
+.section-processing-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.section-processing-spinner {
+  flex-shrink: 0;
+  border-color: rgba(79, 70, 229, 0.22);
+  border-top-color: #4f46e5;
 }
 
 /* Grid of section cards inside the container */

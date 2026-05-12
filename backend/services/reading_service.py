@@ -7,7 +7,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from services import model_service
-from services.overall_summary_service import generate_overall_summary
 from services.text_preprocessor import enrich_segments_with_llm, preprocess_text
 from services.text_service import basic_algorithm, use_openai
 
@@ -37,7 +36,6 @@ def process_reading_text(text: str) -> dict:
     # This is the main service used by the Reading Support page.
     # It converts one raw article into the block-based response expected by the frontend.
     preprocess_seconds = 0.0
-    overall_summary_seconds = 0.0
     section_card_seconds = 0.0
     team_model_seconds = 0.0
     total_start = time.perf_counter()
@@ -50,7 +48,6 @@ def process_reading_text(text: str) -> dict:
             timing_enabled,
             time.perf_counter() - total_start,
             preprocess_seconds,
-            overall_summary_seconds,
             section_card_seconds,
             team_model_seconds,
             block_count=0,
@@ -71,7 +68,7 @@ def process_reading_text(text: str) -> dict:
             "blocks": [],
             "processingStats": _build_processing_stats(
                 total_seconds=time.perf_counter() - total_start,
-                overall_summary_seconds=overall_summary_seconds,
+                overall_summary_seconds=0.0,
                 section_card_seconds=section_card_seconds,
                 preprocess_seconds=preprocess_seconds,
                 team_model_seconds=team_model_seconds,
@@ -82,30 +79,12 @@ def process_reading_text(text: str) -> dict:
             ),
         }
 
-    # The whole-document overview and semantic segmentation both depend only on
-    # the source text, so run them together instead of making the user wait twice.
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        overall_summary_future = executor.submit(
-            _timed_call,
-            generate_overall_summary,
-            source_text,
-        )
-        preprocess_future = executor.submit(
-            _timed_call,
-            _build_segments,
-            source_text,
-        )
-
-        overall_summary, overall_summary_seconds = overall_summary_future.result()
-        (
-            (
-                segments,
-                preprocessing_used_fallback,
-                preprocessing_reason,
-                segmentation_metadata,
-            ),
-            preprocess_seconds,
-        ) = preprocess_future.result()
+    (
+        segments,
+        preprocessing_used_fallback,
+        preprocessing_reason,
+        segmentation_metadata,
+    ), preprocess_seconds = _timed_call(_build_segments, source_text)
 
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
@@ -225,7 +204,7 @@ def process_reading_text(text: str) -> dict:
         timing_enabled,
         time.perf_counter() - total_start,
         preprocess_seconds,
-        overall_summary_seconds,
+        0.0,
         section_card_seconds,
         team_model_seconds,
         block_count=len(blocks),
@@ -244,11 +223,10 @@ def process_reading_text(text: str) -> dict:
             preprocessing_reason,
             len(blocks),
         ),
-        "overallSummary": overall_summary,
         "blocks": blocks,
         "processingStats": _build_processing_stats(
             total_seconds=time.perf_counter() - total_start,
-            overall_summary_seconds=overall_summary_seconds,
+            overall_summary_seconds=0.0,
             section_card_seconds=section_card_seconds,
             preprocess_seconds=preprocess_seconds,
             team_model_seconds=team_model_seconds,
