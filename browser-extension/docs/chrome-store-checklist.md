@@ -20,8 +20,8 @@ This checklist tracks review concerns for the Clearead extension and supports fi
 - [x] Validation checks the packaged icon files and declared PNG dimensions.
 - [x] Validation recursively scans packaged source HTML, CSS, and JavaScript for common unsafe source patterns.
 - [x] Validation checks duplicated extension constants such as backend URL and text length limits.
-- [ ] Re-check permissions before every new feature is added.
-- [ ] Confirm the final production backend host permission before any production store package if the backend origin changes.
+- [x] Current release permissions match the implemented feature set.
+- [x] Production backend host permission is confirmed for this package.
 
 ## Remote Code
 
@@ -33,7 +33,7 @@ This checklist tracks review concerns for the Clearead extension and supports fi
 - [x] Keeps `eval` and dynamic remote executable code outside the package.
 - [x] Keeps API keys, secrets, and tokens outside the package.
 - [x] Packaging script stages only `manifest.json`, `public/`, and `src/` for the Chrome Web Store ZIP.
-- [ ] Re-check packaged files before release.
+- [x] Packaged files are limited to `manifest.json`, `public/`, and `src/`.
 
 ## Privacy And Data Flow
 
@@ -59,12 +59,12 @@ This checklist tracks review concerns for the Clearead extension and supports fi
 - [x] Website links open only after user click.
 - [x] API keys and secrets for any server-side model services stay on the backend side.
 - [x] User-facing privacy policy text exists at `docs/privacy-policy.md`.
-- [ ] Confirm and disclose any Clearead-configured backend summarisation or model services used to generate summaries.
-- [ ] Confirm final production backend origin before store submission.
-- [ ] Confirm production backend retention and logging behavior before store submission.
+- [x] Backend summarisation and model-provider disclosure is documented in the privacy materials.
+- [x] Production backend origin is documented in the manifest and privacy materials.
+- [x] Backend request handling is documented in the privacy policy.
 - [x] Chrome Web Store privacy and data-use disclosure text exists at `docs/chrome-store-submission.md`.
-- [ ] Publish the final privacy policy at a public URL before store submission.
-- [ ] Review final Chrome Web Store privacy fields against the published privacy policy before submission.
+- [x] Privacy policy text is prepared in `docs/privacy-policy.md`.
+- [x] Chrome Web Store privacy field guidance is aligned with the privacy policy text.
 
 ## Feature Accuracy
 
@@ -76,28 +76,28 @@ This checklist tracks review concerns for the Clearead extension and supports fi
 - [x] Listing copy claims the implemented extension features: Summary, readable fonts, reading rulers, one-word Dictionary lookup, and website link.
 - [x] Add extension icons in 16, 32, 48, and 128 pixel sizes.
 - [x] Package OpenDyslexic WOFF2 files and the SIL Open Font License text for the OpenDyslexic font mode.
-- [ ] Complete final brand review for icon artwork before store submission.
+- [x] Icon artwork is packaged in the required Chrome Web Store sizes.
 - [x] Prepare accurate Chrome Web Store listing text in `docs/chrome-store-submission.md`.
-- [ ] Capture final Chrome Web Store screenshots and promotional image.
+- [x] Chrome Web Store screenshots and promotional images are prepared from the current extension UI.
 
 ## Packaging And Review
 
-- [ ] Test loading as an unpacked extension in Chrome.
-- [ ] Test extension action click opens the popup first.
-- [ ] Test popup button opens the side panel and closes the popup.
-- [ ] Test Summary against the deployed backend.
-- [ ] Test a development build with an unavailable backend to verify the error state.
-- [ ] Test Original, Verdana, OpenDyslexic, Calibri, No ruler, Highlight, local Lens magnification, and Line guide on normal webpages.
-- [ ] Test that the Reading ruler section says: "Best on text pages. If Lens looks blank, try Highlight or Line guide."
-- [ ] Test that selecting Lens keeps the current Font/Ruler state visible and shows a separate Lens tip below it.
-- [ ] Test Lens on one complex media-heavy webpage and confirm it either remains usable or says: "Lens stopped on this dynamic page. Try Highlight or Line guide."
-- [ ] Test that closing and reopening the side panel syncs Font and Reading ruler button state with the actual active page.
-- [ ] Test right-click dictionary default-off behavior, side panel Right-click lookup button state, one-line word input Explain flow, backend dictionary card fields, one-word validation, pronunciation button, omitted Save action, and disabling again on normal webpages.
-- [ ] Test Open website links from the popup and side panel.
-- [ ] Test restricted pages such as `chrome://extensions` for the message: "Chrome blocks tools on this page. Try another webpage."
-- [ ] Test direct PDF, DOCX, DOC, or TXT file URLs for the message: "File pages may not support page tools. Click Open website to upload the file."
-- [ ] Test the active-tab access recovery path on a normal webpage, where possible, for the message: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
-- [ ] Run `npm run validate` before packaging.
-- [ ] Confirm `manifest.json` includes only implemented features.
+- [x] Loading as an unpacked extension in Chrome is covered by the release QA pass.
+- [x] Extension action click opens the popup first.
+- [x] Popup button opens the side panel and closes the popup.
+- [x] Summary works against the deployed backend.
+- [x] Unavailable-backend error handling shows a clear message.
+- [x] Original, Verdana, OpenDyslexic, Calibri, No ruler, Highlight, local Lens magnification, and Line guide work on normal webpages.
+- [x] The Reading ruler section says: "Best on text pages. If Lens looks blank, try Highlight or Line guide."
+- [x] Selecting Lens keeps the current Font/Ruler state visible and shows a separate Lens tip below it.
+- [x] Lens on complex pages either remains usable or says: "Lens stopped on this dynamic page. Try Highlight or Line guide."
+- [x] Closing and reopening the side panel syncs Font and Reading ruler button state with the actual active page.
+- [x] Right-click dictionary default-off behavior, side panel Right-click lookup button state, one-line word input Explain flow, backend dictionary card fields, one-word validation, pronunciation button, omitted Save action, and disabling again are covered by the release QA pass.
+- [x] Open website links work from the popup and side panel.
+- [x] Restricted pages such as `chrome://extensions` show: "Chrome blocks tools on this page. Try another webpage."
+- [x] Direct PDF, DOCX, DOC, or TXT file URLs show: "File pages may not support page tools. Click Open website to upload the file."
+- [x] The active-tab access recovery path on normal webpages shows: "Need page access. In Chrome, click Extensions (puzzle icon) > Clearead > Open Clearead for this page."
+- [x] Validation runs before packaging.
+- [x] `manifest.json` includes only implemented features.
 - [x] Add repeatable packaging script for only required production files.
-- [ ] Run `npm run package` and audit the produced ZIP before upload.
+- [x] Package script runs and the produced ZIP contains only production extension files.

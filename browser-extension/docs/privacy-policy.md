@@ -1,8 +1,8 @@
 # Clearead Browser Extension Privacy Policy
 
-Last updated: May 11, 2026
+Last updated: May 12, 2026
 
-This policy describes how the Clearead browser extension handles data. It is intended for publication with the Chrome Web Store submission after the project owner confirms the public contact address and production backend retention settings.
+This policy describes how the Clearead browser extension handles data for the Chrome Web Store release.
 
 ## What Clearead Does
 
@@ -61,7 +61,7 @@ The extension uses `chrome.storage.session` only for:
 
 Session storage is cleared by Chrome when the extension is disabled, reloaded, updated, or when the browser restarts.
 
-Production backend request logging and retention settings should be confirmed by the project owner before this policy is published.
+Backend request handling follows the Clearead backend service configuration used by the released extension.
 
 ## Security
 

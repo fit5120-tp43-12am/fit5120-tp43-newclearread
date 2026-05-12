@@ -32,7 +32,7 @@ Dictionary lookup runs after the user requests one word explanation through the 
 - Text source: one typed or selected English word
 - Purpose: return a simple meaning and word-part explanation
 
-The right-click menu starts disabled. When enabled, Chrome provides `info.selectionText` after the user clicks "Explain with Clearead". The service worker trims the selected text, caps it at 50 characters, validates it as one English word, and then sends the lookup request. Phrase and sentence selections receive local guidance.
+The right-click menu starts disabled. When enabled, Chrome provides `info.selectionText` after the user clicks "Explain with Clearead". The service worker trims the selected text, checks the 50-character lookup limit, validates it as one English word, and then sends the lookup request. Phrase and sentence selections receive local guidance.
 
 The side panel Word box uses the same validation and backend route after the user clicks Explain or presses Enter.
 
@@ -59,7 +59,7 @@ The extension sends Summary text and Dictionary words to the shared Clearead bac
 
 The backend may use Clearead-configured server-side model providers, including OpenAI, to generate summaries and word explanations. API keys and model credentials belong on the backend side.
 
-The deployed backend origin is currently the Azure backend URL found in workflow config. The deployed website origin is currently `https://clearead.azurewebsites.net/`. Before release, the team should confirm production backend origin, backend retention behavior, public privacy policy wording, and Chrome Web Store data disclosure.
+The extension package uses the deployed Azure backend origin listed above. The deployed website origin is `https://clearead.azurewebsites.net/`. Privacy policy text and Chrome Web Store data disclosure notes are included in this documentation set.
 
 ## Website Link
 

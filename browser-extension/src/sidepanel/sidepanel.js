@@ -333,6 +333,20 @@ function getDictionaryPartClass(type) {
     return "infix";
   }
 
+  if (
+    normalizedType.includes("base-word") ||
+    (normalizedType.includes("base") && normalizedType.includes("word"))
+  ) {
+    return "base-word";
+  }
+
+  if (
+    normalizedType.includes("combining-form") ||
+    (normalizedType.includes("combining") && normalizedType.includes("form"))
+  ) {
+    return "combining-form";
+  }
+
   return "";
 }
 

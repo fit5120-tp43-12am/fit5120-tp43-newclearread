@@ -81,7 +81,7 @@ The page-tool script is packaged locally and injected programmatically after cle
 4. The service worker stores only the enabled boolean in `chrome.storage.session` and creates the selected-text context menu item for normal `http` and `https` webpages.
 5. The user selects one English word on a normal webpage.
 6. The user right-clicks the selection and clicks Explain with Clearead.
-7. The service worker reads only `info.selectionText`, normalizes whitespace, caps it at 50 characters, and confirms it is one English word.
+7. The service worker reads only `info.selectionText`, normalizes whitespace, checks the 50-character lookup limit, and confirms it is one English word.
 8. If the selection is a phrase, sentence, or unsupported token, the content script shows a dictionary card message asking the user to select one English word.
 9. The service worker injects `src/content/page-tools.js` into the clicked tab if needed.
 10. For valid words, the service worker first sends a `show-dictionary-popover` command with a loading explanation so the page card says Looking up.
@@ -131,7 +131,7 @@ The response shape returned by the plugin summary route is:
 
 The extension displays only `overallSummary.text` from this response in the side panel Result section.
 
-After the extension Summary request reaches the Clearead backend, the plugin summary route performs the full-document summary flow for the extension. Dictionary requests use the existing backend dictionary route and word-breakdown flow. API keys or secrets for those services belong on the backend side. Before Chrome Web Store release, the team must confirm the final production backend origin and privacy disclosures.
+After the extension Summary request reaches the Clearead backend, the plugin summary route performs the full-document summary flow for the extension. Dictionary requests use the existing backend dictionary route and word-breakdown flow. API keys or secrets for those services belong on the backend side. The current package uses the deployed backend origin documented in the manifest and privacy materials.
 
 Because the background service worker is intentionally kept as a classic worker, the backend dictionary URL is duplicated in `src/background/service-worker.js` while side panel API calls use `src/shared/config.js`. If the backend origin changes, update both places and rerun the extension validator.
 
