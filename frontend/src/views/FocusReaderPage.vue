@@ -327,6 +327,10 @@ function resolveChoice(chip) {
   if (!G.roundActive) return
   const rt = performance.now() - G.roundStartedAt
   G.roundActive = false
+  // Stop any in-flight or playing TTS from this round so it doesn't bleed
+  // into the inter-round gap or the next round's audio cue
+  stopBackendTTS()
+  ui.cueIsAudio = false
 
   if (chip.isTarget) {
     G.hits++; G.streak++
@@ -357,6 +361,9 @@ function resolveChoice(chip) {
 function missRound() {
   if (!G.roundActive) return
   G.roundActive = false
+  // Stop any in-flight or playing TTS so it doesn't carry over into the next round
+  stopBackendTTS()
+  ui.cueIsAudio = false
   G.misses++; G.streak = 0
   G.recent.push({ ok: false, rt: G.roundDuration })
   G.recent = G.recent.slice(-6)
