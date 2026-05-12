@@ -463,7 +463,6 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <RouterLink to="/extension"      class="footer-link">Chrome Extension</RouterLink>
           <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
