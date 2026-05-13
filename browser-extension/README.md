@@ -68,7 +68,7 @@ Developers may point a local-only test build at `http://localhost:8000`, but the
 8. Click it and confirm a dictionary card appears near the selection, shows a Looking up state, then displays Simple meaning, Word parts, and Meaning from parts sections.
 9. Confirm the card has a pronunciation button, close button, and omitted Save action.
 10. Click the Right-click lookup button again and confirm it turns off.
-11. Select text and right-click again; confirm the Clearead dictionary item no longer appears.
+11. Select text and right-click again; confirm the Clearead dictionary item is hidden.
 12. Confirm Summary, the font choices, No ruler, Highlight, local Lens magnification, Line guide, and the Right-click lookup button still work.
 13. Try a restricted page such as `chrome://extensions` and confirm Clearead shows the restricted-page guidance.
 14. Select a phrase or sentence and confirm Clearead asks for one English word.
