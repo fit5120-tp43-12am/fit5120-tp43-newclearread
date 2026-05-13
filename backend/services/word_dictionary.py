@@ -86,13 +86,14 @@ Valid inputs include:
 - possessives, such as "teacher's"
 - inflected forms, such as "played", "running", or "books"
 - meaningful hyphenated compounds, such as "well-being"
+- standard dictionary words that can also be names, such as "shea"
 
 If the input is invalid:
 - do not analyze, split, guess, or suggest another word
 - set can_split=false
 - return parts=[]
 - set simple_meaning exactly to:
-  The word "{input_word}" may be incorrect. Please check the spelling and try again.
+  The word "<actual input word>" may be incorrect. Please check the spelling and try again.
 
 If the input looks like two or more valid English words joined without a space or hyphen, but the joined form is not a standard word, treat it as invalid.
 Example: "previoussingle" is invalid, not "previous" + "single".
@@ -124,7 +125,7 @@ For clear learner-useful prefixes or suffixes:
 For valid -ing forms:
 - split into base verb + "-ing" when the base verb is clear
 - set can_split=true
-- use "-ing" as an inflectional ending
+- set the "-ing" part type to "suffix"
 - restore base spelling when needed
 - examples: "playing" -> "play" + "-ing"; "making" -> "make" + "-ing"; "running" -> "run" + "-ing"
 - do not split words that only end in the letters "ing" but are not clear -ing forms, such as "king" or "thing"
@@ -136,7 +137,9 @@ For inflected words, mention the base form only if helpful.
 When a base word has multiple meanings, choose the meaning that best matches the whole input word.
 Example: in "kidding", "kid" means "to joke or not be serious", not "a child".
 
-Do not analyze personal names unless they are also standard dictionary words.
+Do not mark a word as invalid just because it can also be a personal name.
+Analyze it if it is a standard dictionary word or common English form.
+Only reject clear personal names that are not standard dictionary words.
 Do not suggest spelling corrections.
 Do not invent meanings or word parts."""
 
@@ -281,6 +284,14 @@ def _finalize_response(
     """Normalize the final model output and apply local post-processing."""
     if resp.word != input_word:
         resp = resp.model_copy(update={"word": input_word})
+    if "{input_word}" in resp.simple_meaning:
+        resp = resp.model_copy(
+            update={
+                "simple_meaning": resp.simple_meaning.replace(
+                    "{input_word}", input_word
+                )
+            }
+        )
     resp = resp.model_copy(update={"parts": _enrich_parts(resp.parts)})
     return _sanitize(resp)
 
