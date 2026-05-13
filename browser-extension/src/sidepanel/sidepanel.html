@@ -197,6 +197,9 @@
         </div>
         <div class="tool-group" aria-labelledby="dictionary-toggle-heading">
           <h3 id="dictionary-toggle-heading" class="tool-group-title">Right-click lookup</h3>
+          <p id="dictionary-guide" class="tool-help dictionary-guide">
+            Turn it on, then select one English word on a webpage, right-click, and choose Explain with Clearead.
+          </p>
           <div class="tool-choice-grid dictionary-choice-grid" role="group" aria-label="Dictionary">
             <button
               id="dictionary-toggle"
@@ -204,6 +207,7 @@
               type="button"
               data-dictionary-mode="enabled"
               aria-pressed="false"
+              aria-describedby="dictionary-guide"
             >
               <span>Right-click lookup</span>
               <span class="selection-check" aria-hidden="true" hidden>&#10003;</span>
