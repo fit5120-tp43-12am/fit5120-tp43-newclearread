@@ -66,20 +66,82 @@ SUFFIXES: dict[str, str] = {
     "-tion": "action, process, or result",
     "-ation": "the action, process, or result of something",
     "-al": "related to",
+
+    # inflectional endings
+    "-ing": "happening now or used as a noun/adjective form",
+    "-ed": "past or completed action",
+    "-s": "more than one or third-person singular verb form",
+    "-es": "more than one or third-person singular verb form",
 }
 
-SYSTEM_PROMPT = """Analyze ONE English word for learner-friendly morphology.
+SYSTEM_PROMPT = """Analyze the input only if it is a valid English word or valid English form.
 
-Return structured data only.
+Use short, simple, learner-friendly English.
+Return only the required JSON object.
+Do not include markdown or extra commentary.
 
-Rules:
-1. Split only when it helps meaning.
-2. Never split understand into under + stand.
-3. Never split process into pro + cess.
-4. Use only English.
-5. Keep meanings short and learner-friendly.
-6. The input may include apostrophes or hyphens, such as don't or well-being.
-7. If the word is best treated as a whole, set can_split=false and return one base word part matching the whole word."""
+Valid inputs include:
+- standard English words
+- common contractions, such as "don't"
+- possessives, such as "teacher's"
+- inflected forms, such as "played", "running", or "books"
+- meaningful hyphenated compounds, such as "well-being"
+- standard dictionary words that can also be names, such as "shea"
+
+If the input is invalid:
+- do not analyze, split, guess, or suggest another word
+- set can_split=false
+- return parts=[]
+- set simple_meaning exactly to:
+  The word "<actual input word>" may be incorrect. Please check the spelling and try again.
+
+If the input looks like two or more valid English words joined without a space or hyphen, but the joined form is not a standard word, treat it as invalid.
+Example: "previoussingle" is invalid, not "previous" + "single".
+
+Split only when the split clearly helps explain the modern meaning.
+Do not force prefix-root-suffix analysis.
+Do not split a base word just because it visually contains smaller words.
+Do not use old etymological splits if they do not help the modern meaning.
+If a split would confuse the learner, treat the word as a whole.
+
+Misleading split examples:
+- Do not split "understand" into "under" + "stand".
+- Do not split "process" into "pro" + "cess".
+
+If the word is best treated as a whole:
+- set can_split=false
+- return exactly one part
+- the part text must match the whole input
+- set the part type to "base word"
+
+For compounds:
+- split only into meaningful whole-word parts
+- example: "well-being" -> "well" + "being"
+
+For clear learner-useful prefixes or suffixes:
+- split them only when they help explain the word
+- examples: "unhappy" -> "un" + "happy"; "careless" -> "care" + "less"
+
+For valid -ing forms:
+- split into base verb + "-ing" when the base verb is clear
+- set can_split=true
+- set the "-ing" part type to "suffix"
+- restore base spelling when needed
+- examples: "playing" -> "play" + "-ing"; "making" -> "make" + "-ing"; "running" -> "run" + "-ing"
+- do not split words that only end in the letters "ing" but are not clear -ing forms, such as "king" or "thing"
+
+For contractions, explain the expanded meaning.
+For possessives, explain possession or association.
+For inflected words, mention the base form only if helpful.
+
+When a base word has multiple meanings, choose the meaning that best matches the whole input word.
+Example: in "kidding", "kid" means "to joke or not be serious", not "a child".
+
+Do not mark a word as invalid just because it can also be a personal name.
+Analyze it if it is a standard dictionary word or common English form.
+Only reject clear personal names that are not standard dictionary words.
+Do not suggest spelling corrections.
+Do not invent meanings or word parts."""
 
 _openai_client: OpenAI | None = None
 _openai_client_key: str | None = None
@@ -156,7 +218,7 @@ def _invalid_input_response(original_raw: str, warning: str) -> WordBreakdownRes
         WordBreakdownResponse(
             word=display,
             can_split=False,
-            simple_meaning=warning,
+            simple_meaning=f'The word "{display}" may be incorrect. Please check the spelling and try again.',
             parts=[],
         ),
         source="invalid_input",
@@ -222,6 +284,14 @@ def _finalize_response(
     """Normalize the final model output and apply local post-processing."""
     if resp.word != input_word:
         resp = resp.model_copy(update={"word": input_word})
+    if "{input_word}" in resp.simple_meaning:
+        resp = resp.model_copy(
+            update={
+                "simple_meaning": resp.simple_meaning.replace(
+                    "{input_word}", input_word
+                )
+            }
+        )
     resp = resp.model_copy(update={"parts": _enrich_parts(resp.parts)})
     return _sanitize(resp)
 
