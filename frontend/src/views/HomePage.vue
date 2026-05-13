@@ -10,14 +10,17 @@ import { ref, onMounted, onUnmounted } from 'vue'
 const scrolled  = ref(false)
 // menuOpen controls whether the mobile slide-down nav drawer is visible.
 const menuOpen  = ref(false)
+// ref to the features section for smooth scroll
+const featuresSection = ref(null)
 
 // Simple scroll handler — called ~60× per second during scrolling.
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
+function scrollToFeatures() {
+  featuresSection.value?.scrollIntoView({ behavior: 'smooth' })
+}
+
 // onMounted / onUnmounted are Vue lifecycle hooks.
-// We attach the scroll listener after the component is in the DOM, and REMOVE it when
-// the user navigates away — failing to remove it would cause a memory leak because the
-// callback would keep running on a component that no longer exists.
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
@@ -40,11 +43,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           Clearead
         </RouterLink>
         <ul class="nav-links">
-          <li><RouterLink to="/"         class="nav-link nav-link--active">Home</RouterLink></li>
-          <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
+          <li><RouterLink to="/"           class="nav-link nav-link--active">Home</RouterLink></li>
+          <li><RouterLink to="/reading"    class="nav-link">Reading Support</RouterLink></li>
           <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -60,11 +64,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- Mobile nav -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/"           class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"    class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -92,18 +97,18 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </RouterLink>
-          <RouterLink to="/dyslexia" class="btn-ghost">
-            Learn About Dyslexia
-          </RouterLink>
-          <RouterLink to="/training" class="btn-ghost">
-            Try Training Game
-          </RouterLink>
         </div>
+
+        <button class="scroll-down" @click="scrollToFeatures" aria-label="Scroll to features">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </section>
 
     <!-- ── Features ── -->
-    <section class="section-features">
+    <section class="section-features" ref="featuresSection">
       <div class="container">
         <p class="eyebrow">What Clearead does</p>
         <h2 class="section-title">Three ways Clearead helps</h2>
@@ -211,14 +216,22 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
           <!-- Alphabet backdrop — covers the whole panel, fades right toward the text -->
           <div class="dict-visual-alpha" aria-hidden="true">
-            <span style="top:-8%;   left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
-            <span style="top:-6%;   left:42%;  font-size:130px; transform:rotate(12deg)">A</span>
-            <span style="top:26%;   left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
-            <span style="top:22%;   left:44%;  font-size:118px; transform:rotate(-14deg)">N</span>
-            <span style="top:54%;   left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
-            <span style="top:52%;   left:40%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <!-- left column -->
+            <span style="top:-8%;    left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
+            <span style="top:10%;    left:18%;  font-size:120px; transform:rotate(10deg)">F</span>
+            <span style="top:26%;    left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
+            <span style="top:38%;    left:20%;  font-size:130px; transform:rotate(16deg)">J</span>
+            <span style="top:54%;    left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
+            <span style="top:70%;    left:14%;  font-size:125px; transform:rotate(-20deg)">K</span>
             <span style="bottom:-12%;left:-2%;  font-size:140px; transform:rotate(18deg)">S</span>
-            <span style="bottom:-10%;left:38%;  font-size:155px; transform:rotate(-8deg)">Y</span>
+            <!-- right column (fills the area beside the card) -->
+            <span style="top:-6%;    left:55%;  font-size:130px; transform:rotate(12deg)">A</span>
+            <span style="top:12%;    left:72%;  font-size:110px; transform:rotate(-16deg)">T</span>
+            <span style="top:22%;    left:55%;  font-size:118px; transform:rotate(-14deg)">N</span>
+            <span style="top:38%;    left:68%;  font-size:112px; transform:rotate(14deg)">P</span>
+            <span style="top:52%;    left:55%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <span style="top:68%;    left:70%;  font-size:118px; transform:rotate(18deg)">V</span>
+            <span style="bottom:-10%;left:55%;  font-size:155px; transform:rotate(-8deg)">Y</span>
           </div>
           <!-- Gradient fade — transparent left → white right, covers right half of panel -->
           <div class="dict-visual-fade" aria-hidden="true"></div>
@@ -349,16 +362,108 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       </div>
     </section>
 
+    <!-- ── Chrome Extension Teaser ── -->
+    <section class="section-ext">
+      <div class="container">
+        <div class="ext-panel">
+          <!-- Left: text -->
+          <div class="ext-text">
+            <p class="eyebrow">Chrome Extension</p>
+            <h2 class="section-title">Clearead on every page<br/>you visit</h2>
+            <p class="ext-desc">
+              Reading support doesn't stop at the Clearead website. Install the
+              Chrome extension and get text summaries, word lookups, and
+              dyslexia-friendly page tools on <strong>any webpage</strong> — lecture
+              slides, news articles, assignment portals, everything.
+            </p>
+            <div class="ext-actions">
+              <a
+                href="https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-ext-install"
+              >
+                <!-- Chrome icon -->
+                <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+                  <circle cx="11" cy="11" r="10" fill="white" opacity="0.15"/>
+                  <circle cx="11" cy="11" r="4.2" fill="white"/>
+                  <path d="M11 6.8h8.6A10 10 0 0 0 2.7 8.6L6.9 15.6A4.2 4.2 0 0 1 11 6.8Z" fill="#EA4335" opacity="0.9"/>
+                  <path d="M19.6 6.8H11A4.2 4.2 0 0 1 15.1 15.6L11 22A10 10 0 0 0 19.6 6.8Z" fill="#FBBC05" opacity="0.9"/>
+                  <path d="M6.9 15.6A4.2 4.2 0 0 0 15.1 15.6L11 22A10 10 0 0 1 2.7 8.6Z" fill="#34A853" opacity="0.9"/>
+                </svg>
+                Add to Chrome — it's free
+              </a>
+              <RouterLink to="/extension" class="btn-ext-learn">
+                See how it works
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </RouterLink>
+            </div>
+          </div>
+
+          <!-- Right: mini feature pills -->
+          <div class="ext-pills" aria-hidden="true">
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--blue">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <path d="M4 5h14M4 9h10M4 13h12M4 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Text Summary</div>
+                <div class="ext-pill-sub">Paste any text, get a plain-English summary</div>
+              </div>
+            </div>
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--violet">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="M15 15l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Word Lookup</div>
+                <div class="ext-pill-sub">Right-click any word to look it up</div>
+              </div>
+            </div>
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--green">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <path d="M4 7h14M4 11h14M4 15h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Readable Fonts</div>
+                <div class="ext-pill-sub">Switch any page to OpenDyslexic</div>
+              </div>
+            </div>
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--amber">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <rect x="2" y="9" width="18" height="4" rx="2" fill="currentColor" opacity="0.25"/>
+                  <path d="M2 11h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Highlight &amp; Line Guide</div>
+                <div class="ext-pill-sub">Track your reading line by line</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Footer ── -->
     <footer class="footer">
-      <div class="container footer-inner">
+      <div class="footer-inner">
         <div class="footer-left">
           <span class="footer-logo">Clearead</span>
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Understand Dyslexia</RouterLink>
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
@@ -434,6 +539,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext {
+  color: #2563eb;
+  border: 1px solid rgba(37,99,235,0.22);
+  padding: 5px 13px;
+}
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 .nav-link--active::after {
   content: '';
   position: absolute;
@@ -504,13 +615,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .btn-start {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 26px;
-  background: #2563eb; color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff;
   font-size: 15px; font-weight: 600;
   border-radius: 999px; text-decoration: none;
   box-shadow: 0 6px 20px rgba(37,99,235,0.3);
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-.btn-start:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,99,235,0.35); }
+.btn-start:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,99,235,0.35); }
 .btn-ghost {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 24px;
@@ -521,6 +632,32 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   transition: background 0.2s, transform 0.15s;
 }
 .btn-ghost:hover { background: rgba(255,255,255,0.9); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+/* ── Scroll-down arrow ── */
+.scroll-down {
+  display: flex; align-items: center; justify-content: center;
+  width: 52px; height: 52px;
+  margin: 56px auto 0;
+  background: rgba(255,255,255,0.75);
+  border: 2px solid rgba(99,102,241,0.3);
+  border-radius: 999px;
+  color: #4f46e5;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(99,102,241,0.15);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  animation: bounce 2s ease-in-out infinite;
+}
+.scroll-down:hover {
+  background: rgba(255,255,255,1);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.25);
+  animation: none;
+  transform: translateY(4px);
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(9px); }
+}
 
 /* ── Shared layout ── */
 .container {
@@ -588,14 +725,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .btn-features-start {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 28px;
-  background: #2563eb; color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff;
   font-size: 15px; font-weight: 600;
   border-radius: 999px; text-decoration: none;
   box-shadow: 0 6px 20px rgba(37,99,235,0.3);
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 .btn-features-start:hover {
-  background: #1d4ed8;
+  opacity: 0.92;
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(37,99,235,0.35);
 }
@@ -1011,6 +1148,79 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 
 /* ═══════════════════════════════════════════════════════
+   CHROME EXTENSION TEASER
+   ═══════════════════════════════════════════════════════ */
+.section-ext { padding: 80px 0 96px; }
+.ext-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 28px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 8px 40px rgba(99,120,255,0.09);
+  padding: 52px 56px;
+}
+.ext-desc {
+  font-size: 15.5px; color: #4b5563;
+  line-height: 1.75; margin: 0 0 28px;
+}
+.ext-desc strong { color: #1e293b; }
+.ext-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+/* Chrome install button */
+.btn-ext-install {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: #fff; font-size: 14px; font-weight: 700;
+  border-radius: 999px; text-decoration: none;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.28);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-ext-install:hover { opacity: 0.92; transform: translateY(-2px); }
+
+/* "See how it works" ghost link */
+.btn-ext-learn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 600; color: #4f46e5;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.btn-ext-learn:hover { color: #7c3aed; }
+
+/* Feature pills (right column) */
+.ext-pills {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ext-pill {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.70);
+  border: 1px solid rgba(226,232,240,0.8);
+  border-radius: 14px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.ext-pill:hover { transform: translateX(4px); box-shadow: 0 4px 16px rgba(99,102,241,0.10); }
+.ext-pill-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.ext-pill-icon--blue   { background: #eff6ff; color: #2563eb; }
+.ext-pill-icon--violet { background: #f5f3ff; color: #7c3aed; }
+.ext-pill-icon--green  { background: #f0fdf4; color: #16a34a; }
+.ext-pill-icon--amber  { background: #fffbeb; color: #d97706; }
+.ext-pill-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+.ext-pill-sub   { font-size: 12.5px; color: #6b7280; }
+
+@media (max-width: 860px) {
+  .ext-panel { grid-template-columns: 1fr; gap: 36px; padding: 36px 24px; }
+}
+
+/* ═══════════════════════════════════════════════════════
    FOOTER — deep blue, clearly separated from page body
    ═══════════════════════════════════════════════════════ */
 .footer {
@@ -1018,6 +1228,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   padding: 52px 0;
 }
 .footer-inner {
+  padding: 0 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;

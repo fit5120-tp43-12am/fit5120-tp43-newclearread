@@ -196,11 +196,12 @@ const ctxt = computed(() => {
           Clearead
         </RouterLink>
         <ul class="nav-links">
-          <li><RouterLink to="/" class="nav-link">Home</RouterLink></li>
-          <li><RouterLink to="/reading" class="nav-link">Reading Support</RouterLink></li>
+          <li><RouterLink to="/"           class="nav-link">Home</RouterLink></li>
+          <li><RouterLink to="/reading"    class="nav-link">Reading Support</RouterLink></li>
           <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link nav-link--active">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -216,11 +217,12 @@ const ctxt = computed(() => {
     <!-- Mobile nav -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/"           class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"    class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -707,6 +709,21 @@ const ctxt = computed(() => {
       </section>
 
     </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-left">
+          <span class="footer-logo">Clearead</span>
+          <p class="footer-tagline">Built for minds that think differently.</p>
+        </div>
+        <nav class="footer-links">
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
+        </nav>
+        <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
+      </div>
+    </footer>
+
   </div>
 </template>
 
@@ -772,6 +789,8 @@ const ctxt = computed(() => {
 }
 .nav-link:hover { color: #0d1117; background: rgba(0, 0, 0, 0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 .nav-link--active::after {
   content: '';
   position: absolute;
@@ -1349,4 +1368,25 @@ blockquote {
   .bar-controls { flex-wrap: wrap; }
   .viz-nav { gap: 16px; }
 }
+
+/* ── Footer ── */
+.footer {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  padding: 52px 0;
+}
+.footer-inner {
+  padding: 0 36px;
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 24px;
+}
+.footer-left { display: flex; flex-direction: column; gap: 4px; }
+.footer-logo { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.footer-tagline { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0; }
+.footer-links { display: flex; gap: 28px; }
+.footer-link {
+  font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s;
+}
+.footer-link:hover { color: #fff; }
+.footer-copy { font-size: 13px; color: rgba(255,255,255,0.35); margin: 0; }
 </style>

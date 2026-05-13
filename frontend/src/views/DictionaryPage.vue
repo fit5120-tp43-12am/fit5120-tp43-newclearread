@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useGlobalDict } from '../composables/useGlobalDict'
+import { playBackendTTS, preloadBackendTTS, stopBackendTTS } from '../composables/useBackendTts'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
@@ -13,19 +14,35 @@ const result      = ref(null)
 const loading     = ref(false)
 const errorMsg    = ref('')
 const searched    = ref(false)
+const resultRef   = ref(null)   // template ref for the result card
 
 // ── TTS ───────────────────────────────────────────────────────────────────────
 const ttsPlaying = ref(false)
 
-function speakWord() {
+function dictionaryAudioText(entry) {
+  return [entry?.word, entry?.simpleMeaning].filter(Boolean).join('. ')
+}
+
+function preloadDictionaryAudio(entry) {
+  const text = dictionaryAudioText(entry)
+  if (!text) return
+  preloadBackendTTS(text, { voice: 'default-female', volume: 80 }).catch((err) => {
+    console.warn('[TTS] Dictionary preload failed:', err)
+  })
+}
+
+async function speakWord() {
   if (!result.value) return
-  window.speechSynthesis?.cancel()
-  const text = [result.value.word, result.value.simpleMeaning].filter(Boolean).join('. ')
-  const utt = new SpeechSynthesisUtterance(text)
-  utt.lang = 'en-US'
+  stopBackendTTS()
+  const text = dictionaryAudioText(result.value)
   ttsPlaying.value = true
-  utt.onend = utt.onerror = () => { ttsPlaying.value = false }
-  window.speechSynthesis?.speak(utt)
+  try {
+    await playBackendTTS(text, { voice: 'default-female', speed: 1, volume: 80 })
+  } catch (err) {
+    console.error('[TTS] Dictionary playback error:', err)
+  } finally {
+    ttsPlaying.value = false
+  }
 }
 
 // ── Lookup ────────────────────────────────────────────────────────────────────
@@ -41,7 +58,7 @@ async function handleSearch() {
   errorMsg.value = ''
   result.value   = null
   searched.value = true
-  window.speechSynthesis?.cancel()
+  stopBackendTTS()
   ttsPlaying.value = false
 
   try {
@@ -53,6 +70,10 @@ async function handleSearch() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.detail || 'Word not found.')
     result.value = data
+    preloadDictionaryAudio(data)
+    // Scroll result into view after DOM updates
+    await nextTick()
+    resultRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (err) {
     errorMsg.value = err.message || 'Something went wrong. Please try again.'
   } finally {
@@ -64,6 +85,8 @@ function handleKeydown(e) {
   if (e.key === 'Enter') handleSearch()
 }
 
+// Only show word parts when there is a real morpheme breakdown
+// (i.e. more than one part, OR a single part that is not just "base word")
 const hasWordParts        = computed(() => result.value?.wordParts?.length > 0)
 const hasMeaningFromParts = computed(() => !!result.value?.meaningFromParts)
 
@@ -102,6 +125,7 @@ function loadSaved(entry) {
   searched.value   = true
   errorMsg.value   = ''
   ttsPlaying.value = false
+  preloadDictionaryAudio(entry)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
@@ -131,6 +155,7 @@ function loadSaved(entry) {
           <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link nav-link--active">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
 
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
@@ -152,6 +177,7 @@ function loadSaved(entry) {
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -251,7 +277,7 @@ function loadSaved(entry) {
         </div>
 
         <!-- Result card -->
-        <div v-else-if="result" class="result-card">
+        <div v-else-if="result" class="result-card" ref="resultRef">
 
           <!-- Card header: word + TTS + Save -->
           <div class="result-header">
@@ -308,11 +334,11 @@ function loadSaved(entry) {
               <div
                 v-for="part in result.wordParts"
                 :key="part.form + part.type"
-                :class="['result-part-row', `result-part-row--${part.type?.toLowerCase()}`]"
+                :class="['result-part-row', `result-part-row--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]"
               >
                 <span class="result-part-form">{{ part.form }}</span>
                 <span class="result-part-meaning">{{ part.meaning }}</span>
-                <span :class="['result-part-badge', `result-part-badge--${part.type?.toLowerCase()}`]">
+                <span :class="['result-part-badge', `result-part-badge--${part.type?.toLowerCase().replace(/\s+/g,'-')}`]">
                   {{ part.type }}
                 </span>
               </div>
@@ -379,6 +405,20 @@ function loadSaved(entry) {
       </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-left">
+          <span class="footer-logo">Clearead</span>
+          <p class="footer-tagline">Built for minds that think differently.</p>
+        </div>
+        <nav class="footer-links">
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
+        </nav>
+        <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
+      </div>
+    </footer>
+
   </div>
 </template>
 
@@ -432,6 +472,8 @@ function loadSaved(entry) {
 }
 .nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 .nav-link--active::after {
   content: ''; position: absolute;
   bottom: -2px; left: 50%; transform: translateX(-50%);
@@ -734,9 +776,12 @@ function loadSaved(entry) {
   padding: 12px 14px; border-radius: 12px;
   border-left: 3px solid transparent;
 }
-.result-part-row--prefix { background: rgba(255,241,242,0.9); border-left-color: #fda4af; }
-.result-part-row--root   { background: rgba(239,246,255,0.9); border-left-color: #93c5fd; }
-.result-part-row--suffix { background: rgba(240,253,244,0.9); border-left-color: #86efac; }
+.result-part-row--prefix         { background: #fff1f2; border-left-color: #fda4af; }
+.result-part-row--root           { background: #eff6ff; border-left-color: #93c5fd; }
+.result-part-row--suffix         { background: #f0fdf4; border-left-color: #86efac; }
+.result-part-row--infix          { background: #faf5ff; border-left-color: #d8b4fe; }
+.result-part-row--base-word      { background: #fff7ed; border-left-color: #fdba74; }
+.result-part-row--combining-form { background: #ecfeff; border-left-color: #67e8f9; }
 .result-part-row--infix  { background: rgba(250,245,255,0.9); border-left-color: #d8b4fe; }
 .result-part-form { font-size: 14px; font-weight: 800; color: #0f172a; min-width: 54px; flex-shrink: 0; }
 .result-part-meaning { flex: 1; font-size: 14px; line-height: 1.5; color: #475569; }
@@ -744,9 +789,12 @@ function loadSaved(entry) {
   font-size: 11px; font-weight: 800; padding: 4px 11px; border-radius: 999px;
   letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0;
 }
-.result-part-badge--prefix { background: #ffe4e6; color: #e11d48; }
-.result-part-badge--root   { background: #dbeafe; color: #1d4ed8; }
-.result-part-badge--suffix { background: #dcfce7; color: #15803d; }
+.result-part-badge--prefix         { background: #ffe4e6; color: #e11d48; }
+.result-part-badge--root           { background: #dbeafe; color: #1d4ed8; }
+.result-part-badge--suffix         { background: #dcfce7; color: #15803d; }
+.result-part-badge--infix          { background: #ede9fe; color: #7c3aed; }
+.result-part-badge--base-word      { background: #ffedd5; color: #c2410c; }
+.result-part-badge--combining-form { background: #cffafe; color: #0e7490; }
 .result-part-badge--infix  { background: #ede9fe; color: #7c3aed; }
 .result-parts-meaning { font-size: 15px; line-height: 1.78; color: #334155; margin: 0; font-style: italic; }
 
@@ -827,4 +875,25 @@ function loadSaved(entry) {
   .result-header { padding: 20px 20px 16px; flex-wrap: wrap; }
   .result-section { padding: 16px 20px; }
 }
+
+/* ── Footer ── */
+.footer {
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  padding: 52px 0;
+}
+.footer-inner {
+  padding: 0 36px;
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 24px;
+}
+.footer-left { display: flex; flex-direction: column; gap: 4px; }
+.footer-logo { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.footer-tagline { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0; }
+.footer-links { display: flex; gap: 28px; }
+.footer-link {
+  font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s;
+}
+.footer-link:hover { color: #fff; }
+.footer-copy { font-size: 13px; color: rgba(255,255,255,0.35); margin: 0; }
 </style>

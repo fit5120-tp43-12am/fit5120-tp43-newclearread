@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
 
@@ -8,6 +8,13 @@ MAX_TEXT_CHARS = 50000
 # Request body for plain text submitted by the frontend.
 class TextRequest(BaseModel):
     text: str
+
+
+class TTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=12000)
+    voice: str = "default-female"
+    speed: float = Field(1.0, ge=0.5, le=2.0)
+    volume: int = Field(70, ge=0, le=100)
 
 
 # Request body for uploaded files sent as base64 content.
@@ -43,7 +50,7 @@ class TextBlock(BaseModel):
 class TextProcessingStats(BaseModel):
     # Total time spent processing the request end to end.
     totalSeconds: float = 0.0
-    # Time spent generating the whole-document overview summary.
+    # Kept for compatibility; /process-text no longer generates the overview.
     overallSummarySeconds: float = 0.0
     # Time spent generating section card title/subtitle copy.
     sectionCardSeconds: float = 0.0
@@ -77,7 +84,7 @@ class TextResponse(BaseModel):
     fallbackReason: str
     # Explains whether block segmentation came from AI or local fallback.
     segmentation: Dict[str, Any]
-    # Short whole-document summary shown at the top of the result page.
+    # Kept for compatibility; the frontend now gets this from /api/plugin/summary.
     overallSummary: OverallSummary = Field(default_factory=OverallSummary)
     # Block list consumed directly by ReadingPage.vue.
     blocks: List[TextBlock]

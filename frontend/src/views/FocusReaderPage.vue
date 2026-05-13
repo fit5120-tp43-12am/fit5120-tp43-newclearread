@@ -19,6 +19,7 @@
  */
 
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { playBackendTTS, stopBackendTTS, pauseBackendTTS, resumeBackendTTS, preloadBackendTTS } from '../composables/useBackendTts'
 
 // ── Navbar scroll shadow ──────────────────────────────────────────────────────
 const scrolled = ref(false)
@@ -161,13 +162,20 @@ function getPool() {
  * Builds the label array for a round.
  * Guarantees the target appears once, fills remaining slots first with
  * confusable items, then random pool items.
+ *
+ * For specific modes (letters/chunks/words), distractors are drawn from
+ * that same pool so all chips stay in the same category — making the
+ * mode selection visually meaningful.
+ * For mixed mode, the full combined pool is used for variety.
  */
 function buildLabels(target, count) {
-  const pool  = [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+  const fillPool = settings.mode === 'mixed'
+    ? [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+    : [...(POOLS[settings.mode] || POOLS.letters)]
   const close = CONFUSABLES[target] || []
   const labels = [target, ...shuffle(close).slice(0, Math.min(3, close.length))]
   while (labels.length < count) {
-    const c = pick(pool)
+    const c = pick(fillPool)
     if (!labels.includes(c)) labels.push(c)
   }
   return shuffle(labels)
@@ -268,18 +276,57 @@ function playBeep(type) {
   } catch(e) { /* silently ignore if audio context unavailable */ }
 }
 
-// ── Speech synthesis ──────────────────────────────────────────────────────────
-function speakTarget() {
-  if (!settings.sound || !('speechSynthesis' in window)) {
-    // Fallback: show text when speech is unavailable
+// ── Speech cue via backend TTS ────────────────────────────────────────────────
+
+/**
+ * Plan B fallback: use the browser's built-in SpeechSynthesis when the backend
+ * TTS fails (network error, quota exceeded, etc.).
+ * Browser speech is instant — no network round-trip — so the audio cue always
+ * plays even if the backend is unavailable.
+ */
+function speakWithBrowser(text) {
+  try {
+    if (!window.speechSynthesis) throw new Error('unavailable')
+    window.speechSynthesis.cancel()          // stop any previous browser utterance
+    const utt = new SpeechSynthesisUtterance(text)
+    utt.rate   = 0.8
+    utt.volume = 0.9
+    window.speechSynthesis.speak(utt)
+  } catch {
+    // Both backend and browser TTS unavailable — fall back to visual label
+    ui.cueLabel   = text
+    ui.cueIsAudio = false
+  }
+}
+
+/**
+ * Plan A: silently pre-fetch TTS audio blobs for every word in the active pool
+ * the moment a new game starts. The composable caches blobs by (text, voice) key,
+ * so by the time the first audio cue round arrives the blob is ready in memory
+ * and playback starts instantly with no perceptible network delay.
+ */
+function preloadPoolAudio() {
+  const pool = settings.mode === 'mixed'
+    ? [...new Set([...POOLS.letters, ...POOLS.chunks, ...POOLS.words])]
+    : [...(POOLS[settings.mode] || POOLS.letters)]
+  for (const word of pool) {
+    preloadBackendTTS(word, { voice: 'default-female', volume: 80 }).catch(() => {})
+  }
+}
+
+async function speakTarget() {
+  if (!settings.sound) {
     ui.cueLabel  = G.target
     ui.cueIsAudio = false
     return
   }
-  window.speechSynthesis.cancel()
-  const utt = new SpeechSynthesisUtterance(G.target)
-  utt.lang = 'en-US'; utt.rate = 0.68; utt.pitch = 1.05
-  window.speechSynthesis.speak(utt)
+  try {
+    await playBackendTTS(G.target, { voice: 'default-female', speed: 0.75, volume: 80 })
+  } catch (err) {
+    console.error('[TTS] FocusReader backend error — falling back to browser TTS:', err)
+    // Plan B: backend failed → browser speech synthesis as instant fallback
+    speakWithBrowser(G.target)
+  }
 }
 
 // ── Difficulty adaptation ─────────────────────────────────────────────────────
@@ -317,6 +364,11 @@ function resolveChoice(chip) {
   if (!G.roundActive) return
   const rt = performance.now() - G.roundStartedAt
   G.roundActive = false
+  // Stop any in-flight or playing TTS from this round so it doesn't bleed
+  // into the inter-round gap or the next round's audio cue
+  stopBackendTTS()
+  window.speechSynthesis?.cancel()
+  ui.cueIsAudio = false
 
   if (chip.isTarget) {
     G.hits++; G.streak++
@@ -347,6 +399,10 @@ function resolveChoice(chip) {
 function missRound() {
   if (!G.roundActive) return
   G.roundActive = false
+  // Stop any in-flight or playing TTS so it doesn't carry over into the next round
+  stopBackendTTS()
+  window.speechSynthesis?.cancel()
+  ui.cueIsAudio = false
   G.misses++; G.streak = 0
   G.recent.push({ ok: false, rt: G.roundDuration })
   G.recent = G.recent.slice(-6)
@@ -446,6 +502,8 @@ function loadHistory() {
 
 // ── Session end ───────────────────────────────────────────────────────────────
 function finishSession(completed) {
+  stopBackendTTS()          // stop any in-flight audio cue immediately
+  window.speechSynthesis?.cancel()
   cancelAnimationFrame(G.animId)
   if (!G.running) return
 
@@ -484,6 +542,14 @@ function finishSession(completed) {
 function startGame() {
   if (G.running && G.paused) { resumeGame(); return }
 
+  // Stop any audio from a previous game before a fresh start
+  stopBackendTTS()
+  window.speechSynthesis?.cancel()
+
+  // Plan A: pre-fetch TTS blobs for every word in the active pool so audio
+  // cue rounds play instantly from cache instead of waiting on the network.
+  preloadPoolAudio()
+
   // Full reset for a fresh session
   Object.assign(G, {
     running: true, paused: false, level: 1, score: 0,
@@ -502,6 +568,7 @@ function pauseGame() {
   if (!G.running || G.paused) return
   G.paused = true; isPaused.value = true
   cancelAnimationFrame(G.animId)
+  pauseBackendTTS()         // pause any audio cue that is currently playing
   ui.message = 'Paused. Press Resume to continue. (Shortcut: P)'
 }
 
@@ -510,11 +577,24 @@ function resumeGame() {
   ui.showOverlay = false
   G.roundStartedAt = performance.now()
   G.lastFrame      = performance.now()
+  // If we were in an audio cue round, resume the paused audio
+  if (ui.cueIsAudio) {
+    resumeBackendTTS().catch(() => {
+      // Audio already ended or unavailable — replay the cue for the player
+      speakTarget()
+    })
+  }
   loop(G.lastFrame)
 }
 
 function resetGame() {
   finishSession(false)
+  // Restore the exact initial UI so clicking ↺ Restart truly feels like
+  // "back to the beginning" — same overlay, cue label, and message as first load.
+  ui.cueLabel     = 'Ready'
+  ui.overlayTitle = 'Find the Right Circle'
+  ui.overlayBody  = 'Each round shows you a word or letter. Tap the moving circle that matches it — watch out for ones that look similar!'
+  ui.message      = 'Press Start, then tap the circle that matches the word shown above.'
 }
 
 // ── Canvas pointer handling ───────────────────────────────────────────────────
@@ -606,7 +686,8 @@ function handleKey(e) {
   const key = e.key.toLowerCase()
   if (key === 'escape') { closeGuide() }
   if (key === 'p' && G.running) { e.preventDefault(); G.paused ? resumeGame() : pauseGame() }
-  if (key === 'r' && G.cueMode === 'audio') { e.preventDefault(); speakTarget() }
+  // R replays audio cue only when game is actively running and the current round uses audio
+  if (key === 'r' && G.running && !G.paused && G.cueMode === 'audio') { e.preventDefault(); speakTarget() }
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -627,6 +708,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   cancelAnimationFrame(G.animId)
+  stopBackendTTS()
   window.speechSynthesis?.cancel()
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', onResize)
@@ -653,11 +735,12 @@ onUnmounted(() => {
           Clearead
         </RouterLink>
         <ul class="nav-links">
-          <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
-          <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
+          <li><RouterLink to="/"           class="nav-link">Home</RouterLink></li>
+          <li><RouterLink to="/reading"    class="nav-link">Reading Support</RouterLink></li>
           <li><RouterLink to="/training"   class="nav-link nav-link--active">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -673,11 +756,12 @@ onUnmounted(() => {
     <!-- Mobile nav drawer -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/"           class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"    class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -760,18 +844,30 @@ onUnmounted(() => {
         <!-- ⑥ Controls -->
         <div class="controls-row">
           <button
-            v-if="!isRunning || isPaused"
+            v-if="!isRunning"
             class="btn-start"
             @click="startGame"
-          >
-            {{ isPaused ? '▶ Resume' : (isRunning ? '↺ Restart' : '▶ Start') }}
-          </button>
+          >▶ Start</button>
+          <button
+            v-if="isRunning && isPaused"
+            class="btn-start"
+            @click="resumeGame"
+          >▶ Resume</button>
           <button
             v-if="isRunning && !isPaused"
             class="btn-pause"
             @click="pauseGame"
           >⏸ Pause</button>
-          <button class="btn-reset" @click="resetGame">Reset</button>
+          <button
+            v-if="isRunning"
+            class="btn-reset"
+            @click="resetGame"
+          >↺ Restart</button>
+          <button
+            v-if="!isRunning"
+            class="btn-reset"
+            @click="resetGame"
+          >Reset</button>
           <button class="btn-guide" @click="openGuide" aria-label="How to play">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
@@ -988,15 +1084,13 @@ onUnmounted(() => {
 
     <!-- ── Footer ── -->
     <footer class="footer">
-      <div class="container footer-inner">
+      <div class="footer-inner">
         <div class="footer-left">
           <span class="footer-logo">Clearead</span>
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Understand Dyslexia</RouterLink>
-          <RouterLink to="/training" class="footer-link">Training</RouterLink>
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
@@ -1058,6 +1152,8 @@ onUnmounted(() => {
 }
 .nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 .nav-link--active::after {
   content: ''; position: absolute;
   bottom: -2px; left: 50%; transform: translateX(-50%);
@@ -1481,6 +1577,7 @@ onUnmounted(() => {
   padding: 52px 0;
 }
 .footer-inner {
+  padding: 0 36px;
   display: flex; align-items: center;
   justify-content: space-between; flex-wrap: wrap; gap: 24px;
 }

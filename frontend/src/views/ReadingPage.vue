@@ -10,6 +10,14 @@ const readingPageMemory = {
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import {
+  pauseBackendTTS,
+  playBackendTTS,
+  preloadBackendTTS,
+  resumeBackendTTS,
+  setBackendTTSPlaybackRate,
+  stopBackendTTS,
+} from '../composables/useBackendTts'
 
 // Backend base URL from .env; falls back to localhost for local development
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
@@ -98,16 +106,20 @@ function clearReadingState() {
 
 
 // ── Overall summary (computed from backend response) ──────────────────────────
-// Backend should provide result.overallSummary directly (iteration3 API).
+// The overview is fetched first from the plugin summary endpoint.
 // Falls back to the first block's data for compatibility with older responses.
 const overallSummary = computed(() => {
   if (!result.value) return null
-  if (result.value.overallSummary) return result.value.overallSummary
+  const summary = result.value.overallSummary
+  if (summary?.heading || summary?.text) return summary
   const first = result.value.blocks?.[0]
   return first
     ? { heading: first.title || 'Summary', text: first.summary || '' }
     : null
 })
+
+const sectionProcessing = ref(false)
+let activeProcessRequestId = 0
 
 
 // ── Section detail modal ──────────────────────────────────────────────────────
@@ -123,13 +135,16 @@ const modalShowOriginal = ref(true)
 function openSection(block) {
   stopAudio()
   activeSection.value = block
-  modalShowOriginal.value = true   // always start expanded
+  modalShowOriginal.value = false  // hidden by default; user can expand
+  preloadBlockAudio(block, 'summary')
 }
 
 /** Closes the section detail modal and stops any playing TTS. */
 function closeSection() {
   stopAudio()
   activeSection.value = null
+  // Close the global dictionary popup whenever this modal closes
+  window.dispatchEvent(new CustomEvent('clearead:modal-closed'))
 }
 
 
@@ -221,13 +236,12 @@ const OVERALL_SUMMARY_ID = 0
 async function playOverallSummary() {
   if (!overallSummary.value) return
 
-  // Build the text: heading + body paragraph joined as a sentence
-  const text = [overallSummary.value.heading, overallSummary.value.text]
-    .filter(Boolean).join('. ')
+  const text = getOverallAudioText()
 
   const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
 
-  // Toggle play/pause if already active
+  // Toggle play/pause if already active; do nothing while generating to avoid duplicate requests
+  if (isSame && playbackState.value === 'loading')  return
   if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
   if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
 
@@ -235,7 +249,7 @@ async function playOverallSummary() {
   stopAudio()
   activeBlockId.value   = OVERALL_SUMMARY_ID
   activeBlockType.value = 'summary'
-  playbackState.value   = 'playing'
+  playbackState.value   = 'loading'
 
   try {
     await requestTTS(text)
@@ -297,7 +311,7 @@ const activeBlockId   = ref(null)
 const activeBlockType = ref('original')
 
 // Playback state machine
-const playbackState   = ref('idle')   // 'idle' | 'playing' | 'paused'
+const playbackState   = ref('idle')   // 'idle' | 'loading' | 'playing' | 'paused'
 
 // User-adjustable audio settings
 const playbackSpeed  = ref(1.0)      // multiplier: 0.75 / 1.0 / 1.25 / 1.5 / 2.0
@@ -308,104 +322,68 @@ const volume         = ref(70)       // 0–100
 const SPEED_OPTIONS  = [0.75, 1.0, 1.25, 1.5, 2.0]
 
 // Voice preference keys shown in the toolbar dropdown.
-// These are mapped to actual browser SpeechSynthesisVoice objects by getSelectedVoice().
+// These are mapped to OpenAI TTS voices by the backend.
 const VOICE_OPTIONS  = [
   { value: 'default-female', label: 'Default Female' },
   { value: 'default-male',   label: 'Default Male'   },
-  { value: 'calm-female',    label: 'Calm Female'    },
-  { value: 'clear-male',     label: 'Clear Male'     },
 ]
 
-// Browser voices loaded asynchronously via the Web Speech API
-const availableVoices = ref([])
+let preloadAudioTimer = null
+let preloadAudioToken = 0
 
-function loadVoices() {
-  if (!('speechSynthesis' in window)) return
-  availableVoices.value = window.speechSynthesis.getVoices()
+function getOverallAudioText() {
+  return overallSummary.value
+    ? [overallSummary.value.heading, overallSummary.value.text].filter(Boolean).join('. ')
+    : ''
+}
+
+function getBlockAudioText(block, textType = 'summary') {
+  if (!block) return ''
+  if (textType === 'original') return block.originalText || ''
+  const keyPoints = block.keyPoints?.length
+    ? 'Key points: ' + block.keyPoints.join('. ')
+    : ''
+  return [block.summary, keyPoints].filter(Boolean).join('. ')
+}
+
+function preloadTextAudio(text) {
+  const cleanText = String(text || '').trim()
+  if (!cleanText) return Promise.resolve(null)
+  return preloadBackendTTS(cleanText, {
+    voice: selectedVoice.value,
+    volume: volume.value,
+  }).catch((err) => {
+    console.warn('[TTS] Audio preload failed:', err)
+    return null
+  })
+}
+
+function preloadBlockAudio(block, textType = 'summary') {
+  return preloadTextAudio(getBlockAudioText(block, textType))
+}
+
+function scheduleAudioPreload() {
+  clearTimeout(preloadAudioTimer)
+  const token = ++preloadAudioToken
+  preloadAudioTimer = setTimeout(async () => {
+    if (token !== preloadAudioToken || mode.value !== 'result') return
+    await preloadTextAudio(getOverallAudioText())
+  }, 250)
 }
 
 /**
- * Returns the best matching SpeechSynthesisVoice for the user's preference.
- * Searches English voices by common name patterns for male / female voices.
- */
-function getSelectedVoice() {
-  // Only look at English voices
-  const en = availableVoices.value.filter(v => v.lang.startsWith('en'))
-  if (!en.length) return null
-
-  const pref = selectedVoice.value
-
-  if (pref === 'default-female' || pref === 'calm-female') {
-    // Common female voice name keywords across Windows / macOS / Chrome
-    return (
-      en.find(v => /zira|victoria|samantha|karen|moira|fiona|female|woman/i.test(v.name)) ||
-      en[0]
-    )
-  }
-
-  if (pref === 'default-male' || pref === 'clear-male') {
-    // Common male voice name keywords
-    return (
-      en.find(v => /david|mark|daniel|alex|james|george|male|man/i.test(v.name)) ||
-      en[0]
-    )
-  }
-
-  return en[0]
-}
-
-// ── TTS via Browser Web Speech API ───────────────────────────────────────────
-//
-// Uses the browser's built-in SpeechSynthesis — no backend required.
-// Works in Chrome, Edge, and Safari. Firefox support is partial.
-//
-// The Promise resolves ONLY when speech actually ends (onend).
-// Resolving early (before onend) would cause playBlock() to immediately
-// call stopAudio(), cancelling the speech before it finishes — the
-// original bug that made TTS appear broken.
-
-/**
- * Speak text using the Web Speech API.
+ * Speak text using backend OpenAI TTS.
  * Returns a Promise that resolves when the utterance naturally finishes,
  * or when it is cancelled programmatically (treated as a clean stop).
  */
 function requestTTS(text) {
-  return new Promise((resolve, reject) => {
-    if (!('speechSynthesis' in window)) {
-      reject(new Error('Text-to-speech is not supported in this browser.'))
-      return
-    }
-
-    const synth     = window.speechSynthesis
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang   = 'en-US'
-    utterance.rate   = playbackSpeed.value
-    utterance.volume = volume.value / 100
-
-    // Apply the selected browser voice (mapped from user preference to real voice object)
-    const voice = getSelectedVoice()
-    if (voice) utterance.voice = voice
-
-    // Resolve when speech ends naturally
-    utterance.onend = () => resolve('done')
-
-    // 'interrupted' / 'canceled' fire when stopAudio() calls speechSynthesis.cancel().
-    // Treat them as a normal clean stop, not an error.
-    utterance.onerror = (e) => {
-      if (e.error === 'interrupted' || e.error === 'canceled') {
-        resolve('cancelled')
-      } else {
-        console.warn('[TTS] Speech error:', e.error)
-        reject(new Error(e.error))
-      }
-    }
-
-    // ⚠️ Chrome bug: calling cancel() + speak() in the same synchronous block
-    // causes the new utterance to immediately receive an 'interrupted' error.
-    // stopAudio() already called cancel() before we get here, so we must NOT
-    // call cancel() again. We also defer speak() by 50 ms so Chrome has time
-    // to flush the previous cancellation before queuing the new utterance.
-    setTimeout(() => synth.speak(utterance), 50)
+  return playBackendTTS(text, {
+    voice: selectedVoice.value,
+    speed: playbackSpeed.value,
+    volume: volume.value,
+    onPlaybackStart: () => {
+      if (playbackState.value === 'loading') playbackState.value = 'playing'
+    },
   })
 }
 
@@ -433,19 +411,8 @@ async function playBlock(blockId, textType = 'original') {
   stopAudio()
   activeBlockId.value   = blockId
   activeBlockType.value = textType
-  playbackState.value   = 'playing'
-
-  // Build the text to speak depending on which card was clicked
-  let textToSpeak = ''
-  if (textType === 'original') {
-    textToSpeak = block.originalText
-  } else {
-    // Right card: read summary then key points as a flowing sentence
-    const kp = block.keyPoints?.length
-      ? 'Key points: ' + block.keyPoints.join('. ')
-      : ''
-    textToSpeak = [block.summary, kp].filter(Boolean).join('. ')
-  }
+  playbackState.value   = 'loading'
+  const textToSpeak = getBlockAudioText(block, textType)
 
   try {
     // Await speech completion — state resets to idle only after speech ends
@@ -460,14 +427,20 @@ async function playBlock(blockId, textType = 'original') {
 
 /** Pause the current playback. */
 function pauseAudio() {
-  if ('speechSynthesis' in window) window.speechSynthesis.pause()
+  pauseBackendTTS()
   playbackState.value = 'paused'
 }
 
 /** Resume a paused playback. */
 function resumeAudio() {
-  if ('speechSynthesis' in window) window.speechSynthesis.resume()
-  playbackState.value = 'playing'
+  // Set state only after the browser actually starts playing — if play() is rejected
+  // (e.g. autoplay policy, audio element gone) we catch it and fall back to full stop.
+  resumeBackendTTS()
+    .then(() => { playbackState.value = 'playing' })
+    .catch((err) => {
+      console.error('[TTS] Resume error:', err)
+      stopAudio()
+    })
 }
 
 /** Replay the currently active block (same side) from the beginning. */
@@ -477,11 +450,33 @@ function replayBlock() {
 
 /** Stop all playback and reset to idle. */
 function stopAudio() {
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  stopBackendTTS()
   activeBlockId.value   = null
   activeBlockType.value = 'original'
   playbackState.value   = 'idle'
 }
+
+function restartActiveAudio() {
+  if (activeBlockId.value === null || playbackState.value === 'idle') return
+  const blockId = activeBlockId.value
+  const blockType = activeBlockType.value
+  if (blockId === OVERALL_SUMMARY_ID) {
+    playOverallSummary()
+  } else {
+    playBlock(blockId, blockType)
+  }
+}
+
+watch(selectedVoice, () => {
+  scheduleAudioPreload()
+  restartActiveAudio()
+})
+
+watch(playbackSpeed, (speed) => {
+  setBackendTTSPlaybackRate(speed)
+})
+
+watch(result, scheduleAudioPreload, { deep: true })
 
 
 // ── Feedback strip ────────────────────────────────────────────────────────────
@@ -525,7 +520,7 @@ watch(
 
 async function handleSubmit() {
   const textToProcess = processingText.value.trim()
-  if (!textToProcess || overLimit.value || mode.value === 'loading') return
+  if (!textToProcess || overLimit.value || mode.value === 'loading' || sectionProcessing.value) return
 
   // Clear the input box immediately after capturing the text.
   // We also directly reset the textarea DOM height so it collapses
@@ -540,39 +535,81 @@ async function handleSubmit() {
   await nextTick()
   autoResize()   // recalculate to the correct min height
 
-  showFeedback('loading', 'Processing your text…', 0)
+  showFeedback('loading', 'Generating overview first…', 0)
   stopAudio()                        // stop any playing audio before new submission
   mode.value           = 'loading'
+  result.value         = null
+  sectionProcessing.value = true
   expandedBlocks.value = new Set()
   clampedBlocks.value  = {}
+  const requestId = ++activeProcessRequestId
 
-  try {
-    // Send text to the backend and wait for the paragraph-breakdown response
-    const res = await fetch(`${API_BASE_URL}/api/process-text`, {
+  const fetchJson = async (path) => {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ text: textToProcess }),
     })
     const data = await res.json()
-
     if (!res.ok) throw new Error(data.detail || 'Processing failed.')
+    return data
+  }
 
-    // Store the result — the template will render blocks dynamically from data.blocks
-    result.value = data
-    mode.value   = 'result'
+  fetchJson('/api/plugin/summary')
+    .then((summaryData) => {
+      if (requestId !== activeProcessRequestId) return
+      result.value = {
+        ...(result.value || {}),
+        overallSummary: summaryData.overallSummary,
+        blocks: result.value?.blocks || [],
+      }
+      mode.value = 'result'
+      if (sectionProcessing.value) {
+        showFeedback('loading', 'Overview is ready. Building sections…', 0)
+      } else if (!result.value.blocks?.length) {
+        showFeedback('error', 'Sections could not be generated. The overview is still available.', 6000)
+      }
+    })
+    .catch((err) => {
+      if (requestId !== activeProcessRequestId) return
+      console.error('[summary] Plugin summary failed:', err)
+    })
+
+  try {
+    const data = await fetchJson('/api/process-text')
+    if (requestId !== activeProcessRequestId) return
+
+    const existingSummary = result.value?.overallSummary
+    result.value = {
+      ...data,
+      overallSummary: existingSummary?.heading || existingSummary?.text
+        ? existingSummary
+        : data.overallSummary,
+    }
+    mode.value = 'result'
+    sectionProcessing.value = false
     showFeedback('success', 'Text processed successfully.')
   } catch (err) {
-    mode.value = 'idle'
-    showFeedback('error', err.message || 'Something went wrong. Please try again.', 6000)
+    if (requestId !== activeProcessRequestId) return
+    sectionProcessing.value = false
+    if (result.value?.overallSummary) {
+      mode.value = 'result'
+      showFeedback('error', err.message || 'Sections could not be generated. The overview is still available.', 6000)
+    } else {
+      mode.value = 'idle'
+      showFeedback('error', err.message || 'Something went wrong. Please try again.', 6000)
+    }
   }
 }
 
 // Go back to the input screen without clearing the text
 function handleBackToInput() {
   stopAudio()                        // stop TTS before leaving result view
+  activeProcessRequestId += 1
   mode.value           = 'idle'
   result.value         = null
   feedback.value       = null
+  sectionProcessing.value = false
   expandedBlocks.value = new Set()
   clampedBlocks.value  = {}
   clearReadingState()
@@ -691,21 +728,13 @@ onMounted(() => {
   restoreReadingState()
   window.addEventListener('scroll', onScroll)
   nextTick(autoResize)
-
-  // Load browser voices — they populate asynchronously after page load.
-  // voiceschanged fires once the list is ready (required in Chrome).
-  loadVoices()
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = loadVoices
-  }
 })
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   clearTimeout(feedbackTimer)
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = null
-    window.speechSynthesis.cancel()
-  }
+  clearTimeout(preloadAudioTimer)
+  preloadAudioToken += 1
+  stopAudio()
 })
 
 
@@ -754,11 +783,12 @@ function dismissDictHint() {
 
         <!-- Desktop nav links -->
         <ul class="nav-links">
-          <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
-          <li><RouterLink to="/reading"  class="nav-link nav-link--active">Reading Support</RouterLink></li>
+          <li><RouterLink to="/"           class="nav-link">Home</RouterLink></li>
+          <li><RouterLink to="/reading"    class="nav-link nav-link--active">Reading Support</RouterLink></li>
           <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
           <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
           <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
 
         <!-- Hamburger icon — only visible on small screens -->
@@ -776,11 +806,12 @@ function dismissDictHint() {
     <!-- Mobile navigation drawer -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/"           class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"    class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
         <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
         <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
         <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -889,11 +920,14 @@ function dismissDictHint() {
           <!-- Top status bar: success notice + back button -->
           <div class="result-topbar">
             <div class="result-notice">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <svg v-if="sectionProcessing" class="spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="22 10" stroke-linecap="round"/>
+              </svg>
+              <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <circle cx="7" cy="7" r="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
                 <path d="M4 7l2.2 2.2 3.8-4.4" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Text processed successfully.
+              {{ sectionProcessing ? 'Overview ready. Building sections…' : (result.notice || 'Text processed successfully.') }}
             </div>
             <button class="btn-back" @click="handleBackToInput">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -946,6 +980,10 @@ function dismissDictHint() {
                     <span class="wave-bar wave-bar--white"></span>
                     Pause
                   </template>
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'">
+                    <span class="btn-spinner"></span>
+                    Generating audio
+                  </template>
                   <!-- Paused: resume -->
                   <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -977,18 +1015,6 @@ function dismissDictHint() {
                     </svg>
                   </button>
 
-                  <!-- Restart -->
-                  <button
-                    class="overall-icon-btn"
-                    title="Restart from beginning"
-                    @click="stopAudio(); playOverallSummary()"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M2.5 7a4.5 4.5 0 1 1 1 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                      <path d="M2.5 10.5V7H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </button>
-
                 </div>
 
                 <!-- Thin separator -->
@@ -1016,7 +1042,7 @@ function dismissDictHint() {
                A bridge label connects the overview to the section cards.
                Clicking a card opens the Stage 3 detail modal.
           ══════════════════════════════════════════════════════════════ -->
-          <div class="stage-tree">
+          <div v-if="sectionProcessing || result.blocks?.length" class="stage-tree">
 
             <!-- Vertical connector: flows from overview card → pill label → sections grid -->
             <div class="stage-connector" aria-hidden="true">
@@ -1026,7 +1052,7 @@ function dismissDictHint() {
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <path d="M6.5 2v9M3 8l3.5 3L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <span>{{ result.blocks?.length || 0 }} Sections</span>
+                <span>{{ sectionProcessing ? 'Building Sections' : `${result.blocks?.length || 0} Sections` }}</span>
               </div>
               <div class="stage-connector-line stage-connector-line--bottom"></div>
             </div>
@@ -1037,7 +1063,14 @@ function dismissDictHint() {
               Inside, cards are laid out in a simple grid with no branch lines.
             -->
             <div class="tree-container">
-            <div class="tree-nodes">
+            <div v-if="sectionProcessing" class="section-processing-card">
+              <span class="btn-spinner section-processing-spinner"></span>
+              <div>
+                <strong>Preparing section summaries</strong>
+                <p>The overview is ready, and the detailed reading support is still being generated.</p>
+              </div>
+            </div>
+            <div v-else class="tree-nodes">
               <div
                 v-for="block in result.blocks"
                 :key="block.id"
@@ -1198,6 +1231,10 @@ function dismissDictHint() {
                 <span class="wave-bar"></span>
                 <span class="modal-audio-label">Playing…</span>
               </template>
+              <template v-else-if="activeBlockId === activeSection.id && playbackState === 'loading'">
+                <span class="btn-spinner"></span>
+                <span class="modal-audio-label">Generating audio</span>
+              </template>
               <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <rect x="2" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
@@ -1220,8 +1257,10 @@ function dismissDictHint() {
             <div class="modal-audio-btns">
 
               <!-- Play / Pause / Resume -->
+              <!-- Disabled while generating audio to prevent a duplicate TTS request -->
               <button
                 class="modal-audio-btn modal-audio-btn--primary"
+                :disabled="activeBlockId === activeSection.id && playbackState === 'loading'"
                 @click="
                   activeBlockId === activeSection.id && playbackState === 'playing'
                     ? pauseAudio()
@@ -1236,6 +1275,10 @@ function dismissDictHint() {
                     <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
                   </svg>
                   Pause
+                </template>
+                <template v-else-if="activeBlockId === activeSection.id && playbackState === 'loading'">
+                  <span class="btn-spinner"></span>
+                  Generating
                 </template>
                 <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -1268,7 +1311,7 @@ function dismissDictHint() {
               <button
                 class="modal-audio-btn"
                 title="Restart from beginning"
-                @click="playBlock(activeSection.id, 'summary')"
+                @click="stopAudio(); playBlock(activeSection.id, 'summary')"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1453,6 +1496,7 @@ function dismissDictHint() {
       </div>
     </div>
 
+
   </div>
 </template>
 
@@ -1516,6 +1560,8 @@ function dismissDictHint() {
 }
 .nav-link:hover { color: #0d1117; background: rgba(0, 0, 0, 0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 /* Blue dot under the active page link */
 .nav-link--active::after {
   content: ''; position: absolute;
@@ -2635,6 +2681,35 @@ kbd {
   box-shadow: 0 2px 16px rgba(99, 102, 241, 0.06);
 }
 
+.section-processing-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 108px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #eef0f8;
+  border-radius: 14px;
+  color: #334155;
+}
+.section-processing-card strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f172a;
+  font-size: 14px;
+}
+.section-processing-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.section-processing-spinner {
+  flex-shrink: 0;
+  border-color: rgba(79, 70, 229, 0.22);
+  border-top-color: #4f46e5;
+}
+
 /* Grid of section cards inside the container */
 .tree-nodes {
   display: grid;
@@ -2843,9 +2918,7 @@ kbd {
   gap: 14px;
   padding: 28px 22px 28px 30px;
   min-width: 0;
-  overflow: hidden;
-  /* No cursor/user-select on the whole column — text body must be selectable
-     for the global dictionary double-click to work. */
+  overflow-y: auto;   /* allow scrolling when original text is long */
   cursor: default;
   user-select: text;
 }
@@ -2863,27 +2936,27 @@ kbd {
 .modal-orig-col--collapsed:hover  { background: #eef2ff; }
 .modal-orig-col--collapsed:active { background: #e0e7ff; transform: scale(0.97); }
 
-/* Label row — the interactive toggle when expanded */
+/* Label row — styled as a clear toggle button */
 .modal-orig-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
+  gap: 6px;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: #4f46e5;
   white-space: nowrap;
   flex-shrink: 0;
-  /* Label is the click target when expanded */
   cursor: pointer;
   user-select: none;
-  border-radius: 6px;
-  padding: 4px 6px;
-  margin: -4px -6px;
-  transition: background 0.15s, color 0.15s;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  align-self: flex-start;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.modal-orig-label:hover { background: rgba(99,102,241,0.08); color: #3730a3; }
+.modal-orig-label:hover { background: #e0e7ff; border-color: #a5b4fc; color: #3730a3; }
 
 /* Collapsed: rotate the whole label block vertically */
 .modal-orig-col--collapsed .modal-orig-label {
@@ -2893,13 +2966,16 @@ kbd {
   gap: 6px;
 }
 
-/* Original text body */
+/* Original text body — scrollable when content overflows */
 .modal-orig-text {
   font-size: 14px;
   line-height: 1.78;
   color: #1e293b;
   margin: 0;
   cursor: text;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
 }
 
 /* Plain vertical divider */
@@ -3075,4 +3151,5 @@ kbd {
    The .spin keyframe below is still needed for the loading spinners on this page. */
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
 </style>

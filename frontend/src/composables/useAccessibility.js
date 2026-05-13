@@ -70,6 +70,11 @@ export const FONT_FAMILIES = {
     family: "'Calibri', 'Gill Sans', 'Trebuchet MS', sans-serif",
     note:   'Humanist sans-serif',
   },
+  openDyslexic: {
+    label:  'OpenDyslexic',
+    family: "'OpenDyslexic', sans-serif",
+    note:   'Designed for dyslexia',
+  },
 }
 
 /**
