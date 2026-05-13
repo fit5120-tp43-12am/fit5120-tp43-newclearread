@@ -712,7 +712,7 @@ const ctxt = computed(() => {
 
     <!-- Footer -->
     <footer class="footer">
-      <div class="container footer-inner">
+      <div class="footer-inner">
         <div class="footer-left">
           <span class="footer-logo">Clearead</span>
           <p class="footer-tagline">Built for minds that think differently.</p>
@@ -1375,6 +1375,7 @@ blockquote {
   padding: 52px 0;
 }
 .footer-inner {
+  padding: 0 36px;
   display: flex; align-items: center;
   justify-content: space-between; flex-wrap: wrap; gap: 24px;
 }
