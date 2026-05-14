@@ -816,37 +816,6 @@ function exportAsTxt() {
   triggerDownload(getExportFilename('txt'), lines.join('\n'), 'text/plain;charset=utf-8')
 }
 
-/** Export as Markdown (.md) */
-function exportAsMd() {
-  if (!result.value) return
-  const lines = []
-  const title = result.value.title
-  if (title) lines.push('# ' + title, '')
-
-  const os = overallSummary.value
-  if (os) {
-    lines.push('## Overview', '')
-    if (os.heading) lines.push('**' + os.heading + '**', '')
-    if (os.text)    lines.push(os.text, '')
-    lines.push('---', '')
-  }
-
-  for (const block of result.value.blocks || []) {
-    const sTitle = block.title || 'Section ' + block.id
-    lines.push(`## Section ${block.id}: ${sTitle}`, '')
-    if (block.subtitle) lines.push(`*${block.subtitle}*`, '')
-    if (block.summary)  lines.push('**Summary:** ' + block.summary, '')
-    if (block.keyPoints?.length) {
-      lines.push('**Key Points:**')
-      block.keyPoints.forEach(p => lines.push('- ' + p))
-      lines.push('')
-    }
-    lines.push('---', '')
-  }
-
-  triggerDownload(getExportFilename('md'), lines.join('\n'), 'text/markdown;charset=utf-8')
-}
-
 /** Export as PDF — renders a print-optimised HTML page in a new tab and triggers print */
 function exportAsPdf() {
   if (!result.value) return
@@ -1117,13 +1086,6 @@ function exportAsPdf() {
                       <path d="M4 4.5h6M4 7h6M4 9.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
                     </svg>
                     Plain Text (.txt)
-                  </button>
-                  <button class="export-menu-item" @click="exportAsMd">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <rect x="1" y="3" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                      <path d="M3 9V5l2 2.5L7 5v4M9 9V7m0 0l1.5-2L12 7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Markdown (.md)
                   </button>
                   <div class="export-menu-divider"></div>
                   <button class="export-menu-item" @click="exportAsPdf">
