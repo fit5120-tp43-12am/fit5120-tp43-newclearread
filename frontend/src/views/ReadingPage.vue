@@ -751,6 +751,169 @@ function dismissDictHint() {
 // The popup is now handled globally via App.vue + GlobalDictPopup.vue.
 // A single document-level dblclick listener in App.vue covers every page —
 // no per-page wiring needed. See src/composables/useGlobalDict.js.
+
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+const showExportMenu = ref(false)
+
+/** Sanitise a string for safe HTML injection */
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** Derive a safe filename from the document title */
+function getExportFilename(ext) {
+  const title = result.value?.title || 'clearead-summary'
+  const slug  = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
+  return slug + '.' + ext
+}
+
+/** Create a Blob, trigger a browser download, then revoke the object URL */
+function triggerDownload(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType })
+  const url  = URL.createObjectURL(blob)
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename })
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  showExportMenu.value = false
+}
+
+/** Export as plain text (.txt) */
+function exportAsTxt() {
+  if (!result.value) return
+  const lines = []
+  const title = result.value.title
+  if (title) { lines.push(title, '='.repeat(title.length), '') }
+
+  const os = overallSummary.value
+  if (os) {
+    lines.push('OVERVIEW', '--------')
+    if (os.heading) lines.push(os.heading)
+    if (os.text)    lines.push('', os.text)
+    lines.push('')
+  }
+
+  for (const block of result.value.blocks || []) {
+    lines.push('---')
+    lines.push(`SECTION ${block.id}: ${block.title || 'Section ' + block.id}`)
+    if (block.subtitle) lines.push(block.subtitle)
+    lines.push('')
+    if (block.summary) { lines.push('Summary:', block.summary, '') }
+    if (block.keyPoints?.length) {
+      lines.push('Key Points:')
+      block.keyPoints.forEach(p => lines.push('  • ' + p))
+      lines.push('')
+    }
+  }
+
+  triggerDownload(getExportFilename('txt'), lines.join('\n'), 'text/plain;charset=utf-8')
+}
+
+/** Export as Markdown (.md) */
+function exportAsMd() {
+  if (!result.value) return
+  const lines = []
+  const title = result.value.title
+  if (title) lines.push('# ' + title, '')
+
+  const os = overallSummary.value
+  if (os) {
+    lines.push('## Overview', '')
+    if (os.heading) lines.push('**' + os.heading + '**', '')
+    if (os.text)    lines.push(os.text, '')
+    lines.push('---', '')
+  }
+
+  for (const block of result.value.blocks || []) {
+    const sTitle = block.title || 'Section ' + block.id
+    lines.push(`## Section ${block.id}: ${sTitle}`, '')
+    if (block.subtitle) lines.push(`*${block.subtitle}*`, '')
+    if (block.summary)  lines.push('**Summary:** ' + block.summary, '')
+    if (block.keyPoints?.length) {
+      lines.push('**Key Points:**')
+      block.keyPoints.forEach(p => lines.push('- ' + p))
+      lines.push('')
+    }
+    lines.push('---', '')
+  }
+
+  triggerDownload(getExportFilename('md'), lines.join('\n'), 'text/markdown;charset=utf-8')
+}
+
+/** Export as PDF — renders a print-optimised HTML page in a new tab and triggers print */
+function exportAsPdf() {
+  if (!result.value) return
+  showExportMenu.value = false
+
+  const title = result.value.title || 'Summary'
+  const os    = overallSummary.value
+
+  let html = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<title>${escHtml(title)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 720px; margin: 40px auto; padding: 0 28px 60px; color: #1a1a2e; line-height: 1.75; }
+  h1 { font-size: 24px; font-weight: 800; color: #1e3a8a; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e0e7ff; }
+  .overview-tag { font-size: 11px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+  .overview-heading { font-size: 19px; font-weight: 700; color: #0d1117; margin-bottom: 8px; }
+  .overview-text { font-size: 14px; color: #374151; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+  .section-label { font-size: 10.5px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+  .section-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 3px; }
+  .section-sub   { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+  .field-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .07em; margin: 10px 0 4px; }
+  .summary-text { font-size: 13.5px; color: #1f2937; }
+  ul { margin: 0; padding-left: 18px; }
+  li { font-size: 13.5px; color: #374151; margin-bottom: 3px; }
+  .footer { margin-top: 40px; font-size: 11px; color: #9ca3af; text-align: center; }
+  @media print { body { margin: 20px auto; } }
+</style>
+</head><body>`
+
+  html += `<h1>${escHtml(title)}</h1>`
+
+  if (os) {
+    html += `<p class="overview-tag">Overview</p>`
+    if (os.heading) html += `<p class="overview-heading">${escHtml(os.heading)}</p>`
+    if (os.text)    html += `<p class="overview-text">${escHtml(os.text)}</p>`
+    html += `<hr>`
+  }
+
+  for (const block of result.value.blocks || []) {
+    const sTitle = block.title || 'Section ' + block.id
+    html += `<p class="section-label">Section ${block.id}</p>`
+    html += `<p class="section-title">${escHtml(sTitle)}</p>`
+    if (block.subtitle) html += `<p class="section-sub">${escHtml(block.subtitle)}</p>`
+    if (block.summary) {
+      html += `<p class="field-label">Summary</p>`
+      html += `<p class="summary-text">${escHtml(block.summary)}</p>`
+    }
+    if (block.keyPoints?.length) {
+      html += `<p class="field-label">Key Points</p><ul>`
+      block.keyPoints.forEach(p => { html += `<li>${escHtml(p)}</li>` })
+      html += `</ul>`
+    }
+    html += `<hr>`
+  }
+
+  html += `<p class="footer">Generated by Clearead &mdash; ${new Date().toLocaleDateString()}</p>`
+  html += `</body></html>`
+
+  const win = window.open('', '_blank')
+  if (!win) { alert('Please allow pop-ups for this site to export PDF.'); return }
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print() }, 400)
+}
 </script>
 
 
@@ -917,7 +1080,7 @@ function dismissDictHint() {
         -->
         <div v-else-if="mode === 'result' && result" class="result-state">
 
-          <!-- Top status bar: success notice + back button -->
+          <!-- Top status bar: success notice + export + back button -->
           <div class="result-topbar">
             <div class="result-notice">
               <svg v-if="sectionProcessing" class="spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -929,12 +1092,58 @@ function dismissDictHint() {
               </svg>
               {{ sectionProcessing ? 'Overview ready. Building sections…' : (result.notice || 'Text processed successfully.') }}
             </div>
-            <button class="btn-back" @click="handleBackToInput">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M11 6.5H2M2 6.5L6 2.5M2 6.5L6 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Back to Input
-            </button>
+
+            <div class="topbar-actions">
+              <!-- Export dropdown -->
+              <div class="export-wrap">
+                <!-- Transparent overlay to close menu on outside click -->
+                <div v-if="showExportMenu" class="export-backdrop" @click="showExportMenu = false"></div>
+
+                <button class="btn-export" @click="showExportMenu = !showExportMenu">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M6.5 1v7.5M6.5 8.5L4 6M6.5 8.5L9 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 10h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  Export
+                  <svg class="export-chevron" :class="{ 'export-chevron--open': showExportMenu }" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+
+                <div v-if="showExportMenu" class="export-menu">
+                  <button class="export-menu-item" @click="exportAsTxt">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                      <path d="M4 4.5h6M4 7h6M4 9.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                    </svg>
+                    Plain Text (.txt)
+                  </button>
+                  <button class="export-menu-item" @click="exportAsMd">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="1" y="3" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                      <path d="M3 9V5l2 2.5L7 5v4M9 9V7m0 0l1.5-2L12 7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Markdown (.md)
+                  </button>
+                  <div class="export-menu-divider"></div>
+                  <button class="export-menu-item" @click="exportAsPdf">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                      <path d="M4 5h3.5c.8 0 1.5.7 1.5 1.5S8.3 8 7.5 8H4V5z" stroke="currentColor" stroke-width="1.1"/>
+                      <path d="M4 8h1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                    </svg>
+                    PDF (Print)
+                  </button>
+                </div>
+              </div>
+
+              <button class="btn-back" @click="handleBackToInput">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M11 6.5H2M2 6.5L6 2.5M2 6.5L6 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Back to Input
+              </button>
+            </div>
           </div>
 
           <!-- ══════════════════════════════════════════════════════════════
@@ -1781,6 +1990,60 @@ kbd {
   transition: background 0.15s, color 0.15s;
 }
 .btn-back:hover { background: #f3f4f6; color: #0d1117; }
+
+/* ── Export dropdown ─────────────────────── */
+.topbar-actions {
+  display: flex; align-items: center; gap: 8px;
+}
+.export-wrap {
+  position: relative;
+}
+.export-backdrop {
+  position: fixed; inset: 0; z-index: 99;
+}
+.btn-export {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-export:hover { background: #dbeafe; border-color: #93c5fd; }
+.export-chevron {
+  transition: transform 0.18s;
+}
+.export-chevron--open { transform: rotate(180deg); }
+.export-menu {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 5px;
+  z-index: 100;
+  animation: export-menu-in 0.12s ease;
+}
+@keyframes export-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.export-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 10px;
+  font-size: 13px; font-weight: 500; color: #1f2937;
+  background: none; border: none; border-radius: 7px;
+  cursor: pointer; text-align: left;
+  transition: background 0.12s;
+}
+.export-menu-item:hover { background: #f3f4f6; }
+.export-menu-item svg { color: #6b7280; flex-shrink: 0; }
+.export-menu-divider {
+  height: 1px; background: #f0f0f0; margin: 4px 0;
+}
 
 /* ─────────────────────────────────────────
    Audio Control Toolbar
