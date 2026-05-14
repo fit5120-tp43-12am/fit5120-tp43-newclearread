@@ -1595,6 +1595,31 @@ function exportAsPdf() {
             @keydown="onKeydown"
           ></textarea>
 
+          <!-- File chip — shown after a file is successfully uploaded -->
+          <Transition name="file-chip-fade">
+            <div v-if="uploadedFileName" class="file-chip-row">
+              <div class="file-chip">
+                <!-- File type icon block -->
+                <div :class="['file-chip-icon', `file-chip-icon--${uploadedFileName.split('.').pop().toLowerCase()}`]">
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                    <rect x="2" y="1" width="10" height="12" rx="1.5" fill="currentColor" opacity="0.15"/>
+                    <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                    <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                  </svg>
+                  <span class="file-chip-ext">{{ uploadedFileName.split('.').pop().toUpperCase() }}</span>
+                </div>
+                <!-- File name -->
+                <span class="file-chip-name" :title="uploadedFileName">{{ uploadedFileName }}</span>
+                <!-- Remove button -->
+                <button class="file-chip-remove" @click="handleClear" title="Remove file">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </Transition>
+
           <div class="input-divider"></div>
 
           <!-- Action buttons row -->
@@ -2523,6 +2548,49 @@ kbd {
   transition: background 0.15s, color 0.15s; white-space: nowrap;
 }
 .btn-upload:hover { background: #e9eaf0; color: #111827; border-color: #d1d5db; }
+
+/* ── File chip ─────────────────────────────── */
+.file-chip-row {
+  padding: 8px 14px 2px;
+}
+.file-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 8px 6px 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  max-width: 320px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.file-chip-icon {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 36px; height: 40px; border-radius: 6px; flex-shrink: 0;
+  font-size: 9px; font-weight: 800; gap: 1px; letter-spacing: .02em;
+}
+.file-chip-icon--pdf  { background: #fef2f2; color: #dc2626; }
+.file-chip-icon--docx { background: #eff6ff; color: #2563eb; }
+.file-chip-icon--doc  { background: #eff6ff; color: #2563eb; }
+.file-chip-icon--txt  { background: #f0fdf4; color: #16a34a; }
+.file-chip-ext {
+  font-size: 8.5px; font-weight: 800; line-height: 1;
+}
+.file-chip-name {
+  font-size: 12.5px; font-weight: 500; color: #1e293b;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 200px;
+}
+.file-chip-remove {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex-shrink: 0;
+  background: #e2e8f0; border: none; border-radius: 50%;
+  color: #64748b; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.file-chip-remove:hover { background: #fecaca; color: #dc2626; }
+.file-chip-fade-enter-active { transition: all 0.2s ease; }
+.file-chip-fade-leave-active { transition: all 0.15s ease; }
+.file-chip-fade-enter-from  { opacity: 0; transform: translateY(-4px); }
+.file-chip-fade-leave-to    { opacity: 0; transform: translateY(-4px); }
 
 /* Character counter */
 .char-count { display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 600; }
