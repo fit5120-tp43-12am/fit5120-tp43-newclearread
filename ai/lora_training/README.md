@@ -1,79 +1,54 @@
-# ClearRead Llama LoRA Training Package
+# ClearRead LoRA Training Packages
 
-This folder documents the ClearRead local model training work. It explains how the final Candidate A LoRA adapter was prepared, trained, evaluated, and packaged, with scripts, configuration files, reports, and metadata needed to understand the workflow.
+This folder contains the model-training evidence packages for the ClearRead AI work.
 
-## Final Result
-
-The selected model for this training cycle is:
-
-```text
-Llama-3.1-8B-Instruct + SFT + QLoRA
-Base model: unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit
-Selected adapter: Candidate A, 3 epochs
-```
-
-Candidate A was selected because it completed training without OOM, passed validation strongly, and performed well on the final held-out test set.
-
-Key results:
-
-| Area | Result |
-| --- | --- |
-| Source records | 1452 accepted records |
-| Split | 1162 train, 145 validation, 145 test |
-| Training route | Supervised fine-tuning with QLoRA |
-| Full training | 3 epochs, 438 optimizer steps |
-| Final train loss | 0.4797596574748216 |
-| Validation loss | 0.9654271602630615 |
-| Validation schema pass | 145/145 |
-| Final test JSON parse | 145/145 |
-| Final test schema pass | 144/145 |
-| Final decision | Candidate A selected with schema guard for deployment |
-
-The only final-test schema failure was one academic-paper example where the model produced seven key points instead of exactly four. The inference wrapper handles this class of issue with a schema guard; the held-out result itself is kept unchanged.
-
-## Where To Start
-
-Read these files in order:
-
-1. `docs/end_to_end_training_process.md` - the full path from accepted data to final model selection.
-2. `docs/experiment_history.md` - the main iterations, retries, checks, and decisions.
-3. `reports/qa_summary.md` - compact evidence table for data, training, validation, and final test quality.
-4. `reports/CLEARREAD_LORA_TRAINING_TECHNICAL_REPORT.md` - detailed technical report.
-5. `docs/local_inference_runbook.md` - clean local inference and schema-guard instructions.
-
-## Package Structure
+It is organised by model scale:
 
 ```text
 ai/lora_training/
-  configs/            Example training, smoke-test, inference, and environment configs
-  scripts/            Training, split, evaluation, inference, and environment-check scripts
-  docs/               Process documentation and runbooks
-  reports/            Training, validation, final-test, and QA reports
-  manifests/          Metadata-only manifests and artifact metadata
-  artifact_metadata/  Metadata pointer for the selected local adapter
-  history/            Sanitized stage reviews and run logs
+  8B/   Original Llama 3.1 8B Candidate A training package
+  3B/   Later 3B-scale replacement experiment package
+```
+
+## 8B Package
+
+The `8B/` folder documents the original successful training cycle:
+
+```text
+Llama 3.1 8B Instruct + SFT + QLoRA
+Selected adapter: Candidate A
+```
+
+This package includes the cleaned training reports, scripts, configuration examples, manifests, and stage history that explain how Candidate A was trained and selected.
+
+## 3B Package
+
+The `3B/` folder documents the later experiment that tested whether a smaller model could replace the 8B baseline for the ClearRead summarisation task.
+
+Final practical recommendation:
+
+```text
+Llama 3.2 3B Instruct + SFT + QLoRA
+Selected adapter checkpoint: phase2_r32_a64_lr1p5e4_epoch_4
+```
+
+The 3B package is designed to be read together with its final report:
+
+```text
+3B/reports/final/school_final_3b_experiment_report_en.md
 ```
 
 ## Large Artifacts
 
-Large generated artifacts are represented by reports, counts, hashes, and metadata instead of being stored in this folder:
+This Git package intentionally excludes large generated artifacts, including:
 
-- raw and derived `.jsonl` datasets
-- model adapter weights such as `.safetensors`
-- base model files, tokenizer large artifacts, checkpoints, optimizer states
-- generated prediction JSONL files
-- Hugging Face cache, Unsloth compiled cache, and local runtime logs
+- base model files
+- LoRA adapter weight files
+- Hugging Face caches
+- optimizer checkpoints
+- raw datasets
+- full raw API response dumps
+- large generated output folders
 
-## Reproducibility Notes
+Those artifacts are represented by reports, summary files, manifests, hashes, parse-failure records, and benchmark score summaries.
 
-The scripts assume they are run from this package root:
-
-```bash
-cd ai/lora_training
-```
-
-Raw accepted training data should be supplied separately, then passed to scripts with command-line options or placed under a local `data/` directory.
-
-## Relationship To Other AI Work
-
-This package covers model training only. The later API service and application deployment layer belongs to the separate `ai-model-deployment` work and is intentionally not reorganized here.

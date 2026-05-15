@@ -1,0 +1,39 @@
+{
+  "created_local_date": "2026-05-12",
+  "purpose": "Stage 3 neighbourhood search templates for the top three Stage 2 model families.",
+  "baseline_anchor_run_id": "stage1_anchor_r32_lr2e4",
+  "templates": [
+    {
+      "run_id_suffix": "stage3_r64_a128_lr2e4",
+      "stage_label_suffix": "stage3_r64_a128_lr2e4",
+      "epochs": 5,
+      "lora_r": 64,
+      "lora_alpha": 128,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.0002
+    },
+    {
+      "run_id_suffix": "stage3_r32_a64_lr1e4",
+      "stage_label_suffix": "stage3_r32_a64_lr1e4",
+      "epochs": 5,
+      "lora_r": 32,
+      "lora_alpha": 64,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.0001
+    },
+    {
+      "run_id_suffix": "stage3_r32_a64_lr5e5",
+      "stage_label_suffix": "stage3_r32_a64_lr5e5",
+      "epochs": 5,
+      "lora_r": 32,
+      "lora_alpha": 64,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.00005
+    }
+  ],
+  "postprocess_policy": {
+    "validation": "full 145 validation items for every epoch snapshot",
+    "judge": "fixed 50-item validation subset for every epoch snapshot",
+    "checkpoint_selection": "product readiness first, then capped judge score, source safety, salience, and lower severe/major risk"
+  }
+}

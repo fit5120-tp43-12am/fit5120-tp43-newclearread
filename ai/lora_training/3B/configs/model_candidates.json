@@ -1,0 +1,204 @@
+{
+  "candidates": [
+    {
+      "key": "compressed_final_llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_4",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4"
+    },
+    {
+      "key": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+      "model_id": "microsoft/Phi-4-mini-instruct::/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3"
+    },
+    {
+      "key": "granite41_3b_stage1_epoch_1",
+      "model_id": "ibm-granite/granite-4.1-3b::stage1_anchor_r32_lr2e4::epoch_1"
+    },
+    {
+      "key": "granite41_3b_stage1_epoch_2",
+      "model_id": "ibm-granite/granite-4.1-3b::stage1_anchor_r32_lr2e4::epoch_2"
+    },
+    {
+      "key": "granite41_3b_stage1_epoch_3",
+      "model_id": "ibm-granite/granite-4.1-3b::stage1_anchor_r32_lr2e4::epoch_3"
+    },
+    {
+      "key": "granite41_3b_stage1_epoch_4",
+      "model_id": "ibm-granite/granite-4.1-3b::stage1_anchor_r32_lr2e4::epoch_4"
+    },
+    {
+      "key": "granite41_3b_stage1_epoch_5",
+      "model_id": "ibm-granite/granite-4.1-3b::stage1_anchor_r32_lr2e4::epoch_5"
+    },
+    {
+      "key": "llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_2",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::phase2_r32_a64_lr1p5e4::epoch_2"
+    },
+    {
+      "key": "llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_4",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::phase2_r32_a64_lr1p5e4::epoch_4"
+    },
+    {
+      "key": "llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_5",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::phase2_r32_a64_lr1p5e4::epoch_5"
+    },
+    {
+      "key": "llama32_3b_instruct_stage1_epoch_1",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::stage1_anchor_r32_lr2e4::epoch_1"
+    },
+    {
+      "key": "llama32_3b_instruct_stage1_epoch_2",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::stage1_anchor_r32_lr2e4::epoch_2"
+    },
+    {
+      "key": "llama32_3b_instruct_stage1_epoch_3",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::stage1_anchor_r32_lr2e4::epoch_3"
+    },
+    {
+      "key": "llama32_3b_instruct_stage1_epoch_4",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::stage1_anchor_r32_lr2e4::epoch_4"
+    },
+    {
+      "key": "llama32_3b_instruct_stage1_epoch_5",
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::stage1_anchor_r32_lr2e4::epoch_5"
+    },
+    {
+      "key": "ministral3_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::phase2_r32_a64_lr1p5e4::epoch_3"
+    },
+    {
+      "key": "ministral3_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_4",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::phase2_r32_a64_lr1p5e4::epoch_4"
+    },
+    {
+      "key": "ministral3_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_5",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::phase2_r32_a64_lr1p5e4::epoch_5"
+    },
+    {
+      "key": "ministral3_3b_instruct_stage1_epoch_1",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::stage1_anchor_r32_lr2e4::epoch_1"
+    },
+    {
+      "key": "ministral3_3b_instruct_stage1_epoch_2",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::stage1_anchor_r32_lr2e4::epoch_2"
+    },
+    {
+      "key": "ministral3_3b_instruct_stage1_epoch_3",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::stage1_anchor_r32_lr2e4::epoch_3"
+    },
+    {
+      "key": "ministral3_3b_instruct_stage1_epoch_4",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::stage1_anchor_r32_lr2e4::epoch_4"
+    },
+    {
+      "key": "ministral3_3b_instruct_stage1_epoch_5",
+      "model_id": "mistralai/Ministral-3-3B-Instruct-2512-BF16::stage1_anchor_r32_lr2e4::epoch_5"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_1",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1e4::epoch_1"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_2",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1e4::epoch_2"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_3",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1e4::epoch_3"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1e4::epoch_4"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_5",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1e4::epoch_5"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_1",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1p5e4::epoch_1"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_2",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1p5e4::epoch_2"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1p5e4::epoch_3"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_4",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1p5e4::epoch_4"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_5",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r32_a64_lr1p5e4::epoch_5"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_1",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r64_a128_lr1e4::epoch_1"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_2",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r64_a128_lr1e4::epoch_2"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_3",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r64_a128_lr1e4::epoch_3"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_4",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r64_a128_lr1e4::epoch_4"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_5",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_r64_a128_lr1e4::epoch_5"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_epoch_4",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3::epoch_4"
+    },
+    {
+      "key": "phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_epoch_5",
+      "model_id": "microsoft/Phi-4-mini-instruct::phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3::epoch_5"
+    },
+    {
+      "key": "phi4_mini_instruct_stage1_epoch_1",
+      "model_id": "microsoft/Phi-4-mini-instruct::stage1_anchor_r32_lr2e4::epoch_1"
+    },
+    {
+      "key": "phi4_mini_instruct_stage1_epoch_2",
+      "model_id": "microsoft/Phi-4-mini-instruct::stage1_anchor_r32_lr2e4::epoch_2"
+    },
+    {
+      "key": "phi4_mini_instruct_stage1_epoch_3",
+      "model_id": "microsoft/Phi-4-mini-instruct::stage1_anchor_r32_lr2e4::epoch_3"
+    },
+    {
+      "key": "phi4_mini_instruct_stage1_epoch_4",
+      "model_id": "microsoft/Phi-4-mini-instruct::stage1_anchor_r32_lr2e4::epoch_4"
+    },
+    {
+      "key": "phi4_mini_instruct_stage1_epoch_5",
+      "model_id": "microsoft/Phi-4-mini-instruct::stage1_anchor_r32_lr2e4::epoch_5"
+    },
+    {
+      "key": "qwen35_4b_stage1_epoch_1",
+      "model_id": "Qwen/Qwen3.5-4B::stage1_anchor_r32_lr2e4::epoch_1"
+    },
+    {
+      "key": "qwen35_4b_stage1_epoch_2",
+      "model_id": "Qwen/Qwen3.5-4B::stage1_anchor_r32_lr2e4::epoch_2"
+    },
+    {
+      "key": "qwen35_4b_stage1_epoch_3",
+      "model_id": "Qwen/Qwen3.5-4B::stage1_anchor_r32_lr2e4::epoch_3"
+    },
+    {
+      "key": "qwen35_4b_stage1_epoch_4",
+      "model_id": "Qwen/Qwen3.5-4B::stage1_anchor_r32_lr2e4::epoch_4"
+    },
+    {
+      "key": "qwen35_4b_stage1_epoch_5",
+      "model_id": "Qwen/Qwen3.5-4B::stage1_anchor_r32_lr2e4::epoch_5"
+    }
+  ]
+}
