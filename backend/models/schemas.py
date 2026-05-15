@@ -50,14 +50,14 @@ class TextBlock(BaseModel):
 class TextProcessingStats(BaseModel):
     # Total time spent processing the request end to end.
     totalSeconds: float = 0.0
-    # Kept for compatibility; /process-text no longer generates the overview.
-    overallSummarySeconds: float = 0.0
     # Time spent generating section card title/subtitle copy.
     sectionCardSeconds: float = 0.0
     # Time spent cleaning, splitting sentences, and building reading blocks.
     preprocessSeconds: float
     # Time spent calling the team summary model.
     modelSeconds: float
+    # Time spent summarising blocks that were not handled by the team model.
+    fallbackBlockSeconds: float = 0.0
     # Number of blocks returned to the frontend.
     blockCount: int
     # Number of blocks sent to the team summary model.

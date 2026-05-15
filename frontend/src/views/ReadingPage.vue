@@ -367,7 +367,11 @@ function scheduleAudioPreload() {
   const token = ++preloadAudioToken
   preloadAudioTimer = setTimeout(async () => {
     if (token !== preloadAudioToken || mode.value !== 'result') return
-    await preloadTextAudio(getOverallAudioText())
+    const blocks = result.value?.blocks || []
+    await Promise.all([
+      preloadTextAudio(getOverallAudioText()),
+      ...blocks.map(block => preloadBlockAudio(block, 'summary')),
+    ])
   }, 250)
 }
 
@@ -1424,7 +1428,7 @@ function exportAsPdf() {
 
             <div class="modal-audio-sep"></div>
 
-            <!-- Playback buttons: Play/Pause · Stop · Restart -->
+            <!-- Playback buttons: Play/Pause · Stop -->
             <div class="modal-audio-btns">
 
               <!-- Play / Pause / Resume -->
@@ -1476,19 +1480,6 @@ function exportAsPdf() {
                   <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
                 </svg>
                 Stop
-              </button>
-
-              <!-- Restart from beginning -->
-              <button
-                class="modal-audio-btn"
-                title="Restart from beginning"
-                @click="stopAudio(); playBlock(activeSection.id, 'summary')"
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  <path d="M2 9V6h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Restart
               </button>
 
             </div>

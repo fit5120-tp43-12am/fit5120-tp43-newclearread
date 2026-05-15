@@ -38,6 +38,7 @@ def process_reading_text(text: str) -> dict:
     preprocess_seconds = 0.0
     section_card_seconds = 0.0
     team_model_seconds = 0.0
+    fallback_block_seconds = 0.0
     total_start = time.perf_counter()
     timing_enabled = _env_bool("CLEARREAD_READING_TIMING_LOGS", False)
 
@@ -50,6 +51,7 @@ def process_reading_text(text: str) -> dict:
             preprocess_seconds,
             section_card_seconds,
             team_model_seconds,
+            fallback_block_seconds,
             block_count=0,
             model_block_count=0,
             fallback_block_count=0,
@@ -68,10 +70,10 @@ def process_reading_text(text: str) -> dict:
             "blocks": [],
             "processingStats": _build_processing_stats(
                 total_seconds=time.perf_counter() - total_start,
-                overall_summary_seconds=0.0,
                 section_card_seconds=section_card_seconds,
                 preprocess_seconds=preprocess_seconds,
                 team_model_seconds=team_model_seconds,
+                fallback_block_seconds=fallback_block_seconds,
                 block_count=0,
                 model_block_count=0,
                 fallback_block_count=0,
@@ -160,7 +162,10 @@ def process_reading_text(text: str) -> dict:
         else:
             fallback_blocks.append(block)
 
-    fallback_results_by_id = _summarise_fallback_blocks(fallback_blocks)
+    fallback_results_by_id, fallback_block_seconds = _timed_call(
+        _summarise_fallback_blocks,
+        fallback_blocks,
+    )
 
     blocks = []
     for block in prepared_blocks:
@@ -204,9 +209,9 @@ def process_reading_text(text: str) -> dict:
         timing_enabled,
         time.perf_counter() - total_start,
         preprocess_seconds,
-        0.0,
         section_card_seconds,
         team_model_seconds,
+        fallback_block_seconds,
         block_count=len(blocks),
         model_block_count=len(model_blocks),
         fallback_block_count=len(fallback_blocks),
@@ -226,10 +231,10 @@ def process_reading_text(text: str) -> dict:
         "blocks": blocks,
         "processingStats": _build_processing_stats(
             total_seconds=time.perf_counter() - total_start,
-            overall_summary_seconds=0.0,
             section_card_seconds=section_card_seconds,
             preprocess_seconds=preprocess_seconds,
             team_model_seconds=team_model_seconds,
+            fallback_block_seconds=fallback_block_seconds,
             block_count=len(blocks),
             model_block_count=len(model_blocks),
             fallback_block_count=len(fallback_blocks),
@@ -436,9 +441,9 @@ def _log_reading_timing(
     enabled: bool,
     total_seconds: float,
     preprocess_seconds: float,
-    overall_summary_seconds: float,
     section_card_seconds: float,
     team_model_seconds: float,
+    fallback_block_seconds: float,
     block_count: int,
     model_block_count: int,
     fallback_block_count: int,
@@ -451,13 +456,13 @@ def _log_reading_timing(
     print(
         "[reading pipeline] "
         f"total={total_seconds:.2f}s "
-        f"overall_summary={overall_summary_seconds:.2f}s "
         f"preprocess={preprocess_seconds:.2f}s "
         f"section_cards={section_card_seconds:.2f}s "
         f"team_model={team_model_seconds:.2f}s "
+        f"fallback_block_seconds={fallback_block_seconds:.2f}s "
         f"blocks={block_count} "
         f"model_blocks={model_block_count} "
-        f"fallback_blocks={fallback_block_count} "
+        f"fallback_block_count={fallback_block_count} "
         f"block_words={block_word_counts}",
         flush=True,
     )
@@ -465,10 +470,10 @@ def _log_reading_timing(
 
 def _build_processing_stats(
     total_seconds: float,
-    overall_summary_seconds: float,
     section_card_seconds: float,
     preprocess_seconds: float,
     team_model_seconds: float,
+    fallback_block_seconds: float,
     block_count: int,
     model_block_count: int,
     fallback_block_count: int,
@@ -476,10 +481,10 @@ def _build_processing_stats(
 ) -> dict:
     return {
         "totalSeconds": round(total_seconds, 2),
-        "overallSummarySeconds": round(overall_summary_seconds, 2),
         "sectionCardSeconds": round(section_card_seconds, 2),
         "preprocessSeconds": round(preprocess_seconds, 2),
         "modelSeconds": round(team_model_seconds, 2),
+        "fallbackBlockSeconds": round(fallback_block_seconds, 2),
         "blockCount": block_count,
         "modelBlockCount": model_block_count,
         "fallbackBlockCount": fallback_block_count,
