@@ -1,0 +1,65 @@
+services:
+  clearread-summary-api:
+    build:
+      context: ../service
+    image: clearread-ai-summary-api:3b-v1
+    restart: unless-stopped
+    env_file:
+      - ./env/production.env
+    ports:
+      - "${CLEARREAD_API_HOST_BIND:-127.0.0.1}:${CLEARREAD_API_PORT:-8010}:8010"
+    depends_on:
+      vllm:
+        condition: service_started
+    networks:
+      - clearread-internal
+
+  vllm:
+    build:
+      context: .
+      dockerfile: vllm-bnb.Dockerfile
+      args:
+        VLLM_BASE_IMAGE: ${VLLM_BASE_IMAGE:-vllm/vllm-openai:latest}
+    image: ${VLLM_RUNTIME_IMAGE:-clearread-vllm-openai-bnb:3b}
+    restart: unless-stopped
+    ipc: host
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      VLLM_LOGGING_LEVEL: ${VLLM_LOGGING_LEVEL:-INFO}
+    volumes:
+      - ${HF_CACHE_DIR:-/opt/clearread-ai-summary/cache/huggingface}:/root/.cache/huggingface
+      - ${MODEL_ROOT:-/opt/clearread-ai-summary/models}:/models:ro
+    command:
+      - ${VLLM_BASE_MODEL:-unsloth/Llama-3.2-3B-Instruct-bnb-4bit}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --served-model-name
+      - ${VLLM_BASE_SERVED_NAME:-clearread-llama32-3b-base}
+      - --enable-lora
+      - --lora-modules
+      - ${VLLM_LORA_NAME:-clearread-llama32-3b-qlora}=/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4
+      - --max-lora-rank
+      - "32"
+      - --max-model-len
+      - ${VLLM_MAX_MODEL_LEN:-8192}
+      - --gpu-memory-utilization
+      - ${VLLM_GPU_MEMORY_UTILIZATION:-0.86}
+      - --dtype
+      - ${VLLM_DTYPE:-bfloat16}
+    expose:
+      - "8000"
+    networks:
+      - clearread-internal
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  clearread-internal:
+    driver: bridge

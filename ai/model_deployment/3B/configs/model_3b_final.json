@@ -1,0 +1,20 @@
+{
+  "selectedModel": {
+    "publicName": "clearread-llama32-3b-qlora-phase2-r32-a64-lr1p5e4-epoch4",
+    "baseModel": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit",
+    "adapterName": "clearread-llama32-3b-qlora",
+    "adapterDirectoryName": "phase2_r32_a64_lr1p5e4_epoch_4",
+    "vmAdapterPath": "/opt/clearread-ai-summary/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4",
+    "method": "SFT + QLoRA",
+    "rank": 32,
+    "alpha": 64,
+    "learningRate": "1.5e-4",
+    "epoch": 4,
+    "globalStep": 584
+  },
+  "deploymentMode": {
+    "wrapper": "FastAPI ClearRead v1 API",
+    "modelBackend": "vLLM OpenAI-compatible server",
+    "parallelism": "The wrapper submits all valid chunks concurrently; vLLM performs continuous batching on the GPU."
+  }
+}

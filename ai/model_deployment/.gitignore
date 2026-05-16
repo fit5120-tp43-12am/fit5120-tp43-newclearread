@@ -5,26 +5,23 @@
 __pycache__/
 *.py[cod]
 
-# Benchmark outputs can contain local timing and endpoint metadata.
-benchmarks/**/pressure_results_*.json
-benchmarks/**/pressure_results_*.csv
-benchmarks/**/*_results.json
-benchmarks/**/*_results.csv
-benchmarks/**/*_sanitized.log
-
-# Model artifacts are intentionally external to Git.
-*.safetensors
-*.bin
-*.pt
-*.pth
-*.gguf
-*.zip
-models/
-adapters/
-artifacts/
-
 # Secrets and local environment files
 .env
 .env.*
 *.key
 *.pem
+
+# Large model artifacts are tracked through manifests.
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+models/
+adapters/
+artifacts/
+
+# Local benchmark outputs
+**/*_results.json
+**/*_results.csv
+**/*_sanitized.log

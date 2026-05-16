@@ -1,0 +1,33 @@
+{
+  "service": "clearread-ai-summary",
+  "version": "v1",
+  "model": "clearread-llama32-3b-qlora-phase2-r32-a64-lr1p5e4-epoch4",
+  "endpoint": "/v1/clearread/summarize",
+  "auth": "Authorization: Bearer <CLEARREAD_AI_SERVICE_API_KEY>",
+  "limits": {
+    "maxBlocks": 32,
+    "recommendedInitialProductionBlocks": 32,
+    "maxCharsPerBlock": 11000,
+    "requestBodyBytes": 2097152
+  },
+  "input": {
+    "requestId": "optional string",
+    "texts": [
+      {
+        "id": "stable non-empty block id",
+        "text": "already chunked source text"
+      }
+    ],
+    "options": {
+      "includeDebug": false
+    }
+  },
+  "successItem": {
+    "id": "input block id",
+    "status": "ok",
+    "summary": "string",
+    "keyPoints": ["dynamic string array"],
+    "schemaGuardAction": "none"
+  },
+  "partialError": "HTTP 200 may return status=partial_error when some items fail."
+}
