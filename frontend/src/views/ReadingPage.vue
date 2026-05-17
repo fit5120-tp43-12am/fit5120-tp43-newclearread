@@ -233,19 +233,17 @@ const OVERALL_SUMMARY_ID = 0
  * Plays (or pauses / resumes) the overall summary using TTS.
  * Reuses the same playback state machine as individual block playback.
  */
-async function playOverallSummary(forceRestart = false) {
+async function playOverallSummary() {
   if (!overallSummary.value) return
 
   const text = getOverallAudioText()
 
   const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
 
-  if (!forceRestart) {
-    // Toggle play/pause if already active; do nothing while generating to avoid duplicate requests
-    if (isSame && playbackState.value === 'loading')  return
-    if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
-    if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
-  }
+  // Toggle play/pause if already active; do nothing while generating to avoid duplicate requests
+  if (isSame && playbackState.value === 'loading')  return
+  if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
+  if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
 
   // Stop whatever is currently playing and start fresh
   stopAudio()
@@ -435,21 +433,19 @@ function requestTTS(text) {
  * @param {number} blockId   - The block to play
  * @param {string} textType  - 'original' (left card) or 'summary' (right card)
  */
-async function playBlock(blockId, textType = 'original', forceRestart = false) {
+async function playBlock(blockId, textType = 'original') {
   const block = result.value?.blocks?.find(b => b.id === blockId)
   if (!block) return
 
   const isSameCard = activeBlockId.value === blockId && activeBlockType.value === textType
 
-  if (!forceRestart) {
-    // Clicking the currently playing card → pause
-    if (isSameCard && playbackState.value === 'playing') {
-      pauseAudio(); return
-    }
-    // Clicking the currently paused card → resume
-    if (isSameCard && playbackState.value === 'paused') {
-      resumeAudio(); return
-    }
+  // Clicking the currently playing card → pause
+  if (isSameCard && playbackState.value === 'playing') {
+    pauseAudio(); return
+  }
+  // Clicking the currently paused card → resume
+  if (isSameCard && playbackState.value === 'paused') {
+    resumeAudio(); return
   }
 
   // New block / different side — stop anything currently playing first
@@ -476,17 +472,32 @@ function pauseAudio() {
   playbackState.value = 'paused'
 }
 
-/** Resume a paused playback. */
-function resumeAudio() {
-  // Set state only after the browser actually starts playing — if play() is rejected
-  // (e.g. autoplay policy, audio element gone) we catch it and fall back to full stop.
-  resumeBackendTTS()
-    .then(() => { playbackState.value = 'playing' })
-    .catch((err) => {
-      console.error('[TTS] Resume error:', err)
-      stopAudio()
-    })
-}
+const TUTORIAL_STEPS = [
+  {
+    title: 'Welcome to Clearead',
+    desc:  'This quick guide walks you through the tool in 3 simple steps. You can skip any time.',
+    highlight: null,
+    cardPos: 'center',
+  },
+  {
+    title: 'Step 1 — Add your text',
+    desc:  'Paste any lecture notes, academic article, or PDF content into the box on the left. You can also click "Upload file" to import a document directly.',
+    highlight: 'input',
+    cardPos: 'right-top',
+  },
+  {
+    title: 'Step 2 — Simplify',
+    desc:  'Click the Simplify button. Clearead will rewrite the text in plain English, pull out the key points, and generate a short summary.',
+    highlight: 'simplify',
+    cardPos: 'right-bottom',
+  },
+  {
+    title: 'Step 3 — Adjust your settings',
+    desc:  'Use the toolbar to change font size, line spacing, and background colour. Small changes can make a big difference to how comfortable it feels to read.',
+    highlight: 'toolbar',
+    cardPos: 'toolbar',
+  },
+]
 
 /** Replay the currently active block (same side) from the beginning. */
 function replayBlock() {
@@ -514,25 +525,7 @@ function restartActiveAudio() {
 
 watch(selectedVoice, () => {
   scheduleAudioPreload()
-
-  // If nothing is playing, no need to restart
-  if (activeBlockId.value === null || playbackState.value === 'idle') return
-
-  // Save what was playing before stopping (stopAudio resets these to null/'idle')
-  const blockId   = activeBlockId.value
-  const blockType = activeBlockType.value
-
-  // Stop current audio cleanly first
-  stopAudio()
-
-  // Wait one tick so reactive state settles, then replay with new voice
-  nextTick(() => {
-    if (blockId === OVERALL_SUMMARY_ID) {
-      playOverallSummary(true)
-    } else {
-      playBlock(blockId, blockType, true)
-    }
-  })
+  restartActiveAudio()
 })
 
 watch(playbackSpeed, (speed) => {
@@ -1203,51 +1196,60 @@ function exportAsPdf() {
               <!-- Supporting body paragraph — double-click any word to look it up (global handler) -->
               <p class="overall-body">{{ overallSummary?.text }}</p>
 
-              <!-- Audio bar: always visible, consistent with section modal controls -->
+              <!-- Audio bar: same layout and logic as section modal controls -->
               <div class="overall-audio-row">
 
-                <!-- Primary play/pause/resume pill button -->
-                <button class="overall-play-pill" @click="playOverallSummary">
-                  <!-- Playing: waveform bars + Pause -->
-                  <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
-                    <span class="wave-bar wave-bar--white"></span>
-                    <span class="wave-bar wave-bar--white"></span>
-                    <span class="wave-bar wave-bar--white"></span>
-                    Pause
-                  </template>
-                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'">
-                    <span class="btn-spinner"></span>
-                    Generating audio
-                  </template>
-                  <!-- Paused: resume -->
-                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
-                    </svg>
-                    Resume
-                  </template>
-                  <!-- Idle: play -->
-                  <template v-else>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
-                    </svg>
-                    Listen to Overview
-                  </template>
-                </button>
+                <!-- Playback buttons: Play/Pause/Resume · Stop -->
+                <div class="modal-audio-btns">
 
-                <!-- Icon-only secondary controls -->
-                <div class="overall-icon-btns">
+                  <!-- Play / Pause / Resume -->
+                  <button
+                    class="modal-audio-btn modal-audio-btn--primary"
+                    :disabled="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'"
+                    @click="
+                      activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'
+                        ? pauseAudio()
+                        : activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'
+                          ? resumeAudio()
+                          : playOverallSummary()
+                    "
+                  >
+                    <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <rect x="2" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                        <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                      </svg>
+                      Pause
+                    </template>
+                    <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'">
+                      <span class="btn-spinner"></span>
+                      Generating
+                    </template>
+                    <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                      </svg>
+                      Resume
+                    </template>
+                    <template v-else>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                      </svg>
+                      Play
+                    </template>
+                  </button>
 
                   <!-- Stop -->
                   <button
-                    class="overall-icon-btn"
+                    class="modal-audio-btn"
                     :disabled="activeBlockId !== OVERALL_SUMMARY_ID || playbackState === 'idle'"
-                    title="Stop"
                     @click="stopAudio"
+                    title="Stop"
                   >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <rect x="2.5" y="2.5" width="9" height="9" rx="2" fill="currentColor"/>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
                     </svg>
+                    Stop
                   </button>
 
                 </div>
@@ -1255,14 +1257,20 @@ function exportAsPdf() {
                 <!-- Thin separator -->
                 <div class="overall-audio-sep"></div>
 
-                <!-- Voice + Speed selects -->
-                <div class="overall-audio-settings">
-                  <select v-model="selectedVoice" class="overall-audio-select" title="Voice">
-                    <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
-                  </select>
-                  <select v-model="playbackSpeed" class="overall-audio-select overall-audio-select--narrow" title="Speed">
-                    <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
-                  </select>
+                <!-- Voice + Speed selects with labels (matching modal style) -->
+                <div class="modal-audio-settings">
+                  <div class="modal-audio-ctrl">
+                    <label class="modal-audio-ctrl-label">Voice</label>
+                    <select v-model="selectedVoice" class="modal-audio-select">
+                      <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                    </select>
+                  </div>
+                  <div class="modal-audio-ctrl">
+                    <label class="modal-audio-ctrl-label">Speed</label>
+                    <select v-model="playbackSpeed" class="modal-audio-select">
+                      <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                    </select>
+                  </div>
                 </div>
 
               </div>
@@ -1541,7 +1549,6 @@ function exportAsPdf() {
                 </svg>
                 Stop
               </button>
-
 
             </div>
 
