@@ -1,4 +1,8 @@
-﻿from fastapi import APIRouter, HTTPException
+# This file handles the two main text-processing endpoints:
+# - /process-text: takes pasted or typed text and returns a block-based reading result
+# - /extract-text: decodes a base64 PDF or DOCX file and returns the plain text
+
+from fastapi import APIRouter, HTTPException
 from models.schemas import (
     ExtractFileRequest,
     ExtractFileResponse,
@@ -11,9 +15,24 @@ from services.reading_service import process_reading_text
 
 router = APIRouter()
 
+
 @router.post("/process-text", response_model=TextResponse)
 def process_text_api(request: TextRequest):
-    # Process pasted text into semantic blocks, then summarise each block for the frontend.
+    """
+    POST /process-text
+
+    Takes raw text from the frontend, splits it into semantic blocks,
+    and generates a summary and key points for each block.
+
+    Args:
+        request (TextRequest): the request body containing the text to process
+
+    Returns:
+        TextResponse: a list of reading blocks with summaries and key points
+
+    Raises:
+        HTTPException 400: if the text is empty or exceeds the character limit
+    """
     text = request.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text cannot be empty.")
@@ -29,13 +48,25 @@ def process_text_api(request: TextRequest):
 
 @router.post("/extract-text", response_model=ExtractFileResponse)
 def extract_text_api(request: ExtractFileRequest):
+    """
+    POST /extract-text
+
+    Accepts a base64-encoded PDF or DOCX file and returns its plain text content
+    so the frontend can pass it to the text processing endpoint.
+
+    Args:
+        request (ExtractFileRequest): the request body with the filename and base64 content
+
+    Returns:
+        ExtractFileResponse: the extracted text, file type, and any truncation notice
+
+    Raises:
+        HTTPException 400: if the file type is not supported or the content is invalid
+        HTTPException 500: if text extraction fails for an unexpected reason
+    """
     try:
-        # Decode PDF/DOCX uploads into plain text before the user runs text processing.
         return extract_text_from_upload(request.filename, request.contentBase64)
     except ValueError as error:
-        # Invalid input from the client is reported as a 400 response.
         raise HTTPException(status_code=400, detail=str(error)) from error
     except Exception as error:
-        # Unexpected extraction errors are treated as server-side failures.
         raise HTTPException(status_code=500, detail=str(error)) from error
-

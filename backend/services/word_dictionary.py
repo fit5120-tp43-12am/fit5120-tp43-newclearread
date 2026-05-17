@@ -1,4 +1,7 @@
-"""Learner-friendly English word breakdown backed by OpenAI Structured Outputs."""
+# This file looks up any English word and returns a breakdown of its parts
+# (prefix, root, suffix) along with a plain-English meaning for each part.
+# It uses OpenAI Structured Outputs and falls back to safe error responses
+# when the API is unavailable.
 
 from __future__ import annotations
 
