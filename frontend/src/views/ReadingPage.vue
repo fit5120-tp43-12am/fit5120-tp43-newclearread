@@ -1202,60 +1202,58 @@ function exportAsPdf() {
               <!-- Supporting body paragraph — double-click any word to look it up (global handler) -->
               <p class="overall-body">{{ overallSummary?.text }}</p>
 
-              <!-- Audio bar: same layout and logic as section modal controls -->
+              <!-- Audio bar: original pill style, logic matches section modal -->
               <div class="overall-audio-row">
 
-                <!-- Playback buttons: Play/Pause/Resume · Stop -->
-                <div class="modal-audio-btns">
+                <!-- Primary play/pause/resume pill button -->
+                <button
+                  class="overall-play-pill"
+                  :disabled="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'"
+                  @click="
+                    activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'
+                      ? pauseAudio()
+                      : activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'
+                        ? resumeAudio()
+                        : playOverallSummary()
+                  "
+                >
+                  <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    Pause
+                  </template>
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'">
+                    <span class="btn-spinner"></span>
+                    Generating audio
+                  </template>
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Resume
+                  </template>
+                  <template v-else>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Listen to Overview
+                  </template>
+                </button>
 
-                  <!-- Play / Pause / Resume -->
-                  <button
-                    class="modal-audio-btn modal-audio-btn--primary"
-                    :disabled="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'"
-                    @click="
-                      activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'
-                        ? pauseAudio()
-                        : activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'
-                          ? resumeAudio()
-                          : playOverallSummary()
-                    "
-                  >
-                    <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <rect x="2" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
-                        <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
-                      </svg>
-                      Pause
-                    </template>
-                    <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'">
-                      <span class="btn-spinner"></span>
-                      Generating
-                    </template>
-                    <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
-                      </svg>
-                      Resume
-                    </template>
-                    <template v-else>
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
-                      </svg>
-                      Play
-                    </template>
-                  </button>
+                <!-- Icon-only secondary controls: Stop -->
+                <div class="overall-icon-btns">
 
                   <!-- Stop -->
                   <button
-                    class="modal-audio-btn"
+                    class="overall-icon-btn"
                     :disabled="activeBlockId !== OVERALL_SUMMARY_ID || playbackState === 'idle'"
-                    @click="stopAudio"
                     title="Stop"
+                    @click="stopAudio"
                   >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2.5" y="2.5" width="9" height="9" rx="2" fill="currentColor"/>
                     </svg>
-                    Stop
                   </button>
 
                 </div>
@@ -1263,20 +1261,14 @@ function exportAsPdf() {
                 <!-- Thin separator -->
                 <div class="overall-audio-sep"></div>
 
-                <!-- Voice + Speed selects with labels (matching modal style) -->
-                <div class="modal-audio-settings">
-                  <div class="modal-audio-ctrl">
-                    <label class="modal-audio-ctrl-label">Voice</label>
-                    <select v-model="selectedVoice" class="modal-audio-select">
-                      <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
-                    </select>
-                  </div>
-                  <div class="modal-audio-ctrl">
-                    <label class="modal-audio-ctrl-label">Speed</label>
-                    <select v-model="playbackSpeed" class="modal-audio-select">
-                      <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
-                    </select>
-                  </div>
+                <!-- Voice + Speed selects -->
+                <div class="overall-audio-settings">
+                  <select v-model="selectedVoice" class="overall-audio-select" title="Voice">
+                    <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                  </select>
+                  <select v-model="playbackSpeed" class="overall-audio-select overall-audio-select--narrow" title="Speed">
+                    <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                  </select>
                 </div>
 
               </div>
