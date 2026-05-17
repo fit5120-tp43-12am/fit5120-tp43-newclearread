@@ -37,6 +37,7 @@ const barGroups = [
 const sexFlt = ref('both')  // filter: 'both' | 'm' | 'f' — controls which bars are highlighted
 const bTip   = ref(null)    // tooltip data: { x, y, text } — null means no tooltip
 
+
 // ── SVG bar-chart coordinate system ──────────────────────────────────────────
 // The chart is drawn as an inline SVG element with a fixed viewBox.
 // All positions are calculated in SVG user units using these constants,
