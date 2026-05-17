@@ -233,17 +233,19 @@ const OVERALL_SUMMARY_ID = 0
  * Plays (or pauses / resumes) the overall summary using TTS.
  * Reuses the same playback state machine as individual block playback.
  */
-async function playOverallSummary() {
+async function playOverallSummary(forceRestart = false) {
   if (!overallSummary.value) return
 
   const text = getOverallAudioText()
 
   const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
 
-  // Toggle play/pause if already active; do nothing while generating to avoid duplicate requests
-  if (isSame && playbackState.value === 'loading')  return
-  if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
-  if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
+  if (!forceRestart) {
+    // Toggle play/pause if already active; do nothing while generating to avoid duplicate requests
+    if (isSame && playbackState.value === 'loading')  return
+    if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
+    if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
+  }
 
   // Stop whatever is currently playing and start fresh
   stopAudio()
@@ -512,7 +514,25 @@ function restartActiveAudio() {
 
 watch(selectedVoice, () => {
   scheduleAudioPreload()
-  restartActiveAudio()
+
+  // If nothing is playing, no need to restart
+  if (activeBlockId.value === null || playbackState.value === 'idle') return
+
+  // Save what was playing before stopping (stopAudio resets these to null/'idle')
+  const blockId   = activeBlockId.value
+  const blockType = activeBlockType.value
+
+  // Stop current audio cleanly first
+  stopAudio()
+
+  // Wait one tick so reactive state settles, then replay with new voice
+  nextTick(() => {
+    if (blockId === OVERALL_SUMMARY_ID) {
+      playOverallSummary(true)
+    } else {
+      playBlock(blockId, blockType, true)
+    }
+  })
 })
 
 watch(playbackSpeed, (speed) => {
