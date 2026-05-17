@@ -433,19 +433,21 @@ function requestTTS(text) {
  * @param {number} blockId   - The block to play
  * @param {string} textType  - 'original' (left card) or 'summary' (right card)
  */
-async function playBlock(blockId, textType = 'original') {
+async function playBlock(blockId, textType = 'original', forceRestart = false) {
   const block = result.value?.blocks?.find(b => b.id === blockId)
   if (!block) return
 
   const isSameCard = activeBlockId.value === blockId && activeBlockType.value === textType
 
-  // Clicking the currently playing card → pause
-  if (isSameCard && playbackState.value === 'playing') {
-    pauseAudio(); return
-  }
-  // Clicking the currently paused card → resume
-  if (isSameCard && playbackState.value === 'paused') {
-    resumeAudio(); return
+  if (!forceRestart) {
+    // Clicking the currently playing card → pause
+    if (isSameCard && playbackState.value === 'playing') {
+      pauseAudio(); return
+    }
+    // Clicking the currently paused card → resume
+    if (isSameCard && playbackState.value === 'paused') {
+      resumeAudio(); return
+    }
   }
 
   // New block / different side — stop anything currently playing first
@@ -1524,7 +1526,7 @@ function exportAsPdf() {
               <button
                 class="modal-audio-btn"
                 title="Restart from beginning"
-                @click="stopAudio(); playBlock(activeSection.id, 'summary')"
+                @click="playBlock(activeSection.id, 'summary', true)"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
