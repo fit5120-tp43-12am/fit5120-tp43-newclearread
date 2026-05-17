@@ -18,11 +18,15 @@ router = APIRouter()
 
 # Request model
 class DictionaryRequest(BaseModel):
+    """Request body containing the word to analyse."""
+
     word: str = Field(..., min_length=1, max_length=256)
 
 
 # Represents one part of a word (e.g. a prefix, root, or suffix)
 class DictionaryPart(BaseModel):
+    """One prefix, root, base word, or suffix returned by the dictionary API."""
+
     form: str
     meaning: str
     type: str
@@ -30,6 +34,8 @@ class DictionaryPart(BaseModel):
 
 # Response model
 class DictionaryResponse(BaseModel):
+    """Response body containing a simple meaning and optional word-part analysis."""
+
     word: str
     simpleMeaning: str | None = None
     wordParts: list[DictionaryPart] | None = None

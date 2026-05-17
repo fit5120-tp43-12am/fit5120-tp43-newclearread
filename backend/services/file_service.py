@@ -2,6 +2,7 @@
 # It decodes the base64 content sent by the frontend, picks the right parser
 # for the file type, and returns clean plain text.
 
+
 import base64
 import binascii
 import io
@@ -125,7 +126,9 @@ def _extract_text_from_docx(file_bytes: bytes) -> str:
     try:
         document = Document(io.BytesIO(file_bytes))
     except zipfile.BadZipFile:
-        raise ValueError("The Word file appears to be empty or corrupted. Please try a different file.")
+        raise ValueError(
+            "The Word file appears to be empty or corrupted. Please try a different file."
+        )
 
     return "\n".join(paragraph.text for paragraph in document.paragraphs)
 

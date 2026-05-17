@@ -20,10 +20,19 @@ const resultRef   = ref(null)   // template ref for the result card
 // ── TTS ───────────────────────────────────────────────────────────────────────
 const ttsPlaying = ref(false)
 
+/**
+ * Build the text string to speak for a dictionary entry: word followed by its meaning.
+ * @param {Object} entry - dictionary result with word and simpleMeaning fields
+ * @returns {string}
+ */
 function dictionaryAudioText(entry) {
   return [entry?.word, entry?.simpleMeaning].filter(Boolean).join('. ')
 }
 
+/**
+ * Silently prefetch TTS audio for a dictionary entry so the speak button responds instantly.
+ * @param {Object} entry
+ */
 function preloadDictionaryAudio(entry) {
   const text = dictionaryAudioText(entry)
   if (!text) return
@@ -32,6 +41,11 @@ function preloadDictionaryAudio(entry) {
   })
 }
 
+/**
+ * Speak the current search result using TTS.
+ * Sets ttsPlaying while audio is running so the button shows a loading state.
+ * @returns {Promise<void>}
+ */
 async function speakWord() {
   if (!result.value) return
   stopBackendTTS()
@@ -47,10 +61,21 @@ async function speakWord() {
 }
 
 // ── Lookup ────────────────────────────────────────────────────────────────────
+
+/**
+ * Strip punctuation and whitespace from the input string, keeping only word characters.
+ * @param {string} str
+ * @returns {string}
+ */
 function cleanWord(str) {
   return str.replace(/[^a-zA-Z'-]/g, '').toLowerCase().trim()
 }
 
+/**
+ * Submit the current query to the dictionary API and update the result card.
+ * Scrolls the result into view after the DOM updates.
+ * @returns {Promise<void>}
+ */
 async function handleSearch() {
   const word = cleanWord(query.value)
   if (!word || word.length < 2) return
@@ -82,6 +107,10 @@ async function handleSearch() {
   }
 }
 
+/**
+ * Trigger a search when the user presses Enter in the search input.
+ * @param {KeyboardEvent} e
+ */
 function handleKeydown(e) {
   if (e.key === 'Enter') handleSearch()
 }

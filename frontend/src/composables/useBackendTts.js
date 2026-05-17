@@ -1,13 +1,28 @@
+// This file handles text-to-speech playback through the backend TTS API.
+// It keeps one active audio session at a time, caches fetched audio blobs so
+// the same text is not requested twice, and pauses new requests for 60 seconds
+// when the API quota is exhausted.
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
+// Module-level state for the currently playing audio session.
 let currentAudio = null
 let currentAudioUrl = null
 let currentResolve = null
 let currentSessionId = 0
+
+// audioBlobCache stores completed blobs; audioRequestCache holds in-flight promises
+// so two callers requesting the same text share one fetch.
 const audioBlobCache = new Map()
 const audioRequestCache = new Map()
 let quotaCooldownUntil = 0
 
+/**
+ * Release the current audio element and revoke its object URL.
+ * Only runs if the given session ID still matches the active one.
+ *
+ * @param {number} sessionId - the session to clean up
+ */
 function cleanup(sessionId = currentSessionId) {
   if (sessionId !== currentSessionId) return
   if (currentAudio) {
@@ -23,6 +38,10 @@ function cleanup(sessionId = currentSessionId) {
   }
 }
 
+/**
+ * Stop any playing or pending TTS audio immediately.
+ * Increments the session ID so any in-flight play call is ignored.
+ */
 export function stopBackendTTS() {
   currentSessionId += 1
   if (currentResolve) {
@@ -32,19 +51,41 @@ export function stopBackendTTS() {
   cleanup()
 }
 
+/**
+ * Pause the currently playing audio without discarding the session.
+ */
 export function pauseBackendTTS() {
   if (currentAudio) currentAudio.pause()
 }
 
+/**
+ * Resume a paused audio session.
+ *
+ * @returns {Promise<void>}
+ */
 export async function resumeBackendTTS() {
   if (currentAudio) await currentAudio.play()
 }
 
+/**
+ * Change the playback speed of the active audio element.
+ *
+ * @param {number} speed - playback rate, clamped to [0.5, 2]
+ */
 export function setBackendTTSPlaybackRate(speed = 1) {
   if (!currentAudio) return
   currentAudio.playbackRate = Math.max(0.5, Math.min(2, Number(speed) || 1))
 }
 
+/**
+ * Fetch and cache the audio blob for a piece of text without playing it.
+ * Useful for loading audio in the background before it is needed.
+ * Returns null if the text is empty or if the quota cooldown is active.
+ *
+ * @param {string} text - the text to preload
+ * @param {Object} options - voice and volume settings (same as playBackendTTS)
+ * @returns {Promise<Blob|null>}
+ */
 export async function preloadBackendTTS(text, options = {}) {
   const cleanText = String(text || '').trim()
   if (!cleanText) return null
@@ -52,6 +93,18 @@ export async function preloadBackendTTS(text, options = {}) {
   return fetchAudioBlob(cleanText, options)
 }
 
+/**
+ * Stop any current audio, then fetch and play the given text.
+ * Resolves with 'done' when playback finishes, or 'cancelled' if stopped early.
+ *
+ * @param {string} text - the text to speak
+ * @param {Object} options - optional settings
+ * @param {string}   [options.voice='default-female'] - voice name sent to the API
+ * @param {number}   [options.volume=70]              - volume as 0–100
+ * @param {number}   [options.speed=1]                - playback rate
+ * @param {Function} [options.onPlaybackStart]        - called when audio actually starts playing
+ * @returns {Promise<'done'|'cancelled'>}
+ */
 export async function playBackendTTS(text, options = {}) {
   stopBackendTTS()
 
@@ -90,6 +143,13 @@ export async function playBackendTTS(text, options = {}) {
   })
 }
 
+/**
+ * Build a cache key string from the text and voice option.
+ *
+ * @param {string} text
+ * @param {Object} options
+ * @returns {string}
+ */
 function cacheKey(text, options = {}) {
   return JSON.stringify({
     text: String(text || '').trim(),
@@ -97,6 +157,16 @@ function cacheKey(text, options = {}) {
   })
 }
 
+/**
+ * Fetch audio from the TTS API and store the result in the blob cache.
+ * If a request for the same key is already in flight, returns that promise
+ * instead of sending a second request.
+ * Sets a 60-second cooldown when the API returns a quota error.
+ *
+ * @param {string} text
+ * @param {Object} options
+ * @returns {Promise<Blob>}
+ */
 async function fetchAudioBlob(text, options = {}) {
   const key = cacheKey(text, options)
   if (audioBlobCache.has(key)) return audioBlobCache.get(key)
