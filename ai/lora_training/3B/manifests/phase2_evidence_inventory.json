@@ -1,6 +1,6 @@
 {
   "created_at_utc": "2026-05-14T04:17:25Z",
-  "root": "<local-phase2-search-workspace>",
+  "root": "<external-local-raw-phase2-search-workspace-not-in-git>",
   "file_count": 1048,
   "hash_policy": {
     "max_hash_size_bytes": 134217728,

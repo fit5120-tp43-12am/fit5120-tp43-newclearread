@@ -5,7 +5,7 @@
     {
       "judge_valid_rate_over_prepared_inputs": 0.882353,
       "mean_capped_official_item_score": 75.041667,
-      "model_id": "microsoft/Phi-4-mini-instruct::<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+      "model_id": "microsoft/Phi-4-mini-instruct::<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
       "rank": 1,
       "schema_valid_judge_output_count": 120,
       "system_id": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
@@ -30,7 +30,7 @@
       "judge_input_count": 136,
       "judge_valid_rate_over_prepared_inputs": 0.882353,
       "judge_validation_failure_count": 32,
-      "model_id": "microsoft/Phi-4-mini-instruct::<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+      "model_id": "microsoft/Phi-4-mini-instruct::<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
       "per_field_mean_scores": {
         "cognitive_load_reduction_and_safe_conciseness": 3.8,
         "main_message_salience_and_quick_understanding": 4.116667,

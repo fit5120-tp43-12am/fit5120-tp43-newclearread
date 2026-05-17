@@ -14,7 +14,7 @@ This document summarises the current project workflow across the Clearead websit
 | Web frontend | `frontend/` | Vue 3 and Vite application for the reading workspace, dictionary, focus reader, public pages, privacy page, and extension page. |
 | Backend API | `backend/` | FastAPI service for extraction, reading summaries, dictionary lookup, extension summaries, and text-to-speech. |
 | Browser extension | `browser-extension/` | Manifest V3 Chrome extension with side-panel reading support, page tools, dictionary lookup, and Chrome Web Store release materials. |
-| AI work | `ai/` | Dataset preparation, LoRA training, model selection, deployment packages, reports, and school-facing evidence. |
+| AI work | `ai/` | Dataset preparation, LoRA training, model selection, deployment packages, reports, and review evidence. |
 | Deployment | `.github/workflows/` | Azure deployment workflows for the backend and frontend from `dev`. |
 
 ## Implemented User Workflows

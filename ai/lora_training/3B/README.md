@@ -19,9 +19,9 @@ The selected checkpoint is the practical deployment recommendation for the 3B ro
 
 Read these files in order:
 
-1. [reports/final/school_final_3b_experiment_report_en.md](reports/final/school_final_3b_experiment_report_en.md): full school-facing final report.
-2. [reports/school_facing/index/README.md](reports/school_facing/index/README.md): index of testing, deployment, and safety/privacy reports.
-3. `reports/school_facing/index/EVIDENCE_TO_REPORT_MATRIX.md`: evidence-to-report allocation matrix.
+1. [reports/final/final_3b_experiment_report_en.md](reports/final/final_3b_experiment_report_en.md): full final technical report.
+2. [reports/project_review/index/README.md](reports/project_review/index/README.md): index of testing, deployment, and safety/privacy reports.
+3. `reports/project_review/index/EVIDENCE_TO_REPORT_MATRIX.md`: evidence-to-report allocation matrix.
 4. [reports/phase2/compressed_candidate_ranking.json](reports/phase2/compressed_candidate_ranking.json): Phase 2 validation ranking before frozen benchmark.
 5. [benchmark/llama32_phase2_frozen/system_score_summary.json](benchmark/llama32_phase2_frozen/system_score_summary.json): final Llama 3.2 3B frozen benchmark summary.
 6. [benchmark/phi4_phase2_frozen/system_score_summary.json](benchmark/phi4_phase2_frozen/system_score_summary.json): final Phi-4-mini frozen benchmark summary.
@@ -51,3 +51,8 @@ Read these files in order:
 Large runtime artifacts are represented through reports, manifests, hashes, and compact score files. Model weights, base-model caches, raw datasets, optimizer checkpoints, full generated output directories, and raw API response dumps remain outside the Git package.
 
 `manifests/package_manifest.json` records the relative path, size, and SHA256 hash of each included evidence file.
+
+Paths in reports follow a mixed evidence convention:
+
+- relative paths such as `reports/...`, `benchmark/...`, `configs/...`, `logs/...`, `scripts/...`, and `manifests/...` point to files included in this Git package;
+- `external-local-raw-...-not-in-git` tokens identify raw workspaces, command-output folders, or model adapter directories retained outside the Git package.

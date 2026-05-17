@@ -57,5 +57,5 @@ The deployment probe supported Llama 3.2 3B as the most practical small-model re
 |---|---|
 | Local resource probe | `reports/deployment_feasibility/local_inference_resource_probe_20260513.md` |
 | Gemma versus 8B feasibility report | `reports/deployment_feasibility/gemma_e4_vs_llama8b_deployment_feasibility_20260513.md` |
-| Final recommendation report | `reports/final/school_final_3b_experiment_report_en.md` |
-| Evidence allocation matrix | `reports/school_facing/index/EVIDENCE_TO_REPORT_MATRIX.md` |
+| Final recommendation report | `reports/final/final_3b_experiment_report_en.md` |
+| Evidence allocation matrix | `reports/project_review/index/EVIDENCE_TO_REPORT_MATRIX.md` |

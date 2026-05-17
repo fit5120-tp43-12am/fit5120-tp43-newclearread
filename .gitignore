@@ -48,4 +48,4 @@ WORKLOG.md
 *.docx
 *.Rhistory
 ai/model_deployment/3B/reports/*.html
-ai/lora_training/3B/reports/school_facing/testing/*.html
+ai/lora_training/3B/reports/project_review/testing/*.html

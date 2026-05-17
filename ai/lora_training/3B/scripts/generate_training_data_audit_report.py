@@ -125,7 +125,7 @@ def top_problem_examples(rows: list[dict[str, Any]], limit: int = 12) -> list[di
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate school-facing report for the 100-pair training data audit.")
+    parser = argparse.ArgumentParser(description="Generate project review report for the 100-pair training data audit.")
     parser.add_argument("--audit-dir", type=Path, default=DEFAULT_AUDIT_DIR)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)

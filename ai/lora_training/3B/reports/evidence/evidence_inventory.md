@@ -1,7 +1,7 @@
 # Evidence Inventory
 
 - Created UTC: `2026-05-14T04:17:25Z`
-- Root: `<local-phase2-search-workspace>`
+- Root: `<external-local-raw-phase2-search-workspace-not-in-git>`
 - Files indexed: `1048`
 
 ## Category Counts

@@ -11,7 +11,7 @@ This answers the deployment-feasibility question only: inference time and GPU me
 - Machine GPU: NVIDIA GeForce RTX 4070 Ti SUPER, 16376 MiB reported by nvidia-smi.
 - Environment: WSL conda environment `clearread-llama-lora`.
 - Route: local single-process sequential inference, Transformers or Unsloth depending on model compatibility, not vLLM.
-- Dataset source: `<local-iteration1-data-workspace>\final_lora_data\outputs\accepted\all_v1.jsonl`.
+- Dataset source: `<external-local-raw-iteration1-data-workspace-not-in-git>/final_lora_data/outputs/accepted/all_v1.jsonl`.
 - Sample seed: `20021`.
 - Block counts: `1` and `3`.
 - Max input tokens: `3072`.

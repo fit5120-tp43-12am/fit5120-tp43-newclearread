@@ -24,7 +24,7 @@ The 8B package provides the original strong baseline. The 3B package documents t
 - Evaluation, validation, and audit scripts.
 - Configuration examples.
 - Compact benchmark summaries.
-- Technical and school-facing reports.
+- Technical reports and review evidence.
 - Manifests, hashes, and evidence inventories.
 - Sanitised run history where needed for traceability.
 

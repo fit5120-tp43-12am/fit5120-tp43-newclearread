@@ -4,7 +4,7 @@
 
 All new experiment files are isolated under:
 
-`<local-3b-search-workspace>`
+`<external-local-raw-3b-search-workspace-not-in-git>`
 
 The old `iteration1` and `training-3b` folders are read-only sources.
 

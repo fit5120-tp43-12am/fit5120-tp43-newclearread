@@ -20,7 +20,7 @@ The following controls were used:
 
 ## Rationale
 
-The experiment needed school-facing evidence that was complete enough for review and clean enough for repository sharing. The package therefore stores scripts, reports, summaries, manifests, and compact benchmark outputs. Full local runtime artifacts remain in the experiment workspace for traceability.
+The experiment needed project review evidence that was complete enough for review and clean enough for repository sharing. The package therefore stores scripts, reports, summaries, manifests, and compact benchmark outputs. Full local runtime artifacts remain in the experiment workspace for traceability.
 
 The safety scoring design also matched the ClearRead task. The product summarises source text for reading support, so source faithfulness and safe simplification are essential. The judge rubric separated content safety from formatting readiness.
 
@@ -70,7 +70,7 @@ Credential handling was also checked during manual Llama scoring. The API key wa
 
 ## Final Conclusion
 
-The 3B experiment package is suitable for school review. It keeps evidence traceable, separates compact review artifacts from large runtime files, preserves safety-scoring outputs, and records deployment-relevant reliability risks.
+The 3B experiment package is suitable for project review. It keeps evidence traceable, separates compact review artifacts from large runtime files, preserves safety-scoring outputs, and records deployment-relevant reliability risks.
 
 The safety and privacy evidence supports the final choice of Llama 3.2 3B because it achieved 0 severe benchmark failures, 0 invalid JSON failures, a smaller local GPU footprint, and a clear evidence trail.
 
@@ -84,5 +84,5 @@ The safety and privacy evidence supports the final choice of Llama 3.2 3B becaus
 | Llama benchmark summary | `benchmark/llama32_phase2_frozen/system_score_summary.json` |
 | Phi benchmark summary | `benchmark/phi4_phase2_frozen/system_score_summary.json` |
 | Training data audit | `reports/data_audit/training_pair_random_audit_100_20260513.md` |
-| Final school report | `reports/final/school_final_3b_experiment_report_en.md` |
-| Evidence allocation matrix | `reports/school_facing/index/EVIDENCE_TO_REPORT_MATRIX.md` |
+| Final technical report | `reports/final/final_3b_experiment_report_en.md` |
+| Evidence allocation matrix | `reports/project_review/index/EVIDENCE_TO_REPORT_MATRIX.md` |

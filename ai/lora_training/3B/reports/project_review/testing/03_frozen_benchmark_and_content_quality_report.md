@@ -88,5 +88,5 @@ The old 8B model remained strongest on strict benchmark score. The selected Llam
 | Phi frozen benchmark summary | `benchmark/phi4_phase2_frozen/system_score_summary.json` |
 | Phi parse failures | `benchmark/phi4_phase2_frozen/parse_failures.jsonl` |
 | Final selection report | `reports/final/compressed_phase2_final_selection_report.json` |
-| Main final report | `reports/final/school_final_3b_experiment_report_en.md` |
-| Evidence allocation matrix | `reports/school_facing/index/EVIDENCE_TO_REPORT_MATRIX.md` |
+| Main final report | `reports/final/final_3b_experiment_report_en.md` |
+| Evidence allocation matrix | `reports/project_review/index/EVIDENCE_TO_REPORT_MATRIX.md` |

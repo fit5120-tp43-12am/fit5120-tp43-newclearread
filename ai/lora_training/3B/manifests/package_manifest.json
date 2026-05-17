@@ -1,550 +1,550 @@
 {
-    "package":  "ClearRead 3B-scale replacement experiment package",
-    "created_local":  "2026-05-17T12:30:01",
+    "package_root":  "ai/lora_training/3B",
+    "generated_at_utc":  "2026-05-17T02:43:51Z",
     "file_count":  109,
     "files":  [
                   {
-                      "relative_path":  "benchmark\\llama32_phase2_frozen\\item_scores_all_systems.jsonl",
-                      "size_bytes":  297897,
-                      "sha256":  "413E5C7D5A1A831F7BBA3D619AE91EA63AEE7186637653A1CBDECD8791F4D8E2"
+                      "relative_path":  "benchmark/llama32_phase2_frozen/item_scores_all_systems.jsonl",
+                      "size_bytes":  301065,
+                      "sha256":  "DD060CFABBD7D00C98C11BC9AD8BE3E7DCFD1DE651B4CF7FFB37C1F4EDA8D952"
                   },
                   {
-                      "relative_path":  "benchmark\\llama32_phase2_frozen\\parse_failures.jsonl",
-                      "size_bytes":  18891,
-                      "sha256":  "13E23E3DDC0F611C9013B3E4CB62D5808AF99EA99EA7980BC828C4F9B91D5CFC"
+                      "relative_path":  "benchmark/llama32_phase2_frozen/parse_failures.jsonl",
+                      "size_bytes":  18979,
+                      "sha256":  "AF3826BA5B644C4D44C161BECDC17803C64687F545C91E422948DE51599DB5D0"
                   },
                   {
-                      "relative_path":  "benchmark\\llama32_phase2_frozen\\system_score_summary.json",
-                      "size_bytes":  3000,
-                      "sha256":  "D197988C90F3457F894AA2F2DE59291F848B0F9A5563B33EE3C84FB58888B195"
+                      "relative_path":  "benchmark/llama32_phase2_frozen/system_score_summary.json",
+                      "size_bytes":  3048,
+                      "sha256":  "B9B350FDD446444B59D8DF05334D6077E3E3EC2B77E15016D04469B5525DABD2"
                   },
                   {
-                      "relative_path":  "benchmark\\phi4_phase2_frozen\\item_scores_all_systems.jsonl",
-                      "size_bytes":  268913,
-                      "sha256":  "A6B2E7E1B3B8ABEEDE9982E470D2E4413BBA6D51C996CB5F56830995CD2BB009"
+                      "relative_path":  "benchmark/phi4_phase2_frozen/item_scores_all_systems.jsonl",
+                      "size_bytes":  271793,
+                      "sha256":  "358F9A2C7F6AB391389CE51F977D0A4C144A0D920E97A2882042144056808C38"
                   },
                   {
-                      "relative_path":  "benchmark\\phi4_phase2_frozen\\parse_failures.jsonl",
-                      "size_bytes":  15238,
-                      "sha256":  "E5FE5D07F80E4D6E5BF0B85CE1BA2900B21155BC6C9063A1D3BBC566124D0788"
+                      "relative_path":  "benchmark/phi4_phase2_frozen/parse_failures.jsonl",
+                      "size_bytes":  15310,
+                      "sha256":  "8E19EAA02511710757E5F3B551889A1827C9869F07654378230B5355831F0895"
                   },
                   {
-                      "relative_path":  "benchmark\\phi4_phase2_frozen\\system_score_summary.json",
-                      "size_bytes":  3000,
-                      "sha256":  "34F3F34A18480ACB58F7C92C4444BFDF20D8E9A73C5C03A2B63557760B4B53FB"
+                      "relative_path":  "benchmark/phi4_phase2_frozen/system_score_summary.json",
+                      "size_bytes":  3048,
+                      "sha256":  "EE91250AD8AF0B4C89EFB203FF3B191093339179D7CC9366405D0526E1F3162C"
                   },
                   {
-                      "relative_path":  "configs\\eval_settings.json",
+                      "relative_path":  "configs/eval_settings.json",
                       "size_bytes":  144,
                       "sha256":  "4153A0C5C62976B9E1E186CC592D24552496464CFCBAC43A107E370848E9638F"
                   },
                   {
-                      "relative_path":  "configs\\judge_prompt_schema_candidate_v1_1.md",
+                      "relative_path":  "configs/judge_prompt_schema_candidate_v1_1.md",
                       "size_bytes":  15393,
                       "sha256":  "AAA31A144353D6F434F0050FAB9DBF335BD403B23711743A9632033FA1353370"
                   },
                   {
-                      "relative_path":  "configs\\model_candidates.json",
-                      "size_bytes":  8291,
-                      "sha256":  "1CA90B16C459E270640DCD1F5A431F98C078F4D2E63DAEB2DFE4A8477C9EA0D8"
+                      "relative_path":  "configs/model_candidates.json",
+                      "size_bytes":  8339,
+                      "sha256":  "AF8337370FB0EE8336DF19FAC0147DBD62BEEB2AD46B5A194DD38626B603CF55"
                   },
                   {
-                      "relative_path":  "configs\\stage3_search_templates.json",
+                      "relative_path":  "configs/stage3_search_templates.json",
                       "size_bytes":  1265,
                       "sha256":  "EDBD3B891179EC9AD74E257990A77B3D5C2FBDCA0874FE7D5F9F8B53B2D68033"
                   },
                   {
-                      "relative_path":  "configs\\sweep_candidates.json",
+                      "relative_path":  "configs/sweep_candidates.json",
                       "size_bytes":  2531,
                       "sha256":  "63187D1AF1FDA7DC989C09C6BF8D30BE507C1313FC2D2AD6637C5E5E32B0CB6E"
                   },
                   {
-                      "relative_path":  "configs\\validation_judge_subset_50.json",
+                      "relative_path":  "configs/validation_judge_subset_50.json",
                       "size_bytes":  8157,
                       "sha256":  "B27B1301C0C15B29009F560089CF7B386766D99BE10338621B7D298DD56F4026"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\compressed_llama32_3b_instruct_r64_skipped_gap_20260514_054603.md",
+                      "relative_path":  "logs/decisions/compressed_llama32_3b_instruct_r64_skipped_gap_20260514_054603.md",
                       "size_bytes":  169,
                       "sha256":  "23EB7EF3DAE34BA7CC5A2AF5FE4F302443F5701FBD6E55FD8C5E6C5508F7A586"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\compressed_ministral3_3b_instruct_r64_skipped_gap_20260514_092333.md",
+                      "relative_path":  "logs/decisions/compressed_ministral3_3b_instruct_r64_skipped_gap_20260514_092333.md",
                       "size_bytes":  171,
                       "sha256":  "1993DD19995A34196F224748F98E46D0D86430F497B1715D776B58EC029CD05D"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\compressed_plan_takeover_20260514_011914.md",
+                      "relative_path":  "logs/decisions/compressed_plan_takeover_20260514_011914.md",
                       "size_bytes":  271,
                       "sha256":  "79CD6E4D2D9A08D41BDF6AB1EC401260F3C4528BE9B0196EF92B2A3978F5A9E2"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\compressed_plan_takeover_20260514_054603.md",
+                      "relative_path":  "logs/decisions/compressed_plan_takeover_20260514_054603.md",
                       "size_bytes":  271,
                       "sha256":  "FDEA8492C04E84D8697C13C5628341D632D3AC756D519EAA881C87E5EDF52D3E"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\llama32_3b_instruct_phase2_r32_a64_lr1p5e4_checkpoint_selection_20260514_052636.md",
+                      "relative_path":  "logs/decisions/llama32_3b_instruct_phase2_r32_a64_lr1p5e4_checkpoint_selection_20260514_052636.md",
                       "size_bytes":  961,
                       "sha256":  "2F9859F689D2CFE8B875713B40E8E2E8791C25EC845A2A483A1E1229753FF061"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\manual_llama32_frozen_benchmark_20260514.md",
+                      "relative_path":  "logs/decisions/manual_llama32_frozen_benchmark_20260514.md",
                       "size_bytes":  2453,
                       "sha256":  "467774CBA17226477B57BECC13168522AB3677074EEC854328896B191119521F"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\ministral3_3b_instruct_phase2_r32_a64_lr1p5e4_checkpoint_selection_20260514_092333.md",
+                      "relative_path":  "logs/decisions/ministral3_3b_instruct_phase2_r32_a64_lr1p5e4_checkpoint_selection_20260514_092333.md",
                       "size_bytes":  988,
                       "sha256":  "A2D23CF51439FCD753F2C3FDF1C360E2BDDED66FDBCECE739D50824BF789DC49"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\pause_sweep_for_gemma_vs_llama8b_deployment_check_20260513.md",
+                      "relative_path":  "logs/decisions/pause_sweep_for_gemma_vs_llama8b_deployment_check_20260513.md",
                       "size_bytes":  1036,
                       "sha256":  "33D616269AD964040392111C738253941BB7F456F8CDD65B4A5CCA9CAB0414EB"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260513_130841.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260513_130841.md",
                       "size_bytes":  402,
                       "sha256":  "16C078A979AC8409739E58826F97A9B5974D6FE24CE944202F9464A5E444E84F"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260513_150854.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260513_150854.md",
                       "size_bytes":  466,
                       "sha256":  "7E4DC96862AF257FA4F0DF460BBAED5CD8434FEF186F56AF63E58DA8C22698D4"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260513_153857.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260513_153857.md",
                       "size_bytes":  472,
                       "sha256":  "7BC6DA8C8910A16838F63AE2B74058A846AC913063596F7131F6F50B9A3BD7A4"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260513_160856.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260513_160856.md",
                       "size_bytes":  472,
                       "sha256":  "5EB3D3DAF12391DD2259DD7A7A1B64C3113DEBA104581FBB37B5D9C8F196366A"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_031421.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_031421.md",
                       "size_bytes":  494,
                       "sha256":  "1FD1C4611B2F3A802877C607DC52CDD57F62678FADCCA9B5F9EDBF31A1C81ACC"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_034404.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_034404.md",
                       "size_bytes":  500,
                       "sha256":  "60CD89BEF539E09E056E10E0C0A0385AB9A7AEC6DCE4EB2BBB467A70FE0D1F15"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_041405.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_041405.md",
                       "size_bytes":  500,
                       "sha256":  "BE4CBA2B85E071FE0751826CC519729DD2F4725490BBCBB4CCE215187586190B"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_044406.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_044406.md",
                       "size_bytes":  500,
                       "sha256":  "1DDFE77255F9A4A8401DA4AE24CB2901F6E81D32331F8BCF0BBF065A6EAD0DD9"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_051405.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_051405.md",
                       "size_bytes":  523,
                       "sha256":  "344AD4AEAF3107FB29C5F0199EBCCFA86815636D228B9D6FDD5D31820470DF42"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_054410.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_054410.md",
                       "size_bytes":  461,
                       "sha256":  "04F73E5F54C55B0FB75CA2967B3E138918379EE11434D039389562F27829CE4F"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_061407.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_061407.md",
                       "size_bytes":  500,
                       "sha256":  "84A2497C361D8F7B04FD764A7B629AF02A243DF8EBA448D297DB8FDE4EBD1554"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_064408.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_064408.md",
                       "size_bytes":  500,
                       "sha256":  "94E1CEF596926D4EC2758844EADB115A063B8A8EE0FB5F2DA65807C0772F4218"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_071409.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_071409.md",
                       "size_bytes":  500,
                       "sha256":  "B6F35ECFB857D8CA290F21E12AB77BF4D7A299C24B16C2438EE0372C24AE1EE5"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_monitor_progress_20260514_142457.md",
+                      "relative_path":  "logs/decisions/phase2_monitor_progress_20260514_142457.md",
                       "size_bytes":  411,
                       "sha256":  "88B6944EBD9441586D5E8E10B834489F20980A674316579F92FF5D271619507F"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phase2_search_started_20260513_130728.md",
-                      "size_bytes":  318,
-                      "sha256":  "ECB295B094EF0CEDB339A7D8246561100C1CCD609B6FFE6BC417625D1DFC59C2"
+                      "relative_path":  "logs/decisions/phase2_search_started_20260513_130728.md",
+                      "size_bytes":  342,
+                      "sha256":  "4C83AAA7E7F89AD5F946F60118CC80A145F34ADCF435359231815B2D9B7CF941"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phi4_mini_instruct_phase2_r32_a64_lr1e4_checkpoint_selection_20260513_171031.md",
+                      "relative_path":  "logs/decisions/phi4_mini_instruct_phase2_r32_a64_lr1e4_checkpoint_selection_20260513_171031.md",
                       "size_bytes":  1081,
                       "sha256":  "79AC4F7F8F3383B30E5E0FB0214BE649E30E57EA52AC09170112A1152A63316A"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phi4_mini_instruct_phase2_r32_a64_lr1p5e4_checkpoint_selection_20260513_210833.md",
+                      "relative_path":  "logs/decisions/phi4_mini_instruct_phase2_r32_a64_lr1p5e4_checkpoint_selection_20260513_210833.md",
                       "size_bytes":  1074,
                       "sha256":  "08F6E6A27CCF3425DCC9A9E3B6EC20A51B51862154467E32AC66F6D4F880DF01"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phi4_mini_instruct_phase2_r64_a128_lr1e4_checkpoint_selection_20260514_011859.md",
+                      "relative_path":  "logs/decisions/phi4_mini_instruct_phase2_r64_a128_lr1e4_checkpoint_selection_20260514_011859.md",
                       "size_bytes":  1055,
                       "sha256":  "F050D3E5892E161ADD5B9EFD2373BDB81ED6D6A7D37C4988BBF2D3004DD87032"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_checkpoint_selection_20260514_141717.md",
+                      "relative_path":  "logs/decisions/phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_checkpoint_selection_20260514_141717.md",
                       "size_bytes":  967,
                       "sha256":  "ACE220B4706397CC104198D9F4E107A81907A09E2678288B3E89760071F40381"
                   },
                   {
-                      "relative_path":  "logs\\decisions\\superseded_by_compressed_plan_20260514_002705.md",
+                      "relative_path":  "logs/decisions/superseded_by_compressed_plan_20260514_002705.md",
                       "size_bytes":  296,
                       "sha256":  "EBD5EC9618C9214FB7FECE2BC5603A5DB45EFBB6E3AE61D380688869CE0AC049"
                   },
                   {
-                      "relative_path":  "manifests\\benchmark_snapshot_manifest.json",
-                      "size_bytes":  40731,
-                      "sha256":  "F7C2C1227244A1361C87DCCC2ACD542D71449C5066172E0D46165C3B675D5D0E"
+                      "relative_path":  "manifests/benchmark_snapshot_manifest.json",
+                      "size_bytes":  42891,
+                      "sha256":  "C2F4A9C533DF8FEA37D18FBEAEDDC76DEA2BA4FDCE3468F38698171D0ACE350F"
                   },
                   {
-                      "relative_path":  "manifests\\phase2_evidence_inventory.json",
-                      "size_bytes":  369068,
-                      "sha256":  "756A6E74E63075BA56B7D5B972A3B2F9830D60D0A4D91A01CB7CDBCF1119C189"
+                      "relative_path":  "manifests/phase2_evidence_inventory.json",
+                      "size_bytes":  369092,
+                      "sha256":  "D0A1440228427201C94668E271F03305B136572357BD5E7CFC1D9DBFD8CAC3D3"
                   },
                   {
                       "relative_path":  "README.md",
-                      "size_bytes":  3182,
-                      "sha256":  "A566A80797B5CA166C3945D810632E7C6FB36E479EDB016A5D31CC338315966B"
+                      "size_bytes":  3543,
+                      "sha256":  "7E33BF93946373D0FB2786044E639247AA67A834BBD6FCD7A6DCFE8DA9D5BF91"
                   },
                   {
-                      "relative_path":  "reports\\baseline_reference\\old_benchmark_baseline_reference.json",
+                      "relative_path":  "reports/baseline_reference/old_benchmark_baseline_reference.json",
                       "size_bytes":  4681,
                       "sha256":  "D6923A49EFA7D616CC193BD86BA0E95EEC6F2DBB4E130596E792E65012866127"
                   },
                   {
-                      "relative_path":  "reports\\data_audit\\training_pair_random_audit_100_20260513.md",
-                      "size_bytes":  18765,
-                      "sha256":  "5E06F205B456E39754DEE3557C95B85AB49918AC0CF36C96FD028C905B7DA029"
+                      "relative_path":  "reports/data_audit/training_pair_random_audit_100_20260513.md",
+                      "size_bytes":  18933,
+                      "sha256":  "DCF80D0A9ECCCCAB30E7D81F758FF195AA336703F348406B562C0986E6EFF820"
                   },
                   {
-                      "relative_path":  "reports\\deployment_feasibility\\gemma_e4_vs_llama8b_deployment_feasibility_20260513.md",
-                      "size_bytes":  5798,
-                      "sha256":  "21DD6A47336A4397A693B9EDC0E89F3A7A15D1C693EBE5B330BB177002975194"
+                      "relative_path":  "reports/deployment_feasibility/gemma_e4_vs_llama8b_deployment_feasibility_20260513.md",
+                      "size_bytes":  5870,
+                      "sha256":  "38A9FC1D863D31F9403C089B52A05F31F4E0F6188DD41C8297C0692B85420643"
                   },
                   {
-                      "relative_path":  "reports\\deployment_feasibility\\local_inference_resource_probe_20260513.md",
-                      "size_bytes":  3132,
-                      "sha256":  "9F6BEDEA617A4BDAE10F6C61C661A6674A20EA007C15FE32685DC61DAAE00B44"
+                      "relative_path":  "reports/deployment_feasibility/local_inference_resource_probe_20260513.md",
+                      "size_bytes":  3156,
+                      "sha256":  "21D4FA87910D0480003614D6F4FEE5D77F2E48E53B52202F2D55449C69CA26AC"
                   },
                   {
-                      "relative_path":  "reports\\evidence\\evidence_inventory.json",
-                      "size_bytes":  369068,
-                      "sha256":  "756A6E74E63075BA56B7D5B972A3B2F9830D60D0A4D91A01CB7CDBCF1119C189"
+                      "relative_path":  "reports/evidence/evidence_inventory.json",
+                      "size_bytes":  369092,
+                      "sha256":  "D0A1440228427201C94668E271F03305B136572357BD5E7CFC1D9DBFD8CAC3D3"
                   },
                   {
-                      "relative_path":  "reports\\evidence\\evidence_inventory.md",
-                      "size_bytes":  226918,
-                      "sha256":  "487D9F8CF843AC721B4247AC86FAACB7A8EBD63BD17D7969B4E6418140908886"
+                      "relative_path":  "reports/evidence/evidence_inventory.md",
+                      "size_bytes":  226942,
+                      "sha256":  "74C6D1122FD0FB1E8E30E0EEFEFFC49391AF87227757BF19B1AC73E75DC4D411"
                   },
                   {
-                      "relative_path":  "reports\\final\\compressed_phase2_final_selection_report.json",
-                      "size_bytes":  13098,
-                      "sha256":  "0548C215F04A41396DB5CEBDDBCEE27121BB1F99D619CCF22D75A3B28C5A8AB9"
+                      "relative_path":  "reports/final/compressed_phase2_final_selection_report.json",
+                      "size_bytes":  13266,
+                      "sha256":  "DF38939CFC86BDCBDC743B6DEA8AA0EED923F9A6488B8ED7B50EBC6B6B777233"
                   },
                   {
-                      "relative_path":  "reports\\final\\school_final_3b_experiment_report_en.md",
+                      "relative_path":  "reports/final/final_3b_experiment_report_en.md",
                       "size_bytes":  21701,
                       "sha256":  "13E3ADF6183242D43B1653D79FEF1CEA62260DD79206EDD90F946D1A408BD0D4"
                   },
                   {
-                      "relative_path":  "reports\\optimization\\OPTIMIZATION_REPORT_EN.md",
+                      "relative_path":  "reports/optimization/OPTIMIZATION_REPORT_EN.md",
                       "size_bytes":  4566,
                       "sha256":  "0A0AA10029E20B2A45B1D96F28655CF3197F8032602F56398C821594280A6838"
                   },
                   {
-                      "relative_path":  "reports\\optimization\\optimization_summary.json",
-                      "size_bytes":  28328,
-                      "sha256":  "CBA0E3E19E61B3C4AC754119CA22EF802163C0ECDB01CA88EFAD37B39F072A7B"
+                      "relative_path":  "reports/optimization/optimization_summary.json",
+                      "size_bytes":  28598,
+                      "sha256":  "651C43F45736D821F0CC571D7CA6419EE5C361369C9A652F4278E3DB318F0536"
                   },
                   {
-                      "relative_path":  "reports\\phase2\\compressed_candidate_ranking.json",
-                      "size_bytes":  14800,
-                      "sha256":  "0478C358C577C9C34D04598F48CDED48C95641DFEC65BFE1D4BD93AEB90F615A"
+                      "relative_path":  "reports/phase2/compressed_candidate_ranking.json",
+                      "size_bytes":  15136,
+                      "sha256":  "6BD65F9A229414758B3B0E9633559BEAC3EFAFB3D5D29D6BE2417901F5B09163"
                   },
                   {
-                      "relative_path":  "reports\\school_facing\\index\\EVIDENCE_TO_REPORT_MATRIX.md",
-                      "size_bytes":  14929,
-                      "sha256":  "5EBBEAED442C919EB49608EC1E9846DD0202E0C9722288524A7469470FB8D2BA"
+                      "relative_path":  "reports/project_review/index/EVIDENCE_TO_REPORT_MATRIX.md",
+                      "size_bytes":  16537,
+                      "sha256":  "5FBA9538AA68B38FBCF57F044205A49520FA0797D3359CE30D550A4CC8A108D2"
                   },
                   {
-                      "relative_path":  "reports\\school_facing\\index\\README.md",
-                      "size_bytes":  1921,
-                      "sha256":  "B653DE725AF7CAE31D99FCE7A5879CE9D97F9654515A95C2619C0167FA5192E0"
+                      "relative_path":  "reports/project_review/index/README.md",
+                      "size_bytes":  2647,
+                      "sha256":  "F29559CA0CE4C31A6703E577F39262240C9926E3EA0801F35D6472F6E0EA8B73"
                   },
                   {
-                      "relative_path":  "reports\\school_facing\\safety_privacy\\01_safety_privacy_and_compliance_report.md",
-                      "size_bytes":  5073,
-                      "sha256":  "582BE3EFA7B26C9D719B7CC987A99C9307FBEAFFF57F3D2AF96956B14B4F2A76"
+                      "relative_path":  "reports/project_review/safety_privacy/01_safety_privacy_and_compliance_report.md",
+                      "size_bytes":  5072,
+                      "sha256":  "B9F85855C7238A55862A73E2D768DD70B51A3A8F68241FAB52CEB40BF8C1C111"
                   },
                   {
-                      "relative_path":  "reports\\school_facing\\testing\\01_training_data_quality_audit_report.md",
-                      "size_bytes":  3663,
-                      "sha256":  "C312B04896B5DC023E3E2653601457417B4569E4A83D84C6BC491A4459B2ADE2"
+                      "relative_path":  "reports/project_review/testing/01_training_data_quality_audit_report.md",
+                      "size_bytes":  3664,
+                      "sha256":  "632864E13F52C91BF78CB18C81220E08348DAC4A5BF531BAD38B36F93B4449A9"
                   },
                   {
-                      "relative_path":  "reports\\school_facing\\testing\\02_model_training_validation_search_report.md",
-                      "size_bytes":  4627,
-                      "sha256":  "F945F200B1CD7DFB89DB2DCD863F161CA3165F2C099BA7D195540CD6CB40603B"
+                      "relative_path":  "reports/project_review/testing/02_model_training_validation_search_report.md",
+                      "size_bytes":  4628,
+                      "sha256":  "D0A67B3BA412E00ECC4AF80AD13EC25ADB3609C393C3AFD7AA2DF5E8D2C7C024"
                   },
                   {
-                      "relative_path":  "reports\\school_facing\\testing\\03_frozen_benchmark_and_content_quality_report.md",
-                      "size_bytes":  4652,
-                      "sha256":  "9014C930CBB08CB64A72B309B0200F65C69ABF03270D6406BEB43259A988C5A3"
+                      "relative_path":  "reports/project_review/testing/03_frozen_benchmark_and_content_quality_report.md",
+                      "size_bytes":  4646,
+                      "sha256":  "47F83893ACAD946DFCCF3B8CC875470FC1E8D25D9423AD30E75C15EBBEE651D9"
                   },
                   {
-                      "relative_path":  "reports\\school_facing\\testing\\04_deployment_resource_probe_report.md",
-                      "size_bytes":  3546,
-                      "sha256":  "6D6DB0CC48B46338ACAE658A1F7AA933B7A0D29C2D04218D54D2EF5AA0783E26"
+                      "relative_path":  "reports/project_review/testing/04_deployment_resource_probe_report.md",
+                      "size_bytes":  3540,
+                      "sha256":  "E7AD37E760628F88D384DFB177D506DD25B537AC3ED25D752D28438072150D3D"
                   },
                   {
-                      "relative_path":  "reports\\stage1\\stage1_anchor_summary.csv",
+                      "relative_path":  "reports/stage1/stage1_anchor_summary.csv",
                       "size_bytes":  12262,
                       "sha256":  "8B6319D6BF81714CF438BAA5625117E47B0BA64944C7DE98DF9FBF73FDE0473B"
                   },
                   {
-                      "relative_path":  "reports\\stage1\\stage1_anchor_summary.json",
+                      "relative_path":  "reports/stage1/stage1_anchor_summary.json",
                       "size_bytes":  29347,
                       "sha256":  "E67AC4A513ED575D5968F713FD757F9546674709377948A69695D87A3CC685C0"
                   },
                   {
-                      "relative_path":  "reports\\stage1\\stage1_interim_summary_20260512_v2.md",
-                      "size_bytes":  2316,
-                      "sha256":  "8B69DECAE236417AA4EE3E6D5CB506B1B8BE9DBB7522D1EF135EA2BDA78BE199"
+                      "relative_path":  "reports/stage1/stage1_interim_summary_20260512_v2.md",
+                      "size_bytes":  2340,
+                      "sha256":  "6C250B87205D314431D1BFC4491622217CBB2210D4A8372683369D978E8236CA"
                   },
                   {
-                      "relative_path":  "reports\\stage2\\stage2_top_models.json",
+                      "relative_path":  "reports/stage2/stage2_top_models.json",
                       "size_bytes":  5908,
                       "sha256":  "2ED09E6E8C3D26FDEF5F0C97BB43C9E3C56CC76EEDDB1A9FCFEE3A559943D669"
                   },
                   {
-                      "relative_path":  "reports\\stage2\\stage2_top_models.md",
+                      "relative_path":  "reports/stage2/stage2_top_models.md",
                       "size_bytes":  647,
                       "sha256":  "3BE4E11AFC366D69C4278C71F94D2AD7E4222A6300AF526D9AD77ACCBE9E7A85"
                   },
                   {
-                      "relative_path":  "scripts\\aggregate_judge_scores.py",
+                      "relative_path":  "scripts/aggregate_judge_scores.py",
                       "size_bytes":  9217,
                       "sha256":  "2AF8DA5DD8E8CE6AD70A4EA035FDD8D53884A69F144C9B928A3B4B413C99A906"
                   },
                   {
-                      "relative_path":  "scripts\\audit_training_pairs_with_openai.py",
+                      "relative_path":  "scripts/audit_training_pairs_with_openai.py",
                       "size_bytes":  17687,
                       "sha256":  "B6AA16AA021265974B576B664EF2D27733DEBD04F4ADAA05DD11BD1CF949420F"
                   },
                   {
-                      "relative_path":  "scripts\\bootstrap_sweep_manifest.py",
+                      "relative_path":  "scripts/bootstrap_sweep_manifest.py",
                       "size_bytes":  2388,
                       "sha256":  "B63C6547233FBF6B5825DA7ED3B827F066DA1B78C3A3186C60C91EE7D94F62A5"
                   },
                   {
-                      "relative_path":  "scripts\\copy_benchmark_snapshots.py",
+                      "relative_path":  "scripts/copy_benchmark_snapshots.py",
                       "size_bytes":  10240,
                       "sha256":  "0CC4ACEB370AFB0C16CA5E7E47DF5537FE60054E4FF9682A65007BF84A5EC516"
                   },
                   {
-                      "relative_path":  "scripts\\create_stage3_run_matrix.py",
+                      "relative_path":  "scripts/create_stage3_run_matrix.py",
                       "size_bytes":  3503,
                       "sha256":  "34FD655F110FECB1EB51DF86A77A4EFCA7D6670E10CF9F0F184575AA12AC7C4A"
                   },
                   {
-                      "relative_path":  "scripts\\extract_baseline_reference.py",
+                      "relative_path":  "scripts/extract_baseline_reference.py",
                       "size_bytes":  3263,
                       "sha256":  "97E0E7FBE7B33300782D342387CCC2FAFAD98AC90A6FBD1B8C6E4249B6A65498"
                   },
                   {
-                      "relative_path":  "scripts\\gemma_e4_deployment_smoke.py",
+                      "relative_path":  "scripts/gemma_e4_deployment_smoke.py",
                       "size_bytes":  13829,
                       "sha256":  "2FE9901D2DFA7A5B3C0E2674CABED5C2A08F3619B45F4050DDCF29E750BFA8B1"
                   },
                   {
-                      "relative_path":  "scripts\\generate_evidence_inventory.py",
+                      "relative_path":  "scripts/generate_evidence_inventory.py",
                       "size_bytes":  4828,
                       "sha256":  "484107178D0B1C0B20AC4627C96B4FD07719BF67F7A077D4654E61E80A6E9CA9"
                   },
                   {
-                      "relative_path":  "scripts\\generate_training_data_audit_report.py",
+                      "relative_path":  "scripts/generate_training_data_audit_report.py",
                       "size_bytes":  19788,
-                      "sha256":  "538F4596EC94D18528FC5F136608B065A3CB83CBDF8AC91B32AF3A3ACA9DB4C1"
+                      "sha256":  "187BC91728BB0AF628D06DA71AD2B745CA2A0A33EE7623D39139F74D8FED58A8"
                   },
                   {
-                      "relative_path":  "scripts\\local_inference_resource_probe.py",
+                      "relative_path":  "scripts/local_inference_resource_probe.py",
                       "size_bytes":  20144,
                       "sha256":  "88F1DA1FEA560EEAF33FF28A5D1F9BD0C44CB8A0B55CBEC7C5A34840585ECD16"
                   },
                   {
-                      "relative_path":  "scripts\\manual_llama32_frozen_inference_v1.sh",
+                      "relative_path":  "scripts/manual_llama32_frozen_inference_v1.sh",
                       "size_bytes":  1121,
                       "sha256":  "9E3D53587ECE3C7474E9346337AE0B9E99D0B0467C6AE4FBF11600A91BF1B509"
                   },
                   {
-                      "relative_path":  "scripts\\monitor_phase2_48h_search.py",
+                      "relative_path":  "scripts/monitor_phase2_48h_search.py",
                       "size_bytes":  4373,
                       "sha256":  "098BCB808D3BE88CA32349B809B3ADC81DDE40DD1ABCC9C0B159457380FC05C3"
                   },
                   {
-                      "relative_path":  "scripts\\phase2_status.py",
+                      "relative_path":  "scripts/phase2_status.py",
                       "size_bytes":  1177,
                       "sha256":  "1BA8FE5016D9D39AB936D3FA620493D4E14893DF758F23DB8C0875F90478F2C7"
                   },
                   {
-                      "relative_path":  "scripts\\postprocess_final_benchmark_system.sh",
+                      "relative_path":  "scripts/postprocess_final_benchmark_system.sh",
                       "size_bytes":  2051,
                       "sha256":  "7F474D44A491F202D439CB5C6AA89C23AE6284C7645723E9B4077CEF7C658745"
                   },
                   {
-                      "relative_path":  "scripts\\postprocess_run_candidate.sh",
+                      "relative_path":  "scripts/postprocess_run_candidate.sh",
                       "size_bytes":  3598,
                       "sha256":  "C7D66916FAB5BF29578776A6916F7B7666939BC3839E9E46E2FA49F12A8EB0A8"
                   },
                   {
-                      "relative_path":  "scripts\\postprocess_run_candidate_top_epochs.sh",
+                      "relative_path":  "scripts/postprocess_run_candidate_top_epochs.sh",
                       "size_bytes":  4348,
                       "sha256":  "415FFE9E547C0AB36BF64F910046075F234FCA51BB0EE2B86F335A6ECF6A73C8"
                   },
                   {
-                      "relative_path":  "scripts\\postprocess_stage1_candidate.sh",
+                      "relative_path":  "scripts/postprocess_stage1_candidate.sh",
                       "size_bytes":  3316,
                       "sha256":  "6D07CD26D1F271CBEC855ABD6BEF7C9539B7ACCBA00F79A63E2DD5527E7174C2"
                   },
                   {
-                      "relative_path":  "scripts\\prepare_final_benchmark_judge_inputs.py",
+                      "relative_path":  "scripts/prepare_final_benchmark_judge_inputs.py",
                       "size_bytes":  4415,
                       "sha256":  "A8803CDE08CC2C015F89774339F2C0912EAE1CD738726C080A5E272B38D53372"
                   },
                   {
-                      "relative_path":  "scripts\\prepare_validation_judge_inputs.py",
+                      "relative_path":  "scripts/prepare_validation_judge_inputs.py",
                       "size_bytes":  7339,
                       "sha256":  "C37A14410DE40C899074CDA0008F5C325EBE433F2A3E82AC8C9969AC7F9834A6"
                   },
                   {
-                      "relative_path":  "scripts\\run_finalist_benchmark_inference.py",
+                      "relative_path":  "scripts/run_finalist_benchmark_inference.py",
                       "size_bytes":  10552,
                       "sha256":  "76B37145229DDF692330E2B4D703049261D4098FE09043D55B784E63A217483D"
                   },
                   {
-                      "relative_path":  "scripts\\run_gemma_after_qwen_postprocess.ps1",
+                      "relative_path":  "scripts/run_gemma_after_qwen_postprocess.ps1",
                       "size_bytes":  3521,
                       "sha256":  "7454604F49E0C339DACC74C08468C81B6102D72FECA69A9C9E3F25C45A1110EF"
                   },
                   {
-                      "relative_path":  "scripts\\run_judge_api.py",
+                      "relative_path":  "scripts/run_judge_api.py",
                       "size_bytes":  18878,
                       "sha256":  "08D6565FE3482C8EB4AFE481E196E1E1AE16026FB29AC9CFAB66C335CA70327D"
                   },
                   {
-                      "relative_path":  "scripts\\run_phase2_48h_search.py",
+                      "relative_path":  "scripts/run_phase2_48h_search.py",
                       "size_bytes":  30958,
                       "sha256":  "BB5DEDBEEC1227E145A76DDD082507682A67366F90BEC387647EEF716D44C261"
                   },
                   {
-                      "relative_path":  "scripts\\run_phase2_compressed_search.py",
+                      "relative_path":  "scripts/run_phase2_compressed_search.py",
                       "size_bytes":  19065,
                       "sha256":  "630C609FA2C6267FB3DF2A084AE72A81A6D0D7B95C93517B03BB3EBB7E3EBDBD"
                   },
                   {
-                      "relative_path":  "scripts\\run_qlora_training_with_fallback.sh",
+                      "relative_path":  "scripts/run_qlora_training_with_fallback.sh",
                       "size_bytes":  2204,
                       "sha256":  "BD2DA283B13A51CEC27416D99EE774F6B3D4D705962E34EA70EEA0198A2906AB"
                   },
                   {
-                      "relative_path":  "scripts\\run_stage2_stage3_after_stage1.ps1",
+                      "relative_path":  "scripts/run_stage2_stage3_after_stage1.ps1",
                       "size_bytes":  2892,
                       "sha256":  "038E3B59767F1C9C0FC4F2F5EA6220158E5841AC691E09F793ECEE098C36371D"
                   },
                   {
-                      "relative_path":  "scripts\\run_stage3_matrix.py",
+                      "relative_path":  "scripts/run_stage3_matrix.py",
                       "size_bytes":  7925,
                       "sha256":  "F0FB1538783499709F7135F52CBC3A05315AAC08AE5CAABBAB86182EF5BE4455"
                   },
                   {
-                      "relative_path":  "scripts\\sample_training_pairs_for_audit.py",
+                      "relative_path":  "scripts/sample_training_pairs_for_audit.py",
                       "size_bytes":  7832,
                       "sha256":  "9CF8123D4DD2F9054566B4111282BE5C572D952B90FF6336F7E0725E6B7B1662"
                   },
                   {
-                      "relative_path":  "scripts\\select_run_checkpoint.py",
+                      "relative_path":  "scripts/select_run_checkpoint.py",
                       "size_bytes":  7530,
                       "sha256":  "0599EEAF1004E2200E48FF65B018AADD9A333CE0AEA512B0B54A91F8D45ECCF2"
                   },
                   {
-                      "relative_path":  "scripts\\select_stage1_checkpoint.py",
+                      "relative_path":  "scripts/select_stage1_checkpoint.py",
                       "size_bytes":  7249,
                       "sha256":  "9A0A59779965472896449F0CE7C7B8B3E60B294DFDAB70E6798BF9B098568BAC"
                   },
                   {
-                      "relative_path":  "scripts\\select_stage2_top_models.py",
+                      "relative_path":  "scripts/select_stage2_top_models.py",
                       "size_bytes":  7062,
                       "sha256":  "687731664B35297D78E1AC120F774F5B2ACD4C721DDF58DBD28882CEFBC5D713"
                   },
                   {
-                      "relative_path":  "scripts\\select_validation_top_epochs.py",
+                      "relative_path":  "scripts/select_validation_top_epochs.py",
                       "size_bytes":  4199,
                       "sha256":  "1DC68946A23772BEECA18EEFC2CBDBB69F6D45A20A5FE8AEE0C21F635C7EC525"
                   },
                   {
-                      "relative_path":  "scripts\\semantic_rescue_validation_sample.py",
+                      "relative_path":  "scripts/semantic_rescue_validation_sample.py",
                       "size_bytes":  5785,
                       "sha256":  "A3516EE7DC873E744A789865630B7F253EB9831D284B3D3EF7D5686E5133E9BC"
                   },
                   {
-                      "relative_path":  "scripts\\start_phase2_48h_search.ps1",
+                      "relative_path":  "scripts/start_phase2_48h_search.ps1",
                       "size_bytes":  1694,
                       "sha256":  "03E246D379630A7E2D705FA9CE37DE1F19A6B4D3AEE78B79C602C30561A0AA10"
                   },
                   {
-                      "relative_path":  "scripts\\summarize_local_inference_resource_probe.py",
+                      "relative_path":  "scripts/summarize_local_inference_resource_probe.py",
                       "size_bytes":  10153,
                       "sha256":  "9A3361532E09507ED75690B36A25EB6A0105A3E1FDBD16D00A389A9C74212180"
                   },
                   {
-                      "relative_path":  "scripts\\summarize_stage1_results.py",
+                      "relative_path":  "scripts/summarize_stage1_results.py",
                       "size_bytes":  5303,
                       "sha256":  "D85B241D93141C3E646827BED476B5ADE273F4FC4F863C311505F1D08E40C4B3"
                   },
                   {
-                      "relative_path":  "scripts\\sweep_utils.py",
+                      "relative_path":  "scripts/sweep_utils.py",
                       "size_bytes":  6019,
                       "sha256":  "82174777B24F2E95070101720A56C19092B3FCC80EDEA5BE546BC2C0B0F19737"
                   },
                   {
-                      "relative_path":  "scripts\\switch_to_compressed_after_phi.ps1",
+                      "relative_path":  "scripts/switch_to_compressed_after_phi.ps1",
                       "size_bytes":  4207,
                       "sha256":  "A9053568EE862F8DA03E8E2FC92DFD6044C7ADE9A3FDB8CB8D384D96C8B08C6D"
                   },
                   {
-                      "relative_path":  "scripts\\train_sweep_qlora.py",
+                      "relative_path":  "scripts/train_sweep_qlora.py",
                       "size_bytes":  23947,
                       "sha256":  "C3FD0194DD577ED1BBC476D84BA56590497E5DD40158BA8B303D1BD2C11F0C7D"
                   },
                   {
-                      "relative_path":  "scripts\\training_data_utils.py",
+                      "relative_path":  "scripts/training_data_utils.py",
                       "size_bytes":  17129,
                       "sha256":  "FFE745F5CABC2D615A1C37317CEE8FF9BF2EBE59DFB4546C41BF09116829B2FB"
                   },
                   {
-                      "relative_path":  "scripts\\validate_sweep_adapter.py",
+                      "relative_path":  "scripts/validate_sweep_adapter.py",
                       "size_bytes":  8445,
                       "sha256":  "F40D62BC685FD061B6986E085B93EFD55E65236631EC177C9D58B5CE6017DBB7"
                   },
                   {
-                      "relative_path":  "scripts\\verify_workspace_compliance.py",
+                      "relative_path":  "scripts/verify_workspace_compliance.py",
                       "size_bytes":  2446,
                       "sha256":  "F6247B8A6BA970995AC707269BB3BFFFC0B24B115B6547EBA3A92B93BA911719"
                   },
                   {
-                      "relative_path":  "scripts\\watch_and_postprocess_stage1_candidate.ps1",
+                      "relative_path":  "scripts/watch_and_postprocess_stage1_candidate.ps1",
                       "size_bytes":  2506,
                       "sha256":  "D1A84978621DD6146A3EA67ECC1353D69BAF83A697080E49F150125C2C7FF2A5"
                   }

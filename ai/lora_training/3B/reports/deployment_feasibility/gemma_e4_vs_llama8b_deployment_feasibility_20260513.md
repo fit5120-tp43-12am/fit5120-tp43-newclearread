@@ -17,7 +17,7 @@ The comparison prioritises inference speed and GPU memory.
 
 ## Llama 8B real deployment baseline
 
-Source: `<local-iteration1-deployment-workspace>\docs\GCP_L4_PRESSURE_TEST_REPORT.md`
+Source: `<external-local-raw-iteration1-deployment-workspace-not-in-git>/docs/GCP_L4_PRESSURE_TEST_REPORT.md`
 
 Actual deployment route:
 
@@ -45,7 +45,7 @@ The real Llama 8B deployment can process 28 representative text blocks under abo
 
 ## Older local Llama 8B sequential route
 
-Source: `<local-iteration1-deployment-workspace>\benchmarks\011_machine_sizing\benchmark_results.json`
+Source: `<external-local-raw-iteration1-deployment-workspace-not-in-git>/benchmarks/011_machine_sizing/benchmark_results.json`
 
 This is not the final deployment route, but it is useful as a local single-GPU reference.
 
@@ -62,7 +62,7 @@ The old sequential route was much slower than vLLM for multi-block use, which is
 
 ## Gemma E4 local deployment-style smoke
 
-Source: `<local-3b-search-workspace>\outputs\deployment_feasibility\gemma_e4_local_transformers_smoke.json`
+Source: `<external-local-raw-3b-search-workspace-not-in-git>/outputs/deployment_feasibility/gemma_e4_local_transformers_smoke.json`
 
 Route tested:
 

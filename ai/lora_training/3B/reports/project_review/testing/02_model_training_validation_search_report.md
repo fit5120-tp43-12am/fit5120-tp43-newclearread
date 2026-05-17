@@ -85,4 +85,4 @@ The training and validation search identified two important candidates: Phi-4-mi
 | Stage 1 machine summary | `reports/stage1/stage1_anchor_summary.json` |
 | Phase2 candidate ranking | `reports/phase2/compressed_candidate_ranking.json` |
 | Final selection JSON | `reports/final/compressed_phase2_final_selection_report.json` |
-| Evidence allocation matrix | `reports/school_facing/index/EVIDENCE_TO_REPORT_MATRIX.md` |
+| Evidence allocation matrix | `reports/project_review/index/EVIDENCE_TO_REPORT_MATRIX.md` |

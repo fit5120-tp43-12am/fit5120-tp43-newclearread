@@ -26,8 +26,8 @@
     }
   ],
   "best": {
-    "adapter_dir": "<local-iteration1-3b-training-workspace>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
-    "config_path": "<local-iteration1-3b-training-workspace>/optimization_experiments/configs/candidate_c_r64_epoch1_prompt_guard_v3_inference.yaml",
+    "adapter_dir": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
+    "config_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/configs/candidate_c_r64_epoch1_prompt_guard_v3_inference.yaml",
     "elapsed_seconds": 576.96,
     "failure_reasons": {
       "key_points_not_four_string_items": 1,
@@ -246,7 +246,7 @@
   ],
   "frozen_experiments": [
     {
-      "adapter_dir": "<local-iteration1-3b-training-workspace>/models/adapters/selected_candidate_b",
+      "adapter_dir": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/models/adapters/selected_candidate_b",
       "config_path": null,
       "elapsed_seconds": 596.04,
       "failure_reasons": {},
@@ -267,8 +267,8 @@
       "system_id": "clearread_llama32_3b_qlora_candidate_b"
     },
     {
-      "adapter_dir": "<local-iteration1-3b-training-workspace>/models/adapters/selected_candidate_b",
-      "config_path": "<local-iteration1-3b-training-workspace>/optimization_experiments/configs/prompt_guard_v2_inference.yaml",
+      "adapter_dir": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/models/adapters/selected_candidate_b",
+      "config_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/configs/prompt_guard_v2_inference.yaml",
       "elapsed_seconds": 577.28,
       "failure_reasons": {
         "key_points_not_four_string_items": 1,
@@ -291,8 +291,8 @@
       "system_id": "clearread_llama32_3b_candidate_b_prompt_guard_v2"
     },
     {
-      "adapter_dir": "<local-iteration1-3b-training-workspace>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
-      "config_path": "<local-iteration1-3b-training-workspace>/optimization_experiments/configs/candidate_c_r64_epoch1_frozen_inference.yaml",
+      "adapter_dir": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
+      "config_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/configs/candidate_c_r64_epoch1_frozen_inference.yaml",
       "elapsed_seconds": 577.59,
       "failure_reasons": {
         "invalid_json": 1,
@@ -316,8 +316,8 @@
       "system_id": "clearread_llama32_3b_candidate_c_r64_epoch1"
     },
     {
-      "adapter_dir": "<local-iteration1-3b-training-workspace>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
-      "config_path": "<local-iteration1-3b-training-workspace>/optimization_experiments/configs/candidate_c_r64_epoch1_prompt_guard_v2_inference.yaml",
+      "adapter_dir": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
+      "config_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/configs/candidate_c_r64_epoch1_prompt_guard_v2_inference.yaml",
       "elapsed_seconds": 572.84,
       "failure_reasons": {
         "main_idea_not_two_sentences": 2
@@ -339,8 +339,8 @@
       "system_id": "clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v2"
     },
     {
-      "adapter_dir": "<local-iteration1-3b-training-workspace>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
-      "config_path": "<local-iteration1-3b-training-workspace>/optimization_experiments/configs/candidate_c_r64_epoch1_prompt_guard_v3_inference.yaml",
+      "adapter_dir": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/selected_candidate_c_r64",
+      "config_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/configs/candidate_c_r64_epoch1_prompt_guard_v3_inference.yaml",
       "elapsed_seconds": 576.96,
       "failure_reasons": {
         "key_points_not_four_string_items": 1,
@@ -365,8 +365,8 @@
   ],
   "inference_only_experiments": [
     {
-      "adapter_dir": "<local-iteration1-3b-training-workspace>/models/adapters/selected_candidate_b",
-      "config_path": "<local-iteration1-3b-training-workspace>/optimization_experiments/configs/prompt_guard_v1_inference.yaml",
+      "adapter_dir": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/models/adapters/selected_candidate_b",
+      "config_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/configs/prompt_guard_v1_inference.yaml",
       "elapsed_seconds": 585.27,
       "failure_reasons": {
         "invalid_json": 1,
@@ -402,10 +402,10 @@
       "peak_vram_allocated_mib": 15571.78,
       "peak_vram_reserved_mib": 20102.0,
       "snapshots": [
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e04_r64_4epoch\\models\\adapters\\candidate_b_epoch_1",
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e04_r64_4epoch\\models\\adapters\\candidate_b_epoch_2",
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e04_r64_4epoch\\models\\adapters\\candidate_b_epoch_3",
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e04_r64_4epoch\\models\\adapters\\candidate_b_epoch_4"
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/candidate_b_epoch_1",
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/candidate_b_epoch_2",
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/candidate_b_epoch_3",
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/models/adapters/candidate_b_epoch_4"
       ],
       "status": "success",
       "train_loss": 0.4095397219986795,
@@ -417,9 +417,9 @@
       "peak_vram_allocated_mib": 15305.53,
       "peak_vram_reserved_mib": 22590.0,
       "snapshots": [
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e03_continue_epoch5_to_7\\models\\adapters\\continue_lr5e5_gcfix\\continued_epoch_5",
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e03_continue_epoch5_to_7\\models\\adapters\\continue_lr5e5_gcfix\\continued_epoch_6",
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e03_continue_epoch5_to_7\\models\\adapters\\continue_lr5e5_gcfix\\continued_epoch_7"
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e03_continue_epoch5_to_7/models/adapters/continue_lr5e5_gcfix/continued_epoch_5",
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e03_continue_epoch5_to_7/models/adapters/continue_lr5e5_gcfix/continued_epoch_6",
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e03_continue_epoch5_to_7/models/adapters/continue_lr5e5_gcfix/continued_epoch_7"
       ],
       "status": "success",
       "train_loss": 0.0436397062053215,
@@ -431,9 +431,9 @@
       "peak_vram_allocated_mib": 15305.53,
       "peak_vram_reserved_mib": 22590.0,
       "snapshots": [
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e05_continue_low_lr\\models\\adapters\\continue_lr1e5_gcfix\\continued_epoch_5",
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e05_continue_low_lr\\models\\adapters\\continue_lr1e5_gcfix\\continued_epoch_6",
-        "\\mnt\\c\\Users\\Aufb\\Desktop\\fit5120\\iteration1\\training-3b\\optimization_experiments\\experiments\\e05_continue_low_lr\\models\\adapters\\continue_lr1e5_gcfix\\continued_epoch_7"
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e05_continue_low_lr/models/adapters/continue_lr1e5_gcfix/continued_epoch_5",
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e05_continue_low_lr/models/adapters/continue_lr1e5_gcfix/continued_epoch_6",
+        "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e05_continue_low_lr/models/adapters/continue_lr1e5_gcfix/continued_epoch_7"
       ],
       "status": "success",
       "train_loss": 0.04390283510701297,
@@ -600,5 +600,5 @@
       "validation_metrics_path": "optimization_experiments/experiments/e05_continue_low_lr/outputs/validation/continued_epoch_7_lr1e5_gcfix/validation_metrics.json"
     }
   ],
-  "workspace": "<local-iteration1-3b-training-workspace>"
+  "workspace": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>"
 }

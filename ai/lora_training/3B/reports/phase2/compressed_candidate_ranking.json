@@ -7,7 +7,7 @@
   "old_8b_candidate_a_score": 78.055556,
   "ranked_rows": [
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
       "candidate": "phi4_mini_instruct",
       "epoch": 3,
       "judge_count": 50,
@@ -27,7 +27,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
       "candidate": "phi4_mini_instruct",
       "epoch": 4,
       "judge_count": 49,
@@ -47,7 +47,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4",
       "candidate": "llama32_3b_instruct",
       "epoch": 4,
       "judge_count": 50,
@@ -67,7 +67,7 @@
       "system_id": "llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_4"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4",
       "candidate": "phi4_mini_instruct",
       "epoch": 4,
       "judge_count": 49,
@@ -87,7 +87,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_4"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_5",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_5",
       "candidate": "phi4_mini_instruct",
       "epoch": 5,
       "judge_count": 49,
@@ -107,7 +107,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_5"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_3",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_3",
       "candidate": "phi4_mini_instruct",
       "epoch": 3,
       "judge_count": 50,
@@ -127,7 +127,7 @@
       "system_id": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_3"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/ministral3_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4",
       "candidate": "ministral3_3b_instruct",
       "epoch": 4,
       "judge_count": 50,
@@ -147,7 +147,7 @@
       "system_id": "ministral3_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_4"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_2",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_2",
       "candidate": "llama32_3b_instruct",
       "epoch": 2,
       "judge_count": 50,
@@ -167,7 +167,7 @@
       "system_id": "llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_2"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_2",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_2",
       "candidate": "phi4_mini_instruct",
       "epoch": 2,
       "judge_count": 50,
@@ -187,7 +187,7 @@
       "system_id": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_2"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_2",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_2",
       "candidate": "phi4_mini_instruct",
       "epoch": 2,
       "judge_count": 50,
@@ -207,7 +207,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_2"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_4",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_4",
       "candidate": "phi4_mini_instruct",
       "epoch": 4,
       "judge_count": 50,
@@ -227,7 +227,7 @@
       "system_id": "phi4_mini_instruct_phase2_r64_a128_lr1e4_epoch_4"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_3",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_3",
       "candidate": "phi4_mini_instruct",
       "epoch": 3,
       "judge_count": 50,
@@ -247,7 +247,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_3"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_1",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_1",
       "candidate": "phi4_mini_instruct",
       "epoch": 1,
       "judge_count": 50,
@@ -267,7 +267,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_1"
     },
     {
-      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_5",
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r64_a128_lr1e4_epoch_5",
       "candidate": "phi4_mini_instruct",
       "epoch": 5,
       "judge_count": 50,

@@ -1,8 +1,14 @@
-# 3B School-Facing Report Index
+# 3B Project Review Report Index
 
-This index collects the school-facing reports for the Clearead 3B model selection work. The report set separates testing evidence from safety, privacy, and compliance evidence so each area can be reviewed directly.
+This index collects the technical reports for the Clearead 3B model selection work. The report set separates testing evidence from safety, privacy, and compliance evidence so each area can be reviewed directly.
 
 The evidence matrix in this folder maps the underlying logs, reports, manifests, score files, and decision records to the report where each item is used.
+
+## Path Conventions
+
+Report paths such as `reports/...`, `benchmark/...`, `configs/...`, `logs/...`, `scripts/...`, and `manifests/...` are relative to `ai/lora_training/3B/` and are included in the Git package.
+
+Paths that begin with `external-local-raw-...-not-in-git` identify raw experiment workspaces, generated command outputs, or selected adapter directories retained outside the Git package. Those artifacts are represented in Git through compact reports, manifests, hashes, and benchmark summaries.
 
 ## Report Set
 
@@ -38,8 +44,10 @@ Each report follows the same review structure:
 | Learning rate | `1.5e-4` |
 | Selected checkpoint | epoch 4 |
 
+The selected adapter weights are retained externally as a large model artifact. Git contains the selection report, deployment package, benchmark summaries, and manifest evidence for reviewing why this checkpoint was selected.
+
 The final model selection is explained in:
 
 ```text
-../../final/school_final_3b_experiment_report_en.md
+../../final/final_3b_experiment_report_en.md
 ```

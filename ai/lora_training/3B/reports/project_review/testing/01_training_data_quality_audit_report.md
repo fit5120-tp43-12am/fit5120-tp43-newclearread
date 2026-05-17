@@ -92,4 +92,4 @@ The training data was suitable for the 3B-scale search. The evidence supported c
 | Source report | `reports/data_audit/training_pair_random_audit_100_20260513.md` |
 | Final package manifest | `manifests/package_manifest.json` |
 | Evidence inventory | `reports/evidence/evidence_inventory.md` |
-| Evidence allocation matrix | `reports/school_facing/index/EVIDENCE_TO_REPORT_MATRIX.md` |
+| Evidence allocation matrix | `reports/project_review/index/EVIDENCE_TO_REPORT_MATRIX.md` |
