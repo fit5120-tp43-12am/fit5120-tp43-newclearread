@@ -45,12 +45,12 @@ User
 
 FastAPI backend
   |
+  |-- Core Clearead AI summary model service for structured block summaries
   |-- OpenAI-backed dictionary, overall summary, and TTS services
-  |-- Optional ClearRead AI summary service for block summaries
-  |-- Local fallback logic for resilience
+  |-- Local fallback logic for resilience when service dependencies are unavailable
 ```
 
-The AI service package under [ai/model_deployment/3B/](ai/model_deployment/3B/README.md) documents the selected internal summary-model service. The main backend can call that service when `CLEARREAD_AI_SUMMARY_API_URL` and `CLEARREAD_AI_SUMMARY_API_KEY` are configured.
+The AI service package under [ai/model_deployment/3B/](ai/model_deployment/3B/README.md) documents the core Clearead model-serving component for block-level reading summaries. This dedicated service represents the main project AI contribution and the production summarisation path. The backend also includes fallback behaviour so the reading workflow remains testable when a service dependency is unavailable; that fallback is a resilience layer rather than the preferred summary path.
 
 ## Local Setup
 

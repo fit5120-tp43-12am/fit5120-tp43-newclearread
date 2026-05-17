@@ -61,7 +61,7 @@ OPENAI_API_KEY=replace-with-your-key
 OPENAI_MODEL=gpt-5.4-mini
 OPENAI_TTS_MODEL=gpt-4o-mini-tts
 
-# Optional ClearRead internal summary model service
+# Core Clearead AI summary model service
 CLEARREAD_AI_SUMMARY_ENABLED=true
 CLEARREAD_AI_SUMMARY_API_URL=http://127.0.0.1:8010
 CLEARREAD_AI_SUMMARY_API_KEY=replace-with-service-key
@@ -70,7 +70,11 @@ CLEARREAD_AI_SUMMARY_MAX_BLOCKS=100
 CLEARREAD_AI_SUMMARY_MAX_CHARS_PER_BLOCK=11000
 ```
 
-The reading workflow remains usable when selected external model calls are unavailable. The backend uses local fallback segmentation and summary logic where practical, and response fields expose fallback status for debugging.
+## Core Model Service
+
+The `/api/process-text` workflow is designed to use the dedicated Clearead AI summary model service for block-level summaries when the service URL and API key are configured. This service is the primary model-serving route for the project AI work.
+
+The backend also keeps local and external fallback logic so the reading workflow remains usable during service outages, configuration checks, and demonstrations. Response fields expose fallback status for debugging, while the dedicated Clearead model service remains the intended summary path.
 
 ## Request Limits
 

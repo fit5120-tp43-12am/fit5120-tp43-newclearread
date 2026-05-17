@@ -1,6 +1,6 @@
 # Clearead 3B Model Deployment Package
 
-This package documents the production deployment route for the selected Clearead 3B summary model service.
+This package documents the production deployment route for the selected Clearead 3B summary model service, the core model-serving component for structured reading summaries.
 
 ## Service Contract
 

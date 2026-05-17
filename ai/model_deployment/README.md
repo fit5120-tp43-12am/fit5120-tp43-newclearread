@@ -1,6 +1,6 @@
 # Clearead Model Deployment
 
-This directory contains deployment evidence for the Clearead AI summary model service. It documents how selected LoRA adapters are wrapped behind a stable API contract, tested, benchmarked, and prepared for operational use.
+This directory contains deployment evidence for the core Clearead AI summary model service. It documents how selected LoRA adapters are wrapped behind a stable API contract, tested, benchmarked, and prepared for operational use.
 
 ## Directory Map
 
