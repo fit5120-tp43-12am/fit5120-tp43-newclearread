@@ -10,9 +10,9 @@ Verified assistant-only loss labels on the 10-record smoke set. This check loade
 
 - Config: `ai/lora_training/configs/smoke_llama31_8b_qlora.example.yaml`
 - Model tokenizer: `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`
-- Smoke data: `ai/lora_training/data/splits/smoke_test_10.jsonl`
+- Smoke data: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/smoke_test_10.jsonl`
 - Smoke data SHA256: `8f51d083e8fafae143ec146c0155f85dc23a5cfdaf931a04092e7f8543d2d3a8`
-- Split manifest: `ai/lora_training/data/splits/split_manifest.json`
+- Split manifest: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/split_manifest.json`
 
 ## Result
 

@@ -34,7 +34,7 @@ export TRANSFORMERS_CACHE=ai/lora_training/cache/huggingface/transformers
 - Max steps: `20`
 - Final training loss: `0.5587`
 - Final step loss: `0.02816`
-- Adapter path: `ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
+- Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
 - Smoke log: `ai/lora_training/history/run_logs/smoke_test_001.md`
 - Run report: `ai/lora_training/reports/SMOKE_TRAINING_RUN_REPORT.md`
 

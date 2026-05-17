@@ -61,6 +61,8 @@ cd ai/lora_training/8B
 
 Raw accepted training data should be supplied through the project data handoff channel and passed to scripts through command-line options or a local `data/` directory.
 
+Paths beginning with `<external-local-raw-8b-training-workspace-not-in-git>/...` refer to the external/local raw 8B training workspace, not included in the Git package.
+
 ## Artifact Policy
 
 Large generated artifacts are represented by reports, counts, hashes, and metadata:

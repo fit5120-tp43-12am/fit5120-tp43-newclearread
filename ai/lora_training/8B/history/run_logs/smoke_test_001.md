@@ -16,9 +16,9 @@ Date/time: 2026-04-28T14:54:17+10:00
 ## Inputs
 
 - Model id: `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`
-- Data: `ai/lora_training/data/splits/smoke_test_10.jsonl`
+- Data: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/smoke_test_10.jsonl`
 - Data SHA256: `8f51d083e8fafae143ec146c0155f85dc23a5cfdaf931a04092e7f8543d2d3a8`
-- Split manifest: `ai/lora_training/data/splits/split_manifest.json`
+- Split manifest: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/split_manifest.json`
 - Split manifest SHA256: `42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19`
 
 ## Config
@@ -60,7 +60,7 @@ Date/time: 2026-04-28T14:54:17+10:00
 ## Inference Sanity Check
 
 Date/time: 2026-04-28T14:55:26+10:00
-Adapter path: `ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
+Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
 Examples checked: `3`
 Schema pass count: `3`
 
@@ -76,7 +76,7 @@ Schema pass count: `3`
 - Git branch before run: `feature/ai-llama-lora-training`
 - Git commit before run: `e977769ab29fc7eb6242f5c32599d34eb7fc5cd2`
 - OOM: `no`
-- Adapter output path: `ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
+- Adapter output path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
 - Final training loss: `0.5587`
 - Final per-step loss logged at step 20: `0.02816`
 - Trainer runtime: `87.37` seconds
@@ -150,7 +150,7 @@ Smoke training passed locally. The 20-step QLoRA run completed without OOM, save
 ## Inference Sanity Check
 
 Date/time: 2026-04-28T15:09:33+10:00
-Adapter path: `ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
+Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/smoke_llama31_8b_qlora`
 Examples checked: `3`
 Schema pass count: `3`
 

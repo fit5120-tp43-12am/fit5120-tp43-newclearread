@@ -10,9 +10,9 @@ Date/time: 2026-04-28T18:29:42+10:00
 ## Inputs
 
 - Config: `ai/lora_training/configs/train_llama31_8b_qlora_candidate_a.example.yaml`
-- Adapter: `ai/lora_training/models/adapters/full_candidate_a_3epoch`
-- Data: `ai/lora_training/data/splits/test.jsonl`
-- Split manifest: `ai/lora_training/data/splits/split_manifest.json`
+- Adapter: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch`
+- Data: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/test.jsonl`
+- Split manifest: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/split_manifest.json`
 
 ## Outputs
 
@@ -52,4 +52,4 @@ Date/time: 2026-04-28T18:29:42+10:00
 
 Recommendation: `select_with_schema_guard`.
 
-Rationale: Candidate A is strong overall and does not show broad domain, length, safety, instruction-following, or encoding collapse. The single held-out schema failure is isolated but important enough that model-selection review should decide whether to accept Candidate A as the final artifact.
+Rationale: Candidate A is strong overall, with no broad domain, length, safety, instruction-following, or encoding collapse detected. The single held-out schema failure is isolated and important enough for model-selection review before Candidate A is accepted as the final artifact.

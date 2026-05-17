@@ -2,7 +2,7 @@
   "artifact_name": "clearread_llama31_8b_qlora_candidate_a",
   "created_at": "2026-04-28",
   "selection_status": "selected_final_raw_adapter",
-  "selected_adapter_path": "ai/lora_training/models/adapters/full_candidate_a_3epoch",
+  "selected_adapter_path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch",
   "base_model_id": "unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit",
   "training_route": "Llama-3.1-8B-Instruct + SFT + QLoRA",
   "config_path": "ai/lora_training/configs/train_llama31_8b_qlora_candidate_a.example.yaml",
@@ -76,32 +76,32 @@
   },
   "local_adapter_files": [
     {
-      "path": "models/adapters/full_candidate_a_3epoch/adapter_config.json",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/adapter_config.json",
       "size_bytes": 1262,
       "sha256": "e18a24897876cbeea6453292e0027a728bd85b700cd0c05a9aa29c02414c50f1"
     },
     {
-      "path": "models/adapters/full_candidate_a_3epoch/adapter_model.safetensors",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/adapter_model.safetensors",
       "size_bytes": 167832240,
       "sha256": "ef220721c78e72f41c3b14749f25a09ef39f6aaf351266b276cee41ec724cf92"
     },
     {
-      "path": "models/adapters/full_candidate_a_3epoch/chat_template.jinja",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/chat_template.jinja",
       "size_bytes": 4614,
       "sha256": "e10ca381b1ccc5cf9db52e371f3b6651576caee0a630b452e2816b2d404d4b65"
     },
     {
-      "path": "models/adapters/full_candidate_a_3epoch/README.md",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/README.md",
       "size_bytes": 5256,
       "sha256": "1dadff2f9ed0be94f4d1253ae61de95da79f7edea3d641fc157b9270b2c62612"
     },
     {
-      "path": "models/adapters/full_candidate_a_3epoch/tokenizer.json",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/tokenizer.json",
       "size_bytes": 17209920,
       "sha256": "6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b"
     },
     {
-      "path": "models/adapters/full_candidate_a_3epoch/tokenizer_config.json",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/tokenizer_config.json",
       "size_bytes": 50669,
       "sha256": "52a57d911c30cf2b645e3350aafd9f1c424d2529483fd4628e7e34bfb33a7fe2"
     }

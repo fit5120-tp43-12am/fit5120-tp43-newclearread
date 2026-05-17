@@ -64,7 +64,7 @@ Relevant files:
 
 ## 3. Teammate Export
 
-After splitting, aligned user-only and assistant-only exports were generated for teammate use. These exports were local derived data and are not stored in this package, but their counts and hashes are recorded.
+After splitting, aligned user-only and assistant-only exports were generated for teammate use. These exports remain external local derived data, with counts and hashes recorded in this package.
 
 The export preserved one-to-one alignment across:
 

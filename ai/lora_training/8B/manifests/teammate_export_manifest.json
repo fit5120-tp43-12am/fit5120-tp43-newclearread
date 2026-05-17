@@ -8,25 +8,25 @@
   "training_workspace_revision_reference": null,
   "approved_inputs": {
     "train.jsonl": {
-      "path": "ai/lora_training/data/splits\\train.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/train.jsonl",
       "sha256_before": "b99caa6b06963a05ca7e32da3c3be3237c9ea6b128ce1ccf329b78d2d56929fb",
       "sha256_after": "b99caa6b06963a05ca7e32da3c3be3237c9ea6b128ce1ccf329b78d2d56929fb",
       "unchanged": true
     },
     "val.jsonl": {
-      "path": "ai/lora_training/data/splits\\val.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/val.jsonl",
       "sha256_before": "a7cf5277eda97ef1868376caa79343b040ba6920602bc607dc145a2039d2d4be",
       "sha256_after": "a7cf5277eda97ef1868376caa79343b040ba6920602bc607dc145a2039d2d4be",
       "unchanged": true
     },
     "test.jsonl": {
-      "path": "ai/lora_training/data/splits\\test.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/test.jsonl",
       "sha256_before": "6613390f654c55a69c5ddb90234f81005fc3baca8e57651206f1ef024c939b7f",
       "sha256_after": "6613390f654c55a69c5ddb90234f81005fc3baca8e57651206f1ef024c939b7f",
       "unchanged": true
     },
     "split_manifest.json": {
-      "path": "ai/lora_training/data/splits\\split_manifest.json",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/split_manifest.json",
       "sha256_before": "42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19",
       "sha256_after": "42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19",
       "unchanged": true
@@ -94,49 +94,49 @@
   },
   "outputs": {
     "assistant_all.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\assistant_all.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/assistant_all.jsonl",
       "rows": 1452,
       "bytes": 1464323,
       "sha256": "283bd121bd834738f7b4ce10c2e7d53edf7b4f01352601e2f9c55c2b9f3fcefc"
     },
     "assistant_test.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\assistant_test.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/assistant_test.jsonl",
       "rows": 145,
       "bytes": 145295,
       "sha256": "bf7e697e101c47959fa900fec3b2dc53a1cdcc16df8f71cadb66d414128c89b4"
     },
     "assistant_train.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\assistant_train.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/assistant_train.jsonl",
       "rows": 1162,
       "bytes": 1171824,
       "sha256": "043c73d00bc74a2ce0b55f7bd5b8d95edc9c946848cf786df3efb75f099ce61d"
     },
     "assistant_val.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\assistant_val.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/assistant_val.jsonl",
       "rows": 145,
       "bytes": 146694,
       "sha256": "d2f263f9508b9c0ce272e53ea98e60f0b84fc96d26e5e1ae2b26981072307663"
     },
     "user_all.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\user_all.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/user_all.jsonl",
       "rows": 1452,
       "bytes": 6266843,
       "sha256": "2d9a70b88906147a8d77c88f983ef9e5b2a3b20f5788926528d3c2c275a844c2"
     },
     "user_test.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\user_test.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/user_test.jsonl",
       "rows": 145,
       "bytes": 627996,
       "sha256": "701984c0caa024050ef0a2c3103bafb04a319e4a6f03833ab02e13fb9cbd5883"
     },
     "user_train.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\user_train.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/user_train.jsonl",
       "rows": 1162,
       "bytes": 5024879,
       "sha256": "1f3b6ebc55dc5c6400e61a63bfe51a2eb17478e92888591228a85a6d739994d0"
     },
     "user_val.jsonl": {
-      "path": "ai/lora_training/data/teammate_exports\\user_val.jsonl",
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/user_val.jsonl",
       "rows": 145,
       "bytes": 613458,
       "sha256": "ec0477036854f7601b92ce4e70bdcd4c76631c82ab096444bd1b5e6fea307258"

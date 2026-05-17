@@ -132,7 +132,7 @@ Independent review also checked the repo-side `ai` tree and found no test predic
 Selected model artifact for this training cycle:
 
 ```text
-ai/lora_training/models/adapters/full_candidate_a_3epoch
+<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch
 ```
 
 Base model:

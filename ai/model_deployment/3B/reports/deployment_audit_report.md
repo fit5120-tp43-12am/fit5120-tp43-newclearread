@@ -68,7 +68,7 @@ Validation checks confirmed health, readiness, batch summarisation, real test-sp
 | Audit area | Evidence | Result |
 |---|---|---|
 | Directory structure | Runtime files concentrated under `/opt/clearread-ai-summary` | Confirmed |
-| Adapter presence | Adapter directory present under `models/adapters/phase2_r32_a64_lr1p5e4_epoch_4` | Confirmed |
+| Adapter presence | Adapter directory present at `/opt/clearread-ai-summary/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4` on the deployment VM | Confirmed |
 | Adapter integrity | SHA-256 verification completed after upload | Confirmed |
 | Docker services | Wrapper and vLLM containers running after start and reboot | Confirmed |
 | GPU usage | `nvidia-smi` showed `VLLM::EngineCore` using NVIDIA L4 memory | Confirmed |

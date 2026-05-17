@@ -14,9 +14,9 @@ model:
   dtype: auto
 
 data:
-  train_path: data/splits/train.jsonl
-  val_path: data/splits/val.jsonl
-  split_manifest_path: data/splits/split_manifest.json
+  train_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/train.jsonl
+  val_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl
+  split_manifest_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/split_manifest.json
   max_seq_length: 3072
   expected_train_records: 1162
   expected_val_records: 145
@@ -30,7 +30,7 @@ preflight:
 
 outputs:
   output_dir: outputs/full/candidate_a_3epoch
-  adapter_dir: models/adapters/full_candidate_a_3epoch
+  adapter_dir: <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch
   training_log_path: logs/full_train_candidate_a_3epoch.md
   report_path: reports/FULL_TRAIN_CANDIDATE_A_REPORT.md
 

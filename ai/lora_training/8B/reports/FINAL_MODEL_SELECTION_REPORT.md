@@ -8,7 +8,7 @@ Selected model: Candidate A.
 
 - Base model: `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`
 - Training route: Llama-3.1-8B-Instruct + SFT + QLoRA
-- Adapter: `models/adapters/full_candidate_a_3epoch`
+- Adapter: `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch`
 - Final local metadata: `models/final/clearread_llama31_8b_qlora_candidate_a`
 - Training config: `configs/train_llama31_8b_qlora_candidate_a.example.yaml`
 
@@ -29,7 +29,7 @@ Candidate B was skipped because the validation audit did not justify another can
 
 ## Validation Metrics
 
-Validation audit on `data/splits/val.jsonl`:
+Validation audit on `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl`:
 
 - Records: `145`
 - JSON parse: `145/145`
@@ -46,7 +46,7 @@ Validation manual review found no instruction-following failures, no refusal/met
 
 ## Final Test Metrics
 
-Final held-out test on `data/splits/test.jsonl`:
+Final held-out test on `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/test.jsonl`:
 
 - Records: `145`
 - JSON parse: `145/145`
@@ -92,5 +92,5 @@ This guard is a deployment safety layer, not a change to the final held-out test
 
 1. Use `docs/local_inference_runbook.md` to run local inference from WSL.
 2. Integrate `scripts/infer_clearread_candidate_a.py` as the local safety wrapper around Candidate A.
-3. Preserve the selected adapter in `models/adapters/full_candidate_a_3epoch`; keep adapter and model weights in external artifact storage.
+3. Preserve the selected adapter in `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch`; keep adapter and model weights in external artifact storage.
 4. For application integration, consume only successful final JSON outputs or handle the wrapper's machine-readable error object.

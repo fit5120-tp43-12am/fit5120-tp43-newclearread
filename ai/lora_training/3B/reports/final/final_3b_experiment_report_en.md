@@ -275,7 +275,7 @@ The selected system is:
 | Final practical choice | Llama 3.2 3B Phase2 |
 | System ID | `compressed_final_llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_4` |
 | Base model | `unsloth/Llama-3.2-3B-Instruct-bnb-4bit` |
-| Adapter | `model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4` |
+| Adapter | Selected adapter retained externally: `<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4` |
 | Training method | SFT + QLoRA |
 | Rank / alpha / dropout | `r=32`, `alpha=64`, `dropout=0.05` |
 | Learning rate | `1.5e-4` |

@@ -2,6 +2,7 @@
   "created_at_utc": "2026-05-12T06:56:51Z",
   "source_root": "<external-local-raw-iteration1-benchmark-workspace-not-in-git>",
   "destination_root": "<external-local-raw-3b-search-workspace-not-in-git>/data/source_snapshot",
+  "path_convention": "relative_source values are relative to source_root. source_root and destination_root are external/local raw workspaces, not included in the Git package.",
   "policy": "copy whitelisted old benchmark artifacts only; no deletion; no overwrite on hash mismatch",
   "artifact_count": 44,
   "status_counts": {

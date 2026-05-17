@@ -22,7 +22,7 @@ Date/time: 2026-04-28T16:37:14+10:00
 python -m py_compile scripts/training_data_utils.py scripts/verify_assistant_loss_mask.py scripts/train_full_qlora.py scripts/run_inference_check.py
 python scripts/train_full_qlora.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --dry-run
 python scripts/train_full_qlora.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml
-python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path models/adapters/full_candidate_a_3epoch --data-path data/splits/val.jsonl --num-examples 10
+python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl --num-examples 10
 ```
 
 All training/inference commands were run in WSL env `clearread-llama-lora` from `ai/lora_training` with the project-local Hugging Face cache variables.
@@ -59,14 +59,14 @@ Status: `success`
 - Final train loss: `0.4797596574748216`
 - Validation loss: `0.9654271602630615`
 - Validation loss method: final `trainer.evaluate(eval_dataset=validation)`.
-- Adapter path: `models/adapters/full_candidate_a_3epoch`
+- Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch`
 - Output path: `outputs/full/candidate_a_3epoch`
 
 ## Validation Inference Result
 
 Status: `passed`
 
-- Data path: `data/splits/val.jsonl`
+- Data path: `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl`
 - Examples checked: `10`
 - Schema pass: `10/10`
 

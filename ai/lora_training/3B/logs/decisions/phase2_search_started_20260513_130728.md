@@ -4,4 +4,4 @@
 - Root: `<external-local-raw-phase2-search-workspace-not-in-git>`
 - Source manifest: `manifests/phase2_source_snapshot_manifest.json`
 - Old Stage 2 selection is treated as stale because Qwen completed after it.
-- New artifacts remain isolated under phase2_48h_search.
+- New artifacts remain isolated under the external/local Phase 2 search workspace: `<external-local-raw-phase2-search-workspace-not-in-git>`.

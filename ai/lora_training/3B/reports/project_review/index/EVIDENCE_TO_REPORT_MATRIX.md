@@ -20,6 +20,8 @@ Paths in the evidence table use the `3B/` folder as root. Relative paths point t
 | `<external-local-raw-3b-search-workspace-not-in-git>/...` | External/local 3B search workspace; not included in the Git package. |
 | `<external-local-raw-iteration1-benchmark-workspace-not-in-git>/...` | External/local Iteration 1 benchmark workspace; not included in the Git package. |
 | `<external-local-raw-iteration1-3b-training-workspace-not-in-git>/...` | External/local Iteration 1 3B training workspace; not included in the Git package. |
+| `<external-local-raw-iteration1-data-workspace-not-in-git>/...` | External/local Iteration 1 source-data workspace; not included in the Git package. |
+| `<external-local-raw-iteration1-deployment-workspace-not-in-git>/...` | External/local Iteration 1 deployment evidence workspace; not included in the Git package. |
 
 Large model adapters and raw command-output folders are represented by reports, compact summaries, and manifests in Git. Their original local paths are kept as external/local references so reviewers can distinguish included evidence from artifacts retained outside the repository.
 

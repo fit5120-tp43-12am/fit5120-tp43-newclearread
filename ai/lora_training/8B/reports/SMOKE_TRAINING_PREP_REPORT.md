@@ -28,9 +28,9 @@ The implementation follows the current Unsloth guidance to start with Instruct m
 
 - Base model id: `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`
 - Fallback model ids: `unsloth/Llama-3.1-8B-Instruct-bnb-4bit`, `meta-llama/Meta-Llama-3.1-8B-Instruct`
-- Data path: `data/splits/smoke_test_10.jsonl`
+- Data path: `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl`
 - Output dir: `outputs/smoke`
-- Adapter path: `models/adapters/smoke_llama31_8b_qlora`
+- Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/smoke_llama31_8b_qlora`
 - Smoke log path: `logs/smoke_test_001.md`
 - Max sequence length: `3072`
 - QLoRA: `load_in_4bit: true`, `bnb_4bit_quant_type: nf4`, BF16 auto-enabled when CUDA reports support

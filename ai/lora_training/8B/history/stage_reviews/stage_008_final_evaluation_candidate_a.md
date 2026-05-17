@@ -5,15 +5,15 @@ Date/time: 2026-04-28
 ## Scope
 
 - Executed `Stage 008 Candidate A final evaluation`.
-- Used the approved held-out test split: `data/splits/test.jsonl`.
-- Evaluated only Candidate A adapter: `models/adapters/full_candidate_a_3epoch`.
+- Used the approved held-out test split: `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/test.jsonl`.
+- Evaluated only Candidate A adapter: `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch`.
 - Did not run training, tune hyperparameters, change decoding settings for model selection, or run Candidate B.
 
 ## Commands Run
 
 ```bash
 python -m py_compile scripts/evaluate_final_test_candidate_a.py
-python scripts/evaluate_final_test_candidate_a.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path models/adapters/full_candidate_a_3epoch --data-path data/splits/test.jsonl --output-dir outputs/evaluation/candidate_a_test --allow-heldout-test
+python scripts/evaluate_final_test_candidate_a.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/test.jsonl --output-dir outputs/evaluation/candidate_a_test --allow-heldout-test
 ```
 
 Both commands were run from WSL inside the `clearread-llama-lora` conda environment.
@@ -65,7 +65,7 @@ The prediction JSONL and metrics JSON are local artifacts and should not be comm
 
 Recommendation: `select_with_schema_guard`.
 
-Candidate A is strong overall, but one held-out test row violated the exact 4-key-point contract. This is not a `do_not_select_without_fix` result, but project review should decide whether the isolated schema miss is acceptable before declaring Candidate A the selected final artifact.
+Candidate A is strong overall. One held-out test row violated the exact 4-key-point contract, so project review should decide whether the isolated schema miss is acceptable before declaring Candidate A the selected final artifact.
 
 ## Git Result
 

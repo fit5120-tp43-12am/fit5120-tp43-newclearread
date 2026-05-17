@@ -8,7 +8,7 @@ Run the frozen benchmark for the strongest Llama 3.2 3B Phase2 checkpoint after 
 
 - Candidate key: `llama32_3b_instruct`
 - Base model: `unsloth/Llama-3.2-3B-Instruct-bnb-4bit`
-- Adapter: `model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4`
+- Adapter retained externally: `<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4`
 - Training config: `r=32`, `alpha=64`, `lr=1.5e-4`, epoch `4`
 - Frozen benchmark run id: `phase2_llama32_frozen_benchmark_20260514_v1`
 - Judge run id: `phase2_llama32_frozen_benchmark_judge_20260514_v1`

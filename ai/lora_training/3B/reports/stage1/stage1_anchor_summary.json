@@ -25,9 +25,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "granite41_3b",
@@ -51,9 +51,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "granite41_3b",
@@ -77,9 +77,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "granite41_3b",
@@ -103,9 +103,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "granite41_3b",
@@ -129,9 +129,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_granite41_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/granite41_3b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "llama32_3b_instruct",
@@ -155,9 +155,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "llama32_3b_instruct",
@@ -181,9 +181,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "llama32_3b_instruct",
@@ -207,9 +207,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "llama32_3b_instruct",
@@ -233,9 +233,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "llama32_3b_instruct",
@@ -259,9 +259,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_llama32_anchor_20260511/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "ministral3_3b_instruct",
@@ -285,9 +285,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "ministral3_3b_instruct",
@@ -311,9 +311,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "ministral3_3b_instruct",
@@ -337,9 +337,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "ministral3_3b_instruct",
@@ -363,9 +363,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "ministral3_3b_instruct",
@@ -389,9 +389,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_ministral3_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/ministral3_3b_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "phi4_mini_instruct",
@@ -415,9 +415,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "phi4_mini_instruct",
@@ -441,9 +441,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "phi4_mini_instruct",
@@ -467,9 +467,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "phi4_mini_instruct",
@@ -493,9 +493,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "phi4_mini_instruct",
@@ -519,9 +519,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_phi4_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "qwen35_4b",
@@ -545,9 +545,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_1_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "qwen35_4b",
@@ -571,9 +571,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_2_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "qwen35_4b",
@@ -597,9 +597,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_3_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "qwen35_4b",
@@ -623,9 +623,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_4_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     },
     {
       "candidate": "qwen35_4b",
@@ -649,9 +649,9 @@
       "train_loss": null,
       "eval_loss": null,
       "training_oom": false,
-      "metrics_path": "model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
-      "judge_summary_path": "outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
-      "training_result_path": "model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
+      "metrics_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/validation/stage1_anchor_r32_lr2e4_epoch_5_record_messages/metrics.json",
+      "judge_summary_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/outputs/judge/stage1_val50_qwen35_anchor_20260512/scoring/accessibility_first_v2/system_score_summary.json",
+      "training_result_path": "<external-local-raw-stage1-sweep-workspace-not-in-git>/model_workspaces/qwen35_4b/outputs/training/stage1_anchor_r32_lr2e4_training_result.json"
     }
   ]
 }

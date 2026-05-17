@@ -1,6 +1,7 @@
 {
   "created_at_utc": "2026-05-14T04:17:25Z",
   "root": "<external-local-raw-phase2-search-workspace-not-in-git>",
+  "root_description": "External/local raw Phase 2 search workspace; not included in the Git package. Entry relative_path values are relative to this root.",
   "file_count": 1048,
   "hash_policy": {
     "max_hash_size_bytes": 134217728,

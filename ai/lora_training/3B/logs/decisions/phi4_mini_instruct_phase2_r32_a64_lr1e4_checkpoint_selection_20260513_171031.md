@@ -5,7 +5,7 @@
 - Run id: `phase2_r32_a64_lr1e4`
 - Stage label: `phase2_r32_a64_lr1e4`
 - Selected epoch: `4`
-- Selected adapter copy: `model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_selected_epoch_4`
+- Selected adapter retained externally: `<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_selected_epoch_4`
 
 ## Selection Rule
 

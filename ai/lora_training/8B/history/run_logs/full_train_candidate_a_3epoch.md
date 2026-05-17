@@ -53,9 +53,9 @@ Stage id: `Stage 006`
 
 - Config: `ai/lora_training/configs/train_llama31_8b_qlora_candidate_a.example.yaml`
 - Tokenizer model id: `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`
-- Train data: `ai/lora_training/data/splits/train.jsonl`
-- Validation data: `ai/lora_training/data/splits/val.jsonl`
-- Split manifest: `ai/lora_training/data/splits/split_manifest.json`
+- Train data: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/train.jsonl`
+- Validation data: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/val.jsonl`
+- Split manifest: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/split_manifest.json`
 - Split manifest SHA256: `42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19`
 
 | Split | Records | Expected | SHA256 | Max Input Tokens | Max Assistant Tokens | Total Assistant Tokens | Truncated | Trunc % | Non-Empty Labels | JSON OK | Matches Gold JSON |
@@ -104,7 +104,7 @@ Stage id: `Stage 006`
 - End time: `2026-04-28T16:34:13+10:00`
 - Elapsed runtime: `1h 04m 39s` (3879.21 seconds)
 - Output/checkpoint path: `ai/lora_training/outputs/full/candidate_a_3epoch`
-- Adapter output path: `ai/lora_training/models/adapters/full_candidate_a_3epoch`
+- Adapter output path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch`
 - OOM: `no`
 - Final train loss: `0.4797596574748216`
 - Validation loss: `0.9654271602630615`
@@ -188,7 +188,7 @@ The ETA callback used average observed seconds per completed optimizer step. Ear
 
 Command run after training:
 
-`python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path models/adapters/full_candidate_a_3epoch --data-path data/splits/val.jsonl --num-examples 10`
+`python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl --num-examples 10`
 
 ## Decision
 
@@ -197,8 +197,8 @@ Command run after training:
 ## Inference Sanity Check
 
 Date/time: 2026-04-28T16:36:25+10:00
-Adapter path: `ai/lora_training/models/adapters/full_candidate_a_3epoch`
-Data path: `ai/lora_training/data/splits/val.jsonl`
+Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch`
+Data path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/val.jsonl`
 Examples checked: `10`
 Schema pass count: `10`
 
@@ -218,8 +218,8 @@ Schema pass count: `10`
 ## Inference Sanity Check
 
 Date/time: 2026-04-28T17:07:39+10:00
-Adapter path: `ai/lora_training/models/adapters/full_candidate_a_3epoch`
-Data path: `ai/lora_training/data/splits/val.jsonl`
+Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch`
+Data path: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/val.jsonl`
 Examples checked: `5`
 Schema pass count: `5`
 

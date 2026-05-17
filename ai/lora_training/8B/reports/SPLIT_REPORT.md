@@ -158,8 +158,8 @@ Smoke selection notes:
 | --- | --- |
 | reports/source_distribution_profile.json | fa1ac3bcc29c15a557ab92c077f744af7986a2ddff68c5cfeb4c77c91e0ac14a |
 | reports/SOURCE_DISTRIBUTION_PROFILE.md | 3bb66738ef335720d07fc61f09798ec1b03cc64393e5a134b03caa4a174d953a |
-| data/splits/train.jsonl | b99caa6b06963a05ca7e32da3c3be3237c9ea6b128ce1ccf329b78d2d56929fb |
-| data/splits/val.jsonl | a7cf5277eda97ef1868376caa79343b040ba6920602bc607dc145a2039d2d4be |
-| data/splits/test.jsonl | 6613390f654c55a69c5ddb90234f81005fc3baca8e57651206f1ef024c939b7f |
-| data/splits/smoke_test_10.jsonl | 8f51d083e8fafae143ec146c0155f85dc23a5cfdaf931a04092e7f8543d2d3a8 |
-| data/splits/split_manifest.json | 42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19 |
+| <external-local-raw-8b-training-workspace-not-in-git>/data/splits/train.jsonl | b99caa6b06963a05ca7e32da3c3be3237c9ea6b128ce1ccf329b78d2d56929fb |
+| <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl | a7cf5277eda97ef1868376caa79343b040ba6920602bc607dc145a2039d2d4be |
+| <external-local-raw-8b-training-workspace-not-in-git>/data/splits/test.jsonl | 6613390f654c55a69c5ddb90234f81005fc3baca8e57651206f1ef024c939b7f |
+| <external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl | 8f51d083e8fafae143ec146c0155f85dc23a5cfdaf931a04092e7f8543d2d3a8 |
+| <external-local-raw-8b-training-workspace-not-in-git>/data/splits/split_manifest.json | 42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19 |

@@ -65,6 +65,6 @@ Use the r64 epoch1 adapter with the gentle parser guard v3 prompt when optimizin
 
 ## Artifacts
 
-- Best inference manifest: `optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3.json`
-- Best score summary: `optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/scoring/accessibility_first_v2/system_score_summary.json`
-- Full command log and exit-code indexes are saved in `optimization_experiments/reports/optimization_summary.json`.
+- Best inference manifest: `<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3.json`
+- Best score summary: `<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/scoring/accessibility_first_v2/system_score_summary.json`
+- Full command log and exit-code indexes are saved in `<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/reports/optimization_summary.json`.

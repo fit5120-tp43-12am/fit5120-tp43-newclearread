@@ -11,9 +11,9 @@ Date/time: 2026-04-28T17:53:55+10:00
 ## Inputs
 
 - Config: `ai/lora_training/configs/train_llama31_8b_qlora_candidate_a.example.yaml`
-- Adapter: `ai/lora_training/models/adapters/full_candidate_a_3epoch`
-- Data: `ai/lora_training/data/splits/val.jsonl`
-- Split manifest: `ai/lora_training/data/splits/split_manifest.json`
+- Adapter: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch`
+- Data: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/val.jsonl`
+- Split manifest: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/split_manifest.json`
 
 ## Outputs
 

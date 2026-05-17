@@ -64,7 +64,7 @@ validation: 145
 Independent review verified the Candidate A adapter directory exists:
 
 ```text
-ai/lora_training/models/adapters/full_candidate_a_3epoch
+<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch
 ```
 
 Adapter directory contents:
@@ -89,7 +89,7 @@ Result: pass.
 Independent review independently reran validation inference against Candidate A:
 
 ```bash
-python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path models/adapters/full_candidate_a_3epoch --data-path data/splits/val.jsonl --num-examples 5
+python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl --num-examples 5
 ```
 
 Result:

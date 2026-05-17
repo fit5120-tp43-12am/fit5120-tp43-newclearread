@@ -34,7 +34,7 @@
       "main_idea_not_two_sentences": 4
     },
     "id": "e07_r64_prompt_guard_v3",
-    "inference_manifest_path": "optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3.json",
+    "inference_manifest_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3.json",
     "judge_valid": 140,
     "label": "r64 epoch1 + gentle parser guard v3",
     "main_message_salience": 3.892857,
@@ -45,108 +45,108 @@
     "parsed_ok": 140,
     "prepared": 145,
     "score_count": 140,
-    "score_summary_path": "optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/scoring/accessibility_first_v2/system_score_summary.json",
+    "score_summary_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/scoring/accessibility_first_v2/system_score_summary.json",
     "source_safety_margin": 3.007143,
     "system_id": "clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3"
   },
   "command_logs": [
     {
-      "path": "optimization_experiments/logs/command_outputs/e01_prompt_guard_v1_inference_20260510T164622Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e01_prompt_guard_v1_inference_20260510T164622Z.log",
       "sha256": "dbd5544f5ef0b352a881042fd014d9ecb3325e6a2831c8e8ee7388e7cb6c4cee",
       "size_bytes": 43801
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e02_prompt_guard_v2_inference_20260510T165705Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e02_prompt_guard_v2_inference_20260510T165705Z.log",
       "sha256": "6609c269756b9dc536fb93aaf219231ba6ccfcc84b8a06fde38a1c9247627f52",
       "size_bytes": 43811
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e02_prompt_guard_v2_judge_20260510T171131Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e02_prompt_guard_v2_judge_20260510T171131Z.log",
       "sha256": "f0f6b2d9ba44c1cfd65b603e6581bc0108dbc8751fd1f19fc3a44e7e563c64e6",
       "size_bytes": 609
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e02_prompt_guard_v2_judge_resume_20260510T171227Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e02_prompt_guard_v2_judge_resume_20260510T171227Z.log",
       "sha256": "b3aa0bc5b4f82d9e9379f49e2868497b899a06bae01053c0acac819499fb5b29",
       "size_bytes": 6067
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e03_continue_epoch5_to_7_lr5e5_gcfix_training_20260510T173343Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e03_continue_epoch5_to_7_lr5e5_gcfix_training_20260510T173343Z.log",
       "sha256": "237e2a3fef7a786a9b750fac26aa210d12acc3ada2e363b8e6553b4df5e17113",
       "size_bytes": 142612
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e03_continue_epoch5_to_7_lr5e5_training_20260510T173048Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e03_continue_epoch5_to_7_lr5e5_training_20260510T173048Z.log",
       "sha256": "1976ad14dd90638af36ef2a4242762a2a3098dfdcb7cca6765730af80d971bf2",
       "size_bytes": 15138
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e03_validation_epoch5_to_7_gcfix_20260510T180921Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e03_validation_epoch5_to_7_gcfix_20260510T180921Z.log",
       "sha256": "eccb5781b55aa9abcbc8df10f3b3523c795f8e297dfb277435ecde7e85a4be18",
       "size_bytes": 185500
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e04_r64_epoch1_frozen_inference_20260510T203045Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e04_r64_epoch1_frozen_inference_20260510T203045Z.log",
       "sha256": "12c85be910d6eafb6eb9e34f66d1cb6b484cab07b12ec47be692e9b7cd255246",
       "size_bytes": 6678
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e04_r64_epoch1_frozen_inference_20260510T203215Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e04_r64_epoch1_frozen_inference_20260510T203215Z.log",
       "sha256": "1731664163513c47b5fc0864665444d6bfb34f705cecc78d69941362229d489b",
       "size_bytes": 43764
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e04_r64_epoch1_frozen_judge_20260510T204235Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e04_r64_epoch1_frozen_judge_20260510T204235Z.log",
       "sha256": "a7377e4d387d79ca10e68a15909e159e2161f6bb55e2341b9c1f6388eca56272",
       "size_bytes": 6169
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e04_r64_epoch1_validation_judge_20260510T201146Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e04_r64_epoch1_validation_judge_20260510T201146Z.log",
       "sha256": "a3a9b5b9fdb5ec73f4dac5e37474592ccbe2fd9bd2f302688d29b391c911043e",
       "size_bytes": 6348
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e04_train_candidate_c_r64_4epoch_20260510T184334Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e04_train_candidate_c_r64_4epoch_20260510T184334Z.log",
       "sha256": "883b01636bdb2e3b712a054030b055e490e7cbc5c2ce431c23f743750258fe2d",
       "size_bytes": 178876
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e04_validation_candidate_c_r64_1_to_4_20260510T192659Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e04_validation_candidate_c_r64_1_to_4_20260510T192659Z.log",
       "sha256": "9d32f5d7ee00c516867714121dcb69b2e5b7e073508bd0765f343df64fad01df",
       "size_bytes": 246237
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e05_continue_epoch5_to_7_lr1e5_gcfix_training_20260510T205841Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e05_continue_epoch5_to_7_lr1e5_gcfix_training_20260510T205841Z.log",
       "sha256": "e21d60fad9eb25c4760c52452295932c5b2febfe32a28f0f983861e1d35b6d79",
       "size_bytes": 142685
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213349Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213349Z.log",
       "sha256": "616c4f4b6060df54d1aca08459def1b3a8a42489ac85195d44738ad7d00a3b2d",
       "size_bytes": 1671
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213422Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213422Z.log",
       "sha256": "bf0bdecdfcfab7e2d64f4817a431180a20799606c74381e8c53266742cdff8e0",
       "size_bytes": 185454
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e06_r64_epoch1_prompt_guard_v2_inference_20260510T220626Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e06_r64_epoch1_prompt_guard_v2_inference_20260510T220626Z.log",
       "sha256": "057527453bfa824f9752ba15c8dd459feef96da4f5aa9e790a4b95a2b29cc30a",
       "size_bytes": 43823
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e06_r64_epoch1_prompt_guard_v2_judge_20260510T221640Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e06_r64_epoch1_prompt_guard_v2_judge_20260510T221640Z.log",
       "sha256": "caee83532a45132a8e57d3500dc1beb2c6ca1d4c5516520ed4864c4d48bf8ff6",
       "size_bytes": 6334
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e07_r64_epoch1_prompt_guard_v3_inference_20260510T223556Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e07_r64_epoch1_prompt_guard_v3_inference_20260510T223556Z.log",
       "sha256": "5dce670158ed59dcebee844511a94d90b07b872032d949586b5047d91e38c097",
       "size_bytes": 43891
     },
     {
-      "path": "optimization_experiments/logs/command_outputs/e07_r64_epoch1_prompt_guard_v3_judge_20260510T224615Z.log",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/command_outputs/e07_r64_epoch1_prompt_guard_v3_judge_20260510T224615Z.log",
       "sha256": "6b9eed6fbc525a15a1389f4d8d72e6f5fd42be533a26ff446115e17f8c8ba005",
       "size_bytes": 6226
     }
@@ -155,92 +155,92 @@
   "exitcodes": [
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e01_prompt_guard_v1_inference_20260510T164622Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e01_prompt_guard_v1_inference_20260510T164622Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e02_prompt_guard_v2_inference_20260510T165705Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e02_prompt_guard_v2_inference_20260510T165705Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e02_prompt_guard_v2_judge_resume_20260510T171227Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e02_prompt_guard_v2_judge_resume_20260510T171227Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e03_continue_epoch5_to_7_lr5e5_gcfix_training_20260510T173343Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e03_continue_epoch5_to_7_lr5e5_gcfix_training_20260510T173343Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e03_validation_epoch5_to_7_gcfix_20260510T180921Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e03_validation_epoch5_to_7_gcfix_20260510T180921Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e04_r64_epoch1_frozen_inference_20260510T203045Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e04_r64_epoch1_frozen_inference_20260510T203045Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e04_r64_epoch1_frozen_inference_20260510T203215Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e04_r64_epoch1_frozen_inference_20260510T203215Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e04_r64_epoch1_frozen_judge_20260510T204235Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e04_r64_epoch1_frozen_judge_20260510T204235Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e04_r64_epoch1_validation_judge_20260510T201146Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e04_r64_epoch1_validation_judge_20260510T201146Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e04_train_candidate_c_r64_4epoch_20260510T184334Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e04_train_candidate_c_r64_4epoch_20260510T184334Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e04_validation_candidate_c_r64_1_to_4_20260510T192659Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e04_validation_candidate_c_r64_1_to_4_20260510T192659Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e05_continue_epoch5_to_7_lr1e5_gcfix_training_20260510T205841Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e05_continue_epoch5_to_7_lr1e5_gcfix_training_20260510T205841Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "1",
-      "path": "optimization_experiments/logs/tests/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213349Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213349Z.exitcode",
       "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213422Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e05_validation_epoch5_to_7_lr1e5_gcfix_20260510T213422Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e06_r64_epoch1_prompt_guard_v2_inference_20260510T220626Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e06_r64_epoch1_prompt_guard_v2_inference_20260510T220626Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e06_r64_epoch1_prompt_guard_v2_judge_20260510T221640Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e06_r64_epoch1_prompt_guard_v2_judge_20260510T221640Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e07_r64_epoch1_prompt_guard_v3_inference_20260510T223556Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e07_r64_epoch1_prompt_guard_v3_inference_20260510T223556Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     },
     {
       "exitcode": "0",
-      "path": "optimization_experiments/logs/tests/e07_r64_epoch1_prompt_guard_v3_judge_20260510T224615Z.exitcode",
+      "path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/logs/tests/e07_r64_epoch1_prompt_guard_v3_judge_20260510T224615Z.exitcode",
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     }
   ],
@@ -251,7 +251,7 @@
       "elapsed_seconds": 596.04,
       "failure_reasons": {},
       "id": "original_3b_candidate_b",
-      "inference_manifest_path": "benchmark_workspace/df_runs/df_3b_candidate_b_fz1/manifests_logs/model_inference_clearread_llama32_3b_qlora_candidate_b.json",
+      "inference_manifest_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/benchmark_workspace/df_runs/df_3b_candidate_b_fz1/manifests_logs/model_inference_clearread_llama32_3b_qlora_candidate_b.json",
       "judge_valid": 138,
       "label": "Original 3B Candidate B epoch4",
       "main_message_salience": 3.891304,
@@ -262,7 +262,7 @@
       "parsed_ok": 139,
       "prepared": 145,
       "score_count": 138,
-      "score_summary_path": "benchmark_workspace/df_runs/df_3b_candidate_b_fz1/scoring/accessibility_first_v2/system_score_summary.json",
+      "score_summary_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/benchmark_workspace/df_runs/df_3b_candidate_b_fz1/scoring/accessibility_first_v2/system_score_summary.json",
       "source_safety_margin": 2.884058,
       "system_id": "clearread_llama32_3b_qlora_candidate_b"
     },
@@ -275,7 +275,7 @@
         "main_idea_not_two_sentences": 3
       },
       "id": "e02_prompt_guard_v2",
-      "inference_manifest_path": "optimization_experiments/experiments/e02_prompt_guard_v2/df_runs/opt_e02_prompt_guard_v2_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_b_prompt_guard_v2.json",
+      "inference_manifest_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e02_prompt_guard_v2/df_runs/opt_e02_prompt_guard_v2_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_b_prompt_guard_v2.json",
       "judge_valid": 141,
       "label": "r32 epoch4 + prompt guard v2",
       "main_message_salience": 3.900709,
@@ -286,7 +286,7 @@
       "parsed_ok": 141,
       "prepared": 145,
       "score_count": 141,
-      "score_summary_path": "optimization_experiments/experiments/e02_prompt_guard_v2/df_runs/opt_e02_prompt_guard_v2_frozen/scoring/accessibility_first_v2/system_score_summary.json",
+      "score_summary_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e02_prompt_guard_v2/df_runs/opt_e02_prompt_guard_v2_frozen/scoring/accessibility_first_v2/system_score_summary.json",
       "source_safety_margin": 2.985816,
       "system_id": "clearread_llama32_3b_candidate_b_prompt_guard_v2"
     },
@@ -300,7 +300,7 @@
         "main_idea_not_two_sentences": 3
       },
       "id": "e04_r64_epoch1",
-      "inference_manifest_path": "optimization_experiments/experiments/e04_r64_4epoch/df_runs/opt_e04_candidate_c_r64_epoch1_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1.json",
+      "inference_manifest_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/df_runs/opt_e04_candidate_c_r64_epoch1_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1.json",
       "judge_valid": 140,
       "label": "r64 epoch1 + original prompt",
       "main_message_salience": 3.885714,
@@ -311,7 +311,7 @@
       "parsed_ok": 140,
       "prepared": 145,
       "score_count": 140,
-      "score_summary_path": "optimization_experiments/experiments/e04_r64_4epoch/df_runs/opt_e04_candidate_c_r64_epoch1_frozen/scoring/accessibility_first_v2/system_score_summary.json",
+      "score_summary_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/df_runs/opt_e04_candidate_c_r64_epoch1_frozen/scoring/accessibility_first_v2/system_score_summary.json",
       "source_safety_margin": 2.992857,
       "system_id": "clearread_llama32_3b_candidate_c_r64_epoch1"
     },
@@ -323,7 +323,7 @@
         "main_idea_not_two_sentences": 2
       },
       "id": "e06_r64_prompt_guard_v2",
-      "inference_manifest_path": "optimization_experiments/experiments/e06_r64_prompt_guard_v2/df_runs/opt_e06_r64_epoch1_prompt_guard_v2_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v2.json",
+      "inference_manifest_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e06_r64_prompt_guard_v2/df_runs/opt_e06_r64_epoch1_prompt_guard_v2_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v2.json",
       "judge_valid": 143,
       "label": "r64 epoch1 + prompt guard v2",
       "main_message_salience": 3.909091,
@@ -334,7 +334,7 @@
       "parsed_ok": 143,
       "prepared": 145,
       "score_count": 143,
-      "score_summary_path": "optimization_experiments/experiments/e06_r64_prompt_guard_v2/df_runs/opt_e06_r64_epoch1_prompt_guard_v2_frozen/scoring/accessibility_first_v2/system_score_summary.json",
+      "score_summary_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e06_r64_prompt_guard_v2/df_runs/opt_e06_r64_epoch1_prompt_guard_v2_frozen/scoring/accessibility_first_v2/system_score_summary.json",
       "source_safety_margin": 2.993007,
       "system_id": "clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v2"
     },
@@ -347,7 +347,7 @@
         "main_idea_not_two_sentences": 4
       },
       "id": "e07_r64_prompt_guard_v3",
-      "inference_manifest_path": "optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3.json",
+      "inference_manifest_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3.json",
       "judge_valid": 140,
       "label": "r64 epoch1 + gentle parser guard v3",
       "main_message_salience": 3.892857,
@@ -358,7 +358,7 @@
       "parsed_ok": 140,
       "prepared": 145,
       "score_count": 140,
-      "score_summary_path": "optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/scoring/accessibility_first_v2/system_score_summary.json",
+      "score_summary_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e07_r64_prompt_guard_v3/df_runs/opt_e07_r64_epoch1_prompt_guard_v3_frozen/scoring/accessibility_first_v2/system_score_summary.json",
       "source_safety_margin": 3.007143,
       "system_id": "clearread_llama32_3b_candidate_c_r64_epoch1_prompt_guard_v3"
     }
@@ -374,7 +374,7 @@
         "main_idea_not_two_sentences": 4
       },
       "id": "e01_prompt_guard_v1",
-      "inference_manifest_path": "optimization_experiments/experiments/e01_prompt_guard_v1/df_runs/opt_e01_prompt_guard_v1_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_b_prompt_guard_v1.json",
+      "inference_manifest_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e01_prompt_guard_v1/df_runs/opt_e01_prompt_guard_v1_frozen/manifests_logs/model_inference_clearread_llama32_3b_candidate_b_prompt_guard_v1.json",
       "label": "r32 epoch4 + prompt guard v1",
       "parse_failures": 6,
       "parse_success_rate": 0.958621,
@@ -409,7 +409,7 @@
       ],
       "status": "success",
       "train_loss": 0.4095397219986795,
-      "training_result_path": "optimization_experiments/experiments/e04_r64_4epoch/outputs/training/candidate_c_r64_training_result.json"
+      "training_result_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/outputs/training/candidate_c_r64_training_result.json"
     },
     {
       "eval_loss": 1.9764412641525269,
@@ -423,7 +423,7 @@
       ],
       "status": "success",
       "train_loss": 0.0436397062053215,
-      "training_result_path": "optimization_experiments/experiments/e03_continue_epoch5_to_7/outputs/training/continued_epoch5_to_7_lr5e5_gcfix_training_result.json"
+      "training_result_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e03_continue_epoch5_to_7/outputs/training/continued_epoch5_to_7_lr5e5_gcfix_training_result.json"
     },
     {
       "eval_loss": 1.8354066610336304,
@@ -437,7 +437,7 @@
       ],
       "status": "success",
       "train_loss": 0.04390283510701297,
-      "training_result_path": "optimization_experiments/experiments/e05_continue_low_lr/outputs/training/continued_epoch5_to_7_lr1e5_gcfix_training_result.json"
+      "training_result_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e05_continue_low_lr/outputs/training/continued_epoch5_to_7_lr1e5_gcfix_training_result.json"
     }
   ],
   "validation_judges": [
@@ -466,7 +466,7 @@
       "parsed_ok": 145,
       "prepared": 145,
       "score_count": 145,
-      "score_summary_path": "optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_1/scoring/accessibility_first_v2/system_score_summary.json",
+      "score_summary_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_1/scoring/accessibility_first_v2/system_score_summary.json",
       "source_safety_margin": 3.062069
     }
   ],
@@ -501,7 +501,7 @@
       "mojibake": 0,
       "refusal": 0,
       "schema": 145,
-      "validation_metrics_path": "optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_1/validation_metrics.json"
+      "validation_metrics_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_1/validation_metrics.json"
     },
     {
       "avg_s": 4.029,
@@ -517,7 +517,7 @@
       "mojibake": 0,
       "refusal": 0,
       "schema": 144,
-      "validation_metrics_path": "optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_2/validation_metrics.json"
+      "validation_metrics_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_2/validation_metrics.json"
     },
     {
       "avg_s": 4.007,
@@ -533,7 +533,7 @@
       "mojibake": 0,
       "refusal": 0,
       "schema": 144,
-      "validation_metrics_path": "optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_3/validation_metrics.json"
+      "validation_metrics_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_3/validation_metrics.json"
     },
     {
       "avg_s": 4.086,
@@ -549,7 +549,7 @@
       "mojibake": 0,
       "refusal": 0,
       "schema": 144,
-      "validation_metrics_path": "optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_4/validation_metrics.json"
+      "validation_metrics_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e04_r64_4epoch/outputs/validation/candidate_c_r64_epoch_4/validation_metrics.json"
     },
     {
       "avg_s": 3.99,
@@ -565,7 +565,7 @@
       "mojibake": 0,
       "refusal": 0,
       "schema": 144,
-      "validation_metrics_path": "optimization_experiments/experiments/e05_continue_low_lr/outputs/validation/continued_epoch_5_lr1e5_gcfix/validation_metrics.json"
+      "validation_metrics_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e05_continue_low_lr/outputs/validation/continued_epoch_5_lr1e5_gcfix/validation_metrics.json"
     },
     {
       "avg_s": 3.991,
@@ -581,7 +581,7 @@
       "mojibake": 0,
       "refusal": 0,
       "schema": 144,
-      "validation_metrics_path": "optimization_experiments/experiments/e05_continue_low_lr/outputs/validation/continued_epoch_6_lr1e5_gcfix/validation_metrics.json"
+      "validation_metrics_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e05_continue_low_lr/outputs/validation/continued_epoch_6_lr1e5_gcfix/validation_metrics.json"
     },
     {
       "avg_s": 4.054,
@@ -597,7 +597,7 @@
       "mojibake": 0,
       "refusal": 0,
       "schema": 144,
-      "validation_metrics_path": "optimization_experiments/experiments/e05_continue_low_lr/outputs/validation/continued_epoch_7_lr1e5_gcfix/validation_metrics.json"
+      "validation_metrics_path": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>/optimization_experiments/experiments/e05_continue_low_lr/outputs/validation/continued_epoch_7_lr1e5_gcfix/validation_metrics.json"
     }
   ],
   "workspace": "<external-local-raw-iteration1-3b-training-workspace-not-in-git>"

@@ -5,7 +5,7 @@
 - Run id: `phase2_r32_a64_lr1p5e4`
 - Stage label: `phase2_r32_a64_lr1p5e4`
 - Selected epoch: `4`
-- Selected adapter copy: `model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_selected_epoch_4`
+- Selected adapter retained externally: `<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_selected_epoch_4`
 
 ## Selection Rule
 

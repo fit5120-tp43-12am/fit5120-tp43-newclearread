@@ -8,7 +8,7 @@ Result: pass.
 
 Stage 007 completed a validation-only quality audit for Candidate A. The evidence supports proceeding to final test evaluation with Candidate A. Candidate B is not recommended at this point.
 
-Candidate A is now selected for final test evaluation, but it is not yet declared the final model artifact until the held-out test evaluation is reviewed.
+Candidate A is selected for final test evaluation. Final artifact declaration remains pending until the held-out test evaluation is reviewed.
 
 ## Evidence Reviewed
 
@@ -91,7 +91,7 @@ Independent review searched Stage 007 script/report/log for test-set usage and t
 
 ```text
 if data_path.name == "test.jsonl": raise ValueError(...)
-Did not use data/splits/test.jsonl
+Did not use <external-local-raw-8b-training-workspace-not-in-git>/data/splits/test.jsonl
 ```
 
 No training call was found.

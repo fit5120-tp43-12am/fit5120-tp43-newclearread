@@ -42,7 +42,7 @@ split_manifest.json: 42BFE9974C31E74B98B45D45DAA792F8582D517541E153439B510E9A9B3
 Independent review verified the local adapter directory exists:
 
 ```text
-ai/lora_training/models/adapters/smoke_llama31_8b_qlora
+<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/smoke_llama31_8b_qlora
 ```
 
 Adapter directory contents:

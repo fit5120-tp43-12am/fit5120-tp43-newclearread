@@ -11,7 +11,7 @@ Stage 009 successfully packaged Candidate A as the selected final raw adapter fo
 The final selected raw adapter remains:
 
 ```text
-ai/lora_training/models/adapters/full_candidate_a_3epoch
+<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch
 ```
 
 The wrapper schema guard is accepted as the required deployment safety layer for the known held-out row 87 risk. It does not change the final held-out test result.
@@ -33,7 +33,7 @@ ai/lora_training/history/stage_reviews/stage_009_package_artifact_and_deployment
 Key reviewed behavior:
 
 - final inference config points to `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`;
-- selected adapter path is `models/adapters/full_candidate_a_3epoch`;
+- selected adapter path is `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch`;
 - schema guard is enabled;
 - successful default wrapper output is only the final JSON object;
 - debug mode exposes raw output, guarded output, status, errors, and `schema_guard_action`;
@@ -84,7 +84,7 @@ adapter_model.safetensors: ef220721c78e72f41c3b14749f25a09ef39f6aaf351266b276cee
 Independent review reran one live wrapper check on non-test smoke data:
 
 ```bash
-python scripts/infer_clearread_candidate_a.py --config configs/final_candidate_a_inference.example.yaml --input-jsonl data/splits/smoke_test_10.jsonl --num-examples 1 --debug
+python scripts/infer_clearread_candidate_a.py --config configs/final_candidate_a_inference.example.yaml --input-jsonl <external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl --num-examples 1 --debug
 ```
 
 Result:
@@ -148,7 +148,7 @@ unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit
 Final local adapter:
 
 ```text
-ai/lora_training/models/adapters/full_candidate_a_3epoch
+<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch
 ```
 
 Final local wrapper:

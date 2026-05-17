@@ -6,7 +6,7 @@ Date/time: 2026-04-28T17:53:55+10:00
 
 - Executed `Stage 007 Candidate A validation audit`.
 - Evaluated Candidate A on validation split only.
-- Did not use `data/splits/test.jsonl`.
+- Did not use `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/test.jsonl`.
 - Did not run training.
 - Did not modify source splits, teammate exports, source datasets, or the Candidate A adapter.
 
@@ -14,8 +14,8 @@ Date/time: 2026-04-28T17:53:55+10:00
 
 ```bash
 python -m py_compile scripts/evaluate_candidate_a_validation.py scripts/run_inference_check.py
-python scripts/evaluate_candidate_a_validation.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path models/adapters/full_candidate_a_3epoch --data-path data/splits/val.jsonl --output-dir outputs/evaluation/candidate_a_validation
-python scripts/evaluate_candidate_a_validation.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path models/adapters/full_candidate_a_3epoch --data-path data/splits/val.jsonl --output-dir outputs/evaluation/candidate_a_validation --reuse-predictions
+python scripts/evaluate_candidate_a_validation.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl --output-dir outputs/evaluation/candidate_a_validation
+python scripts/evaluate_candidate_a_validation.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl --output-dir outputs/evaluation/candidate_a_validation --reuse-predictions
 ```
 
 The first full evaluation exposed that the mojibake pattern literals in the new script needed Unicode escapes. After fixing that and refining false-positive meta phrase matching, the full validation generation was rerun with the corrected script. The reuse command then refreshed deterministic flags without reloading the model.

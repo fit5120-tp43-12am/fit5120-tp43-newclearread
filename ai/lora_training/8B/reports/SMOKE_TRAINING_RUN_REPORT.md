@@ -11,7 +11,7 @@ The smoke-training step ran the first real ClearRead Llama-3.1-8B-Instruct smoke
 - Status: `success`
 - OOM: `no`
 - Model id: `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`
-- Adapter path: `models/adapters/smoke_llama31_8b_qlora`
+- Adapter path: `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/smoke_llama31_8b_qlora`
 - Smoke data SHA256: `8f51d083e8fafae143ec146c0155f85dc23a5cfdaf931a04092e7f8543d2d3a8`
 - Split manifest SHA256: `42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19`
 - Max input tokens from dry-run: `1914`
@@ -77,7 +77,7 @@ The output previews in `logs/smoke_test_001.md` show the adapter produced concis
 ## Safety
 
 - The source datasets and approved split files were not modified.
-- The adapter and tokenizer artifacts were kept local under `models/adapters/smoke_llama31_8b_qlora`.
+- The adapter and tokenizer artifacts were kept local under `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/smoke_llama31_8b_qlora`.
 - Hugging Face cache files were kept under `cache/huggingface`.
 - Full data JSONL files, base model files, adapter `.safetensors`, checkpoints, `.pt`, `.pth`, and `.bin` files are large runtime artifacts and are not included in this package.
 

@@ -11,7 +11,7 @@ Candidate A completed successfully.
 - Epochs: `3`
 - Optimizer steps: `438`
 - OOM: `no`
-- Adapter: `models/adapters/full_candidate_a_3epoch`
+- Adapter: `<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch`
 - Training log: `logs/full_train_candidate_a_3epoch.md`
 
 Candidate A should be considered a viable candidate for later project review and possible final evaluation. Do not use the test set until the the project selects the final model candidate.
@@ -42,7 +42,7 @@ The train/validation gap should be reviewed, but schema sanity was strong on the
 Validation inference command:
 
 ```bash
-python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path models/adapters/full_candidate_a_3epoch --data-path data/splits/val.jsonl --num-examples 10
+python scripts/run_inference_check.py --config configs/train_llama31_8b_qlora_candidate_a.example.yaml --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl --num-examples 10
 ```
 
 Result:

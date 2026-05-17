@@ -2,6 +2,8 @@
 
 - Created UTC: `2026-05-14T04:17:25Z`
 - Root: `<external-local-raw-phase2-search-workspace-not-in-git>`
+- Root meaning: external/local raw Phase 2 search workspace, not included in the Git package.
+- Path convention: paths listed in the inventory table are relative to the root above unless a full external/local token is shown.
 - Files indexed: `1048`
 
 ## Category Counts

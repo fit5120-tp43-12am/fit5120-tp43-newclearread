@@ -10,15 +10,15 @@ model:
 
 artifact:
   selection_status: selected_final_raw_adapter
-  adapter_dir: models/adapters/full_candidate_a_3epoch
+  adapter_dir: <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch
   final_metadata_dir: models/final/clearread_llama31_8b_qlora_candidate_a
   training_config_path: configs/train_llama31_8b_qlora_candidate_a.example.yaml
 
 data:
   max_seq_length: 3072
-  smoke_path: data/splits/smoke_test_10.jsonl
-  validation_path: data/splits/val.jsonl
-  split_manifest_path: data/splits/split_manifest.json
+  smoke_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl
+  validation_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl
+  split_manifest_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/split_manifest.json
 
 generation:
   max_new_tokens: 320

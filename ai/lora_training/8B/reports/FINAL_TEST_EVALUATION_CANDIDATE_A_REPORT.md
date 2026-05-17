@@ -4,15 +4,15 @@ Date/time: 2026-04-28T18:29:42+10:00
 
 ## Scope
 
-- Evaluated Candidate A on `data/splits/test.jsonl` only after final evaluation approval.
+- Evaluated Candidate A on `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/test.jsonl` only after final evaluation approval.
 - Did not run training, tune parameters, change decoding settings, or run Candidate B.
 - Prediction JSONL and metrics JSON are local artifacts and were kept as local evaluation outputs.
 
 ## Inputs And Local Artifacts
 
 - Config: `ai/lora_training/configs/train_llama31_8b_qlora_candidate_a.example.yaml`
-- Adapter: `ai/lora_training/models/adapters/full_candidate_a_3epoch`
-- Test data: `ai/lora_training/data/splits/test.jsonl`
+- Adapter: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch`
+- Test data: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/test.jsonl`
 - Test SHA256: `6613390f654c55a69c5ddb90234f81005fc3baca8e57651206f1ef024c939b7f`
 - Split manifest SHA256: `42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19`
 - Test records: `145` expected `145`

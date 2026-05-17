@@ -2,9 +2,9 @@
 
 ## Scope
 
-- Split input directory: `ai/lora_training/data/splits`
-- Export output directory: `ai/lora_training/data/teammate_exports`
-- Metadata manifest: `ai/lora_training/data/teammate_exports\teammate_export_manifest.json`
+- Split input directory: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits`
+- Export output directory: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports`
+- Metadata manifest: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/teammate_export_manifest.json`
 - Report path: `ai/lora_training/reports/TEAMMATE_EXPORT_REPORT.md`
 - Script SHA256: `80da172dace81865844c9df277908a04ad929b5bca3bada353029e189f5cbb09`
 - Metadata manifest SHA256: `bcb11dd7104e524b7078708d53af75b787e47503558186b1b5d0bbe215d9b89d`

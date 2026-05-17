@@ -47,7 +47,7 @@ The real Llama 8B deployment can process 28 representative text blocks under abo
 
 Source: `<external-local-raw-iteration1-deployment-workspace-not-in-git>/benchmarks/011_machine_sizing/benchmark_results.json`
 
-This is not the final deployment route, but it is useful as a local single-GPU reference.
+This provides a local single-GPU reference for comparison with the production deployment route.
 
 | Case | Latency | GPU memory after run |
 |---|---:|---:|

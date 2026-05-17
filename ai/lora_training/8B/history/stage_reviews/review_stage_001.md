@@ -5,7 +5,7 @@ Date: 2026-04-28
 ## Reviewed Inputs
 
 - Stage review summary.
-- `ai/lora_training/data/splits\SPLIT_REPORT.md`
+- `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/SPLIT_REPORT.md`
 - `ai/lora_training/history/stage_reviews/stage_001_profile_split.md`
 - `ai/lora_training/reports/source_distribution_profile.json`
 - Team repo status under `<team-repo-root>`

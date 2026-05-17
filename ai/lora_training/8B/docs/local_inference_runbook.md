@@ -13,10 +13,10 @@ To run inference locally, provide these outside the repository:
 Expected package-relative paths in the example config:
 
 ```text
-models/adapters/full_candidate_a_3epoch
-data/splits/smoke_test_10.jsonl
-data/splits/val.jsonl
-data/splits/split_manifest.json
+<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch
+<external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl
+<external-local-raw-8b-training-workspace-not-in-git>/data/splits/val.jsonl
+<external-local-raw-8b-training-workspace-not-in-git>/data/splits/split_manifest.json
 ```
 
 These paths are expected to be provided locally when running inference.
@@ -54,8 +54,8 @@ The expected successful shape is:
 ```bash
 python scripts/run_inference_check.py \
   --config configs/final_candidate_a_inference.example.yaml \
-  --adapter-path models/adapters/full_candidate_a_3epoch \
-  --data-path data/splits/smoke_test_10.jsonl \
+  --adapter-path <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch \
+  --data-path <external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl \
   --num-examples 3
 ```
 

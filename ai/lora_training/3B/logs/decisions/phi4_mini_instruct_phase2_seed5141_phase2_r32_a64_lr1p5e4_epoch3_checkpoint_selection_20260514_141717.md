@@ -5,7 +5,7 @@
 - Run id: `phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3`
 - Stage label: `phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3`
 - Selected epoch: `5`
-- Selected adapter copy: `model_workspaces/phi4_mini_instruct/models/adapters/phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_selected_epoch_5`
+- Selected adapter retained externally: `<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_selected_epoch_5`
 
 ## Selection Rule
 

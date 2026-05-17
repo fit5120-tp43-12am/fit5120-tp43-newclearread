@@ -1,7 +1,7 @@
 {
   "created_at_utc": "2026-05-12T09:17:11Z",
-  "source_system_score_summary": "data/source_snapshot/baseline_benchmark_df_strict_20260504_fz1/df_runs__df_strict_20260504_fz1__scoring__accessibility_first_v2__system_score_summary.json",
-  "source_parse_product_readiness_summary": "data/source_snapshot/baseline_benchmark_df_strict_20260504_fz1/df_runs__df_strict_20260504_fz1__scoring__accessibility_first_v2__parse_product_readiness_summary.json",
+  "source_system_score_summary": "<external-local-raw-phase2-search-workspace-not-in-git>/data/source_snapshot/baseline_benchmark_df_strict_20260504_fz1/df_runs__df_strict_20260504_fz1__scoring__accessibility_first_v2__system_score_summary.json",
+  "source_parse_product_readiness_summary": "<external-local-raw-phase2-search-workspace-not-in-git>/data/source_snapshot/baseline_benchmark_df_strict_20260504_fz1/df_runs__df_strict_20260504_fz1__scoring__accessibility_first_v2__parse_product_readiness_summary.json",
   "note": "Old baseline numbers are copied read-only references, not rerun in the new sweep.",
   "systems": {
     "clearread_llama31_8b_qlora_candidate_a": {

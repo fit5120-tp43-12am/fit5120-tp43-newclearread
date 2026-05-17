@@ -7,7 +7,7 @@ Date: 2026-04-28
 - Stage review summary.
 - `ai/lora_training/reports/TEAMMATE_EXPORT_REPORT.md`
 - `ai/lora_training/history/stage_reviews/stage_002_teammate_exports.md`
-- `ai/lora_training/data/teammate_exports\teammate_export_manifest.json`
+- `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/teammate_exports/teammate_export_manifest.json`
 - Team repo status under `<team-repo-root>`
 
 ## Independent Verification

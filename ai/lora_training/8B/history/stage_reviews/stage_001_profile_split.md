@@ -27,12 +27,12 @@ Date/time: 2026-04-28 13:20:44 +10:00
 - Script: `ai/lora_training/scripts/create_stratified_splits.py`
 - Source profile JSON: `ai/lora_training/reports/source_distribution_profile.json`
 - Source profile markdown: `ai/lora_training/reports/SOURCE_DISTRIBUTION_PROFILE.md`
-- Train split: `ai/lora_training/data/splits\train.jsonl`
-- Validation split: `ai/lora_training/data/splits\val.jsonl`
-- Test split: `ai/lora_training/data/splits\test.jsonl`
-- Smoke split: `ai/lora_training/data/splits\smoke_test_10.jsonl`
-- Split manifest: `ai/lora_training/data/splits\split_manifest.json`
-- Split report: `ai/lora_training/data/splits\SPLIT_REPORT.md`
+- Train split: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/train.jsonl`
+- Validation split: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/val.jsonl`
+- Test split: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/test.jsonl`
+- Smoke split: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/smoke_test_10.jsonl`
+- Split manifest: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/split_manifest.json`
+- Split report: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/data/splits/SPLIT_REPORT.md`
 
 ## Output Hashes
 

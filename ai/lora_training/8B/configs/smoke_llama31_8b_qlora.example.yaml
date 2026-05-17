@@ -14,8 +14,8 @@ model:
   dtype: auto
 
 data:
-  smoke_path: data/splits/smoke_test_10.jsonl
-  split_manifest_path: data/splits/split_manifest.json
+  smoke_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl
+  split_manifest_path: <external-local-raw-8b-training-workspace-not-in-git>/data/splits/split_manifest.json
   max_seq_length: 3072
   train_on_roles:
     - assistant
@@ -23,7 +23,7 @@ data:
 
 outputs:
   output_dir: outputs/smoke
-  adapter_dir: models/adapters/smoke_llama31_8b_qlora
+  adapter_dir: <external-local-raw-8b-training-workspace-not-in-git>/models/adapters/smoke_llama31_8b_qlora
   smoke_log_path: logs/smoke_test_001.md
   mask_report_path: reports/LABEL_MASK_SANITY_CHECK.md
   prep_report_path: reports/SMOKE_TRAINING_PREP_REPORT.md

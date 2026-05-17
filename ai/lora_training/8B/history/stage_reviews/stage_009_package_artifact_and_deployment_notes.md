@@ -10,7 +10,7 @@ Stage 009 packaged Candidate A as the selected final raw adapter and prepared lo
 
 ## Selected Artifact
 
-- Adapter: `ai/lora_training/models/adapters/full_candidate_a_3epoch`
+- Adapter: `<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch`
 - Base model: `unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit`
 - Training config: `configs\train_llama31_8b_qlora_candidate_a.yaml`
 - Inference config: `configs\final_candidate_a_inference.yaml`
@@ -50,7 +50,7 @@ Passed in WSL env `clearread-llama-lora` from `ai/lora_training`:
 python -m py_compile scripts/infer_clearread_candidate_a.py
 python scripts/infer_clearread_candidate_a.py --config configs/final_candidate_a_inference.example.yaml --dry-run
 python -m json.tool models/final/clearread_llama31_8b_qlora_candidate_a/FINAL_ARTIFACT_MANIFEST.json
-python scripts/infer_clearread_candidate_a.py --config configs/final_candidate_a_inference.example.yaml --input-jsonl data/splits/smoke_test_10.jsonl --num-examples 1 --debug
+python scripts/infer_clearread_candidate_a.py --config configs/final_candidate_a_inference.example.yaml --input-jsonl <external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl --num-examples 1 --debug
 ```
 
 Dry-run result:
@@ -61,7 +61,7 @@ Dry-run result:
 
 Smoke wrapper check:
 
-- Data: `data/splits/smoke_test_10.jsonl`
+- Data: `<external-local-raw-8b-training-workspace-not-in-git>/data/splits/smoke_test_10.jsonl`
 - Examples: `1`
 - Status: `ok`
 - Schema guard action: `none`
