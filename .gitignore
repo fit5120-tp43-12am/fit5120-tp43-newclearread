@@ -46,3 +46,6 @@ WORKLOG.md
 
 # Local development artifacts
 *.docx
+*.Rhistory
+ai/model_deployment/3B/reports/*.html
+ai/lora_training/3B/reports/school_facing/testing/*.html

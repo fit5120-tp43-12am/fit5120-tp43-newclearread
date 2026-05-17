@@ -13,7 +13,7 @@
           "--benchmark-run-id",
           "phase2_compressed_final_benchmark_20260514",
           "--adapter-dir",
-          "/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+          "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
           "--max-new-tokens",
           "320"
         ],
@@ -41,7 +41,7 @@
         "started_at_utc": "2026-05-13T23:40:19Z"
       },
       "source_row": {
-        "adapter_dir": "/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+        "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
         "candidate": "phi4_mini_instruct",
         "epoch": 3,
         "judge_count": 50,
@@ -75,7 +75,7 @@
           "--benchmark-run-id",
           "phase2_compressed_final_benchmark_20260514",
           "--adapter-dir",
-          "/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
+          "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
           "--max-new-tokens",
           "320"
         ],
@@ -93,7 +93,7 @@
         "skipped": true
       },
       "source_row": {
-        "adapter_dir": "/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
+        "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
         "candidate": "phi4_mini_instruct",
         "epoch": 4,
         "judge_count": 49,
@@ -130,7 +130,7 @@
         "judge_input_count": 136,
         "judge_valid_rate_over_prepared_inputs": 0.882353,
         "judge_validation_failure_count": 32,
-        "model_id": "microsoft/Phi-4-mini-instruct::/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+        "model_id": "microsoft/Phi-4-mini-instruct::<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
         "per_field_mean_scores": {
           "cognitive_load_reduction_and_safe_conciseness": 3.8,
           "main_message_salience_and_quick_understanding": 4.116667,
@@ -178,7 +178,7 @@
   },
   "finalists": [
     {
-      "adapter_dir": "/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
       "candidate": "phi4_mini_instruct",
       "epoch": 3,
       "judge_count": 50,
@@ -198,7 +198,7 @@
       "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
     },
     {
-      "adapter_dir": "/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
+      "adapter_dir": "<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
       "candidate": "phi4_mini_instruct",
       "epoch": 4,
       "judge_count": 49,

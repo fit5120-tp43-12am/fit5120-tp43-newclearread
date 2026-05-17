@@ -2,11 +2,11 @@
   "candidates": [
     {
       "key": "compressed_final_llama32_3b_instruct_phase2_r32_a64_lr1p5e4_epoch_4",
-      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4"
+      "model_id": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit::<local-phase2-search-workspace>/model_workspaces/llama32_3b_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_4"
     },
     {
       "key": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
-      "model_id": "microsoft/Phi-4-mini-instruct::/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3"
+      "model_id": "microsoft/Phi-4-mini-instruct::<local-phase2-search-workspace>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3"
     },
     {
       "key": "granite41_3b_stage1_epoch_1",

@@ -1,6 +1,6 @@
 {
   "created_at_utc": "2026-05-14T04:17:25Z",
-  "root": "/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search",
+  "root": "<local-phase2-search-workspace>",
   "file_count": 1048,
   "hash_policy": {
     "max_hash_size_bytes": 134217728,

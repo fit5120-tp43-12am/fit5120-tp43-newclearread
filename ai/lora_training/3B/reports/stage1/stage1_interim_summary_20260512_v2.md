@@ -4,7 +4,7 @@
 
 All new experiment files are isolated under:
 
-`C:\Users\Aufb\Desktop\fit5120\iteration3\new-model\fine_tune_sweep`
+`<local-3b-search-workspace>`
 
 The old `iteration1` and `training-3b` folders are read-only sources.
 

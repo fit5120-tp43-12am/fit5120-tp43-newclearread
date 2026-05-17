@@ -1,7 +1,7 @@
 # Evidence Inventory
 
 - Created UTC: `2026-05-14T04:17:25Z`
-- Root: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/phase2_48h_search`
+- Root: `<local-phase2-search-workspace>`
 - Files indexed: `1048`
 
 ## Category Counts

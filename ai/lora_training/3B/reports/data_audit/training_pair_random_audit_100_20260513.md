@@ -224,10 +224,10 @@ This audit is based on a 100-pair random sample from the training split, not a f
 
 ## Artifacts
 
-- Sample with source and target text: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/outputs/data_audit/random_sample_100_20260513/sample_with_text.jsonl`
-- Public sample manifest without raw text: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/outputs/data_audit/random_sample_100_20260513/sample_manifest_public.json`
-- API audit outputs: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/outputs/data_audit/random_sample_100_20260513/api_audit_outputs.jsonl`
-- API raw requests: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/outputs/data_audit/random_sample_100_20260513/raw_api_requests.jsonl`
-- API raw responses: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/outputs/data_audit/random_sample_100_20260513/raw_api_responses.jsonl`
-- Machine-readable summary: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/outputs/data_audit/random_sample_100_20260513/audit_summary.json`
-- Minor repair candidate exports: `/mnt/c/Users/Aufb/Desktop/fit5120/iteration3/new-model/fine_tune_sweep/outputs/data_audit/random_sample_100_20260513/minor_repair_candidates.jsonl`
+- Sample with source and target text: `<local-3b-search-workspace>/outputs/data_audit/random_sample_100_20260513/sample_with_text.jsonl`
+- Public sample manifest without raw text: `<local-3b-search-workspace>/outputs/data_audit/random_sample_100_20260513/sample_manifest_public.json`
+- API audit outputs: `<local-3b-search-workspace>/outputs/data_audit/random_sample_100_20260513/api_audit_outputs.jsonl`
+- API raw requests: `<local-3b-search-workspace>/outputs/data_audit/random_sample_100_20260513/raw_api_requests.jsonl`
+- API raw responses: `<local-3b-search-workspace>/outputs/data_audit/random_sample_100_20260513/raw_api_responses.jsonl`
+- Machine-readable summary: `<local-3b-search-workspace>/outputs/data_audit/random_sample_100_20260513/audit_summary.json`
+- Minor repair candidate exports: `<local-3b-search-workspace>/outputs/data_audit/random_sample_100_20260513/minor_repair_candidates.jsonl`
