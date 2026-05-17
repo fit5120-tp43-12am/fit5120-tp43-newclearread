@@ -472,11 +472,32 @@ function pauseAudio() {
   playbackState.value = 'paused'
 }
 
-/** Resume a paused playback. */
-function resumeAudio() {
-  resumeBackendTTS()
-  playbackState.value = 'playing'
-}
+const TUTORIAL_STEPS = [
+  {
+    title: 'Welcome to Clearead',
+    desc:  'This quick guide walks you through the tool in 3 simple steps. You can skip any time.',
+    highlight: null,
+    cardPos: 'center',
+  },
+  {
+    title: 'Step 1 — Add your text',
+    desc:  'Paste any lecture notes, academic article, or PDF content into the box on the left. You can also click "Upload file" to import a document directly.',
+    highlight: 'input',
+    cardPos: 'right-top',
+  },
+  {
+    title: 'Step 2 — Simplify',
+    desc:  'Click the Simplify button. Clearead will rewrite the text in plain English, pull out the key points, and generate a short summary.',
+    highlight: 'simplify',
+    cardPos: 'right-bottom',
+  },
+  {
+    title: 'Step 3 — Adjust your settings',
+    desc:  'Use the toolbar to change font size, line spacing, and background colour. Small changes can make a big difference to how comfortable it feels to read.',
+    highlight: 'toolbar',
+    cardPos: 'toolbar',
+  },
+]
 
 const TUTORIAL_STEPS = [
   {
