@@ -472,6 +472,12 @@ function pauseAudio() {
   playbackState.value = 'paused'
 }
 
+/** Resume a paused playback. */
+function resumeAudio() {
+  resumeBackendTTS()
+  playbackState.value = 'playing'
+}
+
 const TUTORIAL_STEPS = [
   {
     title: 'Welcome to Clearead',
