@@ -19,6 +19,8 @@ DEFAULT_TIMEOUT_SECONDS = 30
 
 
 class OverallSummaryOutput(BaseModel):
+    """Structured output expected from the overall-summary model call."""
+
     heading: str
     text: str
 

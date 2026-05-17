@@ -14,10 +14,14 @@ router = APIRouter()
 
 # Request and response models
 class PluginSummaryRequest(BaseModel):
+    """Request body containing page text sent by the browser extension."""
+
     text: str = Field(..., min_length=1)
 
 
 class PluginSummaryResponse(BaseModel):
+    """Response body returned to the browser extension summary panel."""
+
     overallSummary: OverallSummary
     processingStats: dict
 

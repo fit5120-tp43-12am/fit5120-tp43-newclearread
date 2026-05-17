@@ -16,6 +16,10 @@ const dragging = ref(false)
 let dragOffsetX = 0
 let dragOffsetY = 0
 
+/**
+ * Begin dragging the popup. Records the offset between the mouse and the card's origin.
+ * @param {MouseEvent} e
+ */
 function onDragStart(e) {
   if (!dictPopup.value) return
   dragging.value = true
@@ -25,6 +29,10 @@ function onDragStart(e) {
   window.addEventListener('mouseup', onDragEnd)
 }
 
+/**
+ * Update the popup position while dragging. Clamps the card inside the viewport.
+ * @param {MouseEvent} e
+ */
 function onDragMove(e) {
   if (!dragging.value || !dictPopup.value) return
   const CARD_W = 340
@@ -34,6 +42,7 @@ function onDragMove(e) {
   dictPopup.value = { ...dictPopup.value, x: newX, y: newY }
 }
 
+/** Stop dragging and remove the temporary global mousemove/mouseup listeners. */
 function onDragEnd() {
   dragging.value = false
   window.removeEventListener('mousemove', onDragMove)

@@ -9,6 +9,10 @@ const readingPageMemory = {
 </script>
 
 <script setup>
+// This is the main reading page where users paste or upload text to be processed.
+// It handles text input, file uploads, API calls for summarisation, TTS playback,
+// section detail modals, export, and persisting state across navigation.
+
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import {
   pauseBackendTTS,
@@ -27,6 +31,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:800
 
 const scrolled = ref(false)   // true when user scrolls past 10px — adds navbar shadow
 const menuOpen = ref(false)   // controls mobile hamburger menu
+/** Update the scrolled flag so the navbar gains a shadow after the user scrolls down. */
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
 
@@ -76,6 +81,7 @@ const mode = ref('idle')   // 'idle' | 'loading' | 'result'
 // ─────────────────────────────────────────────────────────────────────────────
 const result = ref(null)
 
+/** Save the current page state to the module-level memory object so it survives navigation. */
 function saveReadingState() {
   readingPageMemory.mode = result.value && mode.value === 'result' ? 'result' : 'idle'
   readingPageMemory.result = result.value
@@ -84,6 +90,7 @@ function saveReadingState() {
   readingPageMemory.uploadedFileName = uploadedFileName.value
 }
 
+/** Restore previously saved state when the user navigates back to this page. */
 function restoreReadingState() {
   inputText.value        = typeof readingPageMemory.inputText === 'string' ? readingPageMemory.inputText : ''
   uploadedFileText.value = typeof readingPageMemory.uploadedFileText === 'string' ? readingPageMemory.uploadedFileText : ''
@@ -96,6 +103,7 @@ function restoreReadingState() {
   }
 }
 
+/** Reset the module-level memory so the next visit starts fresh. */
 function clearReadingState() {
   readingPageMemory.mode = 'idle'
   readingPageMemory.result = null
@@ -261,7 +269,11 @@ async function playOverallSummary() {
 }
 
 
-// Helper: count words in a string
+/**
+ * Count the number of words in a string.
+ * @param {string} t
+ * @returns {number}
+ */
 function wordCount(t) { return t.trim().split(/\s+/).filter(Boolean).length }
 
 
@@ -276,8 +288,17 @@ const showOriginal = ref(false)
 // Tracks which blocks have been manually expanded by the user
 const expandedBlocks = ref(new Set())
 
+/**
+ * Return whether a block's original text panel is currently expanded.
+ * @param {number} id
+ * @returns {boolean}
+ */
 function isExpanded(id) { return expandedBlocks.value.has(id) }
 
+/**
+ * Toggle the expanded state of a block's original text panel.
+ * @param {number} id
+ */
 function toggleBlock(id) {
   const next = new Set(expandedBlocks.value)
   next.has(id) ? next.delete(id) : next.add(id)
@@ -288,7 +309,14 @@ function toggleBlock(id) {
 // We store a reactive map of blockId → isClamped so the template can show/hide the button.
 const clampedBlocks = ref({})
 
-// Called after each block card renders — checks if the paragraph is overflowing
+/**
+ * Check whether a block's text element is visually overflowing its container.
+ * Stores the result in clampedBlocks so the template can show or hide the expand button.
+ * Only updates the reactive map when the value actually changes to avoid triggering
+ * an infinite render loop.
+ * @param {HTMLElement|null} el
+ * @param {number} id
+ */
 function checkClamp(el, id) {
   if (!el) return
   const isClamped = el.scrollHeight > el.clientHeight + 2  // +2px to avoid sub-pixel false positives
@@ -334,12 +362,22 @@ let sectionPreloadTimer = null
 let sectionPreloadToken = 0
 const SECTION_AUDIO_PRELOAD_CONCURRENCY = 2
 
+/**
+ * Build the full text string for the overall summary card to pass to TTS.
+ * @returns {string}
+ */
 function getOverallAudioText() {
   return overallSummary.value
     ? [overallSummary.value.heading, overallSummary.value.text].filter(Boolean).join('. ')
     : ''
 }
 
+/**
+ * Build the text to speak for a single block.
+ * @param {Object} block      - a block from result.value.blocks
+ * @param {string} textType   - 'summary' reads summary + key points; 'original' reads raw text
+ * @returns {string}
+ */
 function getBlockAudioText(block, textType = 'summary') {
   if (!block) return ''
   if (textType === 'original') return block.originalText || ''
@@ -349,6 +387,12 @@ function getBlockAudioText(block, textType = 'summary') {
   return [block.summary, keyPoints].filter(Boolean).join('. ')
 }
 
+/**
+ * Request the backend to generate and cache audio for the given text.
+ * Errors are swallowed so a failed preload never breaks the UI.
+ * @param {string} text
+ * @returns {Promise<Blob|null>}
+ */
 function preloadTextAudio(text) {
   const cleanText = String(text || '').trim()
   if (!cleanText) return Promise.resolve(null)
@@ -361,10 +405,17 @@ function preloadTextAudio(text) {
   })
 }
 
+/**
+ * Preload audio for a specific block and text type.
+ * @param {Object} block
+ * @param {string} textType - 'summary' or 'original'
+ * @returns {Promise<Blob|null>}
+ */
 function preloadBlockAudio(block, textType = 'summary') {
   return preloadTextAudio(getBlockAudioText(block, textType))
 }
 
+/** Cancel any pending preload timers and invalidate in-flight requests. */
 function cancelAudioPreload() {
   clearTimeout(preloadAudioTimer)
   clearTimeout(sectionPreloadTimer)
@@ -372,11 +423,21 @@ function cancelAudioPreload() {
   sectionPreloadToken += 1
 }
 
+/**
+ * Return the list of blocks that have audio text worth preloading.
+ * @returns {Array}
+ */
 function getSectionAudioPreloadBlocks() {
   const blocks = Array.isArray(result.value?.blocks) ? result.value.blocks : []
   return blocks.filter((block) => String(getBlockAudioText(block, 'summary') || '').trim())
 }
 
+/**
+ * Preload audio for a list of blocks using a fixed number of parallel workers.
+ * Stops early if the token changes (new result arrived) or the page is no longer in result mode.
+ * @param {Array}  blocks - blocks to preload
+ * @param {number} token  - cancellation token; compared against sectionPreloadToken each iteration
+ */
 async function preloadSectionAudioQueue(blocks, token) {
   let nextIndex = 0
   const workerCount = Math.min(SECTION_AUDIO_PRELOAD_CONCURRENCY, blocks.length)
@@ -391,6 +452,7 @@ async function preloadSectionAudioQueue(blocks, token) {
   await Promise.all(workers)
 }
 
+/** Schedule a background preload of all section audio with a short debounce delay. */
 function scheduleSectionAudioPreload() {
   clearTimeout(sectionPreloadTimer)
   const token = ++sectionPreloadToken
@@ -402,6 +464,7 @@ function scheduleSectionAudioPreload() {
   }, 300)
 }
 
+/** Schedule preloads for the overall summary and all section blocks after a short delay. */
 function scheduleAudioPreload() {
   clearTimeout(preloadAudioTimer)
   const token = ++preloadAudioToken
@@ -518,6 +581,7 @@ function stopAudio() {
   playbackState.value   = 'idle'
 }
 
+/** Restart playback from the beginning for whichever block is currently active. */
 function restartActiveAudio() {
   if (activeBlockId.value === null || playbackState.value === 'idle') return
   const blockId = activeBlockId.value
@@ -547,7 +611,12 @@ watch(result, scheduleAudioPreload, { deep: true })
 const feedback = ref(null)
 let feedbackTimer = null
 
-// Show a status message; set autoDismiss = 0 to keep it until manually dismissed
+/**
+ * Show a status message in the feedback strip.
+ * @param {'loading'|'uploading'|'success'|'error'} type
+ * @param {string} message
+ * @param {number} autoDismiss - ms before the message clears; 0 keeps it until manually dismissed
+ */
 function showFeedback(type, message, autoDismiss = 3000) {
   clearTimeout(feedbackTimer)
   feedback.value = { type, message }
@@ -564,6 +633,10 @@ const SUPPORTED_EXT = ['.txt', '.pdf', '.docx']
 
 // ── Auto-resize textarea ──────────────────────────────────────────────────────
 
+/**
+ * Grow or shrink the textarea to fit its content, capped at 180px tall.
+ * Must reset height to 'auto' first so it can shrink when text is deleted.
+ */
 function autoResize() {
   const el = textareaRef.value
   if (!el) return
@@ -580,6 +653,11 @@ watch(
 
 // ── Submit / process text ─────────────────────────────────────────────────────
 
+/**
+ * Submit the current text for processing.
+ * Fires two parallel requests: a fast overview summary and a full section breakdown.
+ * The UI switches to result mode as soon as the first response arrives.
+ */
 async function handleSubmit() {
   const textToProcess = processingText.value.trim()
   if (!textToProcess || overLimit.value || mode.value === 'loading' || sectionProcessing.value) return
@@ -607,6 +685,12 @@ async function handleSubmit() {
   clampedBlocks.value  = {}
   const requestId = ++activeProcessRequestId
 
+  /**
+   * POST the current text to one backend processing endpoint and parse JSON.
+   *
+   * @param {string} path - API path under API_BASE_URL
+   * @returns {Promise<Object>}
+   */
   const fetchJson = async (path) => {
     const res = await fetch(`${API_BASE_URL}${path}`, {
       method:  'POST',
@@ -665,7 +749,7 @@ async function handleSubmit() {
   }
 }
 
-// Go back to the input screen without clearing the text
+/** Return to the input screen and clear the current result. */
 function handleBackToInput() {
   stopAudio()                        // stop TTS before leaving result view
   cancelAudioPreload()
@@ -682,6 +766,7 @@ function handleBackToInput() {
 
 // ── Clear input ───────────────────────────────────────────────────────────────
 
+/** Clear the text input and any uploaded file, then reset the textarea height. */
 function handleClear() {
   inputText.value        = ''
   uploadedFileText.value = ''
@@ -692,6 +777,10 @@ function handleClear() {
   nextTick(autoResize)
 }
 
+/**
+ * Called when the user types in the textarea while a file is loaded.
+ * Clears the uploaded file so the typed text takes over as the input source.
+ */
 function handleTextInput() {
   if (!uploadedFileText.value) return
   uploadedFileText.value = ''
@@ -702,7 +791,13 @@ function handleTextInput() {
 
 // ── File read helpers ─────────────────────────────────────────────────────────
 
-// Reads supported uploads as base64 so the backend handles all text extraction consistently
+/**
+ * Read a File object and return its contents as a raw base64 string.
+ * Strips the data-URL prefix (e.g. "data:application/pdf;base64,") so the
+ * backend receives only the encoded bytes.
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
 function readAsBase64(file) {
   return new Promise((res, rej) => {
     const r = new FileReader()
@@ -715,6 +810,11 @@ function readAsBase64(file) {
   })
 }
 
+/**
+ * Validate and upload a file to the backend text-extraction endpoint.
+ * Shows a feedback message at each stage and stores the extracted text on success.
+ * @param {File} file
+ */
 async function processFile(file) {
   const ext = '.' + file.name.split('.').pop().toLowerCase()
 
@@ -749,8 +849,14 @@ async function processFile(file) {
   }
 }
 
+/** Programmatically open the hidden file input dialog. */
 function triggerFileInput() { fileInputRef.value?.click() }
 
+/**
+ * Handle the file input change event after the user selects a file.
+ * Resets the input value so the same file can be re-selected if needed.
+ * @param {Event} e
+ */
 async function handleFileChange(e) {
   const file = e.target.files[0]
   e.target.value = ''   // reset so the same file can be re-selected
@@ -760,15 +866,20 @@ async function handleFileChange(e) {
 
 // ── Drag and drop ─────────────────────────────────────────────────────────────
 
-// Use a counter instead of a boolean to handle nested drag events correctly
+// A counter tracks how many dragenter events have fired without a matching dragleave.
+// This avoids flickering when the cursor moves between child elements inside the drop zone.
 let dragCounter = 0
 
+/** @param {DragEvent} e */
 function onDragEnter(e) { e.preventDefault(); dragCounter++; isDragging.value = true }
+/** @param {DragEvent} e */
 function onDragOver(e)  { e.preventDefault() }
+/** @returns {void} */
 function onDragLeave()  {
   dragCounter--
   if (dragCounter <= 0) { dragCounter = 0; isDragging.value = false }
 }
+/** @param {DragEvent} e */
 async function onDrop(e) {
   e.preventDefault()
   dragCounter = 0
@@ -780,7 +891,10 @@ async function onDrop(e) {
 
 // ── Keyboard shortcut ─────────────────────────────────────────────────────────
 
-// Ctrl+Enter (or Cmd+Enter on Mac) submits without clicking the button
+/**
+ * Submit the form when the user presses Ctrl+Enter (or Cmd+Enter on Mac).
+ * @param {KeyboardEvent} e
+ */
 function onKeydown(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') handleSubmit()
 }
@@ -805,6 +919,7 @@ onUnmounted(() => {
 const DICT_HINT_KEY = 'clearead-dict-hint-dismissed'
 const dictHintVisible = ref(localStorage.getItem(DICT_HINT_KEY) !== 'true')
 
+/** Hide the dictionary hint banner and remember the choice in localStorage. */
 function dismissDictHint() {
   dictHintVisible.value = false
   localStorage.setItem(DICT_HINT_KEY, 'true')

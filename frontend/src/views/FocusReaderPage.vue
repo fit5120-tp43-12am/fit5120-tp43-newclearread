@@ -24,6 +24,8 @@ import { playBackendTTS, stopBackendTTS, pauseBackendTTS, resumeBackendTTS, prel
 // ── Navbar scroll shadow ──────────────────────────────────────────────────────
 const scrolled = ref(false)
 const menuOpen = ref(false)
+
+/** Update the scrolled flag so the navbar gains a shadow after the user scrolls down. */
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
 // ── Word / letter pools ───────────────────────────────────────────────────────
@@ -134,7 +136,19 @@ const timerColor = computed(() => {
 })
 
 // ── Utility helpers ───────────────────────────────────────────────────────────
+
+/**
+ * Return a random element from an array.
+ * @param {Array} arr
+ * @returns {*}
+ */
 function pick(arr)   { return arr[Math.floor(Math.random() * arr.length)] }
+
+/**
+ * Return a new array with the same items in a random order (Fisher-Yates).
+ * @param {Array} arr
+ * @returns {Array}
+ */
 function shuffle(arr) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -143,9 +157,16 @@ function shuffle(arr) {
   }
   return a
 }
+/** @returns {number} current canvas width in CSS pixels */
 function canvasW() { return canvasEl.value?.getBoundingClientRect().width  || 600 }
+/** @returns {number} current canvas height in CSS pixels */
 function canvasH() { return canvasEl.value?.getBoundingClientRect().height || 420 }
 
+/**
+ * Format an ISO date string as a short locale date+time string.
+ * @param {string} iso
+ * @returns {string}
+ */
 function formatDate(iso) {
   return new Intl.DateTimeFormat('en-AU', {
     month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -153,6 +174,12 @@ function formatDate(iso) {
 }
 
 // ── Pool selection ────────────────────────────────────────────────────────────
+
+/**
+ * Return the word/letter pool for the current game mode.
+ * In mixed mode a random pool is picked each call for variety.
+ * @returns {string[]}
+ */
 function getPool() {
   if (settings.mode === 'mixed') return pick([POOLS.letters, POOLS.chunks, POOLS.words])
   return POOLS[settings.mode] || POOLS.letters
@@ -167,6 +194,10 @@ function getPool() {
  * that same pool so all chips stay in the same category — making the
  * mode selection visually meaningful.
  * For mixed mode, the full combined pool is used for variety.
+ *
+ * @param {string} target - the correct answer for this round
+ * @param {number} count  - total number of labels needed
+ * @returns {string[]}
  */
 function buildLabels(target, count) {
   const fillPool = settings.mode === 'mixed'
@@ -182,6 +213,15 @@ function buildLabels(target, count) {
 }
 
 // ── Chip factory ──────────────────────────────────────────────────────────────
+
+/**
+ * Create a chip object with position, velocity, and colour based on the current level.
+ * @param {string}  label    - text displayed on the chip
+ * @param {boolean} isTarget - whether this chip is the correct answer
+ * @param {number}  index    - position in the labels array, used to space initial angles
+ * @param {number}  total    - total number of chips this round
+ * @returns {Object}
+ */
 function makeChip(label, isTarget, index, total) {
   const radius = Math.max(30, 42 - G.level * 2)
   const margin = radius + 12
@@ -206,6 +246,8 @@ function makeChip(label, isTarget, index, total) {
 }
 
 // ── Canvas drawing ────────────────────────────────────────────────────────────
+
+/** Clear the canvas and redraw the background colour and subtle grid. */
 function drawBackground() {
   const w = canvasW(), h = canvasH()
   ctx.clearRect(0, 0, w, h)
@@ -218,6 +260,10 @@ function drawBackground() {
   for (let y = 0; y < h; y += 56) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke() }
 }
 
+/**
+ * Draw a single chip on the canvas at its current position.
+ * @param {Object} chip
+ */
 function drawChip(chip) {
   const [fill, text, stroke] = CHIP_COLORS[chip.hue]
   ctx.save()
@@ -235,6 +281,7 @@ function drawChip(chip) {
   ctx.restore()
 }
 
+/** Draw the idle canvas with just a "Ready" label — shown before the game starts. */
 function drawEmpty() {
   drawBackground()
   ctx.save()
@@ -246,6 +293,8 @@ function drawEmpty() {
 }
 
 // ── Statistics helper ─────────────────────────────────────────────────────────
+
+/** Recalculate score, accuracy, and reaction time and push them to the reactive ui object. */
 function syncUiStats() {
   const attempts = G.hits + G.misses + G.wrong
   ui.score    = G.score
@@ -256,6 +305,11 @@ function syncUiStats() {
 }
 
 // ── Audio feedback ────────────────────────────────────────────────────────────
+
+/**
+ * Play a short tone using the Web Audio API to give immediate tap feedback.
+ * @param {'correct'|'wrong'} type
+ */
 function playBeep(type) {
   try {
     const ac = new (window.AudioContext || window.webkitAudioContext)()
@@ -314,6 +368,11 @@ function preloadPoolAudio() {
   }
 }
 
+/**
+ * Speak the current round's target using backend TTS.
+ * Falls back to browser speech synthesis if the backend request fails.
+ * Does nothing if sound is turned off in settings.
+ */
 async function speakTarget() {
   if (!settings.sound) {
     ui.cueLabel  = G.target
@@ -360,6 +419,11 @@ function adaptDifficulty() {
 }
 
 // ── Round resolution ──────────────────────────────────────────────────────────
+
+/**
+ * Handle the player tapping a chip — scores the answer, flashes feedback, and queues the next round.
+ * @param {Object} chip - the chip that was tapped
+ */
 function resolveChoice(chip) {
   if (!G.roundActive) return
   const rt = performance.now() - G.roundStartedAt
@@ -396,6 +460,7 @@ function resolveChoice(chip) {
   setTimeout(nextRound, chip.isTarget ? 650 : 1100)
 }
 
+/** Called when the countdown timer expires without the player tapping the correct chip. */
 function missRound() {
   if (!G.roundActive) return
   G.roundActive = false
@@ -413,6 +478,8 @@ function missRound() {
 }
 
 // ── Round start ───────────────────────────────────────────────────────────────
+
+/** Set up a new round: pick a target, build chips, set the cue, and start the timer. */
 function nextRound() {
   if (!G.running || G.paused) return
   G.roundIndex++
@@ -445,6 +512,12 @@ function nextRound() {
 }
 
 // ── Animation loop ────────────────────────────────────────────────────────────
+
+/**
+ * Main game loop driven by requestAnimationFrame.
+ * Moves chips, updates the timer bar, draws the frame, and schedules the next tick.
+ * @param {number} now - timestamp from requestAnimationFrame
+ */
 function loop(now) {
   if (!G.running || G.paused) return
   const dt = Math.min(0.04, (now - G.lastFrame) / 1000 || 0)
@@ -486,21 +559,36 @@ function loop(now) {
 }
 
 // ── Session persistence ───────────────────────────────────────────────────────
+
+/**
+ * Load all saved sessions from localStorage.
+ * @returns {Object[]}
+ */
 function getSessions() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [] } catch { return [] }
 }
 
+/**
+ * Prepend a session record to localStorage, keeping only the 30 most recent.
+ * @param {Object} session
+ */
 function saveSession(session) {
   const all = getSessions()
   all.unshift(session)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all.slice(0, 30)))
 }
 
+/** Refresh the sidebar history list with the 5 most recent sessions. */
 function loadHistory() {
   ui.sessions = getSessions().slice(0, 5)
 }
 
 // ── Session end ───────────────────────────────────────────────────────────────
+
+/**
+ * End the current session, save results, and show the end overlay.
+ * @param {boolean} completed - true if all rounds finished; false if the game was reset early
+ */
 function finishSession(completed) {
   stopBackendTTS()          // stop any in-flight audio cue immediately
   window.speechSynthesis?.cancel()
@@ -539,6 +627,8 @@ function finishSession(completed) {
 }
 
 // ── Game controls ─────────────────────────────────────────────────────────────
+
+/** Start a new game session, or resume if already paused. */
 function startGame() {
   if (G.running && G.paused) { resumeGame(); return }
 
@@ -564,6 +654,7 @@ function startGame() {
   loop(G.lastFrame)
 }
 
+/** Pause the animation loop and the current audio cue. */
 function pauseGame() {
   if (!G.running || G.paused) return
   G.paused = true; isPaused.value = true
@@ -572,6 +663,7 @@ function pauseGame() {
   ui.message = 'Paused. Press Resume to continue. (Shortcut: P)'
 }
 
+/** Resume a paused game and restore any active audio cue. */
 function resumeGame() {
   G.paused = false; isPaused.value = false
   ui.showOverlay = false
@@ -587,6 +679,7 @@ function resumeGame() {
   loop(G.lastFrame)
 }
 
+/** Finish the current session early and reset the UI back to the start screen. */
 function resetGame() {
   finishSession(false)
   // Restore the exact initial UI so clicking ↺ Restart truly feels like
@@ -598,6 +691,12 @@ function resetGame() {
 }
 
 // ── Canvas pointer handling ───────────────────────────────────────────────────
+
+/**
+ * Handle a pointer (mouse or touch) event on the canvas.
+ * Finds the topmost chip under the cursor and resolves it as the player's choice.
+ * @param {PointerEvent} event
+ */
 function handleCanvasPointer(event) {
   if (!G.running || G.paused || !G.roundActive) return
   const rect = canvasEl.value.getBoundingClientRect()
@@ -613,6 +712,8 @@ function handleCanvasPointer(event) {
 }
 
 // ── Canvas resize ─────────────────────────────────────────────────────────────
+
+/** Resize the canvas backing store to match the current element size and device pixel ratio. */
 function resizeCanvas() {
   if (!canvasEl.value) return
   const rect = canvasEl.value.getBoundingClientRect()
@@ -622,6 +723,7 @@ function resizeCanvas() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 }
 
+/** Respond to a window resize: update the canvas size and redraw the current frame. */
 function onResize() {
   resizeCanvas()
   drawBackground()
@@ -635,23 +737,31 @@ const guideStep  = ref(0)
 const guideDir   = ref(1)   // 1 = forward, -1 = backward (drives slide direction)
 const TOTAL_GUIDE_STEPS = 5
 
+/** Open the guide modal, pausing the game if it is running. */
 function openGuide() {
   if (G.running && !G.paused) pauseGame()
   guideStep.value = 0
   showGuide.value = true
 }
+/** Close the guide modal and mark it as seen in localStorage. */
 function closeGuide() {
   showGuide.value = false
   localStorage.setItem(GUIDE_SEEN_KEY, '1')
 }
+/** Advance to the next guide step, or close the guide if on the last step. */
 function nextStep() {
   if (guideStep.value < TOTAL_GUIDE_STEPS - 1) {
     guideDir.value = 1; guideStep.value++
   } else { closeGuide() }
 }
+/** Go back to the previous guide step if not already on the first. */
 function prevStep() {
   if (guideStep.value > 0) { guideDir.value = -1; guideStep.value-- }
 }
+/**
+ * Jump directly to a specific guide step (used by the dot navigation).
+ * @param {number} i - target step index
+ */
 function goToStep(i) {
   guideDir.value = i >= guideStep.value ? 1 : -1
   guideStep.value = i
@@ -682,6 +792,11 @@ const GUIDE_STEPS = [
 ]
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
+
+/**
+ * Handle keyboard shortcuts: Escape closes the guide; P toggles pause.
+ * @param {KeyboardEvent} e
+ */
 function handleKey(e) {
   const key = e.key.toLowerCase()
   if (key === 'escape') { closeGuide() }

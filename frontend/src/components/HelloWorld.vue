@@ -5,6 +5,12 @@ import heroImg from '../assets/hero.png'
 import vueLogo from '../assets/vue.svg'
 
 const count = ref(0)
+/**
+ * Build the symbol URL for one icon inside the shared SVG sprite.
+ *
+ * @param {string} id - icon symbol id inside icons.svg
+ * @returns {string}
+ */
 const iconHref = (id) => `${import.meta.env.BASE_URL}icons.svg#${id}`
 </script>
 

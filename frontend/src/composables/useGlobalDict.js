@@ -24,6 +24,10 @@ const dictPopup = ref(null)   // null | { word, data, x, y, loading, error }
 // ── Saved words (localStorage) ────────────────────────────────────────────────
 const SAVED_KEY = 'clearead-dict-saved'
 
+/**
+ * Load the saved words list from localStorage.
+ * @returns {Array}
+ */
 function loadSavedWords() {
   try { return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]') }
   catch { return [] }
@@ -92,6 +96,11 @@ function relativeDate(iso) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/**
+ * Strip punctuation and whitespace from a selected string so only the word remains.
+ * @param {string} str
+ * @returns {string}
+ */
 function cleanWord(str) {
   return str.replace(/[^a-zA-Z'-]/g, '').toLowerCase().trim()
 }
@@ -139,10 +148,20 @@ async function handleWordDblClick(e) {
   }
 }
 
+/**
+ * Build the TTS text for a dictionary entry: word followed by its meaning.
+ * @param {Object} data - dictionary entry with word and simpleMeaning fields
+ * @returns {string}
+ */
 function getDictAudioText(data) {
   return [data?.word, data?.simpleMeaning].filter(Boolean).join('. ')
 }
 
+/**
+ * Silently prefetch the TTS audio for a dictionary entry so playback starts instantly.
+ * Errors are swallowed — a failed preload never breaks the UI.
+ * @param {Object} data - dictionary entry
+ */
 function preloadDictAudio(data) {
   const text = getDictAudioText(data)
   if (!text) return
@@ -151,6 +170,11 @@ function preloadDictAudio(data) {
   })
 }
 
+/**
+ * Speak the word and meaning shown in the dictionary popup using TTS.
+ * @param {number} rate - playback speed multiplier (default 1)
+ * @returns {Promise<void>}
+ */
 async function speakDictWord(rate = 1) {
   if (!dictPopup.value?.data) return
   const text = getDictAudioText(dictPopup.value.data)
@@ -161,6 +185,7 @@ async function speakDictWord(rate = 1) {
   }
 }
 
+/** Close the dictionary popup and stop any playing TTS audio. */
 function closeDictPopup() {
   dictPopup.value = null
   stopBackendTTS()
@@ -176,6 +201,11 @@ if (typeof window !== 'undefined') {
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
+/**
+ * Expose the global dictionary popup state and actions.
+ *
+ * @returns {Object}
+ */
 export function useGlobalDict() {
   return {
     // Popup
