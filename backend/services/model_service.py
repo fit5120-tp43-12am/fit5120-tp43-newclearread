@@ -1,3 +1,7 @@
+# This file calls the ClearRead summary model API to generate summaries and key points
+# for each reading block. It also normalises the raw API response into a clean format
+# the rest of the app can use.
+
 import os
 import uuid
 from pathlib import Path
@@ -19,6 +23,7 @@ DEFAULT_TIMEOUT_SECONDS = 35
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
+    """Read an environment variable and return it as a boolean."""
     value = os.getenv(name)
     if value is None:
         return default
@@ -26,6 +31,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 
 def _env_int(name: str, default: int) -> int:
+    """Read an environment variable and return it as an integer, falling back to default."""
     value = os.getenv(name)
     if value is None:
         return default
@@ -36,18 +42,34 @@ def _env_int(name: str, default: int) -> int:
 
 
 def is_summary_model_enabled() -> bool:
+    """Return True if the summary model is turned on in the environment settings."""
     return _env_bool("CLEARREAD_AI_SUMMARY_ENABLED", True)
 
 
 def get_summary_max_blocks() -> int:
+    """Return the maximum number of blocks that will be sent to the summary model."""
     return max(0, _env_int("CLEARREAD_AI_SUMMARY_MAX_BLOCKS", 100))
 
 
 def get_summary_max_chars_per_block() -> int:
+    """Return the maximum number of characters allowed per block before it is trimmed."""
     return max(1, _env_int("CLEARREAD_AI_SUMMARY_MAX_CHARS_PER_BLOCK", 11000))
 
 
 def summarize_blocks(texts: list[dict]) -> dict:
+    """
+    Send a list of text blocks to the ClearRead summary model and return the raw response.
+
+    Args:
+        texts (list[dict]): a list of dicts, each with an "id" and "text" field
+
+    Returns:
+        dict: the raw JSON response from the summary model API
+
+    Raises:
+        RuntimeError: if the requests package is missing, the model is disabled,
+                      the API URL or key is not set, or the request fails
+    """
     if requests is None:
         raise RuntimeError("The requests package is required to call the summary model.")
     if not is_summary_model_enabled():
@@ -100,6 +122,17 @@ def summarize_blocks(texts: list[dict]) -> dict:
 
 
 def normalize_model_results(response: dict) -> dict:
+    """
+    Convert the raw summary model response into a simple dict keyed by block ID.
+
+    Args:
+        response (dict): the raw JSON response returned by summarize_blocks
+
+    Returns:
+        dict: a dict mapping each block ID (str) to its summary result,
+              with "status", "summary", and "keyPoints" fields for successes,
+              or "status" and "error" fields for failures
+    """
     if not isinstance(response, dict):
         return {}
 
@@ -133,6 +166,7 @@ def normalize_model_results(response: dict) -> dict:
 
 
 def _prepare_texts(texts: list[dict]) -> list[dict]:
+    """Validate and truncate each text block before sending it to the summary model."""
     prepared = []
     max_chars = get_summary_max_chars_per_block()
 
@@ -156,6 +190,7 @@ def _prepare_texts(texts: list[dict]) -> list[dict]:
 
 
 def _normalize_key_points(item: dict[str, Any]) -> list[str]:
+    """Extract key points from a model result item, accepting both camelCase and snake_case keys."""
     raw_key_points = item.get("keyPoints")
     if raw_key_points is None:
         raw_key_points = item.get("key_points")

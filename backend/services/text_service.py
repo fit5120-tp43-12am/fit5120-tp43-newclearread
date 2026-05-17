@@ -1,4 +1,8 @@
-﻿import json
+﻿# This file provides the text summarisation logic used by the reading pipeline.
+# It tries OpenAI first and falls back to a simple rule-based algorithm
+# if the AI service is unavailable or not configured.
+
+import json
 import os
 import re
 from collections import Counter
@@ -124,7 +128,19 @@ def basic_algorithm(
     notice: str = "",
     fallback_reason: str = "fallback_used",
 ):
-    # Build the standard response shape used when AI output is unavailable.
+    """
+    Generate a summary, simplified text, and key points using only local rules.
+    Used when AI is unavailable or turned off.
+
+    Args:
+        text (str): the text to summarise
+        notice (str): a short message to show the user explaining why fallback was used
+        fallback_reason (str): a machine-readable code for why the fallback was triggered
+
+    Returns:
+        dict: a result dict with "summary", "simplified", "keyPoints",
+              "usedFallback", "fallbackReason", and "notice" fields
+    """
     summary, simplified, key_points = _build_rule_based_fallback(text)
     return {
         "summary": summary,
@@ -135,17 +151,16 @@ def basic_algorithm(
         "notice": notice,
     }
 
-#
-# Detect proxy values that point to a known dead local address.
 def _is_dead_local_proxy(value: str | None) -> bool:
+    """Return True if the proxy value points to a known broken local address."""
     if not value:
         return False
     return value.strip().lower() in DEAD_LOCAL_PROXY_VALUES
 
 
-# Temporarily remove broken local proxy settings while calling external AI services.
 @contextmanager
 def _without_dead_local_proxies():
+    """Context manager that temporarily removes broken local proxy env vars during external requests."""
     removed_proxies = {}
 
     for var_name in PROXY_ENV_VARS:
@@ -161,7 +176,7 @@ def _without_dead_local_proxies():
 
 
 def _fallback_notice(reason: str) -> str:
-    # Convert internal fallback reasons into short messages for the frontend.
+    """Map an internal fallback reason code to a short user-facing message."""
     notices = {
         "temporary_ai_unavailable": "AI service is busy right now. Showing a basic result.",
         "config_error": "AI is not configured right now. Showing a basic result.",
@@ -172,7 +187,7 @@ def _fallback_notice(reason: str) -> str:
 
 
 def _normalize_text(text: str) -> str:
-    # Normalise whitespace before sentence splitting and keyword scoring.
+    """Normalise line endings and whitespace before sentence splitting and keyword scoring."""
     text = re.sub(r"\r\n?", "\n", text)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
@@ -180,7 +195,7 @@ def _normalize_text(text: str) -> str:
 
 
 def _split_sentences(text: str) -> list[str]:
-    # Split text into sentence-like chunks for the rule-based fallback algorithm.
+    """Split text into sentence-like chunks for the rule-based fallback algorithm."""
     normalized = _normalize_text(text)
     if not normalized:
         return []
@@ -190,11 +205,12 @@ def _split_sentences(text: str) -> list[str]:
 
 
 def _tokenize_words(text: str) -> list[str]:
+    """Extract all alphabetic word tokens from text in lowercase."""
     return re.findall(r"[A-Za-z']+", text.lower())
 
 
 def _keyword_weights(sentences: list[str]) -> Counter:
-    # Count repeated meaningful words so important sentences score higher.
+    """Count repeated meaningful words across all sentences to use as importance weights."""
     counter = Counter()
     for sentence in sentences:
         for token in _tokenize_words(sentence):
@@ -206,7 +222,7 @@ def _keyword_weights(sentences: list[str]) -> Counter:
 def _sentence_score(
     sentence: str, keyword_weights: Counter, sentence_index: int
 ) -> float:
-    # Score sentences by keyword density, reasonable length, and early-position bias.
+    """Score a sentence by keyword density, length, and position within the text."""
     tokens = _tokenize_words(sentence)
     if not tokens:
         return 0
@@ -218,7 +234,7 @@ def _sentence_score(
 
 
 def _pick_summary_sentence(sentences: list[str]) -> str:
-    # Use the highest-scoring sentence as the fallback summary.
+    """Return the highest-scoring sentence to use as the fallback one-sentence summary."""
     if not sentences:
         return ""
 
@@ -233,7 +249,7 @@ def _pick_summary_sentence(sentences: list[str]) -> str:
 
 
 def _split_long_sentence(sentence: str, max_words: int = 22) -> list[str]:
-    # Break long sentences into smaller chunks to improve readability.
+    """Break a long sentence into shorter chunks at clause boundaries to improve readability."""
     words = sentence.split()
     if len(words) <= max_words:
         return [sentence.strip()]
@@ -267,7 +283,7 @@ def _split_long_sentence(sentence: str, max_words: int = 22) -> list[str]:
 
 
 def _simplify_text(sentences: list[str]) -> str:
-    # Reformat the original content into shorter, easier-to-read sentence groups.
+    """Reformat sentences into shorter, easier-to-read groups as the simplified text output."""
     simplified_parts = []
     for sentence in sentences:
         cleaned = re.sub(r"\s+", " ", sentence).strip()
@@ -294,7 +310,7 @@ def _simplify_text(sentences: list[str]) -> str:
 
 
 def _pick_key_points(sentences: list[str]) -> list[str]:
-    # Select up to three distinct sentences for the key points section.
+    """Select up to three distinct high-scoring sentences as the key points."""
     if not sentences:
         return []
 
@@ -332,7 +348,7 @@ def _pick_key_points(sentences: list[str]) -> list[str]:
 
 
 def _build_rule_based_fallback(text: str) -> tuple[str, str, list[str]]:
-    # Produce a usable summary package even when no AI provider succeeds.
+    """Produce a summary, simplified text, and key points using only local rule-based logic."""
     normalized = _normalize_text(text)
     if not normalized:
         return "", "", []
@@ -359,7 +375,7 @@ def _build_rule_based_fallback(text: str) -> tuple[str, str, list[str]]:
 
 
 def _build_prompt(text: str) -> str:
-    # Force the model to return a strict JSON payload expected by the frontend.
+    """Build the prompt that instructs the model to return a strict JSON payload."""
     return f"""
 You must return ONLY valid JSON.
 
@@ -418,7 +434,7 @@ Text:
 
 
 def _parse_ai_response(response_text: str):
-    # Extract the first JSON object from the model output and attach app metadata fields.
+    """Extract the first JSON object from the model output and add app metadata fields."""
     if not response_text:
         raise ValueError("Empty response")
 
@@ -436,9 +452,18 @@ def _parse_ai_response(response_text: str):
     return data
 
 
-# OpenAI is the default provider for normal text-processing requests.
 def use_openai(text: str):
-    # External summary provider used for each reading block.
+    """
+    Send text to OpenAI and return a summary, simplified version, and key points.
+    Falls back to basic_algorithm if the request fails.
+
+    Args:
+        text (str): the text to summarise
+
+    Returns:
+        dict: a result dict with "summary", "simplified", "keyPoints",
+              "usedFallback", "fallbackReason", and "notice" fields
+    """
     prompt = _build_prompt(text)
 
     try:
@@ -465,7 +490,17 @@ def use_openai(text: str):
 
 
 def process_text(text: str):
-    # Main entry point: prefer OpenAI output, then fall back to local logic.
+    """
+    Main entry point for single-block text summarisation.
+    Tries OpenAI first and falls back to the local rule-based algorithm.
+
+    Args:
+        text (str): the text to summarise
+
+    Returns:
+        dict: a result dict with "summary", "simplified", "keyPoints",
+              "usedFallback", "fallbackReason", and "notice" fields
+    """
     if not USE_AI:
         return basic_algorithm(
             text,

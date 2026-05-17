@@ -1,3 +1,6 @@
+# This file cleans raw text copied from PDFs or web pages before it is processed.
+# It removes metadata lines, fixes broken line breaks, and normalises whitespace.
+
 import re
 
 
@@ -23,8 +26,16 @@ MISSING_SPACE_FIXES = {
 
 
 def rough_clean_text(raw_text: str) -> str:
-    # Main clean-up flow.
-    # Each step fixes one common problem from copied text or PDF text.
+    """
+    Clean raw text copied from a PDF or web page.
+    Removes metadata lines, fixes broken line breaks, and normalises whitespace.
+
+    Args:
+        raw_text (str): the raw text to clean
+
+    Returns:
+        str: cleaned plain text ready for further processing
+    """
     text = _normalize_basic_formatting(raw_text)
     lines = text.split("\n")
     lines = _remove_metadata_and_sidebar_lines(lines)
@@ -37,7 +48,7 @@ def rough_clean_text(raw_text: str) -> str:
 
 
 def _normalize_basic_formatting(raw_text: str) -> str:
-    # Make strange spacing and symbols easier to handle later.
+    """Standardise line endings, Unicode spaces, and smart quotes for easier downstream processing."""
     text = (raw_text or "").strip()
     replacements = {
         "\r\n": "\n",
@@ -64,8 +75,7 @@ def _normalize_basic_formatting(raw_text: str) -> str:
 
 
 def _remove_metadata_and_sidebar_lines(lines: list[str]) -> list[str]:
-    # Remove lines that look like page noise.
-    # Normal reading sentences should stay here.
+    """Drop lines that look like page noise (metadata, sidebars, key-point boxes) while keeping content."""
     cleaned = []
     skip_key_points = 0
 
@@ -98,8 +108,7 @@ def _remove_metadata_and_sidebar_lines(lines: list[str]) -> list[str]:
 
 
 def _is_obvious_metadata_line(line: str) -> bool:
-    # Decide if a whole line should be dropped.
-    # This should be careful, because dropping a line loses text.
+    """Return True if the line is clearly metadata (page numbers, publisher notices, affiliations)."""
     lowered = line.lower().strip()
 
     if lowered in SHORT_METADATA_FRAGMENTS:
@@ -142,8 +151,7 @@ def _is_obvious_metadata_line(line: str) -> bool:
 
 
 def _looks_like_contact_line(line: str) -> bool:
-    # Find author contact rows from papers or reports.
-    # A normal sentence that mentions email should not match.
+    """Return True if the line looks like an author contact or correspondence row."""
     lowered = line.lower().strip()
     words = lowered.split()
 
@@ -170,8 +178,7 @@ def _looks_like_contact_line(line: str) -> bool:
 
 
 def _looks_like_standalone_link_line(line: str) -> bool:
-    # Remove links when the line is mostly just the link.
-    # Keep longer sentences that use a link as part of the text.
+    """Return True if the line is mostly a bare URL or DOI with no surrounding sentence."""
     lowered = line.lower().strip()
     words = lowered.split()
 
@@ -192,8 +199,7 @@ def _looks_like_standalone_link_line(line: str) -> bool:
 
 
 def _looks_like_publication_notice(line: str) -> bool:
-    # Remove short publisher notes.
-    # Keep normal sentences that discuss these topics.
+    """Return True if the line is a short publisher copyright or open-access notice."""
     lowered = line.lower().strip()
     words = lowered.split()
 
@@ -211,7 +217,7 @@ def _looks_like_publication_notice(line: str) -> bool:
 
 
 def _looks_like_author_affiliation(line: str) -> bool:
-    # Catch short university or department lines from article headers.
+    """Return True if the line looks like a short university or department affiliation header."""
     lowered = line.lower()
     if len(line.split()) > 22:
         return False
@@ -245,7 +251,7 @@ def _looks_like_author_affiliation(line: str) -> bool:
 
 
 def _looks_like_isolated_broken_metadata(line: str) -> bool:
-    # Catch small leftover fragments from removed metadata.
+    """Return True if the line is a small leftover fragment from stripped metadata."""
     lowered = line.lower().strip()
     words = lowered.split()
 
@@ -264,13 +270,12 @@ def _looks_like_isolated_broken_metadata(line: str) -> bool:
 
 
 def _is_key_points_heading(line: str) -> bool:
-    # Some articles have a side box called "Key points".
+    """Return True if the line is the heading for a 'Key points' side box."""
     return re.sub(r"\s+", " ", line.strip()).lower() == "key points"
 
 
 def _looks_like_key_point_line(line: str) -> bool:
-    # Used after a "Key points" heading.
-    # It skips short bullet-like lines from that side box.
+    """Return True if the line is a bullet-style entry inside a 'Key points' side box."""
     if not line.strip():
         return True
 
@@ -285,8 +290,7 @@ def _looks_like_key_point_line(line: str) -> bool:
 
 
 def _merge_broken_lines(text: str) -> str:
-    # Join lines that were split by PDF extraction.
-    # Blank lines still keep paragraph breaks.
+    """Join lines that were split by PDF extraction, preserving blank-line paragraph breaks."""
     lines = text.split("\n")
     output = []
     current = ""
@@ -318,7 +322,7 @@ def _merge_broken_lines(text: str) -> str:
 
 
 def _should_merge_lines(previous: str, current: str) -> bool:
-    # Decide if two neighboring lines belong to the same sentence.
+    """Return True if two adjacent lines should be joined into a single sentence."""
     if _looks_like_section_title(current):
         return False
 
@@ -339,7 +343,7 @@ def _should_merge_lines(previous: str, current: str) -> bool:
 
 
 def _join_lines(previous: str, current: str) -> str:
-    # Join two lines without adding odd spaces.
+    """Concatenate two lines, removing a trailing hyphen or inserting a space as appropriate."""
     if previous.endswith("-"):
         return f"{previous[:-1]}{current}"
     if _is_broken_citation_join(previous, current):
@@ -348,17 +352,17 @@ def _join_lines(previous: str, current: str) -> str:
 
 
 def _is_broken_citation_join(previous: str, current: str) -> bool:
-    # Join citations that were split across two lines.
+    """Return True if the two lines form a citation bracket that was split across lines."""
     return bool(re.search(r"\[[^\]]*$", previous) and re.match(r"^[^\[]*\]", current))
 
 
 def _is_broken_number_join(previous: str, current: str) -> bool:
-    # Join cases like a word at the end of one line and a number next.
+    """Return True if a word at the end of the previous line should be joined to a leading number."""
     return bool(re.search(r"\b[A-Za-z]+$", previous) and re.match(r"^\d+(\.\d+)?\b", current))
 
 
 def _looks_like_section_title(line: str) -> bool:
-    # Do not merge section headings into the paragraph before them.
+    """Return True if the line looks like a section heading that should not be merged with adjacent text."""
     stripped = line.strip()
     if not stripped or stripped.endswith(SENTENCE_ENDINGS):
         return False
@@ -379,7 +383,7 @@ def _looks_like_section_title(line: str) -> bool:
 
 
 def _fix_missing_word_spaces(text: str) -> str:
-    # Fix a few common missing spaces from PDF extraction.
+    """Correct a small set of known word-merge errors introduced by PDF extraction."""
     for bad, good in MISSING_SPACE_FIXES.items():
         text = re.sub(rf"\b{re.escape(bad)}\b", good, text, flags=re.IGNORECASE)
 
@@ -390,7 +394,7 @@ def _fix_missing_word_spaces(text: str) -> str:
 
 
 def _split_known_prefix_merge(match: re.Match) -> str:
-    # Split only the word merges we know are safe.
+    """Split a known safe prefix-word merge (e.g. 'themean') into two words."""
     prefix = match.group(1)
     suffix = match.group(2)
     safe_suffixes = {"mean", "same", "following", "first", "second"}
