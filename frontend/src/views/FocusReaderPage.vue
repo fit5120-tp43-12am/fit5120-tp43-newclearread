@@ -1049,7 +1049,18 @@ onUnmounted(() => {
               <li v-if="!ui.sessions.length" class="history-empty">No games yet</li>
               <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
                 <span class="history-time">{{ formatDate(s.date) }}</span>
-                <span class="history-stats">{{ s.accuracy }}% · {{ s.score }} pts · Lv {{ s.level }}</span>
+                <div class="history-stat-row">
+                  <span class="history-stat-label">Accuracy</span>
+                  <span class="history-stat-value">{{ s.accuracy }}%</span>
+                </div>
+                <div class="history-stat-row">
+                  <span class="history-stat-label">Score</span>
+                  <span class="history-stat-value">{{ s.score }} pts</span>
+                </div>
+                <div class="history-stat-row">
+                  <span class="history-stat-label">Level</span>
+                  <span class="history-stat-value">{{ s.level }}</span>
+                </div>
               </li>
             </ol>
           </aside>
@@ -1165,7 +1176,7 @@ onUnmounted(() => {
 /* ── 3-column game layout ── */
 .game-layout {
   display: grid;
-  grid-template-columns: 200px 1fr 200px;
+  grid-template-columns: 240px 1fr 240px;
   gap: 16px;
   align-items: start;
 }
@@ -1594,13 +1605,17 @@ onUnmounted(() => {
 }
 .history-empty { font-size: 14px; color: #9ca3af; padding: 4px 0; }
 .history-item {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; flex-direction: column; gap: 4px;
   padding: 10px 14px;
   background: rgba(255,255,255,0.6); border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
 }
-.history-time { color: #6b7280; }
-.history-stats { font-weight: 600; color: #374151; }
+.history-time { color: #6b7280; margin-bottom: 4px; }
+.history-stat-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.history-stat-label { color: #9ca3af; font-size: 12px; }
+.history-stat-value { font-weight: 600; color: #374151; }
 
 /* ── Disclaimer ── */
 .disclaimer {
