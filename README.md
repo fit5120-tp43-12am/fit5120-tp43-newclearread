@@ -71,7 +71,8 @@ Create `backend/.env` for local model-backed features:
 ```env
 OPENAI_API_KEY=replace-with-your-key
 
-# Optional internal ClearRead summary service
+# Core Clearead AI summary model service
+CLEARREAD_AI_SUMMARY_ENABLED=true
 CLEARREAD_AI_SUMMARY_API_URL=http://127.0.0.1:8010
 CLEARREAD_AI_SUMMARY_API_KEY=replace-with-service-key
 ```
@@ -105,12 +106,20 @@ Password: tp43_clearead
 
 ### Browser Extension
 
+Install the released extension from the Chrome Web Store:
+
+```text
+https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn
+```
+
+Source-level validation is available for developers:
+
 ```powershell
 cd browser-extension
 npm run validate
 ```
 
-Load the extension in Chrome through `chrome://extensions`, enable Developer mode, and choose `browser-extension/` as an unpacked extension.
+For local extension development, load `browser-extension/` as an unpacked extension from `chrome://extensions`. Chrome Web Store installation is the standard user-facing path; unpacked loading supports source testing and validation.
 
 ## Deployment Notes
 

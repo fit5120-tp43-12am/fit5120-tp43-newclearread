@@ -1,6 +1,6 @@
 # Chrome Web Store Checklist
 
-This checklist tracks review concerns for the Clearead extension and supports final Chrome Web Store preparation.
+This checklist tracks release and maintenance concerns for the Clearead Chrome Web Store package.
 
 ## Permission Minimisation
 
@@ -77,7 +77,7 @@ This checklist tracks review concerns for the Clearead extension and supports fi
 - [x] Add extension icons in 16, 32, 48, and 128 pixel sizes.
 - [x] Package OpenDyslexic WOFF2 files and the SIL Open Font License text for the OpenDyslexic font mode.
 - [x] Icon artwork is packaged in the required Chrome Web Store sizes.
-- [x] Prepare accurate Chrome Web Store listing text in `docs/chrome-store-submission.md`.
+- [x] Maintain accurate Chrome Web Store listing text in `docs/chrome-store-submission.md`.
 - [x] Chrome Web Store screenshots and promotional images are prepared from the current extension UI.
 
 ## Packaging And Review

@@ -1,6 +1,6 @@
 # Testing Development Log
 
-Last updated: 2026-05-11
+Last updated: 2026-05-17
 
 This testing log records validation commands, manual checks, release status, and regression items for the Clearead browser extension.
 
@@ -152,7 +152,8 @@ Chrome Store readiness regression:
 
 ## Current Validation Status
 
-- Chrome Web Store listing and privacy field text exists in `docs/chrome-store-submission.md`.
+- Public Chrome Web Store listing: `https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn`.
+- Chrome Web Store listing and privacy field text is maintained in `docs/chrome-store-submission.md`.
 - Public privacy policy text exists in `docs/privacy-policy.md`.
 - Backend processing and provider disclosure are documented in the privacy materials.
 - Lens has manual smoke-test coverage from the release review pass and includes a clear fallback message for dynamic pages.

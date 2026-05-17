@@ -62,7 +62,19 @@ API keys and model credentials stay on the backend. Page font and ruler tools ru
 
 Session storage is limited to feature state, recent page activation metadata, and short dictionary notices.
 
-## Load In Chrome
+## Install
+
+The released extension is available on the Chrome Web Store:
+
+```text
+https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn
+```
+
+Use Add to Chrome on the store page, then open Clearead from the browser toolbar.
+
+## Local Development
+
+For source-level development and validation, load this folder as an unpacked extension:
 
 1. Open `chrome://extensions`.
 2. Enable Developer mode.
