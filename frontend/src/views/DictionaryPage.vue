@@ -8,6 +8,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:800
 // ── Navbar ────────────────────────────────────────────────────────────────────
 const menuOpen = ref(false)
 
+
 // ── Search state ─────────────────────────────────────────────────────────────
 const query       = ref('')
 const result      = ref(null)
