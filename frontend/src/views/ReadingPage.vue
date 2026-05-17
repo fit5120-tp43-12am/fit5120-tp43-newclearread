@@ -330,6 +330,9 @@ const VOICE_OPTIONS  = [
 
 let preloadAudioTimer = null
 let preloadAudioToken = 0
+let sectionPreloadTimer = null
+let sectionPreloadToken = 0
+const SECTION_AUDIO_PRELOAD_CONCURRENCY = 2
 
 function getOverallAudioText() {
   return overallSummary.value
@@ -362,6 +365,43 @@ function preloadBlockAudio(block, textType = 'summary') {
   return preloadTextAudio(getBlockAudioText(block, textType))
 }
 
+function cancelAudioPreload() {
+  clearTimeout(preloadAudioTimer)
+  clearTimeout(sectionPreloadTimer)
+  preloadAudioToken += 1
+  sectionPreloadToken += 1
+}
+
+function getSectionAudioPreloadBlocks() {
+  const blocks = Array.isArray(result.value?.blocks) ? result.value.blocks : []
+  return blocks.filter((block) => String(getBlockAudioText(block, 'summary') || '').trim())
+}
+
+async function preloadSectionAudioQueue(blocks, token) {
+  let nextIndex = 0
+  const workerCount = Math.min(SECTION_AUDIO_PRELOAD_CONCURRENCY, blocks.length)
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (token === sectionPreloadToken && mode.value === 'result') {
+      const block = blocks[nextIndex]
+      nextIndex += 1
+      if (!block) return
+      await preloadBlockAudio(block, 'summary')
+    }
+  })
+  await Promise.all(workers)
+}
+
+function scheduleSectionAudioPreload() {
+  clearTimeout(sectionPreloadTimer)
+  const token = ++sectionPreloadToken
+  sectionPreloadTimer = setTimeout(() => {
+    if (token !== sectionPreloadToken || mode.value !== 'result') return
+    const blocks = getSectionAudioPreloadBlocks()
+    if (!blocks.length) return
+    preloadSectionAudioQueue(blocks, token)
+  }, 300)
+}
+
 function scheduleAudioPreload() {
   clearTimeout(preloadAudioTimer)
   const token = ++preloadAudioToken
@@ -369,6 +409,7 @@ function scheduleAudioPreload() {
     if (token !== preloadAudioToken || mode.value !== 'result') return
     await preloadTextAudio(getOverallAudioText())
   }, 250)
+  scheduleSectionAudioPreload()
 }
 
 /**
@@ -537,6 +578,7 @@ async function handleSubmit() {
 
   showFeedback('loading', 'Generating overview first…', 0)
   stopAudio()                        // stop any playing audio before new submission
+  cancelAudioPreload()
   mode.value           = 'loading'
   result.value         = null
   sectionProcessing.value = true
@@ -605,6 +647,7 @@ async function handleSubmit() {
 // Go back to the input screen without clearing the text
 function handleBackToInput() {
   stopAudio()                        // stop TTS before leaving result view
+  cancelAudioPreload()
   activeProcessRequestId += 1
   mode.value           = 'idle'
   result.value         = null
@@ -732,8 +775,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   clearTimeout(feedbackTimer)
-  clearTimeout(preloadAudioTimer)
-  preloadAudioToken += 1
+  cancelAudioPreload()
   stopAudio()
 })
 
