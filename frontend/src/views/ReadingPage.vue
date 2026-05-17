@@ -1522,18 +1522,6 @@ function exportAsPdf() {
                 Stop
               </button>
 
-              <!-- Restart from beginning -->
-              <button
-                class="modal-audio-btn"
-                title="Restart from beginning"
-                @click="playBlock(activeSection.id, 'summary', true)"
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  <path d="M2 9V6h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Restart
-              </button>
 
             </div>
 
