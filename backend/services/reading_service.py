@@ -396,7 +396,7 @@ def _summarise_block_fallback(text: str) -> dict:
 
     return basic_algorithm(
         text,
-        notice="AI service is unavailable right now. Showing a basic result.",
+        notice="The ClearRead processing engine is temporarily unavailable. Showing a basic result.",
         fallback_reason="temporary_ai_unavailable",
     )
 
@@ -421,7 +421,7 @@ def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
             except Exception:
                 results[block["model_id"]] = basic_algorithm(
                     block["summary_text"],
-                    notice="AI service is unavailable right now. Showing a basic result.",
+                    notice="The ClearRead processing engine is temporarily unavailable. Showing a basic result.",
                     fallback_reason="temporary_ai_unavailable",
                 )
 
@@ -541,15 +541,15 @@ def _build_notice(used_fallback: bool, fallback_reasons: list[str]) -> str:
         return "Text was processed without semantic segmentation."
 
     if "local_segmentation_fallback" in fallback_reasons:
-        return "Text was segmented locally because AI segmentation is unavailable."
+        return "Text was segmented locally because the ClearRead processing engine is temporarily unavailable."
 
     if "ai_segmentation_failed" in fallback_reasons:
-        return "Text was segmented locally because AI segmentation is unavailable."
+        return "Text was segmented locally because the ClearRead processing engine is temporarily unavailable."
 
     if "partial_ai_segmentation_failed" in fallback_reasons:
-        return "Some text was segmented locally because AI segmentation was partially unavailable."
+        return "Some text was segmented locally because the ClearRead processing engine was partially unavailable."
 
-    return "AI service is unavailable right now. Showing a basic result."
+    return "The ClearRead processing engine is temporarily unavailable. Showing a basic result."
 
 
 def _build_segmentation_info(
