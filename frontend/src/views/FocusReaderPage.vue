@@ -792,7 +792,7 @@ onUnmounted(() => {
         <!-- ── 3-column layout: [settings | canvas | history] ── -->
         <div class="game-layout">
 
-          <!-- LEFT: settings panel -->
+          <!-- LEFT: settings + controls panel -->
           <aside class="game-sidebar game-sidebar--left">
             <p class="sidebar-label">Settings</p>
             <select v-model="settings.mode" class="mode-select mode-select--sidebar" :disabled="isRunning && !isPaused">
@@ -819,6 +819,26 @@ onUnmounted(() => {
               </span>
               <span class="toggle-label">🐢 Slow</span>
             </label>
+
+            <div class="sidebar-divider"></div>
+            <p class="sidebar-label">Controls</p>
+            <div class="controls-row controls-row--sidebar">
+              <button v-if="!isRunning"            class="btn-start"  @click="startGame">▶ Start</button>
+              <button v-if="isRunning && isPaused"  class="btn-start"  @click="resumeGame">▶ Resume</button>
+              <button v-if="isRunning && !isPaused" class="btn-pause"  @click="pauseGame">⏸ Pause</button>
+              <button v-if="isRunning"              class="btn-reset"  @click="resetGame">↺ Restart</button>
+              <button v-if="!isRunning"             class="btn-reset"  @click="resetGame">Reset</button>
+              <button class="btn-guide" @click="openGuide" aria-label="How to play">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M8 11v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M8 9c0-2 3-2 3-4a3 3 0 1 0-6 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Guide
+              </button>
+            </div>
+            <p class="feedback-msg feedback-msg--sidebar" role="status" aria-live="polite">{{ ui.message }}</p>
+            <p class="disclaimer disclaimer--sidebar">Practice game only — not a medical test.</p>
           </aside>
 
           <!-- CENTER: cue + timer + canvas + feedback + controls -->
@@ -871,46 +891,6 @@ onUnmounted(() => {
               <p>{{ ui.overlayBody }}</p>
             </div>
           </Transition>
-        </div>
-
-        <!-- ⑤ Feedback message -->
-        <p class="feedback-msg" role="status" aria-live="polite">{{ ui.message }}</p>
-
-        <!-- ⑥ Controls -->
-        <div class="controls-row">
-          <button
-            v-if="!isRunning"
-            class="btn-start"
-            @click="startGame"
-          >▶ Start</button>
-          <button
-            v-if="isRunning && isPaused"
-            class="btn-start"
-            @click="resumeGame"
-          >▶ Resume</button>
-          <button
-            v-if="isRunning && !isPaused"
-            class="btn-pause"
-            @click="pauseGame"
-          >⏸ Pause</button>
-          <button
-            v-if="isRunning"
-            class="btn-reset"
-            @click="resetGame"
-          >↺ Restart</button>
-          <button
-            v-if="!isRunning"
-            class="btn-reset"
-            @click="resetGame"
-          >Reset</button>
-          <button class="btn-guide" @click="openGuide" aria-label="How to play">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M8 11v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M8 9c0-2 3-2 3-4a3 3 0 1 0-6 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            Guide
-          </button>
         </div>
 
         <!-- ── Guide modal ── -->
@@ -1076,8 +1056,6 @@ onUnmounted(() => {
 
         </div><!-- /game-layout -->
 
-        <p class="disclaimer">Practice game only — not a medical test.</p>
-
       </div>
     </main>
 
@@ -1232,16 +1210,53 @@ onUnmounted(() => {
   margin: 0;
   gap: 10px;
 }
+.sidebar-divider {
+  border: none;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  margin: 2px 0;
+}
+.controls-row--sidebar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.controls-row--sidebar .btn-start,
+.controls-row--sidebar .btn-pause,
+.controls-row--sidebar .btn-reset,
+.controls-row--sidebar .btn-guide {
+  width: 100%;
+  justify-content: center;
+}
+.feedback-msg--sidebar {
+  font-size: 12.5px;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+.disclaimer--sidebar {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+  margin: 0;
+}
 
 /* Collapse sidebars on small screens */
 @media (max-width: 900px) {
   .game-layout {
     grid-template-columns: 1fr;
   }
-  .game-sidebar--left  { order: 2; position: static; }
-  .game-center         { order: 1; }
+  .game-sidebar--left  { order: 1; position: static; }
+  .game-center         { order: 2; }
   .game-sidebar--right { order: 3; position: static; }
   .mode-select--sidebar { font-size: 15px; }
+  .controls-row--sidebar { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .controls-row--sidebar .btn-start,
+  .controls-row--sidebar .btn-pause,
+  .controls-row--sidebar .btn-reset,
+  .controls-row--sidebar .btn-guide { width: auto; }
+  .feedback-msg--sidebar { text-align: left; }
+  .disclaimer--sidebar { text-align: left; }
 }
 
 /* ── ① Status strip ── */
