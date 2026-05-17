@@ -1,0 +1,6 @@
+{
+  "judge_policy": {
+    "judge_model": "gpt-5.4-mini",
+    "judge_prompt_schema": "configs/judge_prompt_schema_candidate_v1_1.md"
+  }
+}

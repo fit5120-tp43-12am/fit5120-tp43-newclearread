@@ -166,6 +166,11 @@ const settings = reactive({
 
 // ── Persistence helpers ───────────────────────────────────────────────────────
 
+/**
+ * Load saved accessibility preferences from localStorage into reactive state.
+ *
+ * @returns {void}
+ */
 function loadFromStorage() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
@@ -176,6 +181,11 @@ function loadFromStorage() {
   } catch { /* ignore corrupt storage data */ }
 }
 
+/**
+ * Save the current accessibility preferences to localStorage.
+ *
+ * @returns {void}
+ */
 function saveToStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...settings }))
@@ -232,6 +242,11 @@ export function applyToDom() {
 
 // ── Reset to defaults ─────────────────────────────────────────────────────────
 
+/**
+ * Restore the accessibility settings to their default values.
+ *
+ * @returns {void}
+ */
 export function resetSettings() {
   settings.theme      = 'default'
   settings.font       = 'inter'
@@ -252,6 +267,11 @@ watch(settings, () => {
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
+/**
+ * Expose the shared accessibility state and actions to Vue components.
+ *
+ * @returns {Object}
+ */
 export function useAccessibility() {
   return {
     settings,

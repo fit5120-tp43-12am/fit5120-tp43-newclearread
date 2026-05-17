@@ -14,16 +14,19 @@ const HINT_KEY = 'clearead-settings-hint-seen'
 const showHint = ref(false)
 let hintTimer = null
 
+/** Hide the hint bubble and mark it as seen in localStorage so it never shows again. */
 function dismissHint() {
   showHint.value = false
   localStorage.setItem(HINT_KEY, '1')
   clearTimeout(hintTimer)
 }
 
+/** Toggle the settings panel open or closed. Also dismisses the hint if visible. */
 function togglePanel() {
   dismissHint()                          // clicking the button counts as "seen"
   panelOpen.value = !panelOpen.value
 }
+/** Close the settings panel. Called when the user clicks outside it. */
 function closePanel() { panelOpen.value = false }
 
 onMounted(() => {
@@ -118,6 +121,7 @@ onUnmounted(() => clearTimeout(hintTimer))
             Colour Theme
           </div>
 
+          
           <!--
             Dyslexia-friendly colour overlays.
             Light themes use mix-blend-mode multiply overlay on the page —

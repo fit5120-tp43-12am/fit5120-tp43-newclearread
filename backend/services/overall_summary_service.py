@@ -1,3 +1,7 @@
+# This file generates the overall summary card shown at the top of the reading result page.
+# It tries to call OpenAI first. If that fails or is disabled, it falls back to
+# pulling a heading and summary text from the first available reading block.
+
 import os
 import re
 from pathlib import Path
@@ -15,11 +19,14 @@ DEFAULT_TIMEOUT_SECONDS = 30
 
 
 class OverallSummaryOutput(BaseModel):
+    """Structured output expected from the overall-summary model call."""
+
     heading: str
     text: str
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
+    """Read an environment variable and return it as a boolean."""
     value = os.getenv(name)
     if value is None:
         return default
@@ -27,6 +34,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 
 def _env_int(name: str, default: int) -> int:
+    """Read an environment variable and return it as an integer, falling back to default."""
     value = os.getenv(name)
     if value is None:
         return default
@@ -37,6 +45,19 @@ def _env_int(name: str, default: int) -> int:
 
 
 def generate_overall_summary(text: str, blocks: list[dict] | None = None) -> dict:
+    """
+    Generate a short overall summary for the full text.
+    Tries OpenAI first. If that fails or is turned off, falls back to pulling
+    a heading and body from the first available reading block.
+
+    Args:
+        text (str): the full source text to summarise
+        blocks (list[dict] | None): optional list of pre-processed reading blocks
+                                    used by the fallback path
+
+    Returns:
+        dict: a dict with "heading" (str) and "text" (str) fields
+    """
     source_text = str(text or "").strip()
     block_list = blocks or []
 
@@ -56,6 +77,7 @@ def generate_overall_summary(text: str, blocks: list[dict] | None = None) -> dic
 
 
 def _call_openai_overall_summary(text: str) -> dict:
+    """Call the OpenAI API and return a raw overall summary dict with heading and text fields."""
     from openai import OpenAI
 
     model = os.getenv("CLEARREAD_OVERALL_SUMMARY_MODEL") or DEFAULT_MODEL
@@ -103,6 +125,7 @@ def _call_openai_overall_summary(text: str) -> dict:
 
 
 def _validate_overall_summary(summary: dict) -> dict:
+    """Clean and validate an overall summary dict, raising ValueError if heading or text is empty."""
     heading = _clean_plain_text(summary.get("heading") if isinstance(summary, dict) else "")
     text = _clean_plain_text(summary.get("text") if isinstance(summary, dict) else "")
 
@@ -116,6 +139,7 @@ def _validate_overall_summary(summary: dict) -> dict:
 
 
 def _fallback_overall_summary(text: str, blocks: list[dict]) -> dict:
+    """Build an overall summary from block metadata or raw text when OpenAI is unavailable."""
     heading = ""
     body = ""
 
@@ -139,6 +163,7 @@ def _fallback_overall_summary(text: str, blocks: list[dict]) -> dict:
 
 
 def _pick_fallback_heading(text: str) -> str:
+    """Return a short heading derived from the first sentence of the text, or a default label."""
     first_sentence = _first_sentence(text)
     if first_sentence:
         return _limit_words(first_sentence, 16)
@@ -146,6 +171,7 @@ def _pick_fallback_heading(text: str) -> str:
 
 
 def _pick_fallback_body(text: str, blocks: list[dict]) -> str:
+    """Build fallback body text from block summaries or the first sentence of raw text."""
     block_summaries = [
         _clean_plain_text(block.get("summary") or block.get("subtitle") or "")
         for block in blocks
@@ -162,6 +188,7 @@ def _pick_fallback_body(text: str, blocks: list[dict]) -> str:
 
 
 def _first_sentence(text: str) -> str:
+    """Return the first sentence of a cleaned text string."""
     cleaned = _clean_plain_text(text)
     if not cleaned:
         return ""
@@ -170,6 +197,7 @@ def _first_sentence(text: str) -> str:
 
 
 def _clean_plain_text(value: object) -> str:
+    """Strip URLs, markdown symbols, and extra whitespace from a value, returning plain text."""
     text = str(value or "")
     text = re.sub(r"https?://\S+|www\.\S+", "", text)
     text = re.sub(r"[*_`>#\[\]]+", " ", text)
@@ -178,6 +206,7 @@ def _clean_plain_text(value: object) -> str:
 
 
 def _limit_words(text: str, max_words: int) -> str:
+    """Trim text to at most max_words words, ending with a period if truncated."""
     words = text.split()
     if len(words) <= max_words:
         return text
@@ -188,6 +217,7 @@ def _limit_words(text: str, max_words: int) -> str:
 
 
 def _limit_sentences(text: str, max_sentences: int) -> str:
+    """Return at most max_sentences sentences from the text."""
     parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
     if not parts:
         return text.strip()

@@ -351,7 +351,8 @@ h2 {
 }
 
 .dictionary-choice-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 220px;
 }
 
 .tool-choice-button {
@@ -420,6 +421,16 @@ h2 {
 .tool-choice-button span:first-child {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.dictionary-choice-grid .tool-choice-button {
+  justify-content: center;
+}
+
+.dictionary-choice-grid .tool-choice-button span:first-child {
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 .tool-choice-button:disabled {
@@ -609,6 +620,10 @@ h2 {
   font-size: 0.82rem;
   line-height: 1.45;
   margin: -2px 0 10px;
+}
+
+.dictionary-guide {
+  margin-bottom: 2px;
 }
 
 .dictionary-result {

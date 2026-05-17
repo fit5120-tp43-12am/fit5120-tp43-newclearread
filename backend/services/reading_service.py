@@ -1,3 +1,7 @@
+# This file is the main reading pipeline.
+# It takes raw user text, splits it into semantic blocks, calls the summary model
+# for each block, and builds the final response sent to the frontend reading page.
+
 import os
 import re
 import time
@@ -16,6 +20,7 @@ load_dotenv(BACKEND_ENV_PATH)
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
+    """Read an environment variable and return it as a boolean."""
     value = os.getenv(name)
     if value is None:
         return default
@@ -23,6 +28,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 
 def _env_int(name: str, default: int) -> int:
+    """Read an environment variable and return it as an integer, falling back to default."""
     value = os.getenv(name)
     if value is None:
         return default
@@ -33,11 +39,27 @@ def _env_int(name: str, default: int) -> int:
 
 
 def process_reading_text(text: str) -> dict:
-    # This is the main service used by the Reading Support page.
-    # It converts one raw article into the block-based response expected by the frontend.
+    """
+    Take raw user text and return a full reading result for the frontend.
+    This is the main entry point for the Reading Support page.
+
+    The pipeline runs these steps:
+    1. Clean and split the text into semantic segments.
+    2. Enrich each segment with a title and subtitle using an LLM.
+    3. Generate a summary and key points for each block.
+    4. Return all blocks along with timing stats and a status notice.
+
+    Args:
+        text (str): the raw article or document text submitted by the user
+
+    Returns:
+        dict: a full reading result with "blocks", "notice", "usedFallback",
+              "segmentation", and "processingStats" fields
+    """
     preprocess_seconds = 0.0
     section_card_seconds = 0.0
     team_model_seconds = 0.0
+    fallback_block_seconds = 0.0
     total_start = time.perf_counter()
     timing_enabled = _env_bool("CLEARREAD_READING_TIMING_LOGS", False)
 
@@ -50,6 +72,7 @@ def process_reading_text(text: str) -> dict:
             preprocess_seconds,
             section_card_seconds,
             team_model_seconds,
+            fallback_block_seconds,
             block_count=0,
             model_block_count=0,
             fallback_block_count=0,
@@ -68,10 +91,10 @@ def process_reading_text(text: str) -> dict:
             "blocks": [],
             "processingStats": _build_processing_stats(
                 total_seconds=time.perf_counter() - total_start,
-                overall_summary_seconds=0.0,
                 section_card_seconds=section_card_seconds,
                 preprocess_seconds=preprocess_seconds,
                 team_model_seconds=team_model_seconds,
+                fallback_block_seconds=fallback_block_seconds,
                 block_count=0,
                 model_block_count=0,
                 fallback_block_count=0,
@@ -160,7 +183,10 @@ def process_reading_text(text: str) -> dict:
         else:
             fallback_blocks.append(block)
 
-    fallback_results_by_id = _summarise_fallback_blocks(fallback_blocks)
+    fallback_results_by_id, fallback_block_seconds = _timed_call(
+        _summarise_fallback_blocks,
+        fallback_blocks,
+    )
 
     blocks = []
     for block in prepared_blocks:
@@ -204,9 +230,9 @@ def process_reading_text(text: str) -> dict:
         timing_enabled,
         time.perf_counter() - total_start,
         preprocess_seconds,
-        0.0,
         section_card_seconds,
         team_model_seconds,
+        fallback_block_seconds,
         block_count=len(blocks),
         model_block_count=len(model_blocks),
         fallback_block_count=len(fallback_blocks),
@@ -226,10 +252,10 @@ def process_reading_text(text: str) -> dict:
         "blocks": blocks,
         "processingStats": _build_processing_stats(
             total_seconds=time.perf_counter() - total_start,
-            overall_summary_seconds=0.0,
             section_card_seconds=section_card_seconds,
             preprocess_seconds=preprocess_seconds,
             team_model_seconds=team_model_seconds,
+            fallback_block_seconds=fallback_block_seconds,
             block_count=len(blocks),
             model_block_count=len(model_blocks),
             fallback_block_count=len(fallback_blocks),
@@ -239,6 +265,7 @@ def process_reading_text(text: str) -> dict:
 
 
 def _normalize_preprocess_result(preprocessing_result: dict) -> tuple[list[dict], bool, dict]:
+    """Convert a raw preprocess_text result into a consistent (segments, success, metadata) tuple."""
     if not isinstance(preprocessing_result, dict):
         return [], False, {}
 
@@ -295,8 +322,9 @@ def _normalize_preprocess_result(preprocessing_result: dict) -> tuple[list[dict]
 
 
 def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
-    # Use semantic preprocessing first. If it fails, keep the page usable by treating
-    # the whole input as a single block.
+    """Run semantic preprocessing and return (segments, used_fallback, reason, metadata).
+    Falls back to treating the whole input as one block if preprocessing fails.
+    """
     try:
         preprocessing_result = preprocess_text(text, enrich_with_llm=False)
     except Exception as exc:
@@ -323,12 +351,14 @@ def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
 
 
 def _timed_call(function, *args, **kwargs):
+    """Call a function with the given arguments and return (result, elapsed_seconds)."""
     started_at = time.perf_counter()
     result = function(*args, **kwargs)
     return result, time.perf_counter() - started_at
 
 
 def _enrich_section_cards(segments: list[dict]) -> list[dict]:
+    """Call the LLM enrichment pipeline to generate viewpoint and summary for each segment."""
     if not segments:
         return []
 
@@ -343,6 +373,7 @@ def _enrich_section_cards(segments: list[dict]) -> list[dict]:
     ]
 
     async def run_enrichment() -> list[dict]:
+        """Run the LLM enrichment pass on all segments that need section card data."""
         return await enrich_segments_with_llm(
             enrichment_segments,
             model=os.getenv("CLEARREAD_SECTION_CARD_MODEL", "gpt-5.4-mini"),
@@ -362,6 +393,7 @@ def _enrich_section_cards(segments: list[dict]) -> list[dict]:
 
 
 def _apply_section_card_copy(blocks: list[dict], enriched_segments: list[dict]) -> None:
+    """Update each block's title and subtitle in-place using the enriched segment data."""
     if not blocks or not enriched_segments:
         return
 
@@ -383,6 +415,7 @@ def _apply_section_card_copy(blocks: list[dict], enriched_segments: list[dict]) 
 
 
 def _summarise_block_fallback(text: str) -> dict:
+    """Generate a summary for one block using OpenAI or the local rule-based algorithm as fallback."""
     if _env_bool("CLEARREAD_OPENAI_SUMMARY_FALLBACK", True):
         try:
             return use_openai(text)
@@ -391,12 +424,13 @@ def _summarise_block_fallback(text: str) -> dict:
 
     return basic_algorithm(
         text,
-        notice="AI service is unavailable right now. Showing a basic result.",
+        notice="The ClearRead processing engine is temporarily unavailable. Showing a basic result.",
         fallback_reason="temporary_ai_unavailable",
     )
 
 
 def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
+    """Summarise a list of blocks concurrently using the fallback path, returning results keyed by model_id."""
     if not blocks:
         return {}
 
@@ -416,7 +450,7 @@ def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
             except Exception:
                 results[block["model_id"]] = basic_algorithm(
                     block["summary_text"],
-                    notice="AI service is unavailable right now. Showing a basic result.",
+                    notice="The ClearRead processing engine is temporarily unavailable. Showing a basic result.",
                     fallback_reason="temporary_ai_unavailable",
                 )
 
@@ -424,6 +458,7 @@ def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
 
 
 def _has_valid_model_summary(model_result: dict | None) -> bool:
+    """Return True if the model result has a non-empty summary and at least one key point."""
     if not model_result or model_result.get("status") != "ok":
         return False
 
@@ -436,14 +471,15 @@ def _log_reading_timing(
     enabled: bool,
     total_seconds: float,
     preprocess_seconds: float,
-    overall_summary_seconds: float,
     section_card_seconds: float,
     team_model_seconds: float,
+    fallback_block_seconds: float,
     block_count: int,
     model_block_count: int,
     fallback_block_count: int,
     block_word_counts: list[int] | None = None,
 ) -> None:
+    """Print a one-line timing summary for the reading pipeline when timing logs are enabled."""
     if not enabled:
         return
 
@@ -451,13 +487,13 @@ def _log_reading_timing(
     print(
         "[reading pipeline] "
         f"total={total_seconds:.2f}s "
-        f"overall_summary={overall_summary_seconds:.2f}s "
         f"preprocess={preprocess_seconds:.2f}s "
         f"section_cards={section_card_seconds:.2f}s "
         f"team_model={team_model_seconds:.2f}s "
+        f"fallback_block_seconds={fallback_block_seconds:.2f}s "
         f"blocks={block_count} "
         f"model_blocks={model_block_count} "
-        f"fallback_blocks={fallback_block_count} "
+        f"fallback_block_count={fallback_block_count} "
         f"block_words={block_word_counts}",
         flush=True,
     )
@@ -465,21 +501,22 @@ def _log_reading_timing(
 
 def _build_processing_stats(
     total_seconds: float,
-    overall_summary_seconds: float,
     section_card_seconds: float,
     preprocess_seconds: float,
     team_model_seconds: float,
+    fallback_block_seconds: float,
     block_count: int,
     model_block_count: int,
     fallback_block_count: int,
     block_word_counts: list[int],
 ) -> dict:
+    """Assemble the processingStats dict returned to the frontend from pipeline timing data."""
     return {
         "totalSeconds": round(total_seconds, 2),
-        "overallSummarySeconds": round(overall_summary_seconds, 2),
         "sectionCardSeconds": round(section_card_seconds, 2),
         "preprocessSeconds": round(preprocess_seconds, 2),
         "modelSeconds": round(team_model_seconds, 2),
+        "fallbackBlockSeconds": round(fallback_block_seconds, 2),
         "blockCount": block_count,
         "modelBlockCount": model_block_count,
         "fallbackBlockCount": fallback_block_count,
@@ -488,12 +525,12 @@ def _build_processing_stats(
 
 
 def _count_words(text: str) -> int:
-    # Simple word count for checking block size in logs.
+    """Return the number of whitespace-separated tokens in a string."""
     return len(re.findall(r"\S+", str(text or "")))
 
 
 def _limit_block_text(text: str) -> str:
-    # Truncate very large segments before summary generation to avoid oversized API requests.
+    """Truncate text to the configured max characters per block before sending to the summary API."""
     cleaned = str(text or "").strip()
     max_chars = model_service.get_summary_max_chars_per_block()
     if len(cleaned) <= max_chars:
@@ -508,6 +545,7 @@ def _get_summary_fallback_reason(
     model_result: dict | None,
     summary_result: dict,
 ) -> str:
+    """Return a machine-readable reason string explaining why the fallback summary was used for a block."""
     if not model_enabled:
         return summary_result.get("fallbackReason") or "summary_fallback"
 
@@ -528,7 +566,7 @@ def _get_summary_fallback_reason(
 
 
 def _build_notice(used_fallback: bool, fallback_reasons: list[str]) -> str:
-    # Choose a short user-facing status message for the frontend result banner.
+    """Return a short user-facing status message based on the fallback reasons collected during processing."""
     if not used_fallback:
         return "Text processed successfully."
 
@@ -536,15 +574,15 @@ def _build_notice(used_fallback: bool, fallback_reasons: list[str]) -> str:
         return "Text was processed without semantic segmentation."
 
     if "local_segmentation_fallback" in fallback_reasons:
-        return "Text was segmented locally because AI segmentation is unavailable."
+        return "Text was segmented locally because the ClearRead processing engine is temporarily unavailable."
 
     if "ai_segmentation_failed" in fallback_reasons:
-        return "Text was segmented locally because AI segmentation is unavailable."
+        return "Text was segmented locally because the ClearRead processing engine is temporarily unavailable."
 
     if "partial_ai_segmentation_failed" in fallback_reasons:
-        return "Some text was segmented locally because AI segmentation was partially unavailable."
+        return "Some text was segmented locally because the ClearRead processing engine was partially unavailable."
 
-    return "AI service is unavailable right now. Showing a basic result."
+    return "The ClearRead processing engine is temporarily unavailable. Showing a basic result."
 
 
 def _build_segmentation_info(
@@ -553,6 +591,7 @@ def _build_segmentation_info(
     fallback_reason: str,
     segment_count: int,
 ) -> dict:
+    """Build the segmentation info dict returned to the frontend, describing how the text was split."""
     mode = metadata.get("segmentation_mode") or ""
     reason = metadata.get("fallback_reason") or fallback_reason or "ok"
     detail = metadata.get("processing_notes") or ""

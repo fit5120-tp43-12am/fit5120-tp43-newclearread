@@ -1,0 +1,77 @@
+{
+  "created_at_utc": "2026-05-14T00:02:59Z",
+  "judge_run_id": "phase2_compressed_final_benchmark_judge_20260514",
+  "primary_accessibility_ranking": [
+    {
+      "judge_valid_rate_over_prepared_inputs": 0.882353,
+      "mean_capped_official_item_score": 75.041667,
+      "model_id": "microsoft/Phi-4-mini-instruct::<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+      "rank": 1,
+      "schema_valid_judge_output_count": 120,
+      "system_id": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
+    }
+  ],
+  "score_policy": {
+    "parse_product_readiness_reported_separately": true,
+    "primary_ranking_metric": "mean_capped_official_item_score",
+    "primary_ranking_population": "schema_valid_judged_rows_only"
+  },
+  "summary_schema_version": "base_shootout_system_score_summary_v1",
+  "systems": {
+    "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3": {
+      "capped_official_item_score": {
+        "count": 120,
+        "max": 100.0,
+        "mean": 75.041667,
+        "median": 70.0,
+        "min": 0.0,
+        "standard_deviation": 15.339707
+      },
+      "judge_input_count": 136,
+      "judge_valid_rate_over_prepared_inputs": 0.882353,
+      "judge_validation_failure_count": 32,
+      "model_id": "microsoft/Phi-4-mini-instruct::<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+      "per_field_mean_scores": {
+        "cognitive_load_reduction_and_safe_conciseness": 3.8,
+        "main_message_salience_and_quick_understanding": 4.116667,
+        "plain_language_lexical_accessibility_and_term_handling": 3.775,
+        "scannable_structure_and_chunking": 4.816667,
+        "sentence_and_syntax_accessibility": 4.766667,
+        "source_safety_margin": 3.2
+      },
+      "ranking_status_counts": {
+        "blocked_by_safety_gate": 1,
+        "not_eligible_as_item_winner": 8,
+        "rankable": 10,
+        "rankable_with_minor_safety_caution": 47,
+        "usable_with_safety_caution_not_clean_pass": 54
+      },
+      "safety_cap_applied_count": 70,
+      "safety_cap_applied_rate": 0.583333,
+      "safety_level_counts": {
+        "clear_pass": 10,
+        "major_risk": 8,
+        "minor_risk": 47,
+        "moderate_risk": 54,
+        "severe_fail": 1
+      },
+      "safety_level_rates": {
+        "clear_pass": 0.083333,
+        "major_risk": 0.066667,
+        "minor_risk": 0.391667,
+        "moderate_risk": 0.45,
+        "severe_fail": 0.008333
+      },
+      "schema_valid_judge_output_count": 120,
+      "system_id": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+      "weighted_accessibility_score_before_cap": {
+        "count": 120,
+        "max": 100.0,
+        "mean": 83.558333,
+        "median": 86.0,
+        "min": 39.0,
+        "standard_deviation": 9.630503
+      }
+    }
+  }
+}

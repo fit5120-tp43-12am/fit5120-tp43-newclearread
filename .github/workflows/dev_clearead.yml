@@ -10,6 +10,7 @@ on:
       - dev
       - Iteration-1-release
       - Iteration-2-release
+      - Iteration-3-release
   workflow_dispatch:
 
 jobs:
@@ -42,6 +43,12 @@ jobs:
         with:
           ref: Iteration-2-release
           path: release2-src
+
+      - name: Checkout Iteration-3-release branch
+        uses: actions/checkout@v4
+        with:
+          ref: Iteration-3-release
+          path: release3-src
 
       - name: Set up Node.js version
         uses: actions/setup-node@v4
@@ -84,17 +91,28 @@ jobs:
           npm ci
           npm run build
 
+      - name: Install and build Iteration-3-release frontend
+        working-directory: release3-src/frontend
+        env:
+          VITE_BASE_PATH: /version3/
+          VITE_API_BASE_URL: https://clear-read-a3c2gyajcjf5agfd.australiaeast-01.azurewebsites.net/
+        run: |
+          npm ci
+          npm run build
+
       - name: Prepare deployment package
         run: |
           mkdir -p deploy-package
           mkdir -p deploy-package/underdevelopment
           mkdir -p deploy-package/version1
           mkdir -p deploy-package/version2
+          mkdir -p deploy-package/version3
 
           cp -R main-src/frontend/dist/. deploy-package/
           cp -R dev-src/frontend/dist/. deploy-package/underdevelopment/
           cp -R release-src/frontend/dist/. deploy-package/version1/
           cp -R release2-src/frontend/dist/. deploy-package/version2/
+          cp -R release3-src/frontend/dist/. deploy-package/version3/
 
           cp dev-src/server.js deploy-package/server.js
           cat > deploy-package/package.json <<'EOF'

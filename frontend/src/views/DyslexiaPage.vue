@@ -4,6 +4,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 /* ── Nav ─────────────────────────────────────────────────────────────── */
 const scrolled = ref(false)   // true when the user scrolled down, so we can style the navbar
 const menuOpen = ref(false)   // true when the mobile menu is open
+/** Update the scrolled flag so the navbar gains a shadow after the user scrolls down. */
 function onScroll() { scrolled.value = window.scrollY > 10 }
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
@@ -13,11 +14,16 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 const chartIdx = ref(0)   // index of the currently shown chart (0 = bar chart, 1 = donut)
 const CHARTS = 2          // total number of charts
 
-// jump to a specific chart by index
+/**
+ * Jump to a specific chart by index.
+ * @param {number} i - chart index (0 = bar chart, 1 = donut)
+ */
 function goTo(i) { chartIdx.value = i }
-// go to the previous chart (does nothing if already on the first one)
+
+/** Show the previous chart. Does nothing if already on the first one. */
 function prevChart() { if (chartIdx.value > 0) chartIdx.value-- }
-// go to the next chart (does nothing if already on the last one)
+
+/** Show the next chart. Does nothing if already on the last one. */
 function nextChart() { if (chartIdx.value < CHARTS - 1) chartIdx.value++ }
 
 /* ── Chart 1: Horizontal Bar Chart ───────────────────────────────────── */
@@ -36,6 +42,7 @@ const barGroups = [
 
 const sexFlt = ref('both')  // filter: 'both' | 'm' | 'f' — controls which bars are highlighted
 const bTip   = ref(null)    // tooltip data: { x, y, text } — null means no tooltip
+
 
 // ── SVG bar-chart coordinate system ──────────────────────────────────────────
 // The chart is drawn as an inline SVG element with a fixed viewBox.
@@ -66,18 +73,45 @@ const DYLX  = ML + 4.9 * SX         // x-coordinate of the dyslexia reference li
 // mY(i) = top edge of the male bar for group i
 // fY(i) = top edge of the female bar for group i (male bar height + gap below it)
 // cY(i) = vertical centre of both bars combined (used to vertically centre the label)
+/**
+ * Y-coordinate of the top edge of the male bar for row i.
+ * @param {number} i - row index
+ * @returns {number}
+ */
 function mY(i) { return MT + i * GH }
+
+/**
+ * Y-coordinate of the top edge of the female bar for row i (sits below the male bar).
+ * @param {number} i
+ * @returns {number}
+ */
 function fY(i) { return MT + i * GH + BH + BG }
+
+/**
+ * Y-coordinate of the vertical centre of both bars combined for row i.
+ * Used to vertically align the row label.
+ * @param {number} i
+ * @returns {number}
+ */
 function cY(i) { return MT + i * GH + (BH * 2 + BG) / 2 }
 
-// Returns the opacity for a bar based on the sex filter toggle.
-// When the user selects "Males", female bars fade to 0.15 opacity (dim but still visible).
+/**
+ * Return the opacity for a bar based on the current sex filter.
+ * Non-selected bars fade to 0.15 so they stay visible but do not distract.
+ * @param {'m'|'f'} sex
+ * @returns {number}
+ */
 function barAlpha(sex) {
   return sexFlt.value === 'both' || sexFlt.value === sex ? 1 : 0.15
 }
 
-// Build the tooltip data object when the user hovers a bar.
-// If the tooltip would overflow the right edge of the SVG, flip it to the left side.
+/**
+ * Set the tooltip data for the hovered bar. Flips to the left side if the tooltip
+ * would overflow the right edge of the SVG.
+ * @param {number}   i   - row index
+ * @param {'m'|'f'}  sex - which bar was hovered
+ * @param {number}   val - percentage value to display
+ */
 function showTip(i, sex, val) {
   const bx = ML + val * SX           // x-coordinate of the right end of the bar
   let tx = bx + 10                   // default: tooltip appears to the right of the bar end
@@ -109,6 +143,14 @@ const DRO = 155, DRI = 92    // outer radius and inner radius (inner creates the
 // SVG arcs require x,y coordinates, but it's easier to define donut segments
 // using angles. pol() converts (angle in degrees measured clockwise from 12 o'clock)
 // to (x, y) using standard trigonometry, then rotating -90° so 0° = top.
+/**
+ * Convert polar coordinates (angle in degrees clockwise from 12 o'clock) to SVG x,y.
+ * @param {number} cx  - centre x
+ * @param {number} cy  - centre y
+ * @param {number} r   - radius
+ * @param {number} deg - angle in degrees (0 = top, clockwise)
+ * @returns {[number, number]}
+ */
 function pol(cx, cy, r, deg) {
   const rad = (deg - 90) * Math.PI / 180   // convert degrees → radians, offset so 0° = up
   return [+(cx + r * Math.cos(rad)).toFixed(2), +(cy + r * Math.sin(rad)).toFixed(2)]
@@ -126,6 +168,17 @@ function pol(cx, cy, r, deg) {
 // SVG arc syntax: A rx ry x-rotation large-arc-flag sweep-flag x y
 //   large-arc-flag = 1 if the arc should take the long way round (> 180°), else 0
 //   sweep-flag     = 1 for clockwise (outer arc) / 0 for counter-clockwise (inner arc)
+/**
+ * Build the SVG path string for one donut segment.
+ * @param {number}  cx     - centre x
+ * @param {number}  cy     - centre y
+ * @param {number}  ro     - outer radius
+ * @param {number}  ri     - inner radius (creates the donut hole)
+ * @param {number}  a0     - start angle in degrees
+ * @param {number}  a1     - end angle in degrees
+ * @param {boolean} expand - if true, shift the segment outward for a pop-out hover effect
+ * @returns {string}
+ */
 function makeSectorPath(cx, cy, ro, ri, a0, a1, expand) {
   const off = expand ? 8 : 0
   const mid = (a0 + a1) / 2

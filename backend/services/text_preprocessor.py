@@ -1,3 +1,8 @@
+# This file splits a long piece of text into semantic reading blocks.
+# It cleans the text, splits it into sentences, groups sentences into blocks,
+# finds topic boundaries using embeddings or TF-IDF, then assembles the final segments.
+# An LLM is used to generate a short title and preview sentence for each segment.
+
 import asyncio
 import json
 import math
@@ -15,6 +20,8 @@ EMBEDDING_BATCH_SIZE = 96
 
 
 class SegmentCardOutput(BaseModel):
+    """LLM-generated title and preview text for one reading segment."""
+
     viewpoint: str = Field(
         max_length=36,
         description="A compact 3-7 word section card title.",
@@ -26,10 +33,14 @@ class SegmentCardOutput(BaseModel):
 
 
 class SegmentCardItem(SegmentCardOutput):
+    """Segment-card output paired with the source segment identifier."""
+
     segment_id: int
 
 
 class SegmentCardBatchOutput(BaseModel):
+    """Batch response containing generated card copy for multiple segments."""
+
     items: list[SegmentCardItem]
 
 SEGMENT_TYPES = {
@@ -119,6 +130,16 @@ STOPWORDS = {
 
 
 def clean_text(text: str) -> str:
+    """
+    Normalise whitespace and formatting in a piece of text.
+    Handles line endings, special Unicode spaces, and smart quotes.
+
+    Args:
+        text (str): the raw text to clean
+
+    Returns:
+        str: cleaned text with consistent spacing and paragraph breaks
+    """
     if text is None:
         return ""
 
@@ -168,10 +189,30 @@ def clean_text(text: str) -> str:
 
 
 def count_words(text: str) -> int:
+    """
+    Count the number of words in a string.
+
+    Args:
+        text (str): the text to count words in
+
+    Returns:
+        int: number of words
+    """
     return len(re.findall(r"\b[\w'-]+\b", text or ""))
 
 
 def split_into_sentences(text: str) -> list[dict]:
+    """
+    Split a piece of text into individual sentences.
+    Handles headings, reference sections, and common abbreviations.
+
+    Args:
+        text (str): the cleaned text to split
+
+    Returns:
+        list[dict]: a list of sentence dicts, each with "sentence_id", "text",
+                    "word_count", "heading_level", "is_heading", and "is_reference" fields
+    """
     cleaned = clean_text(text)
     if not cleaned:
         return []
@@ -222,6 +263,17 @@ def split_into_sentences(text: str) -> list[dict]:
 
 
 def build_sentence_blocks(sentences: list[dict], block_size: int = 4) -> list[dict]:
+    """
+    Group sentences into fixed-size blocks used for boundary detection.
+
+    Args:
+        sentences (list[dict]): the sentence list from split_into_sentences
+        block_size (int): how many sentences per block (clamped to 3–5)
+
+    Returns:
+        list[dict]: a list of block dicts with "block_id", "text", "word_count",
+                    "start_sentence_id", and "end_sentence_id" fields
+    """
     if block_size < 3:
         block_size = 3
     if block_size > 5:
@@ -252,6 +304,23 @@ def embed_texts_openai(
     model: str = DEFAULT_EMBEDDING_MODEL,
     dimensions: int | None = None,
 ) -> list[list[float]]:
+    """
+    Convert a list of text strings into embedding vectors using the OpenAI API.
+    Processes texts in batches to stay within API limits.
+
+    Args:
+        texts (list[str]): the texts to embed (must be non-empty, no empty strings)
+        model (str): the OpenAI embedding model to use
+        dimensions (int | None): optional output dimension override
+
+    Returns:
+        list[list[float]]: one embedding vector per input text
+
+    Raises:
+        ValueError: if texts is empty, contains empty strings, or OPENAI_API_KEY is not set
+        ImportError: if the openai package is not installed
+        RuntimeError: if the API request fails or returns the wrong number of embeddings
+    """
     if not texts:
         raise ValueError("texts must not be empty.")
 
@@ -293,6 +362,17 @@ def embed_texts_openai(
 
 
 def cosine_similarity_vector(a: list[float], b: list[float]) -> float:
+    """
+    Compute the cosine similarity between two dense embedding vectors.
+    Returns 0.0 if either vector is empty or has zero magnitude.
+
+    Args:
+        a (list[float]): the first embedding vector
+        b (list[float]): the second embedding vector
+
+    Returns:
+        float: similarity score between 0.0 and 1.0
+    """
     if not a or not b or len(a) != len(b):
         return 0.0
 
@@ -309,6 +389,21 @@ def detect_boundaries_with_embeddings(
     blocks: list[dict],
     embeddings: list[list[float]],
 ) -> list[dict]:
+    """
+    Find topic boundaries between sentence blocks by comparing their embedding vectors.
+    A low similarity between two neighbouring blocks means a strong boundary.
+
+    Args:
+        blocks (list[dict]): the sentence blocks from build_sentence_blocks
+        embeddings (list[list[float]]): one embedding vector per block
+
+    Returns:
+        list[dict]: boundary dicts sorted by boundary_strength (strongest first),
+                    each with "after_sentence_id", "similarity", and "boundary_strength" fields
+
+    Raises:
+        ValueError: if the number of embeddings does not match the number of blocks
+    """
     if len(blocks) < 2:
         return []
     if len(blocks) != len(embeddings):
@@ -332,6 +427,16 @@ def detect_boundaries_with_embeddings(
 
 
 def detect_boundaries_tfidf(blocks: list[dict]) -> list[dict]:
+    """
+    Find topic boundaries using TF-IDF similarity instead of embeddings.
+    Used as a fallback when the OpenAI embedding API is unavailable.
+
+    Args:
+        blocks (list[dict]): the sentence blocks from build_sentence_blocks
+
+    Returns:
+        list[dict]: boundary dicts sorted by boundary_strength (strongest first)
+    """
     if len(blocks) < 2:
         return []
 
@@ -361,6 +466,20 @@ def assemble_segments(
     min_words: int = 450,
     max_words: int = 850,
 ) -> list[dict]:
+    """
+    Combine sentences into reading segments using topic boundary scores.
+    Each segment aims to stay within the min/max word count range.
+
+    Args:
+        sentences (list[dict]): the full list of sentences from split_into_sentences
+        boundaries (list[dict]): the boundaries from detect_boundaries_* functions
+        target_words (int): the ideal word count per segment
+        min_words (int): the minimum words a segment should contain
+        max_words (int): the maximum words a segment should contain
+
+    Returns:
+        list[dict]: raw segments with "content", "sentence_ids", and "word_count" fields
+    """
     if not sentences:
         return []
 
@@ -396,6 +515,18 @@ def assemble_segments(
 
 
 def classify_segment_type(content: str, segment_index: int, total_segments: int) -> str:
+    """
+    Classify a segment into a broad type such as "introduction", "method", or "conclusion".
+
+    Args:
+        content (str): the text content of the segment
+        segment_index (int): this segment's position in the document (1-based)
+        total_segments (int): the total number of segments in the document
+
+    Returns:
+        str: one of "introduction", "background", "method", "result",
+             "discussion", "conclusion", or "general"
+    """
     text = content.lower()
     headings = [_normalize_heading_text(match) for match in re.findall(r"(?m)^#{1,6}\s+(.+)$", content)]
 
@@ -434,6 +565,17 @@ def classify_segment_type(content: str, segment_index: int, total_segments: int)
 
 
 def summarize_segment(content: str, source_sentences: list[dict] | None = None) -> str:
+    """
+    Write a one-sentence summary for a single reading segment.
+    Calls OpenAI if available, otherwise falls back to a local scoring algorithm.
+
+    Args:
+        content (str): the text content of the segment
+        source_sentences (list[dict] | None): optional pre-split sentences for the local fallback
+
+    Returns:
+        str: a single summary sentence, or an empty string if the content is empty
+    """
     if not content or not str(content).strip():
         return ""
 
@@ -510,6 +652,7 @@ Segment:
 
 
 def _summarize_segment_local(content: str, source_sentences: list[dict] | None = None) -> str:
+    """Generate a short summary for a segment using local sentence scoring without any API call."""
     sentences = source_sentences or split_into_sentences(content)
     content_sentences = [
         sentence
@@ -526,6 +669,7 @@ def _summarize_segment_local(content: str, source_sentences: list[dict] | None =
         return ""
 
     def is_metadata_like(text: str) -> bool:
+        """Return True if the sentence looks like metadata rather than body content."""
         lowered = text.lower()
         return bool(
             re.search(
@@ -539,6 +683,7 @@ def _summarize_segment_local(content: str, source_sentences: list[dict] | None =
         )
 
     def position_bonus(relative_position: float) -> float:
+        """Return a score bonus based on how early, middle, or late the sentence appears."""
         early = max(0.0, 0.28 - relative_position * 0.45)
         middle = max(0.0, 0.18 - abs(relative_position - 0.5) * 0.36)
         late = max(0.0, 0.16 - abs(relative_position - 0.85) * 0.32)
@@ -635,6 +780,17 @@ def _summarize_segment_local(content: str, source_sentences: list[dict] | None =
 
 
 def generate_viewpoint(content: str, source_sentences: list[dict] | None = None) -> str:
+    """
+    Generate a short section card title (viewpoint) for a segment.
+    Tries headings, then the local summary, then falls back to keyword phrases.
+
+    Args:
+        content (str): the text content of the segment
+        source_sentences (list[dict] | None): optional pre-split sentences
+
+    Returns:
+        str: a short title phrase, usually 3–7 words
+    """
     sentences = source_sentences or split_into_sentences(content)
     headings = [
         _normalize_heading_text(sentence["text"])
@@ -674,6 +830,17 @@ def generate_viewpoint(content: str, source_sentences: list[dict] | None = None)
 
 
 def validate_segments(segments: list[dict], cleaned_text: str) -> None:
+    """
+    Check that a list of segments covers all sentences in the cleaned text exactly once.
+    Raises ValueError if any validation rule is broken.
+
+    Args:
+        segments (list[dict]): the segments to validate
+        cleaned_text (str): the original cleaned text the segments were built from
+
+    Raises:
+        ValueError: if segment IDs, word counts, or sentence coverage are invalid
+    """
     validate_segments_detailed(segments, cleaned_text, split_into_sentences(cleaned_text))
 
 
@@ -683,6 +850,19 @@ def validate_segments_detailed(
     sentences: list[dict],
     keep_references: bool = False,
 ) -> None:
+    """
+    Full validation of segments against a pre-split sentence list.
+    Checks that every sentence is assigned to exactly one segment with no gaps or duplicates.
+
+    Args:
+        segments (list[dict]): the segments to validate
+        cleaned_text (str): the original cleaned text
+        sentences (list[dict]): the pre-split sentence list from split_into_sentences
+        keep_references (bool): if True, reference sentences are included in coverage checks
+
+    Raises:
+        ValueError: if any validation rule is broken (IDs, word counts, sentence coverage, etc.)
+    """
     if not isinstance(segments, list):
         raise ValueError("Segments must be a list.")
 
@@ -780,6 +960,30 @@ def preprocess_text(
     llm_concurrency: int = 5,
     llm_max_retries: int = 1,
 ) -> dict:
+    """
+    Full preprocessing pipeline: clean text → split sentences → build blocks →
+    detect boundaries → assemble segments → generate viewpoint and summary.
+
+    Args:
+        text (str): the raw input text to process
+        model (str): the OpenAI embedding model used for boundary detection
+        target_words (int): ideal word count per segment
+        min_words (int): minimum words per segment
+        max_words (int): maximum words per segment
+        block_size (int): sentences per block for boundary detection
+        fallback_to_tfidf (bool): if True, use TF-IDF when embeddings fail
+        keep_references (bool): if True, keep reference sentences in segments
+        debug (bool): if True, include extra debug info in the returned dict
+        enrich_with_llm (bool): if True, call the LLM to improve titles and summaries
+        llm_model (str): the OpenAI model to use for LLM enrichment
+        llm_concurrency (int): how many LLM requests to run at the same time
+        llm_max_retries (int): how many times to retry the LLM call on failure
+
+    Returns:
+        dict: a dict with a "segments" list. Each segment has "segment_id", "viewpoint",
+              "summary", "word_count", and "content" fields.
+              If debug=True, also includes a "debug" dict with sentence and boundary info.
+    """
     cleaned = clean_text(text)
     if not cleaned:
         return {"segments": [], "debug": _empty_debug() } if debug else {"segments": []}
@@ -889,6 +1093,15 @@ def preprocess_text(
 
 
 def build_segment_batch_prompt(segments: list[dict]) -> str:
+    """
+    Build the prompt sent to the LLM for batch section card generation.
+
+    Args:
+        segments (list[dict]): segment dicts with "segment_id" and "content" fields
+
+    Returns:
+        str: the prompt string ready to be sent to the LLM
+    """
     compact_segments = [
         {
             "segment_id": segment.get("segment_id"),
@@ -929,6 +1142,20 @@ async def call_llm_for_segments_batch(
     segments: list[dict],
     model: str,
 ) -> list[dict]:
+    """
+    Call the OpenAI API to generate a viewpoint and summary for each segment in one request.
+
+    Args:
+        segments (list[dict]): segment dicts with "segment_id" and "content" fields
+        model (str): the OpenAI model to use
+
+    Returns:
+        list[dict]: enriched segment dicts with "viewpoint" and "summary" fields added
+
+    Raises:
+        ValueError: if OPENAI_API_KEY is not set or the response format is wrong
+        ImportError: if the openai package is not installed
+    """
     if not os.getenv("OPENAI_API_KEY"):
         raise ValueError("OPENAI_API_KEY is not configured.")
 
@@ -989,6 +1216,22 @@ async def enrich_segments_with_llm(
     concurrency: int = 5,
     max_retries: int = 3,
 ) -> list[dict]:
+    """
+    Enrich a list of segments with LLM-generated viewpoints and summaries.
+    Retries on failure and falls back to local generation if all attempts fail.
+
+    Args:
+        segments (list[dict]): segment dicts to enrich
+        model (str): the OpenAI model to use
+        concurrency (int): maximum number of simultaneous LLM requests
+        max_retries (int): how many times to retry before giving up
+
+    Returns:
+        list[dict]: segments with "viewpoint" and "summary" fields filled in
+
+    Raises:
+        ValueError: if segments is not a list
+    """
     if not isinstance(segments, list):
         raise ValueError("segments must be a list.")
 
@@ -1009,6 +1252,18 @@ async def enrich_segments_with_llm(
 
 
 def validate_llm_enrichment(data: dict) -> dict:
+    """
+    Validate and clean a viewpoint/summary dict returned by the LLM.
+
+    Args:
+        data (dict): raw LLM output with "viewpoint" and "summary" fields
+
+    Returns:
+        dict: a cleaned dict with "viewpoint" and "summary" fields
+
+    Raises:
+        ValueError: if the data is not a dict, or viewpoint/summary fail validation
+    """
     if not isinstance(data, dict):
         raise ValueError("LLM enrichment must be a JSON object.")
 
@@ -1025,6 +1280,19 @@ def validate_llm_enrichment(data: dict) -> dict:
 
 
 def validate_card_enrichment(data: dict) -> dict:
+    """
+    Validate and clean a section card enrichment dict returned by the LLM.
+    Rejects generic or invalid viewpoints and summaries.
+
+    Args:
+        data (dict): the raw LLM output with "viewpoint" and "summary" fields
+
+    Returns:
+        dict: a cleaned dict with "viewpoint" and "summary" fields
+
+    Raises:
+        ValueError: if the viewpoint or summary is missing, empty, or invalid
+    """
     if not isinstance(data, dict):
         raise ValueError("Card enrichment must be a JSON object.")
 
@@ -1049,6 +1317,16 @@ def validate_card_enrichment(data: dict) -> dict:
 
 
 def fallback_generate_viewpoint_and_summary(segment: dict) -> dict:
+    """
+    Generate a viewpoint and summary for a segment using only local logic.
+    Used when the LLM is unavailable or returns invalid output.
+
+    Args:
+        segment (dict): a segment dict with at least a "content" field
+
+    Returns:
+        dict: a dict with "viewpoint" and "summary" fields
+    """
     content = str(segment.get("content") or "")
     existing = {
         "viewpoint": segment.get("viewpoint"),
@@ -1066,6 +1344,7 @@ def fallback_generate_viewpoint_and_summary(segment: dict) -> dict:
 
 
 def _apply_enrichment(segment: dict, enrichment: dict) -> dict:
+    """Return a copy of the segment with the viewpoint and summary replaced by enrichment values."""
     enriched_segment = dict(segment)
     enriched_segment["viewpoint"] = enrichment["viewpoint"]
     enriched_segment["summary"] = enrichment["summary"]
@@ -1078,10 +1357,12 @@ def _run_async_enrichment_sync(
     concurrency: int,
     max_retries: int,
 ) -> list[dict]:
+    """Run the async LLM enrichment pipeline synchronously, handling any already-running event loop."""
     if not segments:
         return []
 
     async def run_enrichment() -> list[dict]:
+        """Run the async LLM enrichment call inside a new event loop."""
         return await enrich_segments_with_llm(
             segments,
             model=model,
@@ -1099,6 +1380,7 @@ def _run_async_enrichment_sync(
 
 
 def _extract_json_object(content: str) -> dict:
+    """Parse the first JSON object from a string, stripping markdown code fences if present."""
     if not content or not content.strip():
         raise ValueError("LLM response was empty.")
 
@@ -1120,6 +1402,7 @@ def _extract_json_object(content: str) -> dict:
 
 
 def _flush_paragraph(paragraphs: list[str], current: list[str]) -> None:
+    """Join the current line buffer into one paragraph and append it to the paragraphs list."""
     if current:
         paragraphs.append(" ".join(current).strip())
 
@@ -1131,6 +1414,7 @@ def _make_sentence(
     is_heading: bool,
     is_reference: bool,
 ) -> dict:
+    """Build a sentence dict with metadata fields used by the segmentation pipeline."""
     return {
         "sentence_id": sentence_id,
         "text": text,
@@ -1142,10 +1426,12 @@ def _make_sentence(
 
 
 def _is_markdown_heading(text: str) -> bool:
+    """Return True if the text starts with one to six markdown heading hashes."""
     return bool(re.match(r"^\s*#{1,6}\s+\S+", text))
 
 
 def _heading_level(text: str) -> int | None:
+    """Return the heading level (1–6) if the text is a markdown heading, otherwise None."""
     match = re.match(r"^\s*(#{1,6})\s+\S+", text)
     if match:
         return len(match.group(1))
@@ -1153,16 +1439,19 @@ def _heading_level(text: str) -> int | None:
 
 
 def _normalize_heading_text(text: str) -> str:
+    """Strip markdown hashes, numbering, and extra punctuation from a heading, returning lowercase text."""
     text = re.sub(r"^\s*#{1,6}\s+", "", text.strip())
     text = re.sub(r"^\d+(\.\d+)*\.?\s+", "", text)
     return re.sub(r"\s+", " ", text.strip(" :-")).lower()
 
 
 def _is_reference_heading(text: str) -> bool:
+    """Return True if the text is a known references or bibliography heading."""
     return _normalize_heading_text(text) in REFERENCE_HEADINGS
 
 
 def _looks_like_reference_line(text: str) -> bool:
+    """Return True if the line looks like a citation or reference entry rather than body text."""
     lowered = text.lower().strip()
     if re.match(r"^\[\d+\]:\s*https?://", lowered):
         return True
@@ -1174,6 +1463,7 @@ def _looks_like_reference_line(text: str) -> bool:
 
 
 def _protect_abbreviations(text: str) -> str:
+    """Replace periods in known abbreviations with a placeholder to prevent false sentence splits."""
     protected = text
     for abbreviation in ABBREVIATIONS:
         pattern = re.compile(re.escape(abbreviation), re.IGNORECASE)
@@ -1183,14 +1473,17 @@ def _protect_abbreviations(text: str) -> str:
 
 
 def _restore_abbreviations(text: str) -> str:
+    """Restore period placeholders back to real periods after sentence splitting is complete."""
     return text.replace("<PERIOD>", ".")
 
 
 def _tokenize(text: str) -> list[str]:
+    """Extract lowercase alphabetic word tokens from text, including hyphens and apostrophes."""
     return re.findall(r"[A-Za-z][A-Za-z'-]*", text.lower())
 
 
 def _build_tfidf_vectors(texts: list[str]) -> list[dict[str, float]]:
+    """Build a TF-IDF sparse vector for each text, returned as a list of term-to-weight dicts."""
     tokenized_texts = [_tokenize(text) for text in texts]
     document_count = len(tokenized_texts)
     document_frequency = Counter()
@@ -1214,6 +1507,7 @@ def _cosine_similarity_sparse(
     vector_a: dict[str, float],
     vector_b: dict[str, float],
 ) -> float:
+    """Compute cosine similarity between two sparse TF-IDF vectors represented as dicts."""
     if not vector_a or not vector_b:
         return 0.0
 
@@ -1228,6 +1522,7 @@ def _cosine_similarity_sparse(
 
 
 def _heading_boundaries(sentences: list[dict]) -> list[dict]:
+    """Generate strong boundary entries at each major heading to guide segment splitting."""
     boundaries = []
     for index, sentence in enumerate(sentences):
         if index == 0 or not sentence.get("is_heading"):
@@ -1250,6 +1545,7 @@ def _heading_boundaries(sentences: list[dict]) -> list[dict]:
 
 
 def _merge_boundaries_by_sentence_id(boundaries: list[dict]) -> dict[int, dict]:
+    """Deduplicate boundaries by sentence ID, keeping the strongest boundary at each position."""
     merged = {}
     for boundary in boundaries:
         sentence_id = boundary["after_sentence_id"]
@@ -1267,6 +1563,7 @@ def _select_segment_end_index(
     min_words: int,
     max_words: int,
 ) -> int:
+    """Find the best sentence index at which to end the current segment given word-count constraints."""
     current_words = 0
     min_index = None
     max_index = len(sentences) - 1
@@ -1313,6 +1610,7 @@ def _choose_best_boundary_index(
     candidates: list[tuple[int, int, dict]],
     target_words: int,
 ) -> int:
+    """Pick the candidate boundary index that best balances boundary strength and word-count closeness to target."""
     best = None
     best_key = None
     strongest = max(candidate[2]["boundary_strength"] for candidate in candidates)
@@ -1336,6 +1634,7 @@ def _make_raw_segment_from_slice(
     start_index: int,
     end_index: int,
 ) -> dict:
+    """Build a raw segment dict from a slice of the sentence list."""
     segment_sentences = sentences[start_index : end_index + 1]
     content = " ".join(sentence["text"] for sentence in segment_sentences).strip()
     sentence_ids = [sentence["sentence_id"] for sentence in segment_sentences]
@@ -1354,6 +1653,7 @@ def _merge_short_final_segment(
     min_words: int,
     max_words: int,
 ) -> list[dict]:
+    """Merge the last segment into the previous one if it is too short and merging stays within max_words."""
     if len(raw_segments) < 2:
         return raw_segments
 
@@ -1383,6 +1683,7 @@ def _split_segments_with_many_major_headings(
     raw_segments: list[dict],
     min_words: int,
 ) -> list[dict]:
+    """Split any segment that contains two or more major headings into smaller sub-segments."""
     refined_segments = []
 
     for segment in raw_segments:
@@ -1437,11 +1738,13 @@ def _split_segments_with_many_major_headings(
 
 
 def _segment_starts_with_major_heading(segment: dict) -> bool:
+    """Return True if the first sentence of the segment is a major heading."""
     first_sentence = segment["_sentences"][0]
     return _is_major_heading_sentence(first_sentence)
 
 
 def _is_major_heading_sentence(sentence: dict) -> bool:
+    """Return True if the sentence is a level-1 or level-2 heading, or a known section name."""
     if not sentence.get("is_heading"):
         return False
     if sentence.get("is_reference"):
@@ -1460,10 +1763,12 @@ def _sentence_slice_word_count(
     start_index: int,
     end_index: int,
 ) -> int:
+    """Return the total word count for a slice of the sentence list."""
     return sum(sentence["word_count"] for sentence in sentences[start_index : end_index + 1])
 
 
 def _has_strong_method_evidence(text: str, headings: list[str]) -> bool:
+    """Return True if the text or headings contain strong signals that this is a methods section."""
     if any(heading in {"method", "methods", "methodology"} for heading in headings):
         return True
     strong_terms = (
@@ -1483,6 +1788,7 @@ def _has_strong_method_evidence(text: str, headings: list[str]) -> bool:
 
 
 def _has_strong_result_evidence(text: str, headings: list[str]) -> bool:
+    """Return True if the text or headings contain strong signals that this is a results section."""
     if any(heading in {"result", "results", "findings"} for heading in headings):
         return True
     strong_terms = (
@@ -1500,6 +1806,7 @@ def _has_strong_result_evidence(text: str, headings: list[str]) -> bool:
 
 
 def _is_summary_candidate(sentence: dict) -> bool:
+    """Return True if the sentence is suitable for inclusion as a summary or key-point candidate."""
     text = sentence["text"].strip()
     lowered = text.lower()
     if sentence.get("is_heading") or sentence.get("is_reference"):
@@ -1522,6 +1829,7 @@ def _construct_role_viewpoint(
     headings: list[str],
     summary: str,
 ) -> str:
+    """Build a role-based viewpoint sentence from the content topic and detected keywords."""
     text = content.lower()
     main_topic = _extract_main_topic(headings, summary, content)
 
@@ -1549,6 +1857,7 @@ def _construct_role_viewpoint(
 
 
 def _extract_main_topic(headings: list[str], summary: str, content: str) -> str:
+    """Extract a short main-topic phrase from headings, falling back to frequent keywords."""
     for heading in headings:
         cleaned = _clean_viewpoint(heading)
         normalized = cleaned.lower().strip(" .")
@@ -1569,6 +1878,7 @@ def _extract_main_topic(headings: list[str], summary: str, content: str) -> str:
 
 
 def _clean_sentence_for_output(text: str) -> str:
+    """Remove URLs and citations from a sentence and ensure it ends with a period."""
     text = _remove_urls_and_citations(text)
     text = re.sub(r"\s+", " ", text).strip(" -")
     if text and text[-1] not in ".!?":
@@ -1577,6 +1887,7 @@ def _clean_sentence_for_output(text: str) -> str:
 
 
 def _clean_viewpoint(text: str) -> str:
+    """Strip markdown, URLs, citations, and excess punctuation from a viewpoint candidate."""
     text = _remove_urls_and_citations(text)
     text = re.sub(r"^\s*#{1,6}\s+", "", text)
     text = re.sub(r"^\d+(\.\d+)*\.?\s+", "", text)
@@ -1592,6 +1903,7 @@ def _clean_viewpoint(text: str) -> str:
 
 
 def _remove_urls_and_citations(text: str) -> str:
+    """Remove HTTP URLs, www links, bracketed citations, and empty parentheses from text."""
     text = re.sub(r"https?://\S+|www\.\S+", "", text)
     text = re.sub(r"\[[^\]]*\]|\(\s*\[\s*\d+\s*\]\s*\)|\(\s*\d{4}\s*\)", "", text)
     text = re.sub(r"\(\s*\)", "", text)
@@ -1599,6 +1911,7 @@ def _remove_urls_and_citations(text: str) -> str:
 
 
 def _is_valid_viewpoint_text(viewpoint: str, allow_short: bool = False) -> bool:
+    """Return True if the viewpoint string passes basic quality checks (length, no URLs, not generic)."""
     if not viewpoint:
         return False
     lowered = viewpoint.lower().strip(" .")
@@ -1615,6 +1928,7 @@ def _is_valid_viewpoint_text(viewpoint: str, allow_short: bool = False) -> bool:
 
 
 def _validate_viewpoint(viewpoint: str, segment_id: int) -> None:
+    """Raise ValueError if the viewpoint is empty, generic, contains URLs, or has wrong word count."""
     if not viewpoint or not viewpoint.strip():
         raise ValueError(f"Segment {segment_id} has an empty viewpoint.")
     lowered = viewpoint.lower().strip(" .")
@@ -1629,6 +1943,7 @@ def _validate_viewpoint(viewpoint: str, segment_id: int) -> None:
 
 
 def _looks_like_weak_topic_label(viewpoint: str) -> bool:
+    """Return True if the viewpoint is a short noun phrase with no verb, making it too generic."""
     cleaned = viewpoint.lower().strip(" .")
     words = cleaned.split()
     if len(words) > 6:
@@ -1655,6 +1970,7 @@ def _looks_like_weak_topic_label(viewpoint: str) -> bool:
 
 
 def _validate_summary(summary: str, segment_id: int) -> None:
+    """Raise ValueError if the summary is empty or contains URLs or citation markers."""
     if not summary or not summary.strip():
         raise ValueError(f"Segment {segment_id} has an empty summary.")
     if re.search(r"https?://|www\.|\[[^\]]+\]", summary):
@@ -1662,10 +1978,12 @@ def _validate_summary(summary: str, segment_id: int) -> None:
 
 
 def _citation_count(text: str) -> int:
+    """Count the number of bracketed or parenthetical citation markers in text."""
     return len(re.findall(r"\[[^\]]+\]|\(\s*\d{4}\s*\)", text))
 
 
 def _sentence_by_id(sentences: list[dict], sentence_id: int) -> dict:
+    """Return the sentence dict with the given ID, raising ValueError if not found."""
     for sentence in sentences:
         if sentence["sentence_id"] == sentence_id:
             return sentence
@@ -1673,10 +1991,12 @@ def _sentence_by_id(sentences: list[dict], sentence_id: int) -> dict:
 
 
 def _normalize_for_duplicate_check(text: str) -> str:
+    """Collapse whitespace and lowercase text to produce a stable key for duplicate detection."""
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
 def _validate_repeated_shingles(content: str, segment_id: int) -> None:
+    """Raise ValueError if the segment content contains an excessive amount of repeated 8-word shingles."""
     words = _tokenize(content)
     if len(words) < 80:
         return
@@ -1695,6 +2015,7 @@ def _validate_repeated_shingles(content: str, segment_id: int) -> None:
 
 
 def _public_segment(segment: dict) -> dict:
+    """Return a copy of a segment with only the fields that are safe to expose to callers."""
     return {
         "segment_id": segment["segment_id"],
         "viewpoint": segment["viewpoint"],
@@ -1705,6 +2026,7 @@ def _public_segment(segment: dict) -> dict:
 
 
 def _empty_debug(sentences: list[dict] | None = None) -> dict:
+    """Return a debug dict with zero-value counters and empty lists for when no segments were built."""
     sentences = sentences or []
     return {
         "sentence_count": len(sentences),
@@ -1719,10 +2041,12 @@ def _empty_debug(sentences: list[dict] | None = None) -> dict:
 
 
 def _keyword_score(text: str, keywords: tuple[str, ...]) -> int:
+    """Count how many of the given keyword phrases appear as whole words in the text."""
     return sum(1 for keyword in keywords if re.search(rf"\b{re.escape(keyword)}\b", text))
 
 
 def _trim_summary(sentence: str, max_words: int = 35) -> str:
+    """Trim a summary sentence to at most max_words words, ending with a period if cut short."""
     words = sentence.strip().split()
     if len(words) <= max_words:
         return sentence.strip()

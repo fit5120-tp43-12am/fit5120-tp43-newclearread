@@ -1,11 +1,12 @@
 # Browser Extension Release Runbook
 
-This runbook is for preparing the Clearead extension ZIP for Chrome Web Store review.
+This runbook is for validating, packaging, and maintaining Clearead extension releases on the Chrome Web Store.
 
 ## 1. Confirm Release Scope
 
-- Branch: `feature/browser-extension`
+- Branch: `dev`
 - Extension root: `browser-extension/`
+- Public listing: `https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn`
 - Production package contents: `manifest.json`, `src/`, `public/`
 - Store ZIP contents are limited to production extension files.
 
@@ -85,7 +86,7 @@ browser-extension/dist/clearead-extension-0.1.0.zip
 
 ## 5. Dashboard Materials
 
-Use `docs/chrome-store-submission.md` for:
+Use `docs/chrome-store-submission.md` for store listing maintenance:
 
 - Store summary
 - Detailed description
@@ -98,7 +99,9 @@ Use `docs/chrome-store-submission.md` for:
 
 Publish `docs/privacy-policy.md` at a public URL and use that URL in the Developer Dashboard.
 
-## 6. Before Clicking Submit
+## 6. Release Submission Checks
+
+Confirm these items before publishing a new or updated package:
 
 - Confirm production backend URL is final.
 - Confirm backend request logging and retention.

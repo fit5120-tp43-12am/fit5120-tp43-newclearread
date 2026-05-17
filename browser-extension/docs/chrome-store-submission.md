@@ -1,6 +1,8 @@
 # Chrome Web Store Submission
 
-This document collects Chrome Web Store dashboard text for the Clearead extension release.
+This document maintains Chrome Web Store dashboard text for the published Clearead extension and future release updates.
+
+Public listing: `https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn`.
 
 Official references checked on May 11, 2026:
 
@@ -149,7 +151,7 @@ The extension works without login or paid account setup.
 
 Suggested text:
 
-1. Load the extension and click the Clearead toolbar icon.
+1. Open the installed extension and click the Clearead toolbar icon.
 2. Click "Open Clearead for this page" to open the side panel.
 3. Paste a short paragraph into the text box and click Summary.
 4. On a normal webpage, try Verdana, OpenDyslexic, Highlight, Lens, Line guide, and No ruler.

@@ -1,8 +1,8 @@
 # Security And Privacy Development Log
 
-Last updated: 2026-05-09
+Last updated: 2026-05-17
 
-This development log supports review, presentation, and Chrome Web Store preparation. The public privacy policy text is maintained in `docs/privacy-policy.md`.
+This development log supports review, presentation, and Chrome Web Store release maintenance. The public privacy policy text is maintained in `docs/privacy-policy.md`.
 
 ## Official Chrome References Checked
 
