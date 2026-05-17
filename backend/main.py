@@ -25,9 +25,11 @@ app.include_router(tts_router, prefix="/api")
 
 @app.get("/")
 def home():
+    """Return a simple status message to confirm the backend is running."""
     return {"message": "Backend is running!"}
 
 
 def test():
+    """Return a hello message used for basic connectivity checks."""
     return {"message": "Hello from backend!"}
 

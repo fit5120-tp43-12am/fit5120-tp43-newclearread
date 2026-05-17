@@ -35,6 +35,11 @@ const errorMessage      = ref('')
 const canSubmit = computed(() => username.value.trim() && password.value)
 
 // ── Login handler ─────────────────────────────────────────────────────────────
+/**
+ * Validate the login form and store successful authentication for this browser session.
+ *
+ * @returns {void}
+ */
 function handleLogin() {
   if (
     username.value.trim() === VALID_USERNAME &&

@@ -20,6 +20,8 @@ EMBEDDING_BATCH_SIZE = 96
 
 
 class SegmentCardOutput(BaseModel):
+    """LLM-generated title and preview text for one reading segment."""
+
     viewpoint: str = Field(
         max_length=36,
         description="A compact 3-7 word section card title.",
@@ -31,10 +33,14 @@ class SegmentCardOutput(BaseModel):
 
 
 class SegmentCardItem(SegmentCardOutput):
+    """Segment-card output paired with the source segment identifier."""
+
     segment_id: int
 
 
 class SegmentCardBatchOutput(BaseModel):
+    """Batch response containing generated card copy for multiple segments."""
+
     items: list[SegmentCardItem]
 
 SEGMENT_TYPES = {
@@ -1356,6 +1362,7 @@ def _run_async_enrichment_sync(
         return []
 
     async def run_enrichment() -> list[dict]:
+        """Run the async LLM enrichment call inside a new event loop."""
         return await enrich_segments_with_llm(
             segments,
             model=model,

@@ -373,6 +373,7 @@ def _enrich_section_cards(segments: list[dict]) -> list[dict]:
     ]
 
     async def run_enrichment() -> list[dict]:
+        """Run the LLM enrichment pass on all segments that need section card data."""
         return await enrich_segments_with_llm(
             enrichment_segments,
             model=os.getenv("CLEARREAD_SECTION_CARD_MODEL", "gpt-5.4-mini"),

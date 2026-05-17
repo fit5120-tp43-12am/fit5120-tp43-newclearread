@@ -13,9 +13,10 @@ const menuOpen  = ref(false)
 // ref to the features section for smooth scroll
 const featuresSection = ref(null)
 
-// Simple scroll handler — called ~60× per second during scrolling.
+/** Update the scrolled flag so the navbar gains a shadow after the user scrolls down. */
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
+/** Smoothly scroll to the features section when the hero CTA button is clicked. */
 function scrollToFeatures() {
   featuresSection.value?.scrollIntoView({ behavior: 'smooth' })
 }

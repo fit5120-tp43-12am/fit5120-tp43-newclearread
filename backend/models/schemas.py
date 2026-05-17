@@ -10,10 +10,14 @@ MAX_TEXT_CHARS = 50000
 
 # Request body for plain text submitted by the frontend.
 class TextRequest(BaseModel):
+    """Request body containing raw text submitted for reading support."""
+
     text: str
 
 
 class TTSRequest(BaseModel):
+    """Request body for backend text-to-speech generation."""
+
     text: str = Field(..., min_length=1, max_length=12000)
     voice: str = "default-female"
     speed: float = Field(1.0, ge=0.5, le=2.0)
@@ -22,12 +26,16 @@ class TTSRequest(BaseModel):
 
 # Request body for uploaded files sent as base64 content.
 class ExtractFileRequest(BaseModel):
+    """Request body for a TXT, PDF, or DOCX upload encoded as base64."""
+
     filename: str
     contentBase64: str
 
 
 # Response returned after extracting readable text from a file.
 class ExtractFileResponse(BaseModel):
+    """Response returned after readable text is extracted from an uploaded file."""
+
     text: str
     sourceType: str
     usedFallback: bool
@@ -36,6 +44,8 @@ class ExtractFileResponse(BaseModel):
 
 # A single reading block shown by the frontend result page.
 class TextBlock(BaseModel):
+    """One section card and summary block displayed by the frontend."""
+
     id: int
     title: str = ""
     subtitle: str = ""
@@ -46,6 +56,8 @@ class TextBlock(BaseModel):
 
 # Compact processing metrics exposed for debugging in the browser network tab.
 class TextProcessingStats(BaseModel):
+    """Timing and block-count metrics returned with a reading response."""
+
     totalSeconds: float = 0.0
     sectionCardSeconds: float = 0.0
     preprocessSeconds: float
@@ -60,12 +72,16 @@ class TextProcessingStats(BaseModel):
 
 # Overall document summary shown above the section cards.
 class OverallSummary(BaseModel):
+    """Short whole-document summary displayed above the reading blocks."""
+
     heading: str = ""
     text: str = ""
 
 
 # Response returned after splitting and summarising reading text.
 class TextResponse(BaseModel):
+    """Full reading-support response returned to the frontend."""
+
     notice: str
     usedFallback: bool
     # Machine-readable reason for fallback, empty when the normal path succeeds.
