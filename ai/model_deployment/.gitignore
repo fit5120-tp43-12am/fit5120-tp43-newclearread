@@ -1,0 +1,27 @@
+# Runtime artifacts
+*.log
+*.pid
+*.tmp
+__pycache__/
+*.py[cod]
+
+# Secrets and local environment files
+.env
+.env.*
+*.key
+*.pem
+
+# Large model artifacts are tracked through manifests.
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+models/
+adapters/
+artifacts/
+
+# Local benchmark outputs
+**/*_results.json
+**/*_results.csv
+**/*_sanitized.log

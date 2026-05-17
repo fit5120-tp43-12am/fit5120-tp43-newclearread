@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clearead</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup-shell">
+      <div class="popup-brand">
+        <img
+          class="popup-logo"
+          src="../../public/icons/icon-32.png"
+          alt=""
+          aria-hidden="true"
+        >
+        <h1>Clearead</h1>
+      </div>
+      <p class="popup-note">
+        Connect Clearead to this page.
+      </p>
+      <button id="open-clearead" class="primary-button" type="button">
+        Open Clearead for this page
+      </button>
+      <div class="website-callout" aria-label="Clearead website">
+        <div class="website-callout-copy">
+          <p class="website-callout-kicker">More features</p>
+          <p class="website-callout-title">Clearead website</p>
+        </div>
+        <a
+          id="open-clearead-website"
+          class="secondary-link"
+          href="https://clearead.azurewebsites.net/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open website
+        </a>
+      </div>
+      <p id="popup-status" class="popup-status" role="status" aria-live="polite">
+        Then choose tools in the side panel.
+      </p>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

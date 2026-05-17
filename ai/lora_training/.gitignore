@@ -1,0 +1,18 @@
+# Local model and training artifacts
+**/models/
+**/cache/
+**/outputs/
+**/checkpoints/
+**/unsloth_compiled_cache/
+**/__pycache__/
+
+# Model/checkpoint binaries
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.gguf
+
+# Python artifacts
+*.pyc
+

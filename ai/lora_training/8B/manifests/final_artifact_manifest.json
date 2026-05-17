@@ -1,0 +1,131 @@
+{
+  "artifact_name": "clearread_llama31_8b_qlora_candidate_a",
+  "created_at": "2026-04-28",
+  "selection_status": "selected_final_raw_adapter",
+  "selected_adapter_path": "<external-local-raw-8b-training-workspace-not-in-git>/ai/lora_training/models/adapters/full_candidate_a_3epoch",
+  "base_model_id": "unsloth/Llama-3.1-8B-Instruct-unsloth-bnb-4bit",
+  "training_route": "Llama-3.1-8B-Instruct + SFT + QLoRA",
+  "config_path": "ai/lora_training/configs/train_llama31_8b_qlora_candidate_a.example.yaml",
+  "inference_config_path": "ai/lora_training/configs/final_candidate_a_inference.example.yaml",
+  "final_test_report_path": "ai/lora_training/reports/FINAL_TEST_EVALUATION_CANDIDATE_A_REPORT.md",
+  "split_hashes": {
+    "train_jsonl_sha256": "b99caa6b06963a05ca7e32da3c3be3237c9ea6b128ce1ccf329b78d2d56929fb",
+    "validation_jsonl_sha256": "a7cf5277eda97ef1868376caa79343b040ba6920602bc607dc145a2039d2d4be",
+    "test_jsonl_sha256": "6613390f654c55a69c5ddb90234f81005fc3baca8e57651206f1ef024c939b7f",
+    "split_manifest_sha256": "42bfe9974c31e74b98b45d45daa792f8582d517541e153439b510e9a9b307f19"
+  },
+  "training_summary": {
+    "epochs": 3,
+    "optimizer_steps": 438,
+    "final_train_loss": 0.4797596574748216,
+    "validation_loss": 0.9654271602630615,
+    "validation_loss_method": "trainer.evaluate(eval_dataset=validation) once after training",
+    "oom": "no",
+    "validation_inference_sanity_schema_pass": "10/10"
+  },
+  "validation_audit_summary": {
+    "records": 145,
+    "json_parse": "145/145",
+    "schema_pass": "145/145",
+    "exact_key_order": "145/145",
+    "exactly_4_key_points": "145/145",
+    "manual_review": {
+      "pass": 14,
+      "minor_issue": 2,
+      "major_issue": 0,
+      "uncertain": 0
+    },
+    "recommendation": "proceed_to_final_evaluation",
+    "summary": "No instruction-following failures, refusal/meta behavior, mojibake, or broad domain/length quality collapse were found."
+  },
+  "final_test_summary": {
+    "records": 145,
+    "json_parse": "145/145",
+    "schema_pass": "144/145",
+    "exact_key_order": "145/145",
+    "main_idea_string": "145/145",
+    "key_points_list": "145/145",
+    "exactly_4_key_points": "144/145",
+    "all_key_points_strings": "145/145",
+    "row_87_caveat": {
+      "row": 87,
+      "record_id": "academic_paper:000458:8541ac16b79f",
+      "domain": "academic_paper",
+      "natural_length_bucket": "medium",
+      "schema_error": "key_points_len_7",
+      "summary": "The output was parseable and broadly faithful, but produced seven key points instead of exactly four."
+    },
+    "manual_review": {
+      "pass": 14,
+      "minor_issue": 2,
+      "major_issue": 1,
+      "uncertain": 0,
+      "summary": "Manual review found no severe faithfulness, safety, instruction-following, refusal/meta, or encoding issue. The major issue was the row 87 schema-contract failure."
+    }
+  },
+  "schema_guard": {
+    "required": true,
+    "implemented_in": "scripts/infer_clearread_candidate_a.py",
+    "policy": {
+      "too_many_key_points": "truncate to first four generated key points and record schema_guard_action=truncated_key_points",
+      "too_few_key_points": "return machine-readable error object",
+      "json_parse_error": "return machine-readable error object",
+      "wrong_keys_or_types": "return machine-readable error object"
+    },
+    "note": "The guard is a deployment safety layer and does not change the held-out final test score."
+  },
+  "local_adapter_files": [
+    {
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/adapter_config.json",
+      "size_bytes": 1262,
+      "sha256": "e18a24897876cbeea6453292e0027a728bd85b700cd0c05a9aa29c02414c50f1"
+    },
+    {
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/adapter_model.safetensors",
+      "size_bytes": 167832240,
+      "sha256": "ef220721c78e72f41c3b14749f25a09ef39f6aaf351266b276cee41ec724cf92"
+    },
+    {
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/chat_template.jinja",
+      "size_bytes": 4614,
+      "sha256": "e10ca381b1ccc5cf9db52e371f3b6651576caee0a630b452e2816b2d404d4b65"
+    },
+    {
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/README.md",
+      "size_bytes": 5256,
+      "sha256": "1dadff2f9ed0be94f4d1253ae61de95da79f7edea3d641fc157b9270b2c62612"
+    },
+    {
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/tokenizer.json",
+      "size_bytes": 17209920,
+      "sha256": "6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b"
+    },
+    {
+      "path": "<external-local-raw-8b-training-workspace-not-in-git>/models/adapters/full_candidate_a_3epoch/tokenizer_config.json",
+      "size_bytes": 50669,
+      "sha256": "52a57d911c30cf2b645e3350aafd9f1c424d2529483fd4628e7e34bfb33a7fe2"
+    }
+  ],
+  "artifact_storage_policy": {
+    "include_adapter_or_model_files": false,
+    "include_cache_or_checkpoint_files": false,
+    "external_artifact_patterns": [
+      "ai/lora_training/**/*.jsonl",
+      "ai/lora_training/**/*.safetensors",
+      "ai/lora_training/**/*.pt",
+      "ai/lora_training/**/*.pth",
+      "ai/lora_training/**/*.bin",
+      "Hugging Face cache",
+      "Unsloth compiled cache",
+      "checkpoints",
+      "optimizer states"
+    ],
+    "repository_files": [
+      "ai/lora_training/configs/final_candidate_a_inference.example.yaml",
+      "ai/lora_training/scripts/infer_clearread_candidate_a.py",
+      "ai/lora_training/docs/local_inference_runbook.md",
+      "ai/lora_training/reports/FINAL_MODEL_SELECTION_REPORT.md",
+      "ai/lora_training/history/stage_reviews/stage_009_package_artifact_and_deployment_notes.md"
+    ]
+  }
+}

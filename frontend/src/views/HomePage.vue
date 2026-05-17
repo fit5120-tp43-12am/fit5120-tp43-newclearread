@@ -1,15 +1,26 @@
 <script setup>
+// ── HomePage.vue ──────────────────────────────────────────────────────────────
+// The landing page. Shows the hero section, feature overview, training game promo,
+// how-it-works steps, a CTA banner, and the footer.
+// The script only handles two UI behaviours: navbar scroll shadow and mobile menu toggle.
 import { ref, onMounted, onUnmounted } from 'vue'
 
-// track whether the user has scrolled down — used to add a shadow to the navbar
+// scrolled drives the .navbar--scrolled CSS class.
+// The navbar starts transparent; once the user scrolls 10px it becomes frosted-glass.
 const scrolled  = ref(false)
-// track whether the mobile hamburger menu is open or closed
+// menuOpen controls whether the mobile slide-down nav drawer is visible.
 const menuOpen  = ref(false)
+// ref to the features section for smooth scroll
+const featuresSection = ref(null)
 
-// called on every scroll event — sets scrolled to true once the user goes past 10px
+// Simple scroll handler — called ~60× per second during scrolling.
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
-// add the scroll listener when the page loads, remove it when the page is destroyed
+function scrollToFeatures() {
+  featuresSection.value?.scrollIntoView({ behavior: 'smooth' })
+}
+
+// onMounted / onUnmounted are Vue lifecycle hooks.
 onMounted(() => window.addEventListener('scroll', onScroll))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
@@ -32,9 +43,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           Clearead
         </RouterLink>
         <ul class="nav-links">
-          <li><RouterLink to="/"         class="nav-link nav-link--active">Home</RouterLink></li>
-          <li><RouterLink to="/reading"  class="nav-link">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
+          <li><RouterLink to="/"           class="nav-link nav-link--active">Home</RouterLink></li>
+          <li><RouterLink to="/reading"    class="nav-link">Reading Support</RouterLink></li>
+          <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
+          <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -50,9 +64,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     <!-- Mobile nav -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
+        <li><RouterLink to="/"           class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"    class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
+        <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
@@ -80,15 +97,18 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
               <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </RouterLink>
-          <RouterLink to="/dyslexia" class="btn-ghost">
-            Learn About Dyslexia
-          </RouterLink>
         </div>
+
+        <button class="scroll-down" @click="scrollToFeatures" aria-label="Scroll to features">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </section>
 
     <!-- ── Features ── -->
-    <section class="section-features">
+    <section class="section-features" ref="featuresSection">
       <div class="container">
         <p class="eyebrow">What Clearead does</p>
         <h2 class="section-title">Three ways Clearead helps</h2>
@@ -110,75 +130,340 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
             <p>Change font size, spacing, and background colour. Find what works for you.</p>
           </div>
         </div>
+
+        <div class="features-cta">
+          <RouterLink to="/reading" class="btn-features-start">
+            Start Here
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </RouterLink>
+        </div>
       </div>
     </section>
 
-    <!-- ── How it works ── -->
-    <section class="section-steps">
+    <!-- ── Training game promo ── -->
+    <section class="section-training">
       <div class="container">
-        <p class="eyebrow">How it works</p>
-        <h2 class="section-title">Three steps</h2>
+      <div class="training-panel">
+      <div class="training-inner">
+        <!-- Left: text content -->
+        <div class="training-text">
+          <p class="eyebrow">New — Reading Training</p>
+          <h2 class="section-title">Build reading skills with Focus Reader</h2>
+          <p class="training-desc">
+            A short, game-based exercise that trains you to tell apart easily confused
+            letters and sounds — like b/d/p/q and sh/ch/th. Tap the right moving chip
+            before time runs out. Difficulty adapts to your pace.
+          </p>
+          <ul class="training-bullets">
+            <li>
+              <span class="bullet-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                  <path d="M4 7l2 2 4-4" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Confusable letters, phoneme chunks, and short words
+            </li>
+            <li>
+              <span class="bullet-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                  <path d="M4 7l2 2 4-4" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Visual and audio cues — trains both reading pathways
+            </li>
+            <li>
+              <span class="bullet-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                  <path d="M4 7l2 2 4-4" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Adapts difficulty automatically as you improve
+            </li>
+          </ul>
+          <RouterLink to="/training" class="btn-training">
+            Try Focus Reader
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </RouterLink>
+        </div>
+        <!-- Right: visual preview of the game chips -->
+        <div class="training-visual" aria-hidden="true">
+          <div class="chip-preview">
+            <div class="chip chip--target">b</div>
+            <div class="chip chip--distractor chip--blue">d</div>
+            <div class="chip chip--distractor chip--rose">p</div>
+            <div class="chip chip--distractor chip--yellow">q</div>
+            <div class="chip chip--distractor chip--plain">sh</div>
+            <div class="chip chip--distractor chip--blue">ch</div>
+          </div>
+          <p class="preview-caption">Tap the chip that matches the cue</p>
+        </div>
+      </div><!-- training-inner -->
+      </div><!-- training-panel -->
+      </div><!-- container -->
+    </section>
 
-        <div class="steps-row">
-          <div class="step">
-            <span class="step-num">1</span>
-            <div class="step-body">
-              <h3>Paste your text</h3>
-              <p>Paste any text or upload a file.</p>
+    <!-- ── Dictionary feature promo ── -->
+    <section class="section-dict">
+      <div class="container">
+        <div class="dict-panel">
+
+          <!-- Alphabet backdrop — covers the whole panel, fades right toward the text -->
+          <div class="dict-visual-alpha" aria-hidden="true">
+            <!-- left column -->
+            <span style="top:-8%;    left:-4%;  font-size:150px; transform:rotate(-18deg)">W</span>
+            <span style="top:10%;    left:18%;  font-size:120px; transform:rotate(10deg)">F</span>
+            <span style="top:26%;    left:-6%;  font-size:145px; transform:rotate(-24deg)">M</span>
+            <span style="top:38%;    left:20%;  font-size:130px; transform:rotate(16deg)">J</span>
+            <span style="top:54%;    left:-4%;  font-size:160px; transform:rotate(14deg)">B</span>
+            <span style="top:70%;    left:14%;  font-size:125px; transform:rotate(-20deg)">K</span>
+            <span style="bottom:-12%;left:-2%;  font-size:140px; transform:rotate(18deg)">S</span>
+            <!-- right column (fills the area beside the card) -->
+            <span style="top:-6%;    left:55%;  font-size:130px; transform:rotate(12deg)">A</span>
+            <span style="top:12%;    left:72%;  font-size:110px; transform:rotate(-16deg)">T</span>
+            <span style="top:22%;    left:55%;  font-size:118px; transform:rotate(-14deg)">N</span>
+            <span style="top:38%;    left:68%;  font-size:112px; transform:rotate(14deg)">P</span>
+            <span style="top:52%;    left:55%;  font-size:115px; transform:rotate(-10deg)">R</span>
+            <span style="top:68%;    left:70%;  font-size:118px; transform:rotate(18deg)">V</span>
+            <span style="bottom:-10%;left:55%;  font-size:155px; transform:rotate(-8deg)">Y</span>
+          </div>
+          <!-- Gradient fade — transparent left → white right, covers right half of panel -->
+          <div class="dict-visual-fade" aria-hidden="true"></div>
+
+          <div class="dict-inner">
+
+            <!-- Left: animated double-click guide -->
+            <div class="dict-visual" aria-hidden="true">
+
+              <!-- Step 1: text passage with target word -->
+              <div class="demo-scene">
+
+                <!-- Text card -->
+                <div class="demo-text-card">
+                  <p class="demo-passage">
+                    Often hard to
+                    <span class="demo-target-word">comprehend</span>
+                    complex terms.
+                  </p>
+                  <!-- Hint label -->
+                  <p class="demo-hint-label">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                      <circle cx="6" cy="6" r="5" stroke="#6366f1" stroke-width="1.3"/>
+                      <path d="M6 4v3M6 8.5v.2" stroke="#6366f1" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    Double-click any word to look it up
+                  </p>
+                </div>
+
+                <!-- Animated cursor -->
+                <div class="demo-cursor">
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <path d="M4 2l14 9-7 1-4 7z" fill="white" stroke="#4f46e5" stroke-width="1.5" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+
+                <!-- Double-click ripple (fires twice) -->
+                <div class="demo-ripple demo-ripple--1"></div>
+                <div class="demo-ripple demo-ripple--2"></div>
+
+                <!-- Popup card that slides in after double-click -->
+                <div class="demo-popup">
+                  <div class="demo-popup-header">
+                    <span class="demo-popup-word">comprehend</span>
+                    <span class="demo-popup-star">★</span>
+                  </div>
+                  <div class="demo-popup-section">
+                    <div class="demo-popup-label">Simple meaning</div>
+                    <p class="demo-popup-meaning">To understand something fully and clearly.</p>
+                  </div>
+                  <div class="demo-popup-section">
+                    <div class="demo-popup-label">Word parts</div>
+                    <div class="demo-popup-parts">
+                      <div class="demo-popup-part demo-popup-part--prefix">
+                        <span class="demo-popup-form">com-</span>
+                        <span class="demo-popup-desc">together</span>
+                        <span class="demo-popup-badge demo-popup-badge--prefix">Prefix</span>
+                      </div>
+                      <div class="demo-popup-part demo-popup-part--root">
+                        <span class="demo-popup-form">prehend</span>
+                        <span class="demo-popup-desc">to grasp</span>
+                        <span class="demo-popup-badge demo-popup-badge--root">Root</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
-          </div>
-          <div class="step-arrow">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="#d1d5db" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="step">
-            <span class="step-num">2</span>
-            <div class="step-body">
-              <h3>Simplify</h3>
-              <p>Click Simplify. Get a plain English version and key points.</p>
+
+            <!-- Right: text content -->
+            <div class="dict-text">
+              <p class="eyebrow">Built-in Dictionary</p>
+              <h2 class="section-title">Understand every word,<br>right where you read</h2>
+              <p class="dict-desc">
+                Stuck on a word? Just double-click it — anywhere on the site.
+                Clearead breaks it into prefixes, roots, and suffixes so you can
+                understand not just this word, but every word built the same way.
+              </p>
+              <ul class="dict-bullets">
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Plain-English definition — no jargon
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Word parts: prefix, root, and suffix explained
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Save words to review later on the Dictionary page
+                </li>
+                <li>
+                  <span class="bullet-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="6" fill="#eef2ff"/>
+                      <path d="M4 7l2 2 4-4" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  Listen to the pronunciation with one tap
+                </li>
+              </ul>
+              <RouterLink to="/dictionary" class="btn-dict">
+                Open Dictionary
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </RouterLink>
             </div>
-          </div>
-          <div class="step-arrow">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="#d1d5db" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="step">
-            <span class="step-num">3</span>
-            <div class="step-body">
-              <h3>Read or listen</h3>
-              <p>Read or listen at your own pace.</p>
-            </div>
+
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ── CTA ── -->
-    <section class="section-cta">
+    <!-- ── Chrome Extension Teaser ── -->
+    <section class="section-ext">
       <div class="container">
-        <h2>Give it a try.</h2>
-        <p>It only takes a minute to get started.</p>
-        <RouterLink to="/reading" class="btn-cta">
-          Start Here
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </RouterLink>
+        <div class="ext-panel">
+          <!-- Left: text -->
+          <div class="ext-text">
+            <p class="eyebrow">Chrome Extension</p>
+            <h2 class="section-title">Clearead on every page<br/>you visit</h2>
+            <p class="ext-desc">
+              Reading support doesn't stop at the Clearead website. Install the
+              Chrome extension and get text summaries, word lookups, and
+              dyslexia-friendly page tools on <strong>any webpage</strong> — lecture
+              slides, news articles, assignment portals, everything.
+            </p>
+            <div class="ext-actions">
+              <a
+                href="https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-ext-install"
+              >
+                <!-- Chrome icon -->
+                <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+                  <circle cx="11" cy="11" r="10" fill="white" opacity="0.15"/>
+                  <circle cx="11" cy="11" r="4.2" fill="white"/>
+                  <path d="M11 6.8h8.6A10 10 0 0 0 2.7 8.6L6.9 15.6A4.2 4.2 0 0 1 11 6.8Z" fill="#EA4335" opacity="0.9"/>
+                  <path d="M19.6 6.8H11A4.2 4.2 0 0 1 15.1 15.6L11 22A10 10 0 0 0 19.6 6.8Z" fill="#FBBC05" opacity="0.9"/>
+                  <path d="M6.9 15.6A4.2 4.2 0 0 0 15.1 15.6L11 22A10 10 0 0 1 2.7 8.6Z" fill="#34A853" opacity="0.9"/>
+                </svg>
+                Add to Chrome — it's free
+              </a>
+              <RouterLink to="/extension" class="btn-ext-learn">
+                See how it works
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </RouterLink>
+            </div>
+          </div>
+
+          <!-- Right: mini feature pills -->
+          <div class="ext-pills" aria-hidden="true">
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--blue">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <path d="M4 5h14M4 9h10M4 13h12M4 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Text Summary</div>
+                <div class="ext-pill-sub">Paste any text, get a plain-English summary</div>
+              </div>
+            </div>
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--violet">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="M15 15l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Word Lookup</div>
+                <div class="ext-pill-sub">Right-click any word to look it up</div>
+              </div>
+            </div>
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--green">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <path d="M4 7h14M4 11h14M4 15h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Readable Fonts</div>
+                <div class="ext-pill-sub">Switch any page to OpenDyslexic</div>
+              </div>
+            </div>
+            <div class="ext-pill">
+              <div class="ext-pill-icon ext-pill-icon--amber">
+                <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                  <rect x="2" y="9" width="18" height="4" rx="2" fill="currentColor" opacity="0.25"/>
+                  <path d="M2 11h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ext-pill-title">Highlight &amp; Line Guide</div>
+                <div class="ext-pill-sub">Track your reading line by line</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ── Footer ── -->
     <footer class="footer">
-      <div class="container footer-inner">
+      <div class="footer-inner">
         <div class="footer-left">
           <span class="footer-logo">Clearead</span>
           <p class="footer-tagline">Built for minds that think differently.</p>
         </div>
         <nav class="footer-links">
-          <RouterLink to="/reading"  class="footer-link">Reading Support</RouterLink>
-          <RouterLink to="/dyslexia" class="footer-link">Dyslexia</RouterLink>
+          <RouterLink to="/privacy-policy" class="footer-link">Privacy Policy</RouterLink>
         </nav>
         <p class="footer-copy">© 2026 Clearead. All rights reserved.</p>
       </div>
@@ -188,10 +473,28 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </template>
 
 <style scoped>
-/* ── Page ── */
+/* ═══════════════════════════════════════════════════════
+   PAGE — seamless gradient canvas, no fixed attachment
+   Use a tall linear base + radial blobs so there is NO
+   hard edge anywhere as the user scrolls.
+   ═══════════════════════════════════════════════════════ */
 .page {
   min-height: 100vh;
-  background: #fff;
+  background:
+    /* top-left lavender */
+    radial-gradient(ellipse 80% 40% at 0%   0%,   rgba(147,167,255,0.50) 0%, transparent 55%),
+    /* top-right peach */
+    radial-gradient(ellipse 70% 35% at 100% 0%,   rgba(255,200,150,0.42) 0%, transparent 52%),
+    /* mid-left soft violet */
+    radial-gradient(ellipse 60% 30% at 0%   50%,  rgba(147,167,255,0.25) 0%, transparent 55%),
+    /* mid-right warm peach */
+    radial-gradient(ellipse 55% 28% at 100% 50%,  rgba(255,218,180,0.28) 0%, transparent 52%),
+    /* bottom-left lavender */
+    radial-gradient(ellipse 65% 30% at 0%   100%, rgba(147,167,255,0.30) 0%, transparent 55%),
+    /* bottom-right peach */
+    radial-gradient(ellipse 60% 28% at 100% 100%, rgba(255,200,150,0.30) 0%, transparent 52%),
+    /* base */
+    #f4f5ff;
   color: #0d1117;
 }
 
@@ -203,10 +506,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   transition: background 0.3s, box-shadow 0.3s;
 }
 .navbar--scrolled {
-  background: rgba(255,255,255,0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+  background: rgba(244,245,255,0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(99,120,255,0.1);
 }
 .nav-inner {
   max-width: 1160px;
@@ -236,6 +539,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext {
+  color: #2563eb;
+  border: 1px solid rgba(37,99,235,0.22);
+  padding: 5px 13px;
+}
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
 .nav-link--active::after {
   content: '';
   position: absolute;
@@ -244,29 +553,26 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   border-radius: 50%; background: #2563eb;
 }
 
-/* ── Hero ── */
+/* ── Hero — transparent so page gradient shows ── */
 .hero {
   position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(ellipse 55% 80% at 15% 55%, rgba(147,167,255,0.45) 0%, transparent 65%),
-    radial-gradient(ellipse 45% 65% at 85% 40%, rgba(255,200,150,0.4) 0%, transparent 60%),
-    radial-gradient(ellipse 30% 40% at 50% 80%, rgba(255,220,180,0.25) 0%, transparent 55%),
-    #f8f9ff;
+  background: transparent;
   overflow: hidden;
 }
+/* subtle animated blobs add depth without blocking the fixed gradient */
 .blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
+  filter: blur(100px);
   pointer-events: none;
   z-index: 0;
 }
-.blob--blue  { width: 520px; height: 520px; background: rgba(99,120,255,0.18); top: -60px; left: -80px; }
-.blob--peach { width: 420px; height: 420px; background: rgba(255,165,100,0.15); bottom: -60px; right: -60px; }
+.blob--blue  { width: 500px; height: 500px; background: rgba(99,120,255,0.14); top: -80px; left: -100px; }
+.blob--peach { width: 400px; height: 400px; background: rgba(255,165,100,0.12); bottom: -80px; right: -80px; }
 
 .hero-content {
   position: relative;
@@ -278,12 +584,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .badge {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 6px 16px;
-  background: rgba(255,255,255,0.7);
-  border: 1px solid rgba(79,110,247,0.2);
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(79,110,247,0.18);
   border-radius: 999px;
   font-size: 13px; font-weight: 500; color: #374151;
   margin-bottom: 28px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .hero-title {
@@ -309,23 +615,49 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .btn-start {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 26px;
-  background: #2563eb; color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff;
   font-size: 15px; font-weight: 600;
   border-radius: 999px; text-decoration: none;
   box-shadow: 0 6px 20px rgba(37,99,235,0.3);
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-.btn-start:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,99,235,0.35); }
+.btn-start:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(37,99,235,0.35); }
 .btn-ghost {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 13px 24px;
-  background: rgba(255,255,255,0.75); color: #374151;
+  background: rgba(255,255,255,0.65); color: #374151;
   font-size: 15px; font-weight: 600;
-  border-radius: 999px; border: 1px solid rgba(0,0,0,0.1);
-  text-decoration: none; backdrop-filter: blur(10px);
+  border-radius: 999px; border: 1px solid rgba(255,255,255,0.8);
+  text-decoration: none; backdrop-filter: blur(12px);
   transition: background 0.2s, transform 0.15s;
 }
-.btn-ghost:hover { background: rgba(255,255,255,0.95); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+.btn-ghost:hover { background: rgba(255,255,255,0.9); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+/* ── Scroll-down arrow ── */
+.scroll-down {
+  display: flex; align-items: center; justify-content: center;
+  width: 52px; height: 52px;
+  margin: 56px auto 0;
+  background: rgba(255,255,255,0.75);
+  border: 2px solid rgba(99,102,241,0.3);
+  border-radius: 999px;
+  color: #4f46e5;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(99,102,241,0.15);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  animation: bounce 2s ease-in-out infinite;
+}
+.scroll-down:hover {
+  background: rgba(255,255,255,1);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.25);
+  animation: none;
+  transform: translateY(4px);
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(9px); }
+}
 
 /* ── Shared layout ── */
 .container {
@@ -343,32 +675,34 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-weight: 800; letter-spacing: -0.03em;
   margin: 0 0 14px; line-height: 1.2;
 }
-.section-sub {
-  font-size: 16px; color: #6b7280;
-  line-height: 1.65; margin: 0 0 52px;
-  max-width: 520px;
-}
 
-/* ── Features ── */
+/* ═══════════════════════════════════════════════════════
+   FEATURES — transparent section, glass cards
+   ═══════════════════════════════════════════════════════ */
 .section-features {
   padding: 96px 0;
-  border-bottom: 1px solid #e5e7eb;
+  /* no background, no border — seamless with page gradient */
 }
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 20px;
+  margin-top: 8px;
 }
+/* Glass card — lets gradient show through */
 .feature-card {
   padding: 32px 28px;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  background: #fff;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(99,120,255,0.07);
   transition: box-shadow 0.2s, transform 0.2s;
 }
 .feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.07);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 40px rgba(99,120,255,0.13);
 }
 .feature-num {
   font-size: 12px; font-weight: 700;
@@ -383,80 +717,518 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-size: 14.5px; color: #6b7280;
   line-height: 1.7; margin: 0;
 }
-
-/* ── Steps ── */
-.section-steps {
-  padding: 96px 0;
-  background: #fafbff;
-  border-bottom: 1px solid #e5e7eb;
-}
-.steps-row {
+.features-cta {
+  margin-top: 44px;
   display: flex;
-  align-items: center;
-  gap: 0;
-  margin-top: 52px;
+  justify-content: center;
 }
-.step {
-  flex: 1;
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-}
-.step-num {
-  width: 40px; height: 40px;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: #eef2ff;
-  color: #2563eb;
-  font-size: 15px; font-weight: 800;
-  border-radius: 12px;
-}
-.step-body h3 {
-  font-size: 16px; font-weight: 700;
-  margin: 0 0 8px; letter-spacing: -0.02em;
-}
-.step-body p {
-  font-size: 14px; color: #6b7280;
-  line-height: 1.65; margin: 0;
-}
-.step-arrow {
-  flex-shrink: 0;
-  padding: 0 28px;
-  margin-top: 10px;
-}
-
-/* ── CTA ── */
-.section-cta {
-  padding: 96px 0;
-  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
-  text-align: center;
-}
-.section-cta h2 {
-  font-size: clamp(26px, 4vw, 42px);
-  font-weight: 800; color: #fff;
-  letter-spacing: -0.04em; margin: 0 0 14px;
-}
-.section-cta p {
-  font-size: 16px; color: rgba(255,255,255,0.65);
-  margin: 0 0 36px;
-}
-.btn-cta {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 14px 32px;
-  background: #fff; color: #2563eb;
-  font-size: 15px; font-weight: 700;
+.btn-features-start {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 28px;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: #fff;
+  font-size: 15px; font-weight: 600;
   border-radius: 999px; text-decoration: none;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.2);
-  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-.btn-cta:hover { background: #eef2ff; transform: translateY(-2px); }
+.btn-features-start:hover {
+  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37,99,235,0.35);
+}
 
-/* ── Footer ── */
+/* ═══════════════════════════════════════════════════════
+   TRAINING — glass panel, no section divider
+   ═══════════════════════════════════════════════════════ */
+.section-training {
+  padding: 80px 0 96px;
+}
+.training-panel {
+  /* Wider glass panel wrapping the whole training block */
+  background: rgba(255,255,255,0.52);
+  border: 1px solid rgba(255,255,255,0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 28px;
+  box-shadow: 0 8px 40px rgba(99,120,255,0.09);
+  padding: 56px 64px;
+}
+.training-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+.training-text { max-width: 520px; }
+.training-desc {
+  font-size: 15.5px; color: #4b5563;
+  line-height: 1.72; margin: 0 0 28px;
+}
+.training-bullets {
+  list-style: none; padding: 0; margin: 0 0 32px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.training-bullets li {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14.5px; color: #374151; line-height: 1.5;
+}
+.bullet-icon { flex-shrink: 0; display: flex; }
+.btn-training {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 26px;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: #fff;
+  font-size: 15px; font-weight: 600;
+  border-radius: 999px; text-decoration: none;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-training:hover { opacity: 0.92; transform: translateY(-2px); }
+
+/* Chip preview */
+.training-visual {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 20px;
+}
+.chip-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  grid-template-rows: repeat(2, 80px);
+  gap: 16px;
+  justify-items: center; align-items: center;
+}
+.chip {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 900;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+.chip:hover { transform: scale(1.08); }
+.chip--target    { background: #0f766e; color: #fff; border: 3px solid #07413e; }
+.chip--blue      { background: #2f6fbb; color: #fff; border: 2px solid #18395f; }
+.chip--yellow    { background: #f9d56e; color: #1f2937; border: 2px solid #8b6215; }
+.chip--rose      { background: #e76f73; color: #fff; border: 2px solid #82373a; }
+.chip--plain     { background: rgba(255,255,255,0.9); color: #20242a; border: 2px solid #aab6c1; }
+.chip--distractor { opacity: 0.88; }
+.preview-caption {
+  font-size: 12.5px; color: #9ca3af;
+  font-weight: 500; margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DICTIONARY PROMO SECTION
+   ═══════════════════════════════════════════════════════ */
+.section-dict {
+  padding: 80px 0 96px;
+}
+.dict-panel {
+  position: relative;
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 28px;
+  box-shadow: 0 4px 32px rgba(99,102,241,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  overflow: hidden;
+  padding: 52px 56px;
+}
+.dict-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+/* ── Visual mock ── */
+.dict-visual {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 310px;
+}
+/* Alphabet confined to left half of panel only */
+.dict-visual-alpha {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 50%;
+  pointer-events: none; user-select: none;
+  overflow: hidden;
+}
+.dict-visual-alpha span {
+  position: absolute;
+  font-weight: 900; letter-spacing: -0.02em;
+  color: rgba(99,102,241,0.08); line-height: 1;
+}
+/* Fades letters only in the left half — stops at 50% so right text is unaffected */
+.dict-visual-fade {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 50%;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 50%,
+    rgba(255,255,255,0.7) 75%,
+    rgba(255,255,255,1) 100%
+  );
+}
+.dict-mock-card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 320px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 16px 48px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+.dict-mock-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 16px 12px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.dict-mock-word {
+  font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em;
+}
+.dict-mock-actions { display: flex; align-items: center; gap: 6px; }
+.dict-mock-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #f8fafc;
+}
+.dict-mock-section {
+  padding: 12px 18px;
+  border-bottom: 1px solid #f8fafc;
+}
+.dict-mock-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;
+}
+.dict-mock-meaning {
+  font-size: 13.5px; line-height: 1.6; color: #1e293b; margin: 0;
+}
+.dict-mock-parts { display: flex; flex-direction: column; gap: 6px; }
+.dict-mock-part {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+.dict-mock-part--prefix { background: #fff1f2; border-left-color: #fda4af; }
+.dict-mock-part--root   { background: #eff6ff; border-left-color: #93c5fd; }
+.dict-mock-form { font-size: 12px; font-weight: 800; color: #0f172a; min-width: 40px; flex-shrink: 0; }
+.dict-mock-desc { flex: 1; font-size: 12px; color: #475569; }
+.dict-mock-badge {
+  font-size: 9.5px; font-weight: 800; padding: 2px 7px;
+  border-radius: 999px; letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+}
+.dict-mock-badge--prefix { background: #ffe4e6; color: #e11d48; }
+.dict-mock-badge--root   { background: #dbeafe; color: #1d4ed8; }
+.dict-mock-hint {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 18px;
+  font-size: 11.5px; color: #6366f1; font-weight: 600;
+  background: #f5f3ff;
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATED DEMO SCENE (double-click guide)
+   ═══════════════════════════════════════════════════════ */
+.demo-scene {
+  position: relative;
+  width: 100%;
+  /* tall enough to show popup below the text card; no clip so popup isn't cut */
+  height: 310px;
+}
+
+/* ── Text card ──
+   Fixed width + centered so "comprehend" lands at a predictable x/y.
+   At 280px card → 244px content area; "Often hard to " (14 chars ≈ 95px)
+   + "comprehend" bold (~84px) = 179px — all on ONE line.
+   comprehend centre ≈ left: 95+42+18 = 155px from card left.
+   card left in a ~436px column = (436-280)/2 = 78px from scene left.
+   → comprehend centre in scene ≈ x: 78+155 = 233px, y: 16+16+12 = 44px */
+.demo-text-card {
+  position: absolute;
+  top: 16px;
+  left: 50%; transform: translateX(-50%);
+  width: 280px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  z-index: 2;
+}
+.demo-passage {
+  font-size: 14px; line-height: 1.72;
+  color: #374151; margin: 0 0 10px;
+}
+.demo-target-word {
+  font-weight: 800; color: #4f46e5;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(99,102,241,0.45);
+}
+.demo-hint-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: #6366f1; font-weight: 600;
+  margin: 0;
+  animation: demo-hint-pulse 7s ease-in-out infinite;
+}
+
+/* ── Cursor — starts bottom-right, glides up to "comprehend" ──
+   Target: scene x≈233 y≈44; cursor tip is top-left of SVG, so
+   translate(223px, 34px) puts the tip near the word centre. */
+.demo-cursor {
+  position: absolute;
+  top: 0; left: 0;
+  width: 22px; height: 22px;
+  pointer-events: none; z-index: 10;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25));
+  animation: demo-cursor-travel 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Ripples — centred on "comprehend" in the scene ── */
+.demo-ripple {
+  position: absolute;
+  top: 44px; left: 233px;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 2px solid #6366f1;
+  pointer-events: none; z-index: 8;
+  opacity: 0;
+}
+.demo-ripple--1 { animation: demo-ripple-burst 7s ease-out infinite; }
+.demo-ripple--2 { animation: demo-ripple-burst 7s ease-out 0.28s infinite; }
+
+/* ── Popup card — appears below the word, fully inside 300px scene ──
+   top: 90px gives ~210px for popup (header+2 sections ≈ 155px, fits OK).
+   left aligned with card left edge (78px) for a natural feel. */
+.demo-popup {
+  position: absolute;
+  top: 95px; left: 50%; transform-origin: top center;
+  width: 248px;
+  margin-left: -124px;   /* centre under comprehend */
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 14px 42px rgba(0,0,0,0.13);
+  overflow: hidden;
+  z-index: 9;
+  opacity: 0;
+  animation: demo-popup-appear 7s cubic-bezier(0.34, 1.3, 0.64, 1) infinite;
+}
+.demo-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.demo-popup-word {
+  font-size: 18px; font-weight: 800;
+  color: #0f172a; letter-spacing: -0.03em;
+}
+.demo-popup-star {
+  font-size: 15px; color: #f59e0b;
+}
+.demo-popup-section {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f8fafc;
+}
+.demo-popup-section:last-child { border-bottom: none; }
+.demo-popup-label {
+  font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #94a3b8; margin-bottom: 6px;
+}
+.demo-popup-meaning {
+  font-size: 12.5px; line-height: 1.6; color: #1e293b; margin: 0;
+}
+.demo-popup-parts { display: flex; flex-direction: column; gap: 5px; }
+.demo-popup-part {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 9px; border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+.demo-popup-part--prefix { background: #fff1f2; border-left-color: #fda4af; }
+.demo-popup-part--root   { background: #eff6ff; border-left-color: #93c5fd; }
+.demo-popup-form  { font-size: 11px; font-weight: 800; color: #0f172a; min-width: 44px; flex-shrink: 0; }
+.demo-popup-desc  { flex: 1; font-size: 11px; color: #475569; }
+.demo-popup-badge {
+  font-size: 9px; font-weight: 800;
+  padding: 2px 6px; border-radius: 999px;
+  letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+}
+.demo-popup-badge--prefix { background: #ffe4e6; color: #e11d48; }
+.demo-popup-badge--root   { background: #dbeafe; color: #1d4ed8; }
+
+/* ── Keyframes ── */
+
+/* Cursor: starts bottom-right, glides to comprehend at ≈(223px, 34px).
+   280px-wide card centred in ~436px column → card left ≈ 78px.
+   "Often hard to " ≈ 95px + 18px padding → comprehend starts at x≈191px;
+   half-word-width ≈ 42px → centre x≈233px. Cursor tip offset: -10px → 223px. */
+@keyframes demo-cursor-travel {
+  0%        { transform: translate(330px, 230px); opacity: 0; }
+  6%        { opacity: 1; }
+  26%       { transform: translate(223px, 34px); }   /* arrives at word */
+  28%       { transform: translate(223px, 34px); }   /* pause */
+  30%       { transform: translate(221px, 32px); }   /* click 1 press */
+  31%       { transform: translate(223px, 34px); }   /* release */
+  33%       { transform: translate(221px, 32px); }   /* click 2 press */
+  34%       { transform: translate(223px, 34px); }   /* release */
+  76%       { transform: translate(223px, 34px); opacity: 1; }
+  86%       { transform: translate(223px, 34px); opacity: 0; }
+  100%      { transform: translate(330px, 230px); opacity: 0; }
+}
+
+/* Ripple burst — fires at ~29–38% of the 7s loop */
+@keyframes demo-ripple-burst {
+  0%, 29%   { transform: scale(0); opacity: 0; }
+  30%       { transform: scale(0); opacity: 0.75; }
+  38%       { transform: scale(3.2); opacity: 0; }
+  100%      { transform: scale(0); opacity: 0; }
+}
+
+/* Popup: pops in at 40%, stays until 78%, then fades out */
+@keyframes demo-popup-appear {
+  0%, 39%   { opacity: 0; transform: translateY(10px) scale(0.92); }
+  46%       { opacity: 1; transform: translateY(0)    scale(1); }
+  76%       { opacity: 1; transform: translateY(0)    scale(1); }
+  86%       { opacity: 0; transform: translateY(-5px) scale(0.96); }
+  100%      { opacity: 0; transform: translateY(10px) scale(0.92); }
+}
+
+/* Hint label subtle pulse */
+@keyframes demo-hint-pulse {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+/* ── Text side ── */
+.dict-text { display: flex; flex-direction: column; gap: 20px; }
+.dict-desc {
+  font-size: 16px; line-height: 1.75; color: #4b5563; margin: 0;
+}
+.dict-bullets {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.dict-bullets li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 15px; color: #374151; line-height: 1.5;
+}
+.btn-dict {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 26px; border-radius: 999px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff; font-size: 15px; font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(99,102,241,0.30);
+  transition: transform 0.15s, box-shadow 0.2s;
+  align-self: flex-start;
+}
+.btn-dict:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(99,102,241,0.38);
+}
+
+@media (max-width: 860px) {
+  .section-dict { padding: 64px 0; }
+  .dict-panel { padding: 36px 24px; border-radius: 20px; }
+  .dict-inner { grid-template-columns: 1fr; gap: 36px; }
+  .dict-visual { order: -1; min-height: 260px; }
+  .demo-scene { height: 260px; }
+  .demo-popup { width: 210px; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   CHROME EXTENSION TEASER
+   ═══════════════════════════════════════════════════════ */
+.section-ext { padding: 80px 0 96px; }
+.ext-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 28px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 8px 40px rgba(99,120,255,0.09);
+  padding: 52px 56px;
+}
+.ext-desc {
+  font-size: 15.5px; color: #4b5563;
+  line-height: 1.75; margin: 0 0 28px;
+}
+.ext-desc strong { color: #1e293b; }
+.ext-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+/* Chrome install button */
+.btn-ext-install {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: #fff; font-size: 14px; font-weight: 700;
+  border-radius: 999px; text-decoration: none;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.28);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-ext-install:hover { opacity: 0.92; transform: translateY(-2px); }
+
+/* "See how it works" ghost link */
+.btn-ext-learn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 600; color: #4f46e5;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.btn-ext-learn:hover { color: #7c3aed; }
+
+/* Feature pills (right column) */
+.ext-pills {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ext-pill {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.70);
+  border: 1px solid rgba(226,232,240,0.8);
+  border-radius: 14px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.ext-pill:hover { transform: translateX(4px); box-shadow: 0 4px 16px rgba(99,102,241,0.10); }
+.ext-pill-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.ext-pill-icon--blue   { background: #eff6ff; color: #2563eb; }
+.ext-pill-icon--violet { background: #f5f3ff; color: #7c3aed; }
+.ext-pill-icon--green  { background: #f0fdf4; color: #16a34a; }
+.ext-pill-icon--amber  { background: #fffbeb; color: #d97706; }
+.ext-pill-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+.ext-pill-sub   { font-size: 12.5px; color: #6b7280; }
+
+@media (max-width: 860px) {
+  .ext-panel { grid-template-columns: 1fr; gap: 36px; padding: 36px 24px; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   FOOTER — deep blue, clearly separated from page body
+   ═══════════════════════════════════════════════════════ */
 .footer {
-  background: #0d1117;
-  padding: 48px 0;
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+  padding: 52px 0;
 }
 .footer-inner {
+  padding: 0 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -473,7 +1245,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   color: #fff; letter-spacing: -0.3px;
 }
 .footer-tagline {
-  font-size: 13px; color: rgba(255,255,255,0.35);
+  font-size: 13px; color: rgba(255,255,255,0.45);
   margin: 0;
 }
 .footer-links {
@@ -481,13 +1253,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .footer-link {
   font-size: 14px; font-weight: 500;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.6);
   text-decoration: none;
   transition: color 0.2s;
 }
 .footer-link:hover { color: #fff; }
 .footer-copy {
-  font-size: 13px; color: rgba(255,255,255,0.3);
+  font-size: 13px; color: rgba(255,255,255,0.35);
   margin: 0;
 }
 
@@ -500,9 +1272,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 
 /* ── Mobile nav drawer ── */
-.mobile-nav {
-  display: none;
-}
+.mobile-nav { display: none; }
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
@@ -516,10 +1286,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     display: block;
     position: fixed;
     top: 64px; left: 0; right: 0;
-    background: rgba(255,255,255,0.98);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border-bottom: 1px solid #e5e7eb;
+    background: rgba(244,245,255,0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(99,120,255,0.1);
     z-index: 99;
   }
   .mobile-nav-links { list-style: none; margin: 0; padding: 0; }
@@ -527,16 +1297,19 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     display: block; padding: 16px 28px;
     font-size: 16px; font-weight: 500; color: #374151;
     text-decoration: none;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
     transition: background 0.15s;
   }
-  .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
+  .mobile-nav-link:hover { background: rgba(255,255,255,0.6); color: #0d1117; }
 
   .features-grid { grid-template-columns: 1fr; }
-  .steps-row  { flex-direction: column; gap: 24px; }
-  .step-arrow { display: none; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
   .container { padding: 0 20px; }
-  .section-features, .section-steps, .section-cta { padding: 64px 0; }
+  .section-features, .section-training { padding: 64px 0; }
+  .training-panel { padding: 36px 24px; border-radius: 20px; }
+  .training-inner { grid-template-columns: 1fr; gap: 40px; }
+  .training-visual { order: -1; }
+  .chip-preview { grid-template-columns: repeat(3, 68px); grid-template-rows: repeat(2, 68px); }
+  .chip { width: 64px; height: 64px; font-size: 18px; }
 }
 </style>

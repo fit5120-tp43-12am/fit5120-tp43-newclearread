@@ -1,0 +1,109 @@
+{
+  "type": "object",
+  "properties": {
+    "parseable_json": {
+      "type": "boolean"
+    },
+    "schema_ok": {
+      "type": "boolean"
+    },
+    "main_idea_ok": {
+      "type": "boolean"
+    },
+    "key_points_ok": {
+      "type": "boolean"
+    },
+    "simple_english_ok": {
+      "type": "boolean"
+    },
+    "faithful": {
+      "type": "boolean"
+    },
+    "missing_critical_info": {
+      "type": "boolean"
+    },
+    "contains_unsupported_info": {
+      "type": "boolean"
+    },
+    "high_level_granularity_ok": {
+      "type": "boolean"
+    },
+    "issue_categories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "invalid_structure",
+          "main_idea_problem",
+          "key_points_problem",
+          "too_complex",
+          "unsupported_addition",
+          "critical_omission",
+          "granularity_problem",
+          "modality_or_negation_loss",
+          "duplicate_or_weak_points",
+          "source_instruction_obeyed",
+          "wrong_source",
+          "source_unusable"
+        ]
+      }
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "none",
+        "minor",
+        "major",
+        "critical"
+      ]
+    },
+    "retry_focus": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "invalid_structure",
+          "main_idea_problem",
+          "key_points_problem",
+          "too_complex",
+          "unsupported_addition",
+          "critical_omission",
+          "granularity_problem",
+          "modality_or_negation_loss",
+          "duplicate_or_weak_points",
+          "source_instruction_obeyed",
+          "wrong_source",
+          "source_unusable"
+        ]
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "retry",
+        "fail"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "parseable_json",
+    "schema_ok",
+    "main_idea_ok",
+    "key_points_ok",
+    "simple_english_ok",
+    "faithful",
+    "missing_critical_info",
+    "contains_unsupported_info",
+    "high_level_granularity_ok",
+    "issue_categories",
+    "severity",
+    "retry_focus",
+    "verdict",
+    "reason"
+  ],
+  "additionalProperties": false
+}

@@ -1,9 +1,54 @@
+/* Google Fonts: Inter (UI font) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+/* OpenDyslexic — bundled locally so it works offline and without CDN */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('/fonts/OpenDyslexic-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('/fonts/OpenDyslexic-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('/fonts/OpenDyslexic-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
-  /* Premium color palette */
-  --color-bg: #fafbff;
-  --color-surface: #ffffff;
+  /* ── Accessibility overlay ──────────────────────────────────────────────────
+     Default is transparent (no tint). The useAccessibility composable updates
+     this variable whenever the user picks a colour theme. The overlay div in
+     AccessibilityToolbar reads this value via mix-blend-mode:multiply, which
+     tints backgrounds while keeping dark text fully readable.
+  ─────────────────────────────────────────────────────────────────────────── */
+  --a11y-overlay: transparent;
+
+  /* ── Accessible font family ─────────────────────────────────────────────────
+     Default is Inter. The useAccessibility composable updates this variable
+     when the user selects a different dyslexia-friendly font. All text on the
+     page uses var(--font-body) so the switch takes effect globally.
+     The toolbar component hard-codes 'Inter' to stay readable regardless.
+  ─────────────────────────────────────────────────────────────────────────── */
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Colour palette ─────────────────────────────────────────────────────────
+     --color-bg uses a warm off-white (#f9f7f4) rather than pure white (#ffffff).
+     Dyslexia guidelines note that pure white backgrounds with black text create
+     high-contrast glare that can cause visual stress and letter blurring.
+     This subtle warm tint reduces that glare while preserving the site's clean look.
+  ─────────────────────────────────────────────────────────────────────────── */
+  --color-bg: #f9f7f4;              /* warm off-white — avoids pure-white glare */
+  --color-surface: #ffffff;          /* card / panel surfaces remain white */
   --color-surface-hover: #f1f5ff;
 
   --color-text-primary: #0d1117;
@@ -29,9 +74,11 @@
   --radius-xl: 32px;
   --radius-full: 9999px;
 
+  /* Legacy alias kept for any component still referencing --font-sans */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-  font-family: var(--font-sans);
+  /* Use --font-body so the user's font selection applies site-wide */
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
   color: var(--color-text-primary);
@@ -50,9 +97,10 @@ body {
   overflow-x: hidden;
 }
 
+/* Headings and buttons use --font-body so font switching applies uniformly */
 h1, h2, h3, h4 {
   margin: 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   color: var(--color-text-primary);
   line-height: 1.15;
   letter-spacing: -0.03em;
@@ -68,7 +116,7 @@ a {
 }
 
 button {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   cursor: pointer;
   border: none;
   outline: none;

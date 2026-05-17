@@ -1,357 +1,476 @@
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+<script>
+const readingPageMemory = {
+  mode: 'idle',
+  result: null,
+  inputText: '',
+  uploadedFileText: '',
+  uploadedFileName: '',
+}
+</script>
 
-// read the backend URL from the .env file, fall back to localhost for local development
+<script setup>
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import {
+  pauseBackendTTS,
+  playBackendTTS,
+  preloadBackendTTS,
+  resumeBackendTTS,
+  setBackendTTSPlaybackRate,
+  stopBackendTTS,
+} from '../composables/useBackendTts'
+
+// Backend base URL from .env; falls back to localhost for local development
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 
-// ── Navbar scroll ──
-const scrolled  = ref(false)
-const menuOpen  = ref(false)
-// add a shadow to the navbar when the user scrolls past 10px
+
+// ── Navbar state ──────────────────────────────────────────────────────────────
+
+const scrolled = ref(false)   // true when user scrolls past 10px — adds navbar shadow
+const menuOpen = ref(false)   // controls mobile hamburger menu
 function onScroll() { scrolled.value = window.scrollY > 10 }
 
-// ── Input ──
-const rawText    = ref('')         // the text the user types or pastes in
-const charLimit  = 5000            // max characters we allow
-const charCount  = computed(() => rawText.value.length)
-const overLimit  = computed(() => charCount.value > charLimit)   // true if user typed too much
-const atLimit    = computed(() => charCount.value >= charLimit)  // true if at the limit
-const inputWordCount = computed(() => wordCount(rawText.value))  // live word count for the input box
 
-// ── App state ──
-// the page has 3 states: nothing loaded yet, waiting for API response, or showing results
-const mode      = ref('idle')     // 'idle' | 'loading' | 'result'
-const viewMode  = ref('simplified') // which version to show: simplified or original
+// ── Input state ───────────────────────────────────────────────────────────────
 
-// ── Result data (populated by backend stub) ──
+const inputText        = ref('')  // text the user has typed or pasted
+const uploadedFileText = ref('')  // extracted file text kept out of the visible textarea
+const uploadedFileName = ref('')
+const charLimit   = 50000         // max characters allowed
+const processingText = computed(() => uploadedFileText.value || inputText.value)
+const charCount   = computed(() => processingText.value.length)
+const overLimit   = computed(() => charCount.value > charLimit)
+const textareaRef = ref(null)     // ref to the textarea DOM element for auto-resize
+
+
+// ── Page mode ─────────────────────────────────────────────────────────────────
+
+// The page can be in one of three states at any time
+const mode = ref('idle')   // 'idle' | 'loading' | 'result'
+
+// Holds the processed result returned by the backend.
+//
+// ── Expected shape (iteration3 updated API) ──────────────────────────────────
+// {
+//   title: '...'                   (optional) article title shown as tree root node
+//   overallSummary: {              (NEW in iteration3 — backend must provide this)
+//     heading: '...',              large heading shown in Stage 1 card
+//     text:    '...'               paragraph text shown in Stage 1 card
+//   },
+//   blocks: [                      array of sections/paragraphs
+//     {
+//       id:           1,           section number
+//       title:        '...',       (NEW) section name shown as tree node label
+//       subtitle:     '...',       (NEW) one-line description shown under node label
+//       originalText: '...',       original text from the article (kept for backward compat)
+//       summary:      '...',       plain-English summary shown in the detail modal
+//       keyPoints:    ['...', '...'] bullet points shown in the detail modal
+//     },
+//     ...
+//   ],
+//   notice: '...' (optional)
+// }
+//
+// Backward-compatibility notes:
+//   - If overallSummary is missing, we fall back to the first block's summary.
+//   - If block.title is missing, we show "Section {id}" as the node label.
+// ─────────────────────────────────────────────────────────────────────────────
 const result = ref(null)
-// Shape: { summary, simplified, keyPoints, usedFallback, fallbackReason, notice }
 
-// ── Display settings ──
-const fontSize    = ref(18)          // current font size in px
-const lineSpacing = ref('normal')    // 'compact' | 'normal' | 'relaxed'
-const bgTheme     = ref('white')     // which background colour the user picked
+function saveReadingState() {
+  readingPageMemory.mode = result.value && mode.value === 'result' ? 'result' : 'idle'
+  readingPageMemory.result = result.value
+  readingPageMemory.inputText = inputText.value
+  readingPageMemory.uploadedFileText = uploadedFileText.value
+  readingPageMemory.uploadedFileName = uploadedFileName.value
+}
 
-// map the spacing label to actual CSS line-height values
-const spacingMap = { compact: 1.55, normal: 1.8, relaxed: 2.15 }
+function restoreReadingState() {
+  inputText.value        = typeof readingPageMemory.inputText === 'string' ? readingPageMemory.inputText : ''
+  uploadedFileText.value = typeof readingPageMemory.uploadedFileText === 'string' ? readingPageMemory.uploadedFileText : ''
+  uploadedFileName.value = typeof readingPageMemory.uploadedFileName === 'string' ? readingPageMemory.uploadedFileName : ''
 
-// the three background colour options the user can choose from
-const bgThemes = [
-  { value: 'white', bg: '#ffffff', swatch: '#ffffff', text: '#0d1117' },
-  { value: 'cream', bg: '#fdf8ed', swatch: '#fdf8ed', text: '#1c1309' },
-  { value: 'sky',   bg: '#eef4ff', swatch: '#eef4ff', text: '#0d1940' },
-]
-// get the currently selected theme object
-const theme = computed(() => bgThemes.find(t => t.value === bgTheme.value) || bgThemes[0])
-
-// combine font + spacing + background into one style object for the results area
-const readingStyle = computed(() => ({
-  fontSize:   `${fontSize.value}px`,
-  lineHeight: spacingMap[lineSpacing.value],
-  background: theme.value.bg,
-  color:      theme.value.text,
-}))
-
-// background only — used to colour the whole panel including padding
-const panelBgStyle = computed(() => ({
-  background: theme.value.bg,
-  color:      theme.value.text,
-}))
-
-// font + spacing only — used for inner text nodes where we don't want to set background
-const textStyle = computed(() => ({
-  fontSize:   `${fontSize.value}px`,
-  lineHeight: spacingMap[lineSpacing.value],
-}))
-
-// the input panel takes up more space when idle, then shrinks once results are showing
-const inputFlexStyle = computed(() => ({
-  flex: mode.value === 'idle' ? '0 0 46%' : '0 0 30%',
-}))
-
-// ── What text to read aloud ──
-// if results are showing, read whichever version (simplified or original) the user selected
-const activeText = computed(() => {
-  if (mode.value === 'result' && result.value) {
-    return viewMode.value === 'simplified'
-      ? result.value.simplified
-      : rawText.value
+  if (readingPageMemory.result && readingPageMemory.mode === 'result') {
+    result.value = readingPageMemory.result
+    mode.value   = 'result'
+    feedback.value = { type: 'success', message: 'Text processed successfully.' }
   }
-  return rawText.value
+}
+
+function clearReadingState() {
+  readingPageMemory.mode = 'idle'
+  readingPageMemory.result = null
+  readingPageMemory.inputText = ''
+  readingPageMemory.uploadedFileText = ''
+  readingPageMemory.uploadedFileName = ''
+}
+
+
+// ── Overall summary (computed from backend response) ──────────────────────────
+// The overview is fetched first from the plugin summary endpoint.
+// Falls back to the first block's data for compatibility with older responses.
+const overallSummary = computed(() => {
+  if (!result.value) return null
+  const summary = result.value.overallSummary
+  if (summary?.heading || summary?.text) return summary
+  const first = result.value.blocks?.[0]
+  return first
+    ? { heading: first.title || 'Summary', text: first.summary || '' }
+    : null
 })
 
-// return a friendly message if the backend had to use a fallback instead of real AI
-function fallbackNotice(resultData) {
-  if (!resultData?.usedFallback) return ''
+const sectionProcessing = ref(false)
+let activeProcessRequestId = 0
 
-  // use the message from the backend if it provided one
-  if (resultData.notice) return resultData.notice
 
-  // otherwise pick a message based on the reason code
-  const notices = {
-    temporary_ai_unavailable: 'AI service is busy right now. Showing a basic result.',
-    config_error: 'AI is not configured right now. Showing a basic result.',
-    invalid_ai_response: 'AI response could not be processed. Showing a basic result.',
-    unknown_error: 'AI is unavailable right now. Showing a basic result.',
-  }
+// ── Section detail modal ──────────────────────────────────────────────────────
+// activeSection holds the block the user clicked in the tree.
+// null = modal closed; a block object = modal open showing that section.
+const activeSection = ref(null)
 
-  return notices[resultData.fallbackReason] || notices.unknown_error
+// Whether the original-text left column is expanded (true) or collapsed (false).
+// Resets to expanded each time the modal opens.
+const modalShowOriginal = ref(true)
+
+/** Opens the section detail modal for the given block. Stops TTS first. */
+function openSection(block) {
+  stopAudio()
+  activeSection.value = block
+  modalShowOriginal.value = false  // hidden by default; user can expand
+  preloadBlockAudio(block, 'summary')
 }
 
-// ── Simplify ──────────────────────────────────────────────────────────────────
-// called when the user clicks the Simplify button
-async function handleSimplify() {
-  // don't do anything if the text box is empty or too long
-  if (!rawText.value.trim() || overLimit.value) return
-
-  // switch to loading state so the spinner shows up
-  mode.value    = 'loading'
-  viewMode.value = 'simplified'
-
-  try {
-    // send the text to the backend API and wait for the response
-    const response = await fetch(`${API_BASE_URL}/api/process-text`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: rawText.value,
-      }),
-    })
-
-    const data = await response.json()
-
-    console.log("Returned by the backend:", data)
-
-    // save the result so the template can display it
-    result.value = data
-
-    // switch to result state to show the simplified text
-    mode.value = 'result'
-
-  } catch (error) {
-    // if the API call fails, go back to idle so the user can try again
-    console.error(error)
-    mode.value = 'idle'
-  }
+/** Closes the section detail modal and stops any playing TTS. */
+function closeSection() {
+  stopAudio()
+  activeSection.value = null
+  // Close the global dictionary popup whenever this modal closes
+  window.dispatchEvent(new CustomEvent('clearead:modal-closed'))
 }
 
-  // ╔══════════════════════════════════════════════════════════╗
-  // ║  BACKEND STUB — teammate connects here                   ║
-  // ║                                                          ║
-  // ║  POST /api/text/simplify                                 ║
-  // ║  Body:   { text: rawText.value }                         ║
-  // ║  Expect: {                                               ║
-  // ║    summary:     string[],   // 2–4 bullet sentences      ║
-  // ║    simplified:  string,     // plain-English version     ║
-  // ║    keyPoints:   string[]    // 3–6 short key points      ║
-  // ║  }                                                       ║
-  // ║                                                          ║
-  // ║  On success:  result.value = data; mode.value = 'result' ║
-  // ║  On error:    mode.value = 'idle'; show error toast      ║
-  // ╚══════════════════════════════════════════════════════════╝
 
-  // Placeholder — remove when API is connected:
-//   setTimeout(() => {
-//     result.value = {
-//       summary: [
-//         'Core concept: The text introduces a central idea about the subject matter.',
-//         'Key mechanism: It explains how the key processes or arguments are structured.',
-//         'Conclusion: The main takeaway connects theory to real-world application.',
-//       ],
-//       simplified:
-//         'This is a placeholder for the simplified version of your text. Once connected to the backend, this section will show a plain-English rewrite that is shorter, clearer, and easier to read for people with dyslexia.',
-//       keyPoints: [
-//         'Main idea from the text',
-//         'Important supporting concept',
-//         'Key term or definition',
-//         'Practical implication',
-//       ],
-//     }
-//     mode.value = 'result'
-//   }, 900)
-// }
-
-// ── Speech (text-to-speech using the browser's built-in Web Speech API) ──────
-const isPlaying  = ref(false)   // true while audio is playing
-const isPaused   = ref(false)   // true if the user paused mid-way
-const speechRate = ref(1.0)     // playback speed (0.75 = slow, 1.5 = fast)
-let   utterance  = null         // the current SpeechSynthesisUtterance object
-
-// start playing — if paused, just resume instead of starting over
-function playSpeech() {
-  if (!('speechSynthesis' in window) || !activeText.value.trim()) return
-  if (isPaused.value) {
-    window.speechSynthesis.resume()
-    isPlaying.value = true
-    isPaused.value  = false
-    return
-  }
-  // stop any existing speech before starting new one
-  stopSpeech()
-  utterance      = new SpeechSynthesisUtterance(activeText.value)
-  utterance.rate = speechRate.value
-  utterance.lang = 'en-AU'
-  // reset state flags when speech naturally finishes or errors out
-  utterance.onend   = () => { isPlaying.value = false; isPaused.value = false }
-  utterance.onerror = () => { isPlaying.value = false; isPaused.value = false }
-  window.speechSynthesis.speak(utterance)
-  isPlaying.value = true
-}
-
-// pause the speech
-function pauseSpeech() {
-  window.speechSynthesis.pause()
-  isPlaying.value = false
-  isPaused.value  = true
-}
-
-// stop speech completely and reset state
-function stopSpeech() {
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel()
-  isPlaying.value = false
-  isPaused.value  = false
-}
-
-// toggle between play and pause (used by the single play/pause button)
-function toggleSpeech() {
-  if (isPlaying.value) pauseSpeech()
-  else playSpeech()
-}
-
-// change the playback speed — restart audio if it was already playing
-function setRate(r) {
-  speechRate.value = r
-  if (isPlaying.value) { stopSpeech(); playSpeech() }
-}
-
-// the speed options shown in the toolbar
-const rateOptions = [0.75, 1.0, 1.25, 1.5]
-
-// ── Read time estimate ──
-// calculate roughly how long it takes to read a piece of text (assuming 200 wpm)
-function readTime(text) {
-  const words = text.trim().split(/\s+/).filter(Boolean).length
-  const mins  = Math.ceil(words / 200)
-  const secs  = Math.round((words / 200) * 60)
-  return secs < 60 ? `~${secs} sec read` : `~${mins} min read`
-}
-
-// count the number of words in a string
-function wordCount(text) {
-  return text.trim().split(/\s+/).filter(Boolean).length
-}
-
-// ── File Upload ──────────────────────────────────────────────────────────────
-const fileInputRef = ref(null)   // ref to the hidden <input type="file"> element
-const fileError    = ref('')     // error message shown below the textarea
-
-// file extensions we support
-const UPLOAD_EXT  = ['.txt', '.md', '.markdown', '.csv', '.rtf', '.log', '.text', '.pdf', '.docx']
-// file types we do NOT support — we show a helpful error message for these
-const IMAGE_EXT   = ['.jpg','.jpeg','.png','.gif','.webp','.svg','.bmp','.tiff','.ico','.heic']
-const MEDIA_EXT   = ['.mp4','.mov','.avi','.mkv','.webm','.mp3','.wav','.aac','.flac','.ogg']
-
-// clear any previous error and open the file picker dialog
-function triggerFileInput() {
-  fileError.value = ''
-  fileInputRef.value?.click()
-}
-
-// read a file and return its contents as a base64 string (needed for sending to the API)
-function readFileAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : ''
-      // strip the "data:...;base64," prefix, keep only the actual base64 data
-      const base64 = result.includes(',') ? result.split(',')[1] : result
-      resolve(base64)
-    }
-    reader.onerror = () => reject(new Error('Could not read the file. Please try again.'))
-    reader.readAsDataURL(file)
-  })
-}
-
-// send the file to the backend to extract text (handles PDF and DOCX)
-async function uploadFileForExtraction(file) {
-  const contentBase64 = await readFileAsBase64(file)
-  const response = await fetch(`${API_BASE_URL}/api/extract-text`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+// ── Demo data ─────────────────────────────────────────────────────────────────
+// Sample data that matches the exact shape the backend will return.
+// Used by loadDemo() so the new UI can be previewed without a real API call.
+// When the backend is updated to return overallSummary + block titles,
+// the real data will flow through exactly the same code paths.
+const DEMO_RESULT = {
+  title: 'Clearead – Iteration 1 Analysis and Design Plan',
+  overallSummary: {
+    heading: 'Making academic reading easier for students with dyslexia.',
+    text: 'This report presents the analysis and design plan for Iteration 1 of Clearead. It aims to help Australian university students with dyslexia by turning dense academic texts into clearer, more structured, and more accessible formats.',
+  },
+  blocks: [
+    {
+      id: 1, title: 'Introduction', subtitle: 'Background and context',
+      originalText: 'Clearead was designed to help students with dyslexia navigate university-level reading.',
+      summary: 'Clearead was designed to help university students with dyslexia who struggle with dense academic texts. The project grew out of research showing that 1 in 5 Australians has dyslexia, yet most academic platforms offer no reading support.',
+      keyPoints: ['1 in 5 Australians are affected by dyslexia.', 'Academic platforms rarely offer reading accessibility tools.', 'Clearead aims to bridge this gap for university students.'],
     },
-    body: JSON.stringify({
-      filename: file.name,
-      contentBase64,
-    }),
-  })
-
-  const data = await response.json()
-  if (!response.ok) {
-    throw new Error(data.detail || 'Could not extract text from this file.')
-  }
-
-  return data
+    {
+      id: 2, title: 'Problem Definition', subtitle: 'Understanding the challenge',
+      originalText: 'Dense academic text is a significant barrier for students with dyslexia.',
+      summary: 'Dense academic text is a significant barrier for students with dyslexia. Complex sentence structures, unfamiliar vocabulary, and lack of structure make it difficult to understand and engage with the content.',
+      keyPoints: ['Academic texts are written for a general audience, not students with dyslexia.', 'Long sentences and complex words increase cognitive load.', 'Students may spend more time reading but retain less.', 'There is a lack of accessible tools for university academic reading.'],
+    },
+    {
+      id: 3, title: 'Target Audience', subtitle: 'Who we are designing for',
+      originalText: 'The primary users are Australian university students aged 18 to 22.',
+      summary: 'The primary users are Australian university students aged 18 to 22 who have been diagnosed with dyslexia or experience reading difficulties.',
+      keyPoints: ['Age range: 18–22 years old.', 'Enrolled in Australian universities.', 'Diagnosed with dyslexia or experiencing reading difficulties.', 'Regular users of digital academic content.'],
+    },
+    {
+      id: 4, title: 'Design Goals', subtitle: 'What we aim to achieve',
+      originalText: 'Clearead aims to reduce cognitive load and improve reading comprehension.',
+      summary: 'Clearead aims to reduce cognitive load, improve reading comprehension, and provide a calm, structured reading experience that adapts to the needs of dyslexic users.',
+      keyPoints: ['Reduce cognitive load through chunked, summarised content.', 'Provide multiple reading modes: visual and audio.', 'Use dyslexia-friendly typography and colour schemes.', 'Enable users to control reading speed and text size.'],
+    },
+    {
+      id: 5, title: 'Approach & Solution', subtitle: 'How we will solve it',
+      originalText: 'The solution involves an AI-powered text processing pipeline.',
+      summary: 'The solution involves an AI-powered text processing pipeline that breaks long documents into manageable sections, generates plain-English summaries, and provides audio playback for each section.',
+      keyPoints: ['AI pipeline segments text into logical blocks.', 'Each block receives a plain-English summary.', 'Text-to-speech is available for every section.', 'Users can adjust font, size, and colour for accessibility.'],
+    },
+    {
+      id: 6, title: 'Evaluation Plan', subtitle: 'How we will test and improve',
+      originalText: 'The evaluation plan includes user testing with dyslexic university students.',
+      summary: 'The evaluation plan includes user testing with dyslexic university students, measuring reading comprehension scores, and gathering qualitative feedback on the usability of the tool.',
+      keyPoints: ['User testing with 5–8 participants with dyslexia.', 'Pre/post comprehension tests to measure improvement.', 'Qualitative interviews to gather usability feedback.', 'Iterative improvements based on test results.'],
+    },
+    {
+      id: 7, title: 'Risks & Considerations', subtitle: 'Potential risks and limitations',
+      originalText: 'Key risks include AI summarisation inaccuracies and browser compatibility issues.',
+      summary: 'Key risks include AI summarisation inaccuracies, browser compatibility issues with text-to-speech, and the challenge of designing for the broad spectrum of dyslexia experiences.',
+      keyPoints: ['AI may occasionally produce inaccurate summaries.', 'Text-to-speech support varies across browsers.', 'Dyslexia affects individuals differently — no one-size-fits-all solution.', 'Privacy considerations for uploaded document content.'],
+    },
+    {
+      id: 8, title: 'Next Steps', subtitle: 'What happens next',
+      originalText: 'The next iteration will focus on refining the AI summarisation model.',
+      summary: 'The next iteration will focus on refining the AI summarisation model, expanding accessibility settings, and conducting a second round of user testing with a larger participant group.',
+      keyPoints: ['Refine AI model based on evaluation feedback.', 'Add more accessibility customisation options.', 'Conduct second round of user testing.', 'Prepare for public beta release.'],
+    },
+  ],
 }
 
-// called when the user selects a file from the file picker
-async function handleFileUpload(event) {
-  const file = event.target.files[0]
-  event.target.value = ''  // reset so the same file can be uploaded again if needed
-  if (!file) return
+/**
+ * Loads demo data so the redesigned UI can be previewed without a backend call.
+ * Mirrors the exact shape POST /api/process-text will return in iteration3.
+ */
+function loadDemo() {
+  stopAudio()
+  result.value      = DEMO_RESULT
+  mode.value        = 'result'
+  activeSection.value = null
+  saveReadingState()
+}
 
-  // get the file extension (e.g. ".pdf")
-  const ext = '.' + file.name.split('.').pop().toLowerCase()
 
-  // reject image files with a helpful message
-  if (IMAGE_EXT.includes(ext)) {
-    fileError.value = 'Image files cannot be uploaded. Please paste your text directly.'
-    return
-  }
-  // reject audio/video files
-  if (MEDIA_EXT.includes(ext)) {
-    fileError.value = 'Audio and video files are not supported. Please paste your text directly.'
-    return
-  }
+// ── Overall Summary playback ──────────────────────────────────────────────────
+// We use block ID 0 as a virtual sentinel for the overall summary card.
+// Real block IDs from the backend start at 1, so 0 is safe.
+const OVERALL_SUMMARY_ID = 0
 
-  // reject any other unsupported file types
-  if (!UPLOAD_EXT.includes(ext)) {
-    fileError.value = `"${file.name}" is not a supported format. Accepted: TXT, MD, CSV, RTF, LOG, PDF, DOCX.`
-    return
-  }
+/**
+ * Plays (or pauses / resumes) the overall summary using TTS.
+ * Reuses the same playback state machine as individual block playback.
+ */
+async function playOverallSummary() {
+  if (!overallSummary.value) return
 
-  // reject files over 5 MB
-  if (file.size > 5 * 1024 * 1024) {
-    fileError.value = 'File is too large (max 5 MB). Please use a shorter document.'
-    return
-  }
+  const text = getOverallAudioText()
 
-  fileError.value = ''
+  const isSame = activeBlockId.value === OVERALL_SUMMARY_ID
 
-  // send to the backend to extract text, then put it in the textarea
+  // Toggle play/pause if already active; do nothing while generating to avoid duplicate requests
+  if (isSame && playbackState.value === 'loading')  return
+  if (isSame && playbackState.value === 'playing') { pauseAudio();  return }
+  if (isSame && playbackState.value === 'paused')  { resumeAudio(); return }
+
+  // Stop whatever is currently playing and start fresh
+  stopAudio()
+  activeBlockId.value   = OVERALL_SUMMARY_ID
+  activeBlockType.value = 'summary'
+  playbackState.value   = 'loading'
+
   try {
-    const extracted = await uploadFileForExtraction(file)
-    if (!extracted.text?.trim()) {
-      fileError.value = extracted.notice || 'No readable text was found in this file.'
-      return
-    }
-
-    rawText.value = extracted.text
-    // show any info notice from the backend (e.g. "only first 5 pages extracted")
-    if (extracted.notice) {
-      fileError.value = extracted.notice
-    }
-  } catch (error) {
-    fileError.value = error instanceof Error ? error.message : 'Could not extract text from this file.'
+    await requestTTS(text)
+    if (activeBlockId.value === OVERALL_SUMMARY_ID) stopAudio()
+  } catch (err) {
+    console.error('[TTS] Overall summary playback error:', err)
+    stopAudio()
   }
 }
 
-// ── Tutorial ──────────────────────────────────────────────────────────────────
-// a short 4-step guide that pops up the first time the user visits the page
-const showTutorial = ref(false)    // whether the tutorial overlay is visible
-const tutorialStep = ref(0)        // which step the user is currently on (0-indexed)
+
+// Helper: count words in a string
+function wordCount(t) { return t.trim().split(/\s+/).filter(Boolean).length }
+
+
+// ── Original-text panel visibility ───────────────────────────────────────────
+
+// Collapsed by default so the user sees only the clean summary on first load.
+// Clicking the left-column toggle or any collapsed block strip sets this to true.
+const showOriginal = ref(false)
+
+// ── Block expand / collapse (left column) ────────────────────────────────────
+
+// Tracks which blocks have been manually expanded by the user
+const expandedBlocks = ref(new Set())
+
+function isExpanded(id) { return expandedBlocks.value.has(id) }
+
+function toggleBlock(id) {
+  const next = new Set(expandedBlocks.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  expandedBlocks.value = next
+}
+
+// Detect whether a text element is being visually clamped (overflowing its container).
+// We store a reactive map of blockId → isClamped so the template can show/hide the button.
+const clampedBlocks = ref({})
+
+// Called after each block card renders — checks if the paragraph is overflowing
+function checkClamp(el, id) {
+  if (!el) return
+  const isClamped = el.scrollHeight > el.clientHeight + 2  // +2px to avoid sub-pixel false positives
+  // Only update if the value actually changed — prevents an infinite render loop
+  // where assigning clampedBlocks.value triggers a re-render which calls checkClamp again.
+  if (clampedBlocks.value[id] === isClamped) return
+  clampedBlocks.value = {
+    ...clampedBlocks.value,
+    [id]: isClamped,
+  }
+}
+
+
+// ── TTS / Audio state ─────────────────────────────────────────────────────────
+
+// ID of the block currently being read aloud (null = nothing active)
+const activeBlockId   = ref(null)
+
+// Which side is playing: 'original' (left card) | 'summary' (right card)
+const activeBlockType = ref('original')
+
+// Playback state machine
+const playbackState   = ref('idle')   // 'idle' | 'loading' | 'playing' | 'paused'
+
+// User-adjustable audio settings
+const playbackSpeed  = ref(1.0)      // multiplier: 0.75 / 1.0 / 1.25 / 1.5 / 2.0
+const selectedVoice  = ref('default-female')
+const volume         = ref(70)       // 0–100
+
+// Speed options shown in the toolbar dropdown
+const SPEED_OPTIONS  = [0.75, 1.0, 1.25, 1.5, 2.0]
+
+// Voice preference keys shown in the toolbar dropdown.
+// These are mapped to OpenAI TTS voices by the backend.
+const VOICE_OPTIONS  = [
+  { value: 'default-female', label: 'Default Female' },
+  { value: 'default-male',   label: 'Default Male'   },
+]
+
+let preloadAudioTimer = null
+let preloadAudioToken = 0
+let sectionPreloadTimer = null
+let sectionPreloadToken = 0
+const SECTION_AUDIO_PRELOAD_CONCURRENCY = 2
+
+function getOverallAudioText() {
+  return overallSummary.value
+    ? [overallSummary.value.heading, overallSummary.value.text].filter(Boolean).join('. ')
+    : ''
+}
+
+function getBlockAudioText(block, textType = 'summary') {
+  if (!block) return ''
+  if (textType === 'original') return block.originalText || ''
+  const keyPoints = block.keyPoints?.length
+    ? 'Key points: ' + block.keyPoints.join('. ')
+    : ''
+  return [block.summary, keyPoints].filter(Boolean).join('. ')
+}
+
+function preloadTextAudio(text) {
+  const cleanText = String(text || '').trim()
+  if (!cleanText) return Promise.resolve(null)
+  return preloadBackendTTS(cleanText, {
+    voice: selectedVoice.value,
+    volume: volume.value,
+  }).catch((err) => {
+    console.warn('[TTS] Audio preload failed:', err)
+    return null
+  })
+}
+
+function preloadBlockAudio(block, textType = 'summary') {
+  return preloadTextAudio(getBlockAudioText(block, textType))
+}
+
+function cancelAudioPreload() {
+  clearTimeout(preloadAudioTimer)
+  clearTimeout(sectionPreloadTimer)
+  preloadAudioToken += 1
+  sectionPreloadToken += 1
+}
+
+function getSectionAudioPreloadBlocks() {
+  const blocks = Array.isArray(result.value?.blocks) ? result.value.blocks : []
+  return blocks.filter((block) => String(getBlockAudioText(block, 'summary') || '').trim())
+}
+
+async function preloadSectionAudioQueue(blocks, token) {
+  let nextIndex = 0
+  const workerCount = Math.min(SECTION_AUDIO_PRELOAD_CONCURRENCY, blocks.length)
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (token === sectionPreloadToken && mode.value === 'result') {
+      const block = blocks[nextIndex]
+      nextIndex += 1
+      if (!block) return
+      await preloadBlockAudio(block, 'summary')
+    }
+  })
+  await Promise.all(workers)
+}
+
+function scheduleSectionAudioPreload() {
+  clearTimeout(sectionPreloadTimer)
+  const token = ++sectionPreloadToken
+  sectionPreloadTimer = setTimeout(() => {
+    if (token !== sectionPreloadToken || mode.value !== 'result') return
+    const blocks = getSectionAudioPreloadBlocks()
+    if (!blocks.length) return
+    preloadSectionAudioQueue(blocks, token)
+  }, 300)
+}
+
+function scheduleAudioPreload() {
+  clearTimeout(preloadAudioTimer)
+  const token = ++preloadAudioToken
+  preloadAudioTimer = setTimeout(async () => {
+    if (token !== preloadAudioToken || mode.value !== 'result') return
+    await preloadTextAudio(getOverallAudioText())
+  }, 250)
+  scheduleSectionAudioPreload()
+}
+
+/**
+ * Speak text using backend OpenAI TTS.
+ * Returns a Promise that resolves when the utterance naturally finishes,
+ * or when it is cancelled programmatically (treated as a clean stop).
+ */
+function requestTTS(text) {
+  return playBackendTTS(text, {
+    voice: selectedVoice.value,
+    speed: playbackSpeed.value,
+    volume: volume.value,
+    onPlaybackStart: () => {
+      if (playbackState.value === 'loading') playbackState.value = 'playing'
+    },
+  })
+}
+
+/**
+ * Start playing a block's text aloud.
+ * @param {number} blockId   - The block to play
+ * @param {string} textType  - 'original' (left card) or 'summary' (right card)
+ */
+async function playBlock(blockId, textType = 'original') {
+  const block = result.value?.blocks?.find(b => b.id === blockId)
+  if (!block) return
+
+  const isSameCard = activeBlockId.value === blockId && activeBlockType.value === textType
+
+  // Clicking the currently playing card → pause
+  if (isSameCard && playbackState.value === 'playing') {
+    pauseAudio(); return
+  }
+  // Clicking the currently paused card → resume
+  if (isSameCard && playbackState.value === 'paused') {
+    resumeAudio(); return
+  }
+
+  // New block / different side — stop anything currently playing first
+  stopAudio()
+  activeBlockId.value   = blockId
+  activeBlockType.value = textType
+  playbackState.value   = 'loading'
+  const textToSpeak = getBlockAudioText(block, textType)
+
+  try {
+    // Await speech completion — state resets to idle only after speech ends
+    await requestTTS(textToSpeak)
+    // Only reset if this block is still the active one (user may have moved on)
+    if (activeBlockId.value === blockId) stopAudio()
+  } catch (err) {
+    console.error('[TTS] Playback error:', err)
+    stopAudio()
+  }
+}
+
+/** Pause the current playback. */
+function pauseAudio() {
+  pauseBackendTTS()
+  playbackState.value = 'paused'
+}
 
 const TUTORIAL_STEPS = [
   {
@@ -380,59 +499,467 @@ const TUTORIAL_STEPS = [
   },
 ]
 
-// position the tutorial card based on which step we're on
-const tutorialCardStyle = computed(() => {
-  const pos = TUTORIAL_STEPS[tutorialStep.value]?.cardPos
-  // on small screens always center the card regardless of the step
-  if (typeof window !== 'undefined' && window.innerWidth <= 600) {
-    return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'calc(100vw - 48px)' }
+/** Replay the currently active block (same side) from the beginning. */
+function replayBlock() {
+  if (activeBlockId.value !== null) playBlock(activeBlockId.value, activeBlockType.value)
+}
+
+/** Stop all playback and reset to idle. */
+function stopAudio() {
+  stopBackendTTS()
+  activeBlockId.value   = null
+  activeBlockType.value = 'original'
+  playbackState.value   = 'idle'
+}
+
+function restartActiveAudio() {
+  if (activeBlockId.value === null || playbackState.value === 'idle') return
+  const blockId = activeBlockId.value
+  const blockType = activeBlockType.value
+  if (blockId === OVERALL_SUMMARY_ID) {
+    playOverallSummary()
+  } else {
+    playBlock(blockId, blockType)
   }
-  if (pos === 'center')       return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
-  if (pos === 'right-top')    return { top: '160px', right: '24px' }
-  if (pos === 'right-bottom') return { bottom: '100px', right: '24px' }
-  if (pos === 'toolbar')      return { top: '145px', right: '24px' }
-  return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+}
+
+watch(selectedVoice, () => {
+  scheduleAudioPreload()
+  restartActiveAudio()
 })
 
-// start the tutorial from the beginning
-function startTutorial() {
-  tutorialStep.value = 0
-  showTutorial.value = true
+watch(playbackSpeed, (speed) => {
+  setBackendTTSPlaybackRate(speed)
+})
+
+watch(result, scheduleAudioPreload, { deep: true })
+
+
+// ── Feedback strip ────────────────────────────────────────────────────────────
+
+// { type: 'loading' | 'uploading' | 'success' | 'error', message: string }
+const feedback = ref(null)
+let feedbackTimer = null
+
+// Show a status message; set autoDismiss = 0 to keep it until manually dismissed
+function showFeedback(type, message, autoDismiss = 3000) {
+  clearTimeout(feedbackTimer)
+  feedback.value = { type, message }
+  if (autoDismiss) feedbackTimer = setTimeout(() => { feedback.value = null }, autoDismiss)
 }
-// go to the next step, or close the tutorial if we're on the last step
-function nextStep() {
-  if (tutorialStep.value < TUTORIAL_STEPS.length - 1) tutorialStep.value++
-  else closeTutorial()
+
+
+// ── File upload ───────────────────────────────────────────────────────────────
+
+const fileInputRef  = ref(null)
+const isDragging    = ref(false)
+const SUPPORTED_EXT = ['.txt', '.pdf', '.docx']
+
+
+// ── Auto-resize textarea ──────────────────────────────────────────────────────
+
+function autoResize() {
+  const el = textareaRef.value
+  if (!el) return
+  el.style.height = 'auto'                                   // reset first so it can shrink
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px'   // cap at 180px
 }
-// go back to the previous step
-function prevStep() {
-  if (tutorialStep.value > 0) tutorialStep.value--
+watch(inputText, () => nextTick(autoResize))
+watch(
+  [mode, result, inputText, uploadedFileText, uploadedFileName],
+  saveReadingState,
+  { deep: true },
+)
+
+
+// ── Submit / process text ─────────────────────────────────────────────────────
+
+async function handleSubmit() {
+  const textToProcess = processingText.value.trim()
+  if (!textToProcess || overLimit.value || mode.value === 'loading' || sectionProcessing.value) return
+
+  // Clear the input box immediately after capturing the text.
+  // We also directly reset the textarea DOM height so it collapses
+  // right away — reactive updates alone can lag on larger content.
+  inputText.value        = ''
+  uploadedFileText.value = ''
+  uploadedFileName.value = ''
+  if (textareaRef.value) {
+    textareaRef.value.value = ''         // force-clear the native element
+    textareaRef.value.style.height = 'auto'  // collapse immediately
+  }
+  await nextTick()
+  autoResize()   // recalculate to the correct min height
+
+  showFeedback('loading', 'Generating overview first…', 0)
+  stopAudio()                        // stop any playing audio before new submission
+  cancelAudioPreload()
+  mode.value           = 'loading'
+  result.value         = null
+  sectionProcessing.value = true
+  expandedBlocks.value = new Set()
+  clampedBlocks.value  = {}
+  const requestId = ++activeProcessRequestId
+
+  const fetchJson = async (path) => {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ text: textToProcess }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || 'Processing failed.')
+    return data
+  }
+
+  fetchJson('/api/plugin/summary')
+    .then((summaryData) => {
+      if (requestId !== activeProcessRequestId) return
+      result.value = {
+        ...(result.value || {}),
+        overallSummary: summaryData.overallSummary,
+        blocks: result.value?.blocks || [],
+      }
+      mode.value = 'result'
+      if (sectionProcessing.value) {
+        showFeedback('loading', 'Overview is ready. Building sections…', 0)
+      } else if (!result.value.blocks?.length) {
+        showFeedback('error', 'Sections could not be generated. The overview is still available.', 6000)
+      }
+    })
+    .catch((err) => {
+      if (requestId !== activeProcessRequestId) return
+      console.error('[summary] Plugin summary failed:', err)
+    })
+
+  try {
+    const data = await fetchJson('/api/process-text')
+    if (requestId !== activeProcessRequestId) return
+
+    const existingSummary = result.value?.overallSummary
+    result.value = {
+      ...data,
+      overallSummary: existingSummary?.heading || existingSummary?.text
+        ? existingSummary
+        : data.overallSummary,
+    }
+    mode.value = 'result'
+    sectionProcessing.value = false
+    showFeedback('success', 'Text processed successfully.')
+  } catch (err) {
+    if (requestId !== activeProcessRequestId) return
+    sectionProcessing.value = false
+    if (result.value?.overallSummary) {
+      mode.value = 'result'
+      showFeedback('error', err.message || 'Sections could not be generated. The overview is still available.', 6000)
+    } else {
+      mode.value = 'idle'
+      showFeedback('error', err.message || 'Something went wrong. Please try again.', 6000)
+    }
+  }
 }
-// close the tutorial and save to localStorage so it doesn't show again next visit
-function closeTutorial() {
-  showTutorial.value = false
-  localStorage.setItem('cr_tutorial_done', '1')
+
+// Go back to the input screen without clearing the text
+function handleBackToInput() {
+  stopAudio()                        // stop TTS before leaving result view
+  cancelAudioPreload()
+  activeProcessRequestId += 1
+  mode.value           = 'idle'
+  result.value         = null
+  feedback.value       = null
+  sectionProcessing.value = false
+  expandedBlocks.value = new Set()
+  clampedBlocks.value  = {}
+  clearReadingState()
 }
+
+
+// ── Clear input ───────────────────────────────────────────────────────────────
+
+function handleClear() {
+  inputText.value        = ''
+  uploadedFileText.value = ''
+  uploadedFileName.value = ''
+  feedback.value         = null
+  clearTimeout(feedbackTimer)
+  saveReadingState()
+  nextTick(autoResize)
+}
+
+function handleTextInput() {
+  if (!uploadedFileText.value) return
+  uploadedFileText.value = ''
+  uploadedFileName.value = ''
+  feedback.value = null
+}
+
+
+// ── File read helpers ─────────────────────────────────────────────────────────
+
+// Reads supported uploads as base64 so the backend handles all text extraction consistently
+function readAsBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader()
+    r.onload = e => {
+      const s = typeof e.target.result === 'string' ? e.target.result : ''
+      res(s.includes(',') ? s.split(',')[1] : s)   // strip the data-URL prefix
+    }
+    r.onerror = () => rej(new Error('Could not read file.'))
+    r.readAsDataURL(file)
+  })
+}
+
+async function processFile(file) {
+  const ext = '.' + file.name.split('.').pop().toLowerCase()
+
+  if (!SUPPORTED_EXT.includes(ext)) {
+    showFeedback('error', `"${file.name}" is not supported. Use TXT, PDF, or DOCX.`, 5000)
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showFeedback('error', 'File is too large (max 5 MB).', 5000)
+    return
+  }
+
+  showFeedback('uploading', `Uploading "${file.name}"…`, 0)
+
+  try {
+    const base64 = await readAsBase64(file)
+    const res = await fetch(`${API_BASE_URL}/api/extract-text`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ filename: file.name, contentBase64: base64 }),
+    })
+    const data = await res.json()
+    if (!res.ok)            throw new Error(data.detail || 'Could not extract text.')
+    if (!data.text?.trim()) throw new Error('No readable text found.')
+    inputText.value = ''
+    uploadedFileText.value = data.text
+    uploadedFileName.value = file.name
+    showFeedback('success', `"${file.name}" ready — click Process Text to continue`, 0)
+    nextTick(autoResize)
+  } catch (err) {
+    showFeedback('error', err.message || 'Upload failed. Please try again.', 6000)
+  }
+}
+
+function triggerFileInput() { fileInputRef.value?.click() }
+
+async function handleFileChange(e) {
+  const file = e.target.files[0]
+  e.target.value = ''   // reset so the same file can be re-selected
+  if (file) await processFile(file)
+}
+
+
+// ── Drag and drop ─────────────────────────────────────────────────────────────
+
+// Use a counter instead of a boolean to handle nested drag events correctly
+let dragCounter = 0
+
+function onDragEnter(e) { e.preventDefault(); dragCounter++; isDragging.value = true }
+function onDragOver(e)  { e.preventDefault() }
+function onDragLeave()  {
+  dragCounter--
+  if (dragCounter <= 0) { dragCounter = 0; isDragging.value = false }
+}
+async function onDrop(e) {
+  e.preventDefault()
+  dragCounter = 0
+  isDragging.value = false
+  const file = e.dataTransfer?.files[0]
+  if (file) await processFile(file)
+}
+
+
+// ── Keyboard shortcut ─────────────────────────────────────────────────────────
+
+// Ctrl+Enter (or Cmd+Enter on Mac) submits without clicking the button
+function onKeydown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') handleSubmit()
+}
+
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
+  restoreReadingState()
   window.addEventListener('scroll', onScroll)
-  // only show the tutorial automatically if the user hasn't seen it before
-  if (!localStorage.getItem('cr_tutorial_done')) {
-    showTutorial.value = true
-  }
+  nextTick(autoResize)
 })
-// clean up: remove scroll listener and stop any playing speech when the page unmounts
-onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech() })
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
+  clearTimeout(feedbackTimer)
+  cancelAudioPreload()
+  stopAudio()
+})
+
+
+// ── Dictionary hint (dismissible, persisted to localStorage) ─────────────────
+const DICT_HINT_KEY = 'clearead-dict-hint-dismissed'
+const dictHintVisible = ref(localStorage.getItem(DICT_HINT_KEY) !== 'true')
+
+function dismissDictHint() {
+  dictHintVisible.value = false
+  localStorage.setItem(DICT_HINT_KEY, 'true')
+}
+
+// ── Dictionary popup ──────────────────────────────────────────────────────────
+// The popup is now handled globally via App.vue + GlobalDictPopup.vue.
+// A single document-level dblclick listener in App.vue covers every page —
+// no per-page wiring needed. See src/composables/useGlobalDict.js.
+
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+const showExportMenu = ref(false)
+
+/** Sanitise a string for safe HTML injection */
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** Derive a safe filename from the document title */
+function getExportFilename(ext) {
+  const title = result.value?.title || 'clearead-summary'
+  const slug  = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
+  return slug + '.' + ext
+}
+
+/** Create a Blob, trigger a browser download, then revoke the object URL */
+function triggerDownload(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType })
+  const url  = URL.createObjectURL(blob)
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename })
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  showExportMenu.value = false
+}
+
+/** Export as plain text (.txt) */
+function exportAsTxt() {
+  if (!result.value) return
+  const lines = []
+  const title = result.value.title
+  if (title) { lines.push(title, '='.repeat(title.length), '') }
+
+  const os = overallSummary.value
+  if (os) {
+    lines.push('OVERVIEW', '--------')
+    if (os.heading) lines.push(os.heading)
+    if (os.text)    lines.push('', os.text)
+    lines.push('')
+  }
+
+  for (const block of result.value.blocks || []) {
+    lines.push('---')
+    lines.push(`SECTION ${block.id}: ${block.title || 'Section ' + block.id}`)
+    if (block.subtitle) lines.push(block.subtitle)
+    lines.push('')
+    if (block.summary) { lines.push('Summary:', block.summary, '') }
+    if (block.keyPoints?.length) {
+      lines.push('Key Points:')
+      block.keyPoints.forEach(p => lines.push('  • ' + p))
+      lines.push('')
+    }
+  }
+
+  triggerDownload(getExportFilename('txt'), lines.join('\n'), 'text/plain;charset=utf-8')
+}
+
+/** Export as PDF — renders a print-optimised HTML page in a new tab and triggers print */
+function exportAsPdf() {
+  if (!result.value) return
+  showExportMenu.value = false
+
+  const title = result.value.title || 'Summary'
+  const os    = overallSummary.value
+
+  let html = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<title>${escHtml(title)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 720px; margin: 40px auto; padding: 0 28px 60px; color: #1a1a2e; line-height: 1.75; }
+  h1 { font-size: 24px; font-weight: 800; color: #1e3a8a; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e0e7ff; }
+  .overview-tag { font-size: 11px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+  .overview-heading { font-size: 19px; font-weight: 700; color: #0d1117; margin-bottom: 8px; }
+  .overview-text { font-size: 14px; color: #374151; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+  .section-label { font-size: 10.5px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+  .section-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 3px; }
+  .section-sub   { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+  .field-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .07em; margin: 10px 0 4px; }
+  .summary-text { font-size: 13.5px; color: #1f2937; }
+  ul { margin: 0; padding-left: 18px; }
+  li { font-size: 13.5px; color: #374151; margin-bottom: 3px; }
+  .footer { margin-top: 40px; font-size: 11px; color: #9ca3af; text-align: center; }
+  @media print { body { margin: 20px auto; } }
+</style>
+</head><body>`
+
+  html += `<h1>${escHtml(title)}</h1>`
+
+  if (os) {
+    html += `<p class="overview-tag">Overview</p>`
+    if (os.heading) html += `<p class="overview-heading">${escHtml(os.heading)}</p>`
+    if (os.text)    html += `<p class="overview-text">${escHtml(os.text)}</p>`
+    html += `<hr>`
+  }
+
+  for (const block of result.value.blocks || []) {
+    const sTitle = block.title || 'Section ' + block.id
+    html += `<p class="section-label">Section ${block.id}</p>`
+    html += `<p class="section-title">${escHtml(sTitle)}</p>`
+    if (block.subtitle) html += `<p class="section-sub">${escHtml(block.subtitle)}</p>`
+    if (block.summary) {
+      html += `<p class="field-label">Summary</p>`
+      html += `<p class="summary-text">${escHtml(block.summary)}</p>`
+    }
+    if (block.keyPoints?.length) {
+      html += `<p class="field-label">Key Points</p><ul>`
+      block.keyPoints.forEach(p => { html += `<li>${escHtml(p)}</li>` })
+      html += `</ul>`
+    }
+    html += `<hr>`
+  }
+
+  html += `<p class="footer">Generated by Clearead &mdash; ${new Date().toLocaleDateString()}</p>`
+  html += `</body></html>`
+
+  const win = window.open('', '_blank')
+  if (!win) { alert('Please allow pop-ups for this site to export PDF.'); return }
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print() }, 400)
+}
 </script>
 
+
 <template>
-  <div class="page">
+  <!-- The whole page listens for drag events so users can drop files anywhere -->
+  <div
+    class="page"
+    @dragenter="onDragEnter"
+    @dragover.prevent="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
+  >
 
     <!-- ── Navbar ── -->
     <nav :class="['navbar', { 'navbar--scrolled': scrolled }]">
       <div class="nav-inner">
+
+        <!-- Brand logo — links back to home -->
         <RouterLink to="/" class="nav-logo">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
             <rect width="28" height="28" rx="8" fill="#2563eb"/>
             <path d="M7 8.5C7 7.67 7.67 7 8.5 7H13.5V21H8.5C7.67 21 7 20.33 7 19.5V8.5Z" fill="white" opacity="0.9"/>
             <path d="M21 8.5C21 7.67 20.33 7 19.5 7H14.5V21H19.5C20.33 21 21 20.33 21 19.5V8.5Z" fill="white" opacity="0.55"/>
@@ -442,11 +969,18 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
           </svg>
           Clearead
         </RouterLink>
+
+        <!-- Desktop nav links -->
         <ul class="nav-links">
-          <li><RouterLink to="/"         class="nav-link">Home</RouterLink></li>
-          <li><RouterLink to="/reading"  class="nav-link nav-link--active">Reading Support</RouterLink></li>
-          <li><RouterLink to="/dyslexia" class="nav-link">Dyslexia</RouterLink></li>
+          <li><RouterLink to="/"           class="nav-link">Home</RouterLink></li>
+          <li><RouterLink to="/reading"    class="nav-link nav-link--active">Reading Support</RouterLink></li>
+          <li><RouterLink to="/training"   class="nav-link">Training</RouterLink></li>
+          <li><RouterLink to="/dictionary" class="nav-link">Dictionary</RouterLink></li>
+          <li><RouterLink to="/dyslexia"   class="nav-link">Understand Dyslexia</RouterLink></li>
+          <li><RouterLink to="/extension"  class="nav-link nav-link--ext">Extension</RouterLink></li>
         </ul>
+
+        <!-- Hamburger icon — only visible on small screens -->
         <button class="nav-hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? 'Close menu' : 'Open menu'">
           <svg v-if="!menuOpen" width="22" height="22" viewBox="0 0 22 22" fill="none">
             <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -458,324 +992,801 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
       </div>
     </nav>
 
-    <!-- Mobile nav -->
+    <!-- Mobile navigation drawer -->
     <div v-if="menuOpen" class="mobile-nav">
       <ul class="mobile-nav-links">
-        <li><RouterLink to="/"         class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
-        <li><RouterLink to="/reading"  class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
-        <li><RouterLink to="/dyslexia" class="mobile-nav-link" @click="menuOpen = false">Dyslexia</RouterLink></li>
+        <li><RouterLink to="/"           class="mobile-nav-link" @click="menuOpen = false">Home</RouterLink></li>
+        <li><RouterLink to="/reading"    class="mobile-nav-link" @click="menuOpen = false">Reading Support</RouterLink></li>
+        <li><RouterLink to="/training"   class="mobile-nav-link" @click="menuOpen = false">Training</RouterLink></li>
+        <li><RouterLink to="/dictionary" class="mobile-nav-link" @click="menuOpen = false">Dictionary</RouterLink></li>
+        <li><RouterLink to="/dyslexia"   class="mobile-nav-link" @click="menuOpen = false">Understand Dyslexia</RouterLink></li>
+        <li><RouterLink to="/extension"  class="mobile-nav-link" @click="menuOpen = false">Extension</RouterLink></li>
       </ul>
     </div>
 
-    <!-- ── Toolbar ── -->
-    <div :class="['toolbar', { 'tutorial-highlight--toolbar': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'toolbar' }]">
-      <div class="toolbar-inner">
 
-        <!-- Left controls -->
-        <div class="toolbar-left">
-          <!-- Play / Pause -->
-          <button
-            class="btn-read"
-            :class="{ 'btn-read--active': isPlaying }"
-            :disabled="!rawText.trim() && mode !== 'result'"
-            @click="toggleSpeech"
-          >
-            <svg v-if="isPlaying" width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <rect x="1.5" y="1" width="4" height="11" rx="1.5" fill="currentColor"/>
-              <rect x="7.5" y="1" width="4" height="11" rx="1.5" fill="currentColor"/>
-            </svg>
-            <svg v-else width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M2 1.5L11.5 6.5L2 11.5V1.5Z" fill="currentColor"/>
-            </svg>
-            {{ isPlaying ? 'Pause' : isPaused ? 'Resume' : 'Start Reading' }}
-          </button>
+    <!-- ── Main reading area ── -->
+    <main :class="['reading-area', { 'reading-area--no-bar': mode === 'result' }]">
+      <div :class="['reading-inner', { 'reading-inner--wide': mode === 'result' }]">
 
-          <!-- Speed -->
-          <div class="speed-group">
-            <button
-              v-for="r in rateOptions"
-              :key="r"
-              :class="['speed-pill', { 'speed-pill--active': speechRate === r }]"
-              @click="setRate(r)"
-            >{{ r }}×</button>
-          </div>
-
-          <div class="toolbar-sep"></div>
-
-          <!-- View toggle -->
-          <div v-if="mode === 'result'" class="view-toggle">
-            <button
-              :class="['view-btn', { 'view-btn--active': viewMode === 'simplified' }]"
-              @click="viewMode = 'simplified'"
-            >Simplified</button>
-            <button
-              :class="['view-btn', { 'view-btn--active': viewMode === 'original' }]"
-              @click="viewMode = 'original'"
-            >Original</button>
-          </div>
-        </div>
-
-        <!-- Right controls -->
-        <div class="toolbar-right">
-          <!-- Font size -->
-          <div class="font-group">
-            <button class="font-btn" @click="fontSize = Math.max(14, fontSize - 2)">A−</button>
-            <span class="font-val">{{ fontSize }}</span>
-            <button class="font-btn" @click="fontSize = Math.min(28, fontSize + 2)">A+</button>
-          </div>
-
-          <div class="toolbar-sep"></div>
-
-          <!-- Spacing -->
-          <div class="seg-group">
-            <button
-              v-for="s in ['compact','normal','relaxed']"
-              :key="s"
-              :class="['seg-btn', { 'seg-btn--active': lineSpacing === s }]"
-              @click="lineSpacing = s"
-            >{{ s.charAt(0).toUpperCase() + s.slice(1) }}</button>
-          </div>
-
-          <div class="toolbar-sep"></div>
-
-          <!-- BG -->
-          <div class="bg-group">
-            <span class="bg-label">BG</span>
-            <button
-              v-for="t in bgThemes"
-              :key="t.value"
-              :class="['bg-swatch', { 'bg-swatch--active': bgTheme === t.value }]"
-              :style="{ background: t.swatch }"
-              @click="bgTheme = t.value"
-            ></button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ── Main content ── -->
-    <div class="content">
-
-      <!-- Left: input panel -->
-      <div :class="['input-panel', { 'tutorial-highlight--input': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'input' }]" :style="inputFlexStyle">
-        <p class="input-panel-label">Paste or upload your text</p>
-
-        <!-- Hidden file input -->
-        <input
-          ref="fileInputRef"
-          type="file"
-          accept=".txt,.md,.markdown,.csv,.rtf,.log,.text,.pdf,.docx"
-          style="display:none"
-          @change="handleFileUpload"
-        />
-
-        <textarea
-          v-model="rawText"
-          class="input-textarea"
-          :class="{ 'input-textarea--over': overLimit }"
-          placeholder="Paste your text here — an article, essay, or any passage you'd like to simplify and read more easily."
-          spellcheck="false"
-          :maxlength="charLimit"
-        ></textarea>
-
-        <!-- File error message -->
-        <div v-if="fileError" class="file-error">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
-            <circle cx="7" cy="7" r="6" stroke="#ef4444" stroke-width="1.5"/>
-            <path d="M7 4v3.5M7 9.5v.5" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          {{ fileError }}
-        </div>
-
-        <div class="input-footer">
-          <!-- Upload button -->
-          <button class="btn-upload" @click="triggerFileInput" title="Upload a TXT, PDF, or DOCX file">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 9.5V2M7 2L4 5M7 2L10 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 10.5v1a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            Upload file
-          </button>
-
-          <div class="input-limit">
-            <span class="word-count" :class="{ 'word-count--over': atLimit }">
-              {{ inputWordCount.toLocaleString() }} words
-            </span>
-            <span v-if="atLimit" class="limit-hint limit-hint--over">
-              Maximum input length applies
-            </span>
-          </div>
-
-          <button
-            :class="['btn-simplify', { 'tutorial-highlight--simplify': showTutorial && TUTORIAL_STEPS[tutorialStep].highlight === 'simplify' }]"
-            :disabled="!rawText.trim() || overLimit || mode === 'loading'"
-            @click="handleSimplify"
-          >
-            <span v-if="mode === 'loading'" class="spinner"></span>
-            <span v-else>Simplify</span>
-            <svg v-if="mode !== 'loading'" width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 7H12M12 7L8 3M12 7L8 11" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Right: results panel -->
-      <div class="results-panel" :style="panelBgStyle">
-
-        <!-- Empty state -->
+        <!-- ── STATE: idle — welcome / how-to screen ── -->
         <div v-if="mode === 'idle'" class="empty-state">
-          <div class="empty-icon">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <rect x="8" y="6" width="24" height="28" rx="4" stroke="#c7d2fe" stroke-width="2"/>
-              <path d="M14 14h12M14 20h12M14 26h7" stroke="#c7d2fe" stroke-width="2" stroke-linecap="round"/>
-            </svg>
+
+          <h2 class="empty-title">Reading Support</h2>
+          <p class="empty-sub">
+            Paste or upload your text — Clearead will break it into sections
+            and write a plain-English summary for each one.
+          </p>
+
+          <!-- Three-step flow — horizontal cards with arrows showing the process -->
+          <div class="how-flow">
+
+            <div class="how-card how-card--1">
+              <span class="how-step-num">1</span>
+              <strong class="how-card-title">Add your text</strong>
+              <p class="how-card-desc">Paste, type, or upload a TXT, PDF, or DOCX file into the box below.</p>
+            </div>
+
+            <!-- Arrow connector -->
+            <div class="how-arrow" aria-hidden="true">
+              <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                <path d="M0 8h24M18 2l6 6-6 6" stroke="#c7d2fe" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+
+            <div class="how-card how-card--2">
+              <span class="how-step-num">2</span>
+              <strong class="how-card-title">Process</strong>
+              <p class="how-card-desc">Click Process Text — Clearead breaks it into paragraphs and writes a clear summary for each.</p>
+            </div>
+
+            <!-- Arrow connector -->
+            <div class="how-arrow" aria-hidden="true">
+              <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                <path d="M0 8h24M18 2l6 6-6 6" stroke="#c7d2fe" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+
+            <div class="how-card how-card--3">
+              <span class="how-step-num">3</span>
+              <strong class="how-card-title">Read or listen</strong>
+              <p class="how-card-desc">Read the summaries, or press Play on any block to hear it read aloud.</p>
+            </div>
+
           </div>
-          <p class="empty-title">Your results will appear here</p>
-          <p class="empty-sub">Paste text on the left and click <strong>Simplify</strong> to get started.</p>
+
+          <p class="empty-shortcut">
+            <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+            <span>to submit quickly</span>
+          </p>
+
+          <!-- Demo CTA: lets users preview the full UI without real content -->
+          <div class="demo-cta">
+            <span class="demo-cta-text">Want to see how it looks?</span>
+            <button class="btn-demo" @click="loadDemo">Try Demo →</button>
+          </div>
+
         </div>
 
-        <!-- Loading skeleton -->
+
+        <!-- ── STATE: loading — animated skeleton ── -->
         <div v-else-if="mode === 'loading'" class="loading-state">
-          <div class="skeleton skeleton--card"></div>
-          <div class="skeleton skeleton--line" style="width: 100%; margin-top: 32px;"></div>
-          <div class="skeleton skeleton--line" style="width: 88%;"></div>
-          <div class="skeleton skeleton--line" style="width: 72%;"></div>
-          <div class="skeleton skeleton--sm" style="width: 50%; margin-top: 32px;"></div>
-          <div class="skeleton skeleton--line" style="width: 90%; margin-top: 12px;"></div>
-          <div class="skeleton skeleton--line" style="width: 80%;"></div>
-          <div class="skeleton skeleton--line" style="width: 60%;"></div>
+          <!-- Skeleton mimics the two-column result layout -->
+          <div class="skeleton-header">
+            <div class="skeleton skeleton--col-title"></div>
+            <div class="skeleton skeleton--col-title"></div>
+          </div>
+          <div v-for="i in 3" :key="i" class="skeleton-row">
+            <!-- Left: original text placeholder -->
+            <div class="skeleton-block">
+              <div class="skeleton skeleton--badge"></div>
+              <div class="skeleton skeleton--line" style="width:100%"></div>
+              <div class="skeleton skeleton--line" style="width:88%"></div>
+              <div class="skeleton skeleton--line" style="width:75%"></div>
+            </div>
+            <!-- Right: summary placeholder -->
+            <div class="skeleton-block skeleton-block--right">
+              <div class="skeleton skeleton--badge"></div>
+              <div class="skeleton skeleton--sm" style="width:60%"></div>
+              <div class="skeleton skeleton--line" style="width:95%"></div>
+              <div class="skeleton skeleton--line" style="width:80%"></div>
+              <div class="skeleton skeleton--sm" style="width:50%; margin-top:8px"></div>
+              <div class="skeleton skeleton--line" style="width:85%"></div>
+              <div class="skeleton skeleton--line" style="width:70%"></div>
+            </div>
+          </div>
         </div>
 
-        <!-- Results -->
-        <div v-else-if="mode === 'result' && result" class="results-content" :style="textStyle">
 
-          <!-- View: Simplified -->
-          <template v-if="viewMode === 'simplified'">
+        <!-- ── STATE: result — 3-stage guided reading flow ── -->
+        <!--
+          Stage 1: Overall Summary Card  — green, centered, with TTS play button
+          Stage 2: Section Tree          — root node → trunk → clickable section cards
+          Stage 3: Section Detail Modal  — opens when a tree card is clicked
+        -->
+        <div v-else-if="mode === 'result' && result" class="result-state">
 
-            <div v-if="result.usedFallback" class="fallback-notice">
-              {{ fallbackNotice(result) }}
+          <!-- Top status bar: success notice + export + back button -->
+          <div class="result-topbar">
+            <div class="result-notice">
+              <svg v-if="sectionProcessing" class="spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="22 10" stroke-linecap="round"/>
+              </svg>
+              <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                <path d="M4 7l2.2 2.2 3.8-4.4" stroke="#16a34a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ sectionProcessing ? 'Overview ready. Building sections…' : (result.notice || 'Text processed successfully.') }}
             </div>
 
-            <!-- AI Summary -->
-            <div class="summary-card">
-              <div class="summary-card-header">
-                <span class="summary-title">AI Summary</span>
-                <span class="summary-badge">{{ readTime(result.simplified) }}</span>
+            <div class="topbar-actions">
+              <!-- Export dropdown -->
+              <div class="export-wrap">
+                <!-- Transparent overlay to close menu on outside click -->
+                <div v-if="showExportMenu" class="export-backdrop" @click="showExportMenu = false"></div>
+
+                <button class="btn-export" @click="showExportMenu = !showExportMenu">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M6.5 1v7.5M6.5 8.5L4 6M6.5 8.5L9 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 10h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  Export
+                  <svg class="export-chevron" :class="{ 'export-chevron--open': showExportMenu }" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+
+                <div v-if="showExportMenu" class="export-menu">
+                  <button class="export-menu-item" @click="exportAsTxt">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                      <path d="M4 4.5h6M4 7h6M4 9.5h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                    </svg>
+                    Plain Text (.txt)
+                  </button>
+                  <div class="export-menu-divider"></div>
+                  <button class="export-menu-item" @click="exportAsPdf">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                      <path d="M4 5h3.5c.8 0 1.5.7 1.5 1.5S8.3 8 7.5 8H4V5z" stroke="currentColor" stroke-width="1.1"/>
+                      <path d="M4 8h1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                    </svg>
+                    PDF (Print)
+                  </button>
+                </div>
               </div>
-              <div class="summary-list">
-                <p>{{ result.summary }}</p>
-              </div>
+
+              <button class="btn-back" @click="handleBackToInput">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M11 6.5H2M2 6.5L6 2.5M2 6.5L6 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Back to Input
+              </button>
             </div>
-
-            <!-- Simplified version -->
-            <div class="result-section">
-              <p class="section-label">Simplified Version</p>
-              <p class="section-text">{{ result.simplified }}</p>
-              <p class="section-meta">{{ wordCount(result.simplified) }} words · {{ readTime(result.simplified) }}</p>
-            </div>
-
-            <!-- Key points -->
-            <div class="result-section result-section--last">
-              <p class="section-label">Key Points</p>
-              <ul class="key-points">
-                <li v-for="(pt, i) in result.keyPoints" :key="i">{{ pt }}</li>
-              </ul>
-              <p class="section-meta section-meta--blue">Simplified to {{ wordCount(result.simplified) }} words</p>
-            </div>
-
-          </template>
-
-          <!-- View: Original -->
-          <template v-else>
-            <div class="result-section result-section--last">
-              <p class="section-label">Original Text</p>
-              <p class="section-text" style="white-space: pre-wrap;">{{ rawText }}</p>
-              <p class="section-meta">{{ wordCount(rawText) }} words · {{ readTime(rawText) }}</p>
-            </div>
-          </template>
-
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ── Floating Guide button ── -->
-    <button class="btn-guide-fab" @click="startTutorial" title="Show guide">
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M5.8 5.8a1.7 1.7 0 013.2.85c0 1.1-1.5 1.4-1.5 2.55" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="7.5" cy="11.5" r=".7" fill="currentColor"/>
-      </svg>
-      Guide
-    </button>
-
-    <!-- ── Tutorial overlay ── -->
-    <Transition name="tutorial-fade">
-      <div v-if="showTutorial" class="tutorial-overlay" @click.self="closeTutorial">
-
-        <!-- Card -->
-        <div class="tutorial-card" :style="tutorialCardStyle">
-
-          <!-- Step dots -->
-          <div class="tutorial-dots">
-            <span
-              v-for="(_, i) in TUTORIAL_STEPS"
-              :key="i"
-              :class="['tutorial-dot', { 'tutorial-dot--active': i === tutorialStep }]"
-            ></span>
           </div>
 
-          <!-- Content -->
-          <h3 class="tutorial-title">{{ TUTORIAL_STEPS[tutorialStep].title }}</h3>
-          <p class="tutorial-desc">{{ TUTORIAL_STEPS[tutorialStep].desc }}</p>
+          <!-- ══════════════════════════════════════════════════════════════
+               STAGE 1 · Overall Summary
+               Fills the full viewport. Reader sees ONLY this section on load.
+               A bouncing arrow at the bottom prompts scrolling to Stage 2.
+          ══════════════════════════════════════════════════════════════ -->
+          <div class="stage-summary">
 
-          <!-- Actions -->
-          <div class="tutorial-actions">
-            <button v-if="tutorialStep > 0" class="tutorial-btn-prev" @click="prevStep">Back</button>
-            <button class="tutorial-btn-skip" @click="closeTutorial">Skip</button>
-            <button class="tutorial-btn-next" @click="nextStep">
-              {{ tutorialStep < TUTORIAL_STEPS.length - 1 ? 'Next' : 'Get started' }}
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M2 6.5H11M11 6.5L7 2.5M11 6.5L7 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Small pill label at the top -->
+            <div class="stage-header">
+              <span class="stage-pill stage-pill--green">
+                <!-- Green dot -->
+                <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                  <circle cx="3.5" cy="3.5" r="3.5" fill="currentColor"/>
+                </svg>
+                Overview
+              </span>
+            </div>
+
+            <!--
+              Main card: white background with green left-accent border.
+              Play button is part of the card flow (below the body text),
+              not absolutely positioned, so it reads naturally.
+            -->
+            <div class="overall-card">
+
+              <!-- Large document-level heading -->
+              <h2 class="overall-heading">{{ overallSummary?.heading }}</h2>
+
+              <!-- Supporting body paragraph — double-click any word to look it up (global handler) -->
+              <p class="overall-body">{{ overallSummary?.text }}</p>
+
+              <!-- Audio bar: always visible, consistent with section modal controls -->
+              <div class="overall-audio-row">
+
+                <!-- Primary play/pause/resume pill button -->
+                <button class="overall-play-pill" @click="playOverallSummary">
+                  <!-- Playing: waveform bars + Pause -->
+                  <template v-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'playing'">
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    <span class="wave-bar wave-bar--white"></span>
+                    Pause
+                  </template>
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'loading'">
+                    <span class="btn-spinner"></span>
+                    Generating audio
+                  </template>
+                  <!-- Paused: resume -->
+                  <template v-else-if="activeBlockId === OVERALL_SUMMARY_ID && playbackState === 'paused'">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Resume
+                  </template>
+                  <!-- Idle: play -->
+                  <template v-else>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                    </svg>
+                    Listen to Overview
+                  </template>
+                </button>
+
+                <!-- Icon-only secondary controls -->
+                <div class="overall-icon-btns">
+
+                  <!-- Stop -->
+                  <button
+                    class="overall-icon-btn"
+                    :disabled="activeBlockId !== OVERALL_SUMMARY_ID || playbackState === 'idle'"
+                    title="Stop"
+                    @click="stopAudio"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="2.5" y="2.5" width="9" height="9" rx="2" fill="currentColor"/>
+                    </svg>
+                  </button>
+
+                </div>
+
+                <!-- Thin separator -->
+                <div class="overall-audio-sep"></div>
+
+                <!-- Voice + Speed selects -->
+                <div class="overall-audio-settings">
+                  <select v-model="selectedVoice" class="overall-audio-select" title="Voice">
+                    <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                  </select>
+                  <select v-model="playbackSpeed" class="overall-audio-select overall-audio-select--narrow" title="Speed">
+                    <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                  </select>
+                </div>
+
+              </div>
+
+            </div><!-- /overall-card -->
+
+          </div><!-- /stage-summary -->
+
+
+          <!-- ══════════════════════════════════════════════════════════════
+               STAGE 2 · Section Grid
+               A bridge label connects the overview to the section cards.
+               Clicking a card opens the Stage 3 detail modal.
+          ══════════════════════════════════════════════════════════════ -->
+          <div v-if="sectionProcessing || result.blocks?.length" class="stage-tree">
+
+            <!-- Vertical connector: flows from overview card → pill label → sections grid -->
+            <div class="stage-connector" aria-hidden="true">
+              <div class="stage-connector-line stage-connector-line--top"></div>
+              <div class="stage-connector-pill">
+                <!-- Down-arrow icon -->
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M6.5 2v9M3 8l3.5 3L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{{ sectionProcessing ? 'Building Sections' : `${result.blocks?.length || 0} Sections` }}</span>
+              </div>
+              <div class="stage-connector-line stage-connector-line--bottom"></div>
+            </div>
+
+            <!--
+              Sections container: a single bordered box that groups ALL cards.
+              This makes clear that every card is a parallel sibling — no hierarchy implied.
+              Inside, cards are laid out in a simple grid with no branch lines.
+            -->
+            <div class="tree-container">
+            <div v-if="sectionProcessing" class="section-processing-card">
+              <span class="btn-spinner section-processing-spinner"></span>
+              <div>
+                <strong>Preparing section summaries</strong>
+                <p>The overview is ready, and the detailed reading support is still being generated.</p>
+              </div>
+            </div>
+            <div v-else class="tree-nodes">
+              <div
+                v-for="block in result.blocks"
+                :key="block.id"
+                class="tree-node"
+                role="button"
+                tabindex="0"
+                :aria-label="`Open section ${block.id}: ${block.title || ''}`"
+                @click="openSection(block)"
+                @keydown.enter.space.prevent="openSection(block)"
+              >
+                <!-- Section number circle badge -->
+                <div class="tree-node-num">{{ block.id }}</div>
+
+                <!-- Section title and subtitle -->
+                <div class="tree-node-content">
+                  <div class="tree-node-title">{{ block.title || `Section ${block.id}` }}</div>
+                  <div v-if="block.subtitle" class="tree-node-subtitle">{{ block.subtitle }}</div>
+                </div>
+
+                <!-- Right-arrow: visual cue that the card is clickable -->
+                <svg class="tree-node-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 7h8M7 3.5l3.5 3.5L7 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div><!-- /tree-nodes -->
+            </div><!-- /tree-container -->
+
+          </div><!-- /stage-tree -->
+
+        </div><!-- /result-state -->
+
+      </div><!-- /reading-inner -->
+    </main>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         STAGE 3 · Section Detail Modal
+         Opens when the user clicks a section card in the tree.
+         Contains: section title/subtitle, 2-column body (summary + key points),
+         and compact TTS audio controls.
+         Clicking the semi-transparent backdrop closes the modal.
+    ══════════════════════════════════════════════════════════════════════ -->
+    <Transition name="modal-fade">
+      <div
+        v-if="activeSection"
+        class="modal-backdrop"
+        role="dialog"
+        :aria-label="`Section ${activeSection.id} – ${activeSection.title || 'detail'}`"
+        @click.self="closeSection"
+      >
+        <div class="modal-panel">
+
+          <!-- ── Modal header ── -->
+          <div class="modal-header">
+
+            <!-- Circular section number badge -->
+            <div class="modal-section-num">{{ activeSection.id }}</div>
+
+            <!-- Title + subtitle -->
+            <div class="modal-title-group">
+              <h3 class="modal-title">{{ activeSection.title || `Section ${activeSection.id}` }}</h3>
+              <p v-if="activeSection.subtitle" class="modal-subtitle">{{ activeSection.subtitle }}</p>
+            </div>
+
+            <!-- Close button (×) -->
+            <button class="modal-close-btn" @click="closeSection" aria-label="Close section detail">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
             </button>
           </div>
-        </div>
 
+          <!-- ── Dictionary hint bar — shown once, dismissed permanently ── -->
+          <Transition name="hint-slide">
+            <div v-if="dictHintVisible" class="dict-hint-bar">
+              <!-- Book icon -->
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" class="dict-hint-icon">
+                <rect x="2" y="1.5" width="11" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                <path d="M5 5h5M5 7.5h5M5 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M2 1.5h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <span class="dict-hint-text">
+                <strong>Dictionary:</strong> double-click any word in the text to look it up instantly.
+              </span>
+              <button class="dict-hint-close" @click="dismissDictHint" aria-label="Dismiss hint">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </Transition>
+
+          <!-- ── Modal body: Original text (left, collapsible) | Summary + Key Points (right) ── -->
+          <div :class="['modal-body', { 'modal-body--orig-hidden': !modalShowOriginal }]">
+
+            <!-- Left column: original text -->
+            <!-- Only the label row (right-side arrow area) toggles expand/collapse.
+                 The text body is NOT a click target so users can freely double-click
+                 words to open the dictionary without triggering a collapse. -->
+            <!-- When collapsed the whole column is a click target (slim strip, easy to miss otherwise).
+                 When expanded only the label row toggles collapse — text body stays free for dblclick. -->
+            <div
+              :class="['modal-orig-col', { 'modal-orig-col--collapsed': !modalShowOriginal }]"
+              @click="!modalShowOriginal ? modalShowOriginal = true : null"
+            >
+              <!-- Label row — clicking this always toggles (expanded or collapsed) -->
+              <div class="modal-orig-label" @click.stop="modalShowOriginal = !modalShowOriginal" role="button" :aria-expanded="modalShowOriginal">
+                <span>Original Text</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path
+                    :d="modalShowOriginal ? 'M2 4l4 4 4-4' : 'M4 2l4 4-4 4'"
+                    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+
+              <!-- Original text body — double-click any word to look it up (global handler) -->
+              <p v-if="modalShowOriginal" class="modal-orig-text">
+                {{ activeSection.originalText || 'Original text not available.' }}
+              </p>
+            </div>
+
+            <!-- Plain divider -->
+            <div class="modal-divider"></div>
+
+            <!-- Right column: Summary and Key Points stacked -->
+            <div class="modal-col">
+
+              <!-- Summary section -->
+              <div class="modal-right-section">
+                <div class="modal-col-label">Summary</div>
+                <p class="modal-summary-text">{{ activeSection.summary || 'Summary not available.' }}</p>
+              </div>
+
+              <!-- Key Points section -->
+              <div class="modal-right-section">
+                <div class="modal-col-label">Key Points</div>
+                <p v-if="!activeSection.keyPoints?.length" class="modal-fallback">
+                  No key points available.
+                </p>
+                <ul v-else class="modal-keypoints">
+                  <li v-for="(pt, i) in activeSection.keyPoints" :key="i">{{ pt }}</li>
+                </ul>
+              </div>
+
+            </div>
+
+          </div><!-- /modal-body -->
+
+          <!-- ── Modal audio bar ── -->
+          <div class="modal-audio">
+
+            <!-- Status indicator -->
+            <div class="modal-audio-status">
+              <template v-if="activeBlockId === activeSection.id && playbackState === 'playing'">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="modal-audio-label">Playing…</span>
+              </template>
+              <template v-else-if="activeBlockId === activeSection.id && playbackState === 'loading'">
+                <span class="btn-spinner"></span>
+                <span class="modal-audio-label">Generating audio</span>
+              </template>
+              <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <rect x="2" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
+                  <rect x="8" y="1.5" width="3" height="10" rx="1" fill="#f59e0b"/>
+                </svg>
+                <span class="modal-audio-label" style="color:#f59e0b">Paused</span>
+              </template>
+              <template v-else>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M1.5 4H4l3-2.5v9L4 8H1.5V4z" fill="#4f46e5"/>
+                  <path d="M9 3.5a4 4 0 0 1 0 6" stroke="#4f46e5" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                <span class="modal-audio-label">Audio</span>
+              </template>
+            </div>
+
+            <div class="modal-audio-sep"></div>
+
+            <!-- Playback buttons: Play/Pause · Stop · Restart -->
+            <div class="modal-audio-btns">
+
+              <!-- Play / Pause / Resume -->
+              <!-- Disabled while generating audio to prevent a duplicate TTS request -->
+              <button
+                class="modal-audio-btn modal-audio-btn--primary"
+                :disabled="activeBlockId === activeSection.id && playbackState === 'loading'"
+                @click="
+                  activeBlockId === activeSection.id && playbackState === 'playing'
+                    ? pauseAudio()
+                    : activeBlockId === activeSection.id && playbackState === 'paused'
+                      ? resumeAudio()
+                      : playBlock(activeSection.id, 'summary')
+                "
+              >
+                <template v-if="activeBlockId === activeSection.id && playbackState === 'playing'">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <rect x="2" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                    <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.8" fill="currentColor"/>
+                  </svg>
+                  Pause
+                </template>
+                <template v-else-if="activeBlockId === activeSection.id && playbackState === 'loading'">
+                  <span class="btn-spinner"></span>
+                  Generating
+                </template>
+                <template v-else-if="activeBlockId === activeSection.id && playbackState === 'paused'">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                  </svg>
+                  Resume
+                </template>
+                <template v-else>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 1.5l8 4.5-8 4.5V1.5z" fill="currentColor"/>
+                  </svg>
+                  Play
+                </template>
+              </button>
+
+              <!-- Stop -->
+              <button
+                class="modal-audio-btn"
+                :disabled="activeBlockId !== activeSection.id || playbackState === 'idle'"
+                @click="stopAudio"
+                title="Stop"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/>
+                </svg>
+                Stop
+              </button>
+
+              <!-- Restart from beginning -->
+              <button
+                class="modal-audio-btn"
+                title="Restart from beginning"
+                @click="stopAudio(); playBlock(activeSection.id, 'summary')"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6a4 4 0 1 1 .8 2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M2 9V6h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Restart
+              </button>
+
+            </div>
+
+            <div class="modal-audio-sep"></div>
+
+            <!-- Settings: Voice + Speed -->
+            <div class="modal-audio-settings">
+
+              <!-- Voice selector -->
+              <div class="modal-audio-ctrl">
+                <label class="modal-audio-ctrl-label">Voice</label>
+                <select v-model="selectedVoice" class="modal-audio-select">
+                  <option v-for="v in VOICE_OPTIONS" :key="v.value" :value="v.value">{{ v.label }}</option>
+                </select>
+              </div>
+
+              <!-- Speed selector -->
+              <div class="modal-audio-ctrl">
+                <label class="modal-audio-ctrl-label">Speed</label>
+                <select v-model="playbackSpeed" class="modal-audio-select">
+                  <option v-for="s in SPEED_OPTIONS" :key="s" :value="s">{{ s }}x</option>
+                </select>
+              </div>
+
+            </div>
+
+          </div><!-- /modal-audio -->
+
+        </div><!-- /modal-panel -->
+      </div><!-- /modal-backdrop -->
+    </Transition><!-- /modal-fade -->
+
+
+    <!-- ── Full-page drag-and-drop overlay ── -->
+    <!-- Shown when the user drags a file anywhere over the window -->
+    <Transition name="drag-fade">
+      <div v-if="isDragging" class="drag-overlay">
+        <div class="drag-card">
+          <div class="drag-icon">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <path d="M18 5v20M18 5L11 12M18 5l7 7" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 28h26" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <p class="drag-title">Drop your file here</p>
+          <p class="drag-sub">TXT · PDF · DOCX</p>
+        </div>
       </div>
     </Transition>
+
+
+    <!-- Dictionary popup is now rendered globally in App.vue via GlobalDictPopup.vue
+         and triggered by the document-level dblclick listener in useGlobalDict.js -->
+
+
+    <!-- ── Fixed bottom input bar ── -->
+    <!-- Hidden in result mode so the reading area has full focus -->
+    <div v-if="mode !== 'result'" class="bottom-bar">
+      <div class="bottom-bar-inner">
+
+        <!-- Feedback strip: shows loading / success / error messages -->
+        <Transition name="feedback">
+          <div v-if="feedback" :class="['feedback-strip', `feedback--${feedback.type}`]">
+            <div class="feedback-icon">
+              <!-- Spinner for loading / uploading -->
+              <svg v-if="feedback.type === 'loading' || feedback.type === 'uploading'"
+                class="spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="22 10" stroke-linecap="round"/>
+              </svg>
+              <!-- Check for success -->
+              <svg v-else-if="feedback.type === 'success'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" fill="#dcfce7"/>
+                <path d="M4 7l2.2 2.2 3.8-4.4" stroke="#16a34a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <!-- X for error -->
+              <svg v-else-if="feedback.type === 'error'" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" fill="#fee2e2"/>
+                <path d="M4.5 4.5l5 5M9.5 4.5l-5 5" stroke="#ef4444" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="feedback-msg">{{ feedback.message }}</span>
+            <button class="feedback-close" @click="feedback = null" aria-label="Dismiss">
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <path d="M2 2l7 7M9 2l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </Transition>
+
+        <!-- Input card: textarea + action buttons -->
+        <div class="input-card">
+
+          <!-- Auto-resizing textarea for text input -->
+          <textarea
+            ref="textareaRef"
+            v-model="inputText"
+            class="input-textarea"
+            :class="{ 'input-textarea--over': overLimit }"
+            placeholder="Type or paste your text here…"
+            rows="1"
+            spellcheck="false"
+            @input="handleTextInput"
+            @keydown="onKeydown"
+          ></textarea>
+
+          <!-- File chip — shown after a file is successfully uploaded -->
+          <Transition name="file-chip-fade">
+            <div v-if="uploadedFileName" class="file-chip-row">
+              <div class="file-chip">
+                <!-- File type icon block -->
+                <div :class="['file-chip-icon', `file-chip-icon--${uploadedFileName.split('.').pop().toLowerCase()}`]">
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                    <rect x="2" y="1" width="10" height="12" rx="1.5" fill="currentColor" opacity="0.15"/>
+                    <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                    <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                  </svg>
+                  <span class="file-chip-ext">{{ uploadedFileName.split('.').pop().toUpperCase() }}</span>
+                </div>
+                <!-- File name -->
+                <span class="file-chip-name" :title="uploadedFileName">{{ uploadedFileName }}</span>
+                <!-- Remove button -->
+                <button class="file-chip-remove" @click="handleClear" title="Remove file">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </Transition>
+
+          <div class="input-divider"></div>
+
+          <!-- Action buttons row -->
+          <div class="input-actions">
+
+            <!-- Left: upload button + character counter -->
+            <div class="actions-left">
+              <!-- Hidden native file picker triggered by the button below -->
+              <input
+                ref="fileInputRef"
+                type="file"
+                accept=".txt,.pdf,.docx"
+                style="display:none"
+                @change="handleFileChange"
+              />
+              <button class="btn-upload" @click="triggerFileInput" title="Upload TXT, PDF or DOCX">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 9.5V2M7 2L4 5M7 2l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M2 10.5v1a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>Upload file</span>
+              </button>
+
+              <!-- Live character counter — turns red when over the limit -->
+              <div :class="['char-count', { 'char-count--over': overLimit }]">
+                <span class="char-current">{{ charCount.toLocaleString() }}</span>
+                <span class="char-sep">/</span>
+                <span class="char-limit">{{ charLimit.toLocaleString() }}</span>
+              </div>
+            </div>
+
+            <!-- Right: clear + submit -->
+            <div class="actions-right">
+              <!-- Clear button only appears when there is text to clear -->
+              <Transition name="fade-btn">
+                <button v-if="inputText || uploadedFileText" class="btn-clear" @click="handleClear" title="Clear input">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  Clear
+                </button>
+              </Transition>
+
+              <!-- Primary submit button — disabled when input is empty or over limit -->
+              <button
+                class="btn-submit"
+                :disabled="!processingText.trim() || overLimit || mode === 'loading'"
+                @click="handleSubmit"
+              >
+                <span v-if="mode === 'loading'" class="btn-spinner"></span>
+                <template v-else>
+                  Process Text
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M2 6.5H11M11 6.5L7 2.5M11 6.5L7 10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </template>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Keyboard shortcut and drag hint -->
+        <p class="bar-hint">
+          <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit
+          <span class="hint-dot">·</span>
+          Drag &amp; drop a file anywhere on this page
+        </p>
+
+      </div>
+    </div>
+
 
   </div>
 </template>
 
+
 <style scoped>
-/* ── Reset / shell ── */
+
+/* ─────────────────────────────────────────
+   Page shell
+   Flexbox column so reading area stretches
+   between the navbar and the fixed bottom bar.
+───────────────────────────────────────── */
 .page {
-  height: 100dvh;   /* dynamic viewport — accounts for mobile browser chrome */
-  height: 100vh;    /* fallback for browsers without dvh support */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background: #fff;
-}
-@supports (height: 100dvh) {
-  .page { height: 100dvh; }
+  background: #f8f9fc;
 }
 
-/* ── Navbar ── */
+
+/* ─────────────────────────────────────────
+   Navbar
+───────────────────────────────────────── */
 .navbar {
   flex-shrink: 0;
-  background: #fff;
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid #e5e7eb;
   z-index: 50;
+  transition: box-shadow 0.2s;
 }
-.navbar--scrolled {
-  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
-}
+.navbar--scrolled { box-shadow: 0 1px 12px rgba(0, 0, 0, 0.07); }
+
 .nav-inner {
-  max-width: 1160px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 36px;
   height: 64px;
@@ -800,617 +1811,1695 @@ onUnmounted(() => { window.removeEventListener('scroll', onScroll); stopSpeech()
   transition: color 0.2s, background 0.2s;
   position: relative;
 }
-.nav-link:hover { color: #0d1117; background: rgba(0,0,0,0.04); }
+.nav-link:hover { color: #0d1117; background: rgba(0, 0, 0, 0.04); }
 .nav-link--active { color: #0d1117; }
+.nav-link--ext { color: #2563eb; border: 1px solid rgba(37,99,235,0.22); padding: 5px 13px; }
+.nav-link--ext:hover { background: rgba(37,99,235,0.07); color: #1d4ed8; }
+/* Blue dot under the active page link */
 .nav-link--active::after {
   content: ''; position: absolute;
   bottom: -2px; left: 50%; transform: translateX(-50%);
   width: 4px; height: 4px;
   border-radius: 50%; background: #2563eb;
 }
-
-/* ── Toolbar ── */
-.toolbar {
-  flex-shrink: 0;
-  background: linear-gradient(105deg, rgba(232,239,255,0.9) 0%, rgba(240,236,255,0.9) 100%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(199,210,254,0.55);
-  z-index: 40;
-  position: relative;
-}
-.toolbar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 0 36px;
-  height: 64px;
-  gap: 16px;
-  width: 100%;
-}
-.toolbar-left,
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.toolbar-sep {
-  width: 1px; height: 24px;
-  background: rgba(199,210,254,0.7);
-  flex-shrink: 0;
-}
-
-/* Play button */
-.btn-read {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 20px;
-  background: #2563eb; color: #fff;
-  font-size: 13.5px; font-weight: 600;
-  border: none; border-radius: 999px; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37,99,235,0.28);
-  transition: background 0.2s, transform 0.15s;
-  white-space: nowrap;
-}
-.btn-read:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
-.btn-read:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-read--active { background: #1d4ed8; }
-
-/* Speed pills */
-.speed-group { display: flex; gap: 4px; }
-.speed-pill {
-  padding: 6px 11px;
-  font-size: 12.5px; font-weight: 600;
-  border: 1.5px solid rgba(199,210,254,0.6); border-radius: 6px;
-  background: rgba(255,255,255,0.45); color: #4b5a8a; cursor: pointer;
-  transition: all 0.15s;
-}
-.speed-pill:hover { background: rgba(255,255,255,0.75); color: #0d1117; }
-.speed-pill--active { background: rgba(255,255,255,0.9); color: #2563eb; border-color: #a5b4fc; }
-
-/* View toggle */
-.view-toggle { display: flex; background: rgba(199,210,254,0.3); border-radius: 8px; padding: 3px; gap: 2px; }
-.view-btn {
-  padding: 6px 14px;
-  font-size: 13px; font-weight: 600;
-  border: none; border-radius: 6px;
-  background: transparent; color: #4b5a8a; cursor: pointer;
-  transition: all 0.15s;
-}
-.view-btn--active { background: rgba(255,255,255,0.9); color: #0d1117; box-shadow: 0 1px 4px rgba(99,120,255,0.12); }
-
-/* Font controls */
-.font-group {
-  display: flex; align-items: center; gap: 6px;
-}
-.font-btn {
-  padding: 7px 11px;
-  font-size: 13.5px; font-weight: 700;
-  border: 1.5px solid rgba(199,210,254,0.6); border-radius: 6px;
-  background: rgba(255,255,255,0.55); color: #374151; cursor: pointer;
-  transition: background 0.15s;
-}
-.font-btn:hover { background: rgba(255,255,255,0.85); }
-.font-val {
-  font-size: 13px; font-weight: 600;
-  color: #1e3a8a; min-width: 26px; text-align: center;
-}
-
-/* Segmented spacing */
-.seg-group { display: flex; gap: 2px; }
-.seg-btn {
-  padding: 5px 10px;
-  font-size: 12.5px; font-weight: 600;
-  border: 1.5px solid rgba(199,210,254,0.6); border-radius: 6px;
-  background: rgba(255,255,255,0.45); color: #4b5a8a; cursor: pointer;
-  transition: all 0.15s;
-}
-.seg-btn:hover { background: rgba(255,255,255,0.75); }
-.seg-btn--active { background: rgba(255,255,255,0.9); color: #2563eb; border-color: #a5b4fc; }
-
-/* BG swatches */
-.bg-group { display: flex; align-items: center; gap: 6px; }
-.bg-label { font-size: 11px; font-weight: 600; color: #7a8fc4; }
-.bg-swatch {
-  width: 22px; height: 22px;
-  border-radius: 6px;
-  border: 2px solid rgba(199,210,254,0.7);
-  cursor: pointer;
-  transition: transform 0.15s;
-  box-shadow: 0 1px 3px rgba(99,120,255,0.12);
-}
-.bg-swatch:hover { transform: scale(1.15); }
-.bg-swatch--active { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
-
-/* ── Main content ── */
-.content {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-height: 0;
-  max-width: 1160px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* ── Left input panel ── */
-.input-panel {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: #fafbff;
-  border-right: 1px solid #e5e7eb;
-  padding: 24px 20px 16px 28px;
-  gap: 12px;
-  overflow: hidden;
-  transition: flex 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.input-panel-label {
-  font-size: 13px; font-weight: 700;
-  color: #0d1117;
-  margin: 0;
-  letter-spacing: -0.01em;
-}
-.input-textarea {
-  flex: 1;
-  resize: none;
-  border: 1.5px solid #e8e4dc;
-  border-radius: 12px;
-  padding: 16px;
-  font-size: 14px;
-  line-height: 1.7;
-  font-family: inherit;
-  color: #374151;
-  background: #fff;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.input-textarea::placeholder { color: #c4c4c4; line-height: 1.8; }
-.input-textarea:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-}
-.input-textarea--over { border-color: #ef4444; }
-.input-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-.input-limit {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.word-count {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: #f3f5fb;
-  color: #34415f;
-  font-size: 13px;
-  font-weight: 700;
-}
-.word-count--over {
-  background: #fef2f2;
-  color: #dc2626;
-}
-.limit-hint {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: #f6f7fb;
-  color: #7b86a2;
-  font-size: 12px;
-  font-weight: 600;
-}
-.limit-hint--over {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-/* File upload button */
-.btn-upload {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 12px;
-  background: #fff; color: #4b5563;
-  font-size: 12.5px; font-weight: 600;
-  border: 1.5px solid #e5e7eb; border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  white-space: nowrap;
-}
-.btn-upload:hover {
-  background: #f3f4f6; color: #0d1117;
-  border-color: #d1d5db;
-}
-
-/* File error */
-.file-error {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; color: #ef4444; font-weight: 500;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.btn-simplify {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 20px;
-  background: #2563eb; color: #fff;
-  font-size: 13.5px; font-weight: 700;
-  border: none; border-radius: 999px; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37,99,235,0.3);
-  transition: background 0.2s, transform 0.15s;
-}
-.btn-simplify:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
-.btn-simplify:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.spinner {
-  width: 14px; height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-
-/* Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-  padding: 40px;
-  text-align: center;
-}
-.empty-icon { opacity: 0.5; }
-.empty-title {
-  font-size: 17px; font-weight: 700;
-  color: #374151; margin: 0;
-}
-.empty-sub {
-  font-size: 14px; color: #9ca3af;
-  margin: 0; line-height: 1.6;
-}
-
-/* Loading skeleton */
-.loading-state {
-  padding: 32px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.2s infinite;
-  border-radius: 8px;
-}
-.skeleton--card { height: 120px; border-radius: 14px; }
-.skeleton--line { height: 16px; }
-.skeleton--sm   { height: 13px; }
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ── Results panel ── */
-.results-panel {
-  flex: 1;
-  overflow-y: auto;
-  min-width: 0;
-  transition: background 0.3s, color 0.3s;
-}
-
-/* Results content — single column, padded */
-.results-content {
-  padding: 36px 44px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  transition: font-size 0.2s, line-height 0.2s;
-}
-
-/* AI Summary card */
-.summary-card {
-  background: #eef4ff;
-  border: 1px solid #c7d9f5;
-  border-left: 4px solid #2563eb;
-  border-radius: 14px;
-  padding: 18px 22px;
-  margin-bottom: 28px;
-}
-.fallback-notice {
-  margin-bottom: 20px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #f5d38a;
-  background: #fff7e6;
-  color: #8a5a00;
-  font-size: 14px;
-  font-weight: 600;
-}
-.summary-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.summary-title {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  color: #1e3a8a;
-}
-.summary-badge {
-  font-size: 11px; font-weight: 600;
-  color: #3b82f6;
-  background: rgba(37,99,235,0.1);
-  padding: 2px 9px; border-radius: 999px;
-}
-.summary-list {
-  margin: 0; padding: 0;
-  list-style: none;
-  display: flex; flex-direction: column; gap: 8px;
-}
-.summary-list li {
-  font-size: inherit;
-  color: #1e3a8a;
-  line-height: inherit;
-  padding-left: 14px;
-  position: relative;
-}
-.summary-list li::before {
-  content: '·';
-  position: absolute; left: 0;
-  color: #2563eb; font-weight: 700;
-}
-
-/* Content sections */
-.result-section {
-  padding: 24px 0;
-  border-top: 1px solid rgba(0,0,0,0.07);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.result-section--last { border-bottom: 1px solid rgba(0,0,0,0.07); }
-
-.section-label {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  color: #9ca3af; margin: 0;
-}
-.section-text {
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
-  margin: 0;
-}
-.section-meta {
-  font-size: 12px; color: #9ca3af; margin: 0;
-}
-.section-meta--blue { color: #3b82f6; }
-
-.key-points {
-  margin: 0; padding: 0;
-  list-style: none;
-  display: flex; flex-direction: column; gap: 8px;
-}
-.key-points li {
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
-  padding-left: 16px;
-  position: relative;
-}
-.key-points li::before {
-  content: '•';
-  position: absolute; left: 0;
-  color: #2563eb; font-weight: 700;
-}
-
-/* ── Hamburger ── */
 .nav-hamburger {
   display: none;
   background: none; border: none; cursor: pointer;
   color: #0d1117; padding: 4px; margin-left: 12px;
   align-items: center; justify-content: center;
 }
-
-/* ── Mobile nav drawer ── */
 .mobile-nav { display: none; }
 
-/* ── Responsive ── */
+
+/* ─────────────────────────────────────────
+   Reading area
+   Fills all space between navbar and bottom bar.
+   padding-bottom clears the fixed input bar.
+───────────────────────────────────────── */
+.reading-area {
+  flex: 1;
+  padding: 32px 0 210px;
+  overflow-y: auto;
+}
+/* In result mode the bottom bar is hidden — remove the bottom clearance */
+.reading-area--no-bar { padding-bottom: 40px; }
+
+/* Narrow width for idle/loading; full-width for results */
+.reading-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 24px;
+  transition: max-width 0.3s ease;
+}
+.reading-inner--wide {
+  max-width: 1100px;  /* wider in result mode to give the 4-column tree room */
+}
+
+
+/* ─────────────────────────────────────────
+   Idle / empty state
+───────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 0 0;
+}
+.empty-title {
+  font-size: 28px; font-weight: 700;
+  color: #0d1117; letter-spacing: -0.03em;
+  margin: 0 0 12px;
+}
+.empty-sub {
+  font-size: 16px; line-height: 1.7;
+  color: #4b5563; margin: 0 0 40px;
+  max-width: 520px;
+}
+
+/* ── Three-step process flow ── */
+/* Horizontal cards with arrow connectors between them. */
+.how-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 32px;
+}
+
+/* Arrow between cards */
+.how-arrow {
+  flex-shrink: 0;
+  padding: 0 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Each step card */
+.how-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px 18px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  text-align: left;
+}
+
+/* Subtle distinct tint per step so they feel like a sequence */
+.how-card--1 { background: #eff6ff; border-color: #dbeafe; }
+.how-card--2 { background: #f0fdf4; border-color: #bbf7d0; }
+.how-card--3 { background: #fefce8; border-color: #fef08a; }
+
+/* Large step number badge at the top of each card */
+.how-step-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  font-size: 14px; font-weight: 800;
+}
+.how-card--1 .how-step-num { background: #2563eb; color: #fff; }
+.how-card--2 .how-step-num { background: #16a34a; color: #fff; }
+.how-card--3 .how-step-num { background: #ca8a04; color: #fff; }
+
+.how-card-title {
+  font-size: 15px; font-weight: 700;
+  color: #0d1117; line-height: 1.3;
+}
+.how-card-desc {
+  font-size: 13px; line-height: 1.65;
+  color: #4b5563; margin: 0;
+}
+
+/* On narrow screens: stack cards vertically, hide arrows */
+@media (max-width: 600px) {
+  .how-flow   { flex-direction: column; max-width: 100%; }
+  .how-arrow  { display: none; }
+  .how-card   { width: 100%; }
+}
+
+.empty-shortcut {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: #9ca3af; margin: 0;
+}
+
+
+kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 7px;
+  font-size: 11.5px; font-weight: 600; font-family: inherit;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-bottom-width: 2px;
+  border-radius: 5px;
+}
+
+
+/* ─────────────────────────────────────────
+   Loading skeleton
+   Two-column skeleton that mirrors the result layout
+───────────────────────────────────────── */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.skeleton-header {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+}
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+}
+.skeleton-block {
+  display: flex; flex-direction: column; gap: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+.skeleton-block--right { background: #fafbff; }
+
+.skeleton {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eff1f5 25%, #e8eaf0 50%, #eff1f5 75%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s infinite;
+}
+.skeleton--col-title { height: 20px; width: 60%; }
+.skeleton--badge     { height: 20px; width: 25%; border-radius: 999px; }
+.skeleton--line      { height: 14px; }
+.skeleton--sm        { height: 11px; }
+@keyframes shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+
+/* ─────────────────────────────────────────
+   Result state — gap is now 0; each stage
+   manages its own spacing internally.
+   (Overridden again in the NEW STYLES block below.)
+───────────────────────────────────────── */
+.result-state { display: flex; flex-direction: column; gap: 0; }
+
+/* Top bar: success badge + back-to-input button */
+.result-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+.result-notice {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 600; color: #15803d;
+}
+.btn-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px; font-weight: 600;
+  color: #4b5563;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-back:hover { background: #f3f4f6; color: #0d1117; }
+
+/* ── Export dropdown ─────────────────────── */
+.topbar-actions {
+  display: flex; align-items: center; gap: 8px;
+}
+.export-wrap {
+  position: relative;
+}
+.export-backdrop {
+  position: fixed; inset: 0; z-index: 99;
+}
+.btn-export {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-export:hover { background: #dbeafe; border-color: #93c5fd; }
+.export-chevron {
+  transition: transform 0.18s;
+}
+.export-chevron--open { transform: rotate(180deg); }
+.export-menu {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 5px;
+  z-index: 100;
+  animation: export-menu-in 0.12s ease;
+}
+@keyframes export-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.export-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 10px;
+  font-size: 13px; font-weight: 500; color: #1f2937;
+  background: none; border: none; border-radius: 7px;
+  cursor: pointer; text-align: left;
+  transition: background 0.12s;
+}
+.export-menu-item:hover { background: #f3f4f6; }
+.export-menu-item svg { color: #6b7280; flex-shrink: 0; }
+.export-menu-divider {
+  height: 1px; background: #f0f0f0; margin: 4px 0;
+}
+
+/* ─────────────────────────────────────────
+   Audio Control Toolbar
+   Shown when any block is playing/paused.
+   Slides in from the top with a transition.
+───────────────────────────────────────── */
+.audio-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08);
+}
+
+/* Slide-down enter/leave transition */
+.audio-bar-enter-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.audio-bar-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.audio-bar-enter-from   { opacity: 0; transform: translateY(-8px); }
+.audio-bar-leave-to     { opacity: 0; transform: translateY(-4px); }
+
+/* Info section: speaker icon + title + now-playing label */
+.at-info {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1; min-width: 160px;
+}
+.at-icon {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: #eff6ff; border-radius: 8px; flex-shrink: 0;
+}
+.at-title  { font-size: 12px; font-weight: 700; color: #1d4ed8; }
+.at-status { font-size: 11.5px; color: #6b7280; margin-top: 1px; }
+.at-paused-tag { color: #f59e0b; font-weight: 600; }
+
+/* Action buttons (Pause/Resume, Replay) */
+.at-actions { display: flex; gap: 6px; }
+.at-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600; color: #4b5563;
+  background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.at-btn:hover { background: #e8eaf0; color: #0d1117; }
+.at-btn--primary { background: #eff6ff; border-color: #93c5fd; color: #2563eb; }
+.at-btn--primary:hover { background: #dbeafe; }
+
+/* Speed / Voice selector controls */
+.at-control { display: flex; flex-direction: column; gap: 3px; }
+.at-label { font-size: 10.5px; font-weight: 700; color: #9ca3af; letter-spacing: 0.06em; text-transform: uppercase; }
+.at-select {
+  padding: 5px 8px; font-size: 12px; font-weight: 600; color: #374151;
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 7px;
+  cursor: pointer; outline: none; transition: border-color 0.15s;
+}
+.at-select:focus { border-color: #93c5fd; }
+
+/* Volume slider */
+.at-volume { flex-direction: row; align-items: center; gap: 6px; flex-wrap: wrap; }
+.at-slider { width: 80px; height: 4px; accent-color: #2563eb; cursor: pointer; }
+.at-vol-num { font-size: 11.5px; font-weight: 600; color: #374151; min-width: 32px; }
+
+/* Stop button — dark fill to clearly signal "stop" */
+.at-btn-stop {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 14px; font-size: 12.5px; font-weight: 700;
+  color: #fff; background: #1f2937; border: none; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s; white-space: nowrap; margin-left: auto;
+}
+.at-btn-stop:hover { background: #111827; }
+
+
+/* ─────────────────────────────────────────
+   Block card header (label + play button)
+───────────────────────────────────────── */
+.block-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Active block — blue border highlight when playing/paused */
+.block-card--active {
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08), 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Play button with three states: idle / playing / paused */
+.btn-play {
+  background: none; border: none; cursor: pointer; padding: 0; line-height: 1;
+}
+
+/* Badge shared styles */
+.play-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.play-badge--idle {
+  color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe;
+}
+.play-badge--idle:hover { background: #dbeafe; }
+
+.play-badge--playing {
+  color: #2563eb; background: #dbeafe; border: 1px solid #93c5fd;
+}
+.play-badge--paused {
+  color: #d97706; background: #fffbeb; border: 1px solid #fde68a;
+}
+
+/* Animated waveform bars (shown when playing) */
+.wave-bar {
+  display: inline-block;
+  width: 3px; height: 10px;
+  background: #2563eb; border-radius: 2px;
+  animation: wave 0.9s ease-in-out infinite;
+}
+.wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar:nth-child(3) { animation-delay: 0.30s; }
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%       { transform: scaleY(1.0); }
+}
+
+
+/* ── Result grid ── */
+/*
+  The outer grid defines the two-column proportion (2fr left, 3fr right).
+  Both the header row and every block row share this same grid template,
+  so the column widths stay perfectly consistent throughout.
+*/
+.result-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Header row — two column titles side by side */
+.result-grid-header {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+}
+
+/*
+  Each block row is also a 2fr / 3fr grid.
+  align-items: stretch makes both cards grow to match the taller one,
+  keeping left and right blocks visually aligned.
+*/
+.block-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* ─────────────────────────────────────────
+   Collapsible original-text panel
+   When .result-grid--orig-hidden is applied the left column narrows to
+   a 72px clickable strip and the right (summary) column fills the rest.
+───────────────────────────────────────── */
+
+/* Narrow the left column for both the header and all block rows.
+   72px is wide enough to read the strip labels without taking space from summary. */
+.result-grid--orig-hidden .result-grid-header,
+.result-grid--orig-hidden .block-row {
+  grid-template-columns: 72px 1fr;
+}
+
+/* ── Left column header toggle button ── */
+/* Shares base styles with .col-header but resets browser button defaults */
+.col-orig-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  padding: 0 4px 8px;
+  border: none;
+  border-bottom: 2px solid #e5e7eb;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s;
+  width: 100%;
+}
+.col-orig-toggle:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+.col-toggle-arrow { flex-shrink: 0; }
+
+/* In collapsed mode, stack icon + rotated label vertically */
+.result-grid--orig-hidden .col-orig-toggle {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 0 8px;
+  gap: 6px;
+}
+
+/* Rotated "Original" text shown in the collapsed header strip */
+.col-orig-label-vert {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* ── Collapsed left block cards ── */
+/* When collapsed, hide the normal content and show only the strip */
+.result-grid--orig-hidden .block-card--left {
+  padding: 10px 4px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed; /* visual cue that the panel is collapsed/hidden */
+  min-height: 80px;
+}
+.result-grid--orig-hidden .block-card--left:hover {
+  border-color: #93c5fd;
+  background: #f0f6ff;
+}
+
+/* Strip hint: icon + rotated block label, stacked vertically inside the narrow card */
+.orig-strip-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  min-height: 60px;
+  width: 100%;
+}
+
+/* Rotated "B1 / B2 / B3" label inside each collapsed block strip */
+.orig-strip-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b0b8cc;
+}
+
+/* ── Mobile: hide the strip entirely, just stack normally ── */
 @media (max-width: 860px) {
-  .nav-links { display: none; }
+  /* Revert narrow columns — mobile already stacks to 1fr */
+  .result-grid--orig-hidden .result-grid-header,
+  .result-grid--orig-hidden .block-row {
+    grid-template-columns: 1fr;
+  }
+  /* Hide the collapsed left cards on mobile to avoid a confusing stub */
+  .result-grid--orig-hidden .block-card--left {
+    display: none;
+  }
+}
+
+/* Column header label */
+.col-header {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 700;
+  color: #374151;
+  padding: 0 4px 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+.col-header-sub {
+  font-size: 12px; font-weight: 500; color: #9ca3af;
+}
+
+/* ── Block cards ── */
+.block-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.2s;
+}
+.block-card:hover { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); }
+.block-card--right {
+  background: #fafbff;
+  border-color: #e0e8ff;
+}
+
+/* "Block X" label badge */
+.block-label {
+  display: inline-flex;
+  align-items: center; gap: 4px;
+  padding: 3px 10px;
+  font-size: 11.5px; font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+
+/* Collapse variant — resets button defaults, keeps badge look, adds pointer */
+.block-label--collapse {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.block-label--collapse:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Original text — smaller font to de-emphasise vs the summary */
+.block-text { font-size: 13.5px; line-height: 1.7; color: #374151; margin: 0; }
+.block-text--small { font-size: 13px; color: #4b5563; }
+
+/*
+  Clamp the left-side text to 7 lines by default.
+  If the text fits within 7 lines, it shows fully — no button appears.
+  If it overflows, the JS checkClamp() detects it and shows the Read more button.
+*/
+.block-text--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 7;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Read more / Show less toggle */
+.btn-toggle {
+  align-self: flex-start;
+  font-size: 12.5px; font-weight: 600;
+  color: #2563eb;
+  background: none; border: none; cursor: pointer; padding: 0;
+  transition: color 0.15s;
+}
+.btn-toggle:hover { color: #1d4ed8; }
+
+/* Summary and key points sections inside the right card */
+.summary-section,
+.keypoints-section { display: flex; flex-direction: column; gap: 6px; }
+
+.keypoints-section { margin-top: 4px; }
+
+/* Section label (e.g. "Summary", "Key Points") */
+.section-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: #6b7280;
+}
+
+.summary-text {
+  font-size: 13.5px; line-height: 1.65;
+  color: #1f2937; margin: 0;
+}
+
+/* Key points bullet list */
+.keypoints-list {
+  margin: 0; padding: 0;
+  list-style: none;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.keypoints-list li {
+  font-size: 13px; line-height: 1.6; color: #374151;
+  padding-left: 14px; position: relative;
+}
+.keypoints-list li::before {
+  content: '•';
+  position: absolute; left: 0;
+  color: #2563eb; font-weight: 700;
+}
+
+/* Fallback text for missing summary or key points */
+.fallback-text {
+  font-size: 13px; color: #9ca3af;
+  font-style: italic; margin: 0;
+}
+
+
+/* ─────────────────────────────────────────
+   Drag-and-drop overlay
+───────────────────────────────────────── */
+.drag-overlay {
+  position: fixed; inset: 0;
+  background: rgba(37, 99, 235, 0.08);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+}
+.drag-card {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 48px 64px;
+  background: #fff;
+  border: 2px dashed #93c5fd;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(37, 99, 235, 0.14);
+}
+.drag-icon {
+  width: 72px; height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  background: #eff6ff; border-radius: 50%;
+}
+.drag-title { font-size: 20px; font-weight: 700; color: #0d1117; margin: 0; }
+.drag-sub   { font-size: 13.5px; color: #6b7280; margin: 0; font-weight: 500; letter-spacing: 0.05em; }
+
+
+/* ─────────────────────────────────────────
+   Fixed bottom input bar
+───────────────────────────────────────── */
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(248, 249, 252, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.07);
+  z-index: 100;
+  padding: 12px 0 14px;
+}
+.bottom-bar-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+/* ─── Feedback strip ─── */
+.feedback-strip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  line-height: 1.4;
+}
+.feedback--loading,
+.feedback--uploading { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.feedback--success   { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.feedback--error     { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.feedback-icon { flex-shrink: 0; display: flex; }
+.feedback-msg  { flex: 1; }
+.feedback-close {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  background: none; border: none; cursor: pointer;
+  color: inherit; opacity: 0.55; border-radius: 4px; transition: opacity 0.15s;
+}
+.feedback-close:hover { opacity: 1; }
+
+
+/* ─── Input card ─── */
+.input-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+}
+/* Blue focus ring when anything inside the card is focused */
+.input-card:focus-within {
+  border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input-textarea {
+  display: block; width: 100%;
+  min-height: 46px; max-height: 180px;
+  padding: 14px 16px 8px;
+  font-size: 14.5px; line-height: 1.65;
+  font-family: inherit; color: #1f2937;
+  background: transparent;
+  border: none; outline: none; resize: none;
+  box-sizing: border-box; overflow-y: auto;
+}
+.input-textarea::placeholder { color: #b8bfd0; }
+.input-textarea--over        { color: #ef4444; } /* red text when over character limit */
+
+.input-divider { height: 1px; background: #f3f4f6; margin: 0 12px; }
+
+.input-actions {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 10px; gap: 8px;
+}
+.actions-left,
+.actions-right { display: flex; align-items: center; gap: 8px; }
+
+/* Upload button */
+.btn-upload {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600; color: #4b5563;
+  background: #f3f4f6; border: 1px solid #e5e7eb;
+  border-radius: 8px; cursor: pointer;
+  transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.btn-upload:hover { background: #e9eaf0; color: #111827; border-color: #d1d5db; }
+
+/* ── File chip ─────────────────────────────── */
+.file-chip-row {
+  padding: 8px 14px 2px;
+}
+.file-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 8px 6px 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  max-width: 320px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.file-chip-icon {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 36px; height: 40px; border-radius: 6px; flex-shrink: 0;
+  font-size: 9px; font-weight: 800; gap: 1px; letter-spacing: .02em;
+}
+.file-chip-icon--pdf  { background: #fef2f2; color: #dc2626; }
+.file-chip-icon--docx { background: #eff6ff; color: #2563eb; }
+.file-chip-icon--doc  { background: #eff6ff; color: #2563eb; }
+.file-chip-icon--txt  { background: #f0fdf4; color: #16a34a; }
+.file-chip-ext {
+  font-size: 8.5px; font-weight: 800; line-height: 1;
+}
+.file-chip-name {
+  font-size: 12.5px; font-weight: 500; color: #1e293b;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 200px;
+}
+.file-chip-remove {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex-shrink: 0;
+  background: #e2e8f0; border: none; border-radius: 50%;
+  color: #64748b; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.file-chip-remove:hover { background: #fecaca; color: #dc2626; }
+.file-chip-fade-enter-active { transition: all 0.2s ease; }
+.file-chip-fade-leave-active { transition: all 0.15s ease; }
+.file-chip-fade-enter-from  { opacity: 0; transform: translateY(-4px); }
+.file-chip-fade-leave-to    { opacity: 0; transform: translateY(-4px); }
+
+/* Character counter */
+.char-count { display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 600; }
+.char-current { color: #9ca3af; }
+.char-sep, .char-limit { color: #d1d5db; }
+.char-count--over .char-current { color: #ef4444; }
+
+/* Clear button */
+.btn-clear {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600; color: #6b7280;
+  background: transparent; border: 1px solid #e5e7eb;
+  border-radius: 8px; cursor: pointer; transition: all 0.15s;
+}
+.btn-clear:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+/* Primary submit button */
+.btn-submit {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 22px;
+  font-size: 13.5px; font-weight: 700; color: #fff;
+  background: #2563eb; border: none; border-radius: 999px; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.btn-submit:hover:not(:disabled) {
+  background: #1d4ed8; transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.40);
+}
+.btn-submit:disabled { opacity: 0.42; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Spinner inside the submit button while loading */
+.btn-spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Spinning animation used on feedback icons */
+.spin { animation: spin 0.9s linear infinite; transform-origin: center; }
+
+/* Hint row below the input card */
+.bar-hint {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 11.5px; color: #b0b8cc; margin: 0; flex-wrap: wrap;
+}
+.bar-hint kbd { font-size: 10.5px; padding: 1px 5px; color: #9ca3af; background: #f3f4f6; border-color: #e5e7eb; }
+.hint-dot { color: #d1d5db; }
+
+
+/* ─────────────────────────────────────────
+   Transitions
+───────────────────────────────────────── */
+.drag-fade-enter-active,
+.drag-fade-leave-active { transition: opacity 0.2s ease; }
+.drag-fade-enter-from,
+.drag-fade-leave-to    { opacity: 0; }
+
+.feedback-enter-active { transition: all 0.22s ease; }
+.feedback-leave-active { transition: all 0.18s ease; }
+.feedback-enter-from   { opacity: 0; transform: translateY(6px); }
+.feedback-leave-to     { opacity: 0; transform: translateY(4px); }
+
+.fade-btn-enter-active { transition: all 0.18s ease; }
+.fade-btn-leave-active { transition: all 0.14s ease; }
+.fade-btn-enter-from   { opacity: 0; transform: scale(0.9); }
+.fade-btn-leave-to     { opacity: 0; transform: scale(0.9); }
+
+
+/* ─────────────────────────────────────────
+   Responsive styles
+───────────────────────────────────────── */
+
+/* Tablet: switch to hamburger menu */
+@media (max-width: 860px) {
+  .nav-links     { display: none; }
   .nav-hamburger { display: flex; }
+  .nav-inner     { padding: 0 16px; }
 
   .mobile-nav {
     display: block;
-    position: fixed;
-    top: 64px; left: 0; right: 0;
-    background: rgba(255,255,255,0.98);
+    position: fixed; top: 64px; left: 0; right: 0;
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border-bottom: 1px solid #e5e7eb;
-    z-index: 99;
+    border-bottom: 1px solid #e5e7eb; z-index: 99;
   }
   .mobile-nav-links { list-style: none; margin: 0; padding: 0; }
   .mobile-nav-link {
     display: block; padding: 16px 24px;
     font-size: 16px; font-weight: 500; color: #374151;
-    text-decoration: none;
-    border-bottom: 1px solid #f3f4f6;
-    transition: background 0.15s;
+    text-decoration: none; border-bottom: 1px solid #f3f4f6; transition: background 0.15s;
   }
   .mobile-nav-link:hover { background: #f9fafb; color: #0d1117; }
 
-  /* Layout */
-  .content { flex-direction: column; max-width: 100%; }
-  .input-panel { flex: 0 0 auto !important; height: 36vh; border-right: none; border-bottom: 1px solid #e5e7eb; }
-  .results-content { padding: 20px 16px; }
-  .loading-state { padding: 24px 16px; }
-  .nav-inner { padding: 0 16px; }
-
-  /* Toolbar — scroll horizontally so all controls remain accessible */
-  .toolbar-inner {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    justify-content: flex-start;
-    padding: 0 16px;
-    gap: 12px;
-    scrollbar-width: none;
-  }
-  .toolbar-inner::-webkit-scrollbar { display: none; }
-  .toolbar-left, .toolbar-right { flex-shrink: 0; }
+  /* Stack the two result columns on tablet */
+  .result-grid-header,
+  .block-row       { grid-template-columns: 1fr; }
+  .skeleton-header,
+  .skeleton-row    { grid-template-columns: 1fr; }
 }
 
-/* ── Floating Guide button ── */
-.btn-guide-fab {
-  position: fixed;
-  bottom: 28px; right: 28px;
-  z-index: 150;
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 10px 18px;
-  background: #fff; color: #2563eb;
-  font-size: 13px; font-weight: 700;
-  border: 1.5px solid #c7d2fe; border-radius: 999px;
-  box-shadow: 0 4px 18px rgba(37,99,235,0.18), 0 1px 4px rgba(0,0,0,0.08);
-  cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
-}
-.btn-guide-fab:hover {
-  background: #eef2ff;
-  box-shadow: 0 6px 24px rgba(37,99,235,0.26);
-  transform: translateY(-2px);
-}
-@media (max-width: 860px) {
-  .btn-guide-fab { bottom: 16px; right: 16px; padding: 9px 14px; font-size: 12.5px; }
-}
-
-/* ── Tutorial highlight states ── */
-.tutorial-highlight--toolbar {
-  box-shadow: 0 0 0 3px #2563eb, 0 0 0 7px rgba(37,99,235,0.18);
-  z-index: 210;
-  position: relative;
-  border-radius: 0;
-}
-.tutorial-highlight--input {
-  box-shadow: 0 0 0 3px #2563eb, 0 0 0 7px rgba(37,99,235,0.18);
-  z-index: 210;
-  position: relative;
-}
-.tutorial-highlight--simplify {
-  box-shadow: 0 0 0 3px #2563eb, 0 0 20px rgba(37,99,235,0.45) !important;
-  transform: scale(1.05);
-  z-index: 210;
-  position: relative;
-}
-
-/* ── Tutorial overlay ── */
-.tutorial-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 200;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
-
-/* ── Tutorial card ── */
-.tutorial-card {
-  position: fixed;
-  width: 300px;
-  background: #fff;
-  border-radius: 18px;
-  padding: 26px 24px 20px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.1);
-  z-index: 211;
-}
-
-.tutorial-dots {
-  display: flex; gap: 6px; margin-bottom: 18px;
-}
-.tutorial-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: #e5e7eb;
-  transition: background 0.2s, width 0.2s;
-}
-.tutorial-dot--active {
-  width: 20px;
-  border-radius: 999px;
-  background: #2563eb;
-}
-
-.tutorial-title {
-  font-size: 16px; font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #0d1117; margin: 0 0 10px;
-}
-.tutorial-desc {
-  font-size: 13.5px; line-height: 1.68;
-  color: #4b5563; margin: 0 0 22px;
-}
-
-.tutorial-actions {
-  display: flex; align-items: center; gap: 8px;
-}
-.tutorial-btn-prev {
-  font-size: 13px; font-weight: 600;
-  color: #6b7280; background: none;
-  border: none; cursor: pointer; padding: 6px 2px;
-  transition: color 0.15s;
-}
-.tutorial-btn-prev:hover { color: #0d1117; }
-.tutorial-btn-skip {
-  font-size: 13px; font-weight: 500;
-  color: #9ca3af; background: none;
-  border: none; cursor: pointer; padding: 6px 4px;
-  margin-right: auto;
-  transition: color 0.15s;
-}
-.tutorial-btn-skip:hover { color: #6b7280; }
-.tutorial-btn-next {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 18px;
-  background: #2563eb; color: #fff;
-  font-size: 13px; font-weight: 700;
-  border: none; border-radius: 999px; cursor: pointer;
-  box-shadow: 0 4px 12px rgba(37,99,235,0.3);
-  transition: background 0.2s, transform 0.15s;
-}
-.tutorial-btn-next:hover { background: #1d4ed8; transform: translateY(-1px); }
-
-/* ── Tutorial card — mobile override ── */
+/* Mobile: further layout adjustments */
 @media (max-width: 600px) {
-  .tutorial-card {
-    position: fixed !important;
-    top: 50% !important; left: 50% !important;
-    right: auto !important; bottom: auto !important;
-    transform: translate(-50%, -50%) !important;
-    width: calc(100vw - 48px);
-    max-width: 340px;
-  }
+  .reading-area { padding-bottom: 260px; }
+  .empty-title  { font-size: 18px; }
+  .empty-features { gap: 6px; }
+
+  /* Stack input action buttons vertically */
+  .input-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .actions-left  { justify-content: space-between; }
+  .actions-right { justify-content: flex-end; }
+  .btn-submit    { flex: 1; justify-content: center; }
+
+  .bar-hint  { display: none; }  /* hide hint row to save space */
+  .drag-card { padding: 36px 28px; }
 }
 
-/* ── Transition ── */
-.tutorial-fade-enter-active,
-.tutorial-fade-leave-active { transition: opacity 0.22s ease; }
-.tutorial-fade-enter-from,
-.tutorial-fade-leave-to    { opacity: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ITERATION 3 — 3-stage guided reading flow
+   Premium, calm design for dyslexia-friendly reading.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────
+   Demo CTA banner in idle state
+───────────────────────────────────────── */
+.demo-cta {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 24px; padding: 14px 20px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid #bfdbfe; border-radius: 12px;
+  max-width: 520px; width: 100%;
+}
+.demo-cta-text { font-size: 13.5px; color: #4b5563; flex: 1; }
+.btn-demo {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; font-size: 13px; font-weight: 700; color: #2563eb;
+  background: #fff; border: 1.5px solid #bfdbfe; border-radius: 999px;
+  cursor: pointer; transition: all 0.18s; white-space: nowrap; font-family: inherit;
+}
+.btn-demo:hover {
+  background: #eff6ff; border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.14); transform: translateY(-1px);
+}
+
+
+/* ─────────────────────────────────────────
+   Result state — no gap; stages are full-page
+───────────────────────────────────────── */
+.result-state { display: flex; flex-direction: column; gap: 0; }
+
+
+/* ─────────────────────────────────────────
+   Stage pill labels (OVERVIEW / SECTIONS)
+───────────────────────────────────────── */
+.stage-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.stage-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 18px;
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: 999px;
+}
+.stage-pill--green { color: #15803d; background: #f0fdf4; border: 1.5px solid #86efac; }
+.stage-pill--blue  { color: #4338ca; background: #eef2ff; border: 1.5px solid #c7d2fe; }
+.stage-pill-count  { font-size: 12px; color: #9ca3af; font-weight: 500; }
+
+
+/* ─────────────────────────────────────────
+   STAGE 1 — Overall Summary hero card
+   Natural height — flows directly into the section grid below.
+───────────────────────────────────────── */
+.stage-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 740px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 48px 0 0;
+}
+
+/*
+  Main card: white background, green left accent border.
+  No coloured fill — white feels cleaner and more premium.
+  Three layers of shadow for natural depth.
+*/
+.overall-card {
+  background: #ffffff;
+  border: 1px solid #e8f5e9;
+  border-left: 4px solid #22c55e;
+  border-radius: 20px;
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    0 20px 56px rgba(0, 0, 0, 0.05);
+}
+
+/* Large, impactful heading */
+.overall-heading {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0a0a0a;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* Comfortable body text */
+.overall-body {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #4b5563;
+  margin: 0;
+}
+
+/*
+  Audio control row: thin top separator, then play button + optional speed.
+  The play button is part of the card flow — below the body text —
+  so the reading hierarchy feels natural.
+*/
+/* ── Overview card audio bar ── */
+.overall-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #f0fdf4;
+  flex-wrap: wrap;
+}
+
+/* Primary pill: Play / Pause / Resume */
+.overall-play-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px;
+  font-size: 14px; font-weight: 700; color: #fff;
+  background: #16a34a;
+  border: none; border-radius: 999px;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.32);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  white-space: nowrap;
+}
+.overall-play-pill:hover {
+  background: #15803d;
+  box-shadow: 0 6px 22px rgba(22, 163, 74, 0.42);
+  transform: translateY(-1px);
+}
+.overall-play-pill:active { transform: translateY(0); }
+
+/* Icon-only Stop + Restart buttons grouped together */
+.overall-icon-btns {
+  display: flex; align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.overall-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: none; border: none;
+  color: #94a3b8; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.overall-icon-btn:not(:last-child) { border-right: 1px solid #e2e8f0; }
+.overall-icon-btn:hover:not(:disabled) { background: #f0fdf4; color: #16a34a; }
+.overall-icon-btn:active:not(:disabled) { background: #dcfce7; }
+.overall-icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Thin vertical separator */
+.overall-audio-sep {
+  width: 1px; height: 22px;
+  background: #e2e8f0; flex-shrink: 0;
+}
+
+/* Voice + Speed selects pushed to the right */
+.overall-audio-settings {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+.overall-audio-select {
+  padding: 7px 12px;
+  font-size: 12.5px; font-weight: 600; color: #374151;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; outline: none; font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: auto;
+}
+.overall-audio-select:hover { background: #f0fdf4; border-color: #86efac; }
+.overall-audio-select:focus { border-color: #4ade80; background: #fff; }
+.overall-audio-select--narrow { width: 72px; }
+
+/* White waveform bars on the green pill */
+.wave-bar--white {
+  display: inline-block;
+  width: 3px; height: 11px;
+  background: #fff; border-radius: 2px;
+  animation: wave 0.9s ease-in-out infinite;
+}
+.wave-bar--white:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar--white:nth-child(3) { animation-delay: 0.30s; }
+
+
+/* ─────────────────────────────────────────
+   STAGE 2 — Section Grid
+   Flows naturally below the overview card.
+   The bridge label visually connects the two.
+───────────────────────────────────────── */
+.stage-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* so connector pill centres within full-width container */
+  gap: 0;
+  padding: 0 0 64px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────
+   Vertical connector: flows overview → N Sections pill → grid
+───────────────────────────────────────── */
+.stage-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  gap: 0;
+}
+
+/* Thin vertical lines above and below the pill */
+.stage-connector-line {
+  width: 2px;
+  background: linear-gradient(to bottom, #c7d2fe, #ddd6fe);
+  border-radius: 2px;
+}
+.stage-connector-line--top    { height: 32px; }
+.stage-connector-line--bottom { height: 28px; }
+
+/* The pill badge in the centre */
+.stage-connector-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4338ca;
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.10);
+  white-space: nowrap;
+}
+
+/*
+  Container box — wraps ALL section cards in one visual unit.
+  This makes it unmistakably clear that every card is a peer,
+  NOT a child of another card.
+  A soft background + border draws the eye to the group as a whole.
+*/
+.tree-container {
+  width: 100%;                /* fill stage-tree even when parent uses align-items: center */
+  border: 1.5px solid #e0e7ff;
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(160deg, #fafbff 0%, #f5f4ff 100%);
+  box-shadow: 0 2px 16px rgba(99, 102, 241, 0.06);
+}
+
+.section-processing-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 108px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #eef0f8;
+  border-radius: 14px;
+  color: #334155;
+}
+.section-processing-card strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f172a;
+  font-size: 14px;
+}
+.section-processing-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.section-processing-spinner {
+  flex-shrink: 0;
+  border-color: rgba(79, 70, 229, 0.22);
+  border-top-color: #4f46e5;
+}
+
+/* Grid of section cards inside the container */
+.tree-nodes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  /* No position: relative or padding-top needed — branch lines are gone */
+}
+
+/* No crossbar pseudo-element */
+.tree-nodes::before { display: none; }
+
+/* Individual section card */
+.tree-node {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 18px 18px 16px 20px;
+  background: #fff;
+  border: 1px solid #eef0f8;
+  border-left: 3px solid #e0e7ff;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: border-left-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.tree-node:hover {
+  border-left-color: #6366f1;
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.13);
+  transform: translateY(-3px);
+}
+.tree-node:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+
+/* No branch-line pseudo-element per card */
+.tree-node::before { display: none; }
+
+/* Number badge */
+.tree-node-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 800; color: #4338ca;
+  background: #eef2ff;
+  align-self: flex-start;
+}
+.tree-node-content { flex: 1; }
+.tree-node-title {
+  font-size: 13.5px; font-weight: 700; color: #0f172a;
+  line-height: 1.3; margin-bottom: 4px;
+}
+.tree-node-subtitle { font-size: 12px; color: #64748b; line-height: 1.45; }
+
+/* Right arrow: click hint */
+.tree-node-arrow {
+  color: #cbd5e1;
+  transition: color 0.15s, transform 0.15s;
+  align-self: flex-end; margin-top: auto;
+}
+.tree-node:hover .tree-node-arrow { color: #6366f1; transform: translateX(4px); }
+
+/* Responsive grid */
+@media (max-width: 1000px) {
+  .tree-nodes { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px) {
+  .tree-nodes { grid-template-columns: repeat(2, 1fr); }
+  .stage-tree { padding: 0 0 40px; }
+  .tree-container { padding: 14px; }
+}
+@media (max-width: 440px) {
+  .tree-nodes { grid-template-columns: 1fr; }
+}
+
+
+/* ─────────────────────────────────────────
+   STAGE 3 — Section Detail Modal
+   Full-screen backdrop + centred panel card.
+───────────────────────────────────────── */
+
+/* Dim backdrop with blur */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(8, 10, 18, 0.52);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+/* Panel card */
+.modal-panel {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.04),
+    0 24px 80px rgba(0, 0, 0, 0.24);
+  max-width: 1100px; width: 100%;
+  max-height: 96vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* Modal header */
+.modal-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+/* Circular section number */
+.modal-section-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
+  font-size: 17px; font-weight: 800; color: #4338ca;
+  background: #eef2ff; border: 2px solid #c7d2fe;
+}
+
+.modal-title-group { flex: 1; min-width: 0; }
+.modal-title {
+  font-size: 21px; font-weight: 800; color: #0f172a;
+  letter-spacing: -0.025em; margin: 0 0 5px; line-height: 1.3;
+}
+.modal-subtitle { font-size: 13.5px; color: #374151; margin: 0; line-height: 1.45; }
+
+/* Close button */
+.modal-close-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: #f8fafc; border: none; border-radius: 999px;
+  color: #94a3b8; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.modal-close-btn:hover { background: #f1f5f9; color: #0f172a; }
+
+/* ── Dictionary usage hint bar ──
+   Shown once inside the modal, just below the header.
+   Dismissed permanently via localStorage.                */
+.dict-hint-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px 9px 24px;
+  background: #eef2ff;
+  border-bottom: 1px solid #c7d2fe;
+  flex-shrink: 0;
+}
+.dict-hint-icon {
+  flex-shrink: 0;
+  color: #6366f1;
+}
+.dict-hint-text {
+  flex: 1;
+  font-size: 12.5px;
+  color: #4338ca;
+  line-height: 1.5;
+}
+.dict-hint-text strong {
+  font-weight: 800;
+  color: #4338ca;
+}
+.dict-hint-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: #818cf8;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.dict-hint-close:hover {
+  background: #c7d2fe;
+  color: #3730a3;
+}
+
+/* Slide-down enter / slide-up leave */
+.hint-slide-enter-active { transition: max-height 0.28s ease, opacity 0.22s ease; overflow: hidden; }
+.hint-slide-leave-active { transition: max-height 0.22s ease, opacity 0.18s ease; overflow: hidden; }
+.hint-slide-enter-from   { max-height: 0; opacity: 0; }
+.hint-slide-enter-to     { max-height: 80px; opacity: 1; }
+.hint-slide-leave-from   { max-height: 80px; opacity: 1; }
+.hint-slide-leave-to     { max-height: 0; opacity: 0; }
+
+/* Modal body: 3-column grid — original (collapsible) | divider | summary+keypoints */
+.modal-body {
+  display: grid;
+  grid-template-columns: 2fr auto 3fr;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  transition: grid-template-columns 0.25s ease;
+}
+
+/* Collapsed state: original column shrinks to a readable strip */
+.modal-body--orig-hidden {
+  grid-template-columns: 110px auto 1fr;
+}
+
+/* ── Left column: original text ── */
+.modal-orig-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 22px 28px 30px;
+  min-width: 0;
+  overflow-y: auto;   /* allow scrolling when original text is long */
+  cursor: default;
+  user-select: text;
+}
+
+/* Collapsed state — entire column is the click target, so restore pointer */
+.modal-orig-col--collapsed {
+  align-items: center;
+  justify-content: center;
+  padding: 28px 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.18s ease;
+}
+.modal-orig-col--collapsed:hover  { background: #eef2ff; }
+.modal-orig-col--collapsed:active { background: #e0e7ff; transform: scale(0.97); }
+
+/* Label row — styled as a clear toggle button */
+.modal-orig-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #4f46e5;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  align-self: flex-start;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.modal-orig-label:hover { background: #e0e7ff; border-color: #a5b4fc; color: #3730a3; }
+
+/* Collapsed: rotate the whole label block vertically */
+.modal-orig-col--collapsed .modal-orig-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  flex-direction: column-reverse;
+  gap: 6px;
+}
+
+/* Original text body — scrollable when content overflows */
+.modal-orig-text {
+  font-size: 14px;
+  line-height: 1.78;
+  color: #1e293b;
+  margin: 0;
+  cursor: text;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+}
+
+/* Plain vertical divider */
+.modal-divider {
+  width: 1px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* ── Right column: Summary + Key Points ── */
+.modal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 30px 28px 0;
+  min-width: 0;
+}
+
+/* Sub-section group */
+.modal-right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Column label (ORIGINAL TEXT / SUMMARY / KEY POINTS) */
+.modal-col-label {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase; color: #4f46e5;
+}
+
+/* Vertical divider */
+.modal-divider { width: 1px; background: #f1f5f9; margin: 28px 24px; flex-shrink: 0; }
+
+/* Summary text */
+.modal-summary-text { font-size: 15px; line-height: 1.8; color: #1e293b; margin: 0; }
+
+/* Key points list */
+.modal-keypoints { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.modal-keypoints li {
+  font-size: 14px; line-height: 1.65; color: #334155;
+  padding-left: 16px; position: relative;
+}
+.modal-keypoints li::before { content: '●'; position: absolute; left: 0; color: #818cf8; font-size: 8px; top: 6px; }
+
+.modal-fallback { font-size: 13px; color: #94a3b8; font-style: italic; margin: 0; }
+
+/* ── Audio bar ── */
+.modal-audio {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 24px;
+  background: #fafafa;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+/* Status: waveform / paused / idle icon + label */
+.modal-audio-status {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: #64748b; font-weight: 600;
+  min-width: 90px;
+}
+.modal-audio-label { font-size: 12px; color: #64748b; }
+
+/* Thin vertical separator between groups */
+.modal-audio-sep {
+  width: 1px; height: 22px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0 16px;
+}
+
+/* Playback button group */
+.modal-audio-btns {
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* Individual control button */
+.modal-audio-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px;
+  font-size: 12.5px; font-weight: 700;
+  background: #fff; color: #374151;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.modal-audio-btn:hover:not(:disabled) {
+  background: #f1f5f9; border-color: #cbd5e1; color: #0f172a;
+  transform: translateY(-1px);
+}
+.modal-audio-btn:active:not(:disabled) { transform: translateY(0); }
+.modal-audio-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Primary play button */
+.modal-audio-btn--primary {
+  background: #4f46e5; border-color: #4f46e5; color: #fff;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.28);
+}
+.modal-audio-btn--primary:hover:not(:disabled) {
+  background: #4338ca; border-color: #4338ca;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.38);
+}
+
+/* Settings group: Voice + Speed */
+.modal-audio-settings {
+  display: flex; align-items: center; gap: 12px;
+  margin-left: auto;
+}
+
+/* Individual labeled control (Voice / Speed) */
+.modal-audio-ctrl {
+  display: flex; align-items: center; gap: 6px;
+}
+.modal-audio-ctrl-label {
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em; color: #94a3b8;
+  white-space: nowrap;
+}
+.modal-audio-select {
+  padding: 5px 10px; font-size: 12px; font-weight: 600; color: #374151;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  cursor: pointer; outline: none; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.modal-audio-select:focus { border-color: #818cf8; }
+
+/* Mobile modal */
+@media (max-width: 680px) {
+  /* Stack columns vertically on small screens */
+  .modal-body,
+  .modal-body--orig-hidden {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .modal-orig-col { padding: 20px 20px 0; }
+  .modal-orig-col--collapsed { padding: 12px 20px; align-items: flex-start; }
+  .modal-orig-col--collapsed .modal-orig-label { writing-mode: initial; transform: none; flex-direction: row; }
+  .modal-col { padding: 0 20px 20px; }
+  .modal-divider { width: auto; height: 1px; }
+  .modal-panel { border-radius: 18px; max-height: 93vh; }
+  .modal-header { padding: 20px 22px 16px; }
+  .modal-audio { padding: 14px 22px; }
+  .overall-card { padding: 24px 20px; }
+  .overall-heading { font-size: 22px; }
+  .stage-summary { padding: 28px 0 0; }
+}
+
+
+/* ─────────────────────────────────────────
+   Modal fade + scale-in transition
+───────────────────────────────────────── */
+.modal-fade-enter-active { transition: opacity 0.22s ease; }
+.modal-fade-leave-active { transition: opacity 0.18s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+
+.modal-fade-enter-active .modal-panel {
+  animation: modal-pop 0.24s cubic-bezier(0.34, 1.38, 0.64, 1);
+}
+@keyframes modal-pop {
+  from { transform: scale(0.93) translateY(12px); }
+  to   { transform: scale(1) translateY(0); }
+}
+
+
+/* Dictionary popup CSS lives in GlobalDictPopup.vue — rendered once at App root.
+   The .spin keyframe below is still needed for the loading spinners on this page. */
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 </style>

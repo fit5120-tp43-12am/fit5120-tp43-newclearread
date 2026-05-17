@@ -1,226 +1,135 @@
-## Project Overview
+# Clearead
 
-This project is a web-based reading support system designed for users with reading difficulties, such as students with dyslexia.
+Clearead is a reading-support platform for students and other readers who benefit from clearer text structure, accessible visual settings, dictionary support, and audio playback. The project combines a Vue web application, a FastAPI backend, a Chrome extension, and documented AI model-training and deployment packages.
 
-The main goals of the system are:
-Help users understand complex text more easily
-Reduce reading stress
-Provide a clearer and more controllable reading experience
+The repository is organised so a reviewer can start at this root README, then move into the application, extension, and AI evidence folders through the linked README files.
 
-The system supports:
-Text input and display
-Content summary
-Reading assistance (chunking, structure)
-Custom reading settings (font, colour)
-Text-to-speech (TTS)
+## What The System Provides
 
-## Project Structure
+- Web reading workspace for pasted text and uploaded TXT, PDF, or DOCX files.
+- Text segmentation, plain-English summaries, key points, and full-document summaries.
+- Learner-friendly dictionary lookup with word-part explanations.
+- Text-to-speech playback through the backend.
+- Dyslexia-oriented visual controls, including font, size, line height, colour overlay, and reading support pages.
+- Chrome extension with a side-panel summary workflow, page font/ruler tools, and opt-in right-click dictionary lookup.
+- AI evidence packages for dataset preparation, LoRA training, model selection, and deployment.
 
-This project uses a front-end and back-end separated architecture.
+## Repository Map
 
-project-root/
-│
-├── frontend/     # Frontend (Vue 3 + Vite)
-├── backend/      # Backend (FastAPI)
-├── database/     # Database (not used yet)
-├── docs/         # Documentation (optional)
-├── docker/       # Deployment (future use)
+| Path | Purpose |
+| --- | --- |
+| [frontend/](frontend/README.md) | Vue 3 and Vite web application. |
+| [backend/](backend/README.md) | FastAPI application API used by the web app and extension. |
+| [browser-extension/](browser-extension/README.md) | Manifest V3 Chrome extension package. |
+| [ai/](ai/README.md) | Data preparation, LoRA training, and AI model deployment evidence. |
+| [.github/workflows/](.github/workflows) | GitHub Actions workflows for Azure deployment. |
+| [server.js](server.js) | Static server used by the Azure frontend deployment package. |
+| [requirements.txt](requirements.txt) | Root Python dependency entry that points to backend requirements. |
 
-Note: Both frontend and backend must run at the same time.
+## Architecture
 
-## Tech Stack
-Frontend
-Vue 3
-Vite
-JavaScript
-Backend
-Python 3.11
-FastAPI
-Uvicorn
-Others
-REST API
-Environment variables (.env)
+```text
+User
+  |
+  |-- Web app: Vue 3 + Vite
+  |       |
+  |       |-- /api/process-text
+  |       |-- /api/extract-text
+  |       |-- /api/dictionary
+  |       |-- /api/tts
+  |
+  |-- Chrome extension: Manifest V3 side panel
+          |
+          |-- /api/plugin/summary
+          |-- /api/dictionary
 
-## Backend Structure
-backend/
-│
-├── main.py           # Entry point
-├── config.py         # Configuration
-│
-├── core/             # Core settings
-│   └── database.py
-│
-├── routes/           # API layer
-│   └── api.py
-│
-├── services/         # Business logic (core)
-├── models/           # Data models
-├── repositories/     # Database access
-├── utils/            # Utilities
-│
-└── venv/             # Virtual environment (do not commit,this is already added to .gitignore.)
+FastAPI backend
+  |
+  |-- Core Clearead AI summary model service for structured block summaries
+  |-- OpenAI-backed dictionary, overall summary, and TTS services
+  |-- Local fallback logic for resilience when service dependencies are unavailable
+```
 
-## Simple explanation:
-routes: API endpoints
-services: main logic
-models: data structure
-repositories: database operations
+The AI service package under [ai/model_deployment/3B/](ai/model_deployment/3B/README.md) documents the core Clearead model-serving component for block-level reading summaries. This dedicated service represents the main project AI contribution and the production summarisation path. The backend also includes fallback behaviour so the reading workflow remains testable when a service dependency is unavailable; that fallback is a resilience layer rather than the preferred summary path.
 
-## Frontend Structure
-frontend/
-│
-├── src/
-│   ├── pages/        
-│   ├── components/   
-│   ├── services/     
-│   ├── router/       
-│   ├── assets/       
-│   ├── App.vue       
-│   └── main.js       
-│
-├── public/
-├── node_modules/     # do not commit
-└── vite.config.js
+## Local Setup
 
-## Frontend & Backend
-Frontend: http://localhost:5173
-Backend: http://127.0.0.1:8000
+Use two terminals for normal development: one for the backend and one for the frontend.
 
-# Example API:
-http://127.0.0.1:8000/api/xxx
+### Backend
 
-### First Setup
-
-If this is your first time running the project, follow these steps.
-
-1. Install Requirements
-
-Make sure you have:
-
-Python 3.11
-Node.js 18 or above
-Git
-
-Check installation
-
-Windows:
-python --version
-node -v
-npm -v
-
-macOS:
-python3 --version
-node -v
-npm -v
-
-2. Get Latest Code
-
-Make sure you are on your branch:
-
-git pull origin dev
-
-Or use Git GUI to pull from dev.
-
-3. Run Backend
-a. Go to backend:
+```powershell
 cd backend
-
-b. Create virtual environment (only once)
-Windows:
 python -m venv venv
-
-macOS:
-python3 -m venv venv
-
-###### c. Activate environment (every time) !!!!!!!
-Windows:
-venv\Scripts\activate
-
-macOS:
-source venv/bin/activate
-
-d. You should see (venv) in terminal
-
-e. Install dependencies:
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
 
-f. Set environment variable
-Create .env in backend folder:
+Create `backend/.env` for local model-backed features:
 
-GEMINI_API_KEY=your_api_key
+```env
+OPENAI_API_KEY=replace-with-your-key
 
-g. Start backend
-uvicorn main:app --reload
+# Core Clearead AI summary model service
+CLEARREAD_AI_SUMMARY_ENABLED=true
+CLEARREAD_AI_SUMMARY_API_URL=http://127.0.0.1:8010
+CLEARREAD_AI_SUMMARY_API_KEY=replace-with-service-key
+```
 
-Open:
+Backend API docs are available at:
+
+```text
 http://127.0.0.1:8000/docs
+```
 
-4. Run Frontend
+### Frontend
 
-⚠️Use a new terminal
-
-a. cd frontend
-
-b. Install:
+```powershell
+cd frontend
 npm install
-
-c.Run:
 npm run dev
+```
 
-Open:
+The frontend runs at:
+
+```text
 http://localhost:5173
+```
 
-5. How It Works
+The demo sign-in used by the coursework review build is:
 
-You must run both:
-Backend (FastAPI)
-Frontend (Vue)
+```text
+Username: tp43_goodjob
+Password: tp43_clearead
+```
 
-Flow:
-Frontend → API request → Backend → Response → Display
+### Browser Extension
 
-## Common Issues
+Install the released extension from the Chrome Web Store:
 
-1. Backend not working
+```text
+https://chromewebstore.google.com/detail/clearead/jlohhhioeodjkkeahcoelbbnkaigflkn
+```
 
-Check venv is activated
-Check dependencies installed
+Source-level validation is available for developers:
 
-2. Frontend cannot get data
+```powershell
+cd browser-extension
+npm run validate
+```
 
-Check backend is running
-Check API URL
+For local extension development, load `browser-extension/` as an unpacked extension from `chrome://extensions`. Chrome Web Store installation is the standard user-facing path; unpacked loading supports source testing and validation.
 
-3. API key error
-Check .env file
-Development Rules
-Python Environment
+## Deployment Notes
 
-###### Always activate venv before coding !!!
-# Do not install new packages without notice
-# Update requirements.txt if new packages are added
+The GitHub Actions workflows deploy:
 
-# Git Branch Naming
-Module	          Example
-frontend	    feature/frontend-homepage
-backend	        feature/backend-api
-ai	            feature/ai-text
-database	    feature/db-schema
-deploy	        chore/deploy
+- the Python backend to Azure App Service from `dev`;
+- the built frontend to an Azure Node static server package with route prefixes for current and release builds.
 
-# Sync with dev
+Runtime secrets, environment files, generated datasets, model weights, adapter binaries, logs, and caches are excluded from Git. AI artifacts are represented through manifests, reports, hashes, configuration examples, and reproducible scripts.
 
-Run in your branch:
-git add .
-git commit -m "save progress"
-git pull origin dev
+## Documentation Approach
 
-This will merge changes, not overwrite your code.
-
-## Summary
-
-To run the project:
-
-Start backend
-Start frontend
-Open browser
+This repository follows GitHub's README conventions: the root README explains what the project does, why it is useful, how to get started, and where to find deeper documentation. Subdirectory README files provide local context and use relative links so they work both on GitHub and in a cloned repository.

@@ -1,18 +1,40 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+// ── App.vue — Root component ───────────────────────────────────────────────────
+// App.vue is the single root component that wraps the entire application.
+// Its two responsibilities:
+//   1. Auth gate: show a login form until the user enters the correct credentials.
+//   2. After login: render the global AccessibilityToolbar + the current page via <RouterView>.
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import AccessibilityToolbar from './components/AccessibilityToolbar.vue'
+import GlobalDictPopup from './components/GlobalDictPopup.vue'
+import { useGlobalDict } from './composables/useGlobalDict'
 
+// ── Global double-click dictionary ────────────────────────────────────────────
+// Registers one dblclick listener on document so any word on any page can be
+// looked up without each page needing its own handler.
+const { handleWordDblClick, closeDictPopup } = useGlobalDict()
+
+// ── Auth gate constants ───────────────────────────────────────────────────────
+// This project is a coursework demo, so a simple hardcoded password is sufficient.
+// sessionStorage (not localStorage) is intentional: the login state is cleared when
+// the browser tab is closed, so tutors/markers always start from the login screen.
 const AUTH_STORAGE_KEY = 'clearead-session-authenticated'
 const VALID_USERNAME = 'tp43_goodjob'
 const VALID_PASSWORD = 'tp43_clearead'
 
-const isAuthenticated = ref(false)
-const username = ref('')
-const password = ref('')
-const isPasswordVisible = ref(false)
-const errorMessage = ref('')
+// ── Reactive state ────────────────────────────────────────────────────────────
+const isAuthenticated   = ref(false)  // true = show the app; false = show login form
+const username          = ref('')
+const password          = ref('')
+const isPasswordVisible = ref(false)  // toggles the password input between text / password type
+const errorMessage      = ref('')
 
+// canSubmit is a computed (derived) value — the Submit button is disabled unless
+// both fields are non-empty. Using computed() means it updates automatically
+// whenever username or password change, with no extra event listeners needed.
 const canSubmit = computed(() => username.value.trim() && password.value)
 
+// ── Login handler ─────────────────────────────────────────────────────────────
 function handleLogin() {
   if (
     username.value.trim() === VALID_USERNAME &&
@@ -20,21 +42,54 @@ function handleLogin() {
   ) {
     isAuthenticated.value = true
     errorMessage.value = ''
+    // Persist auth state for this browser session so the user isn't asked
+    // to log in again if they refresh the page.
     sessionStorage.setItem(AUTH_STORAGE_KEY, 'true')
     return
   }
 
+  // Wrong credentials — show error and clear the password field for security.
   errorMessage.value = 'Incorrect username or password.'
   password.value = ''
 }
 
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
+  // On page load, check whether this session was already authenticated (e.g. after a refresh).
+  // If the flag is present, skip straight to the app without showing the login form again.
   isAuthenticated.value = sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true'
+
+  // Global double-click: works on every page once the user is authenticated
+  document.addEventListener('dblclick', handleWordDblClick)
+
+  // Pressing Escape closes the popup
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDictPopup()
+  })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('dblclick', handleWordDblClick)
 })
 </script>
 
 <template>
-  <RouterView v-if="isAuthenticated" />
+  <!--
+    Two exclusive branches:
+    • Authenticated: show the global AccessibilityToolbar + the current page.
+      RouterView renders whichever page component matches the current URL.
+    • Not authenticated: show only the login form (auth gate).
+  -->
+  <template v-if="isAuthenticated">
+    <!-- AccessibilityToolbar is rendered once here at the root level so it floats
+         above every page without each page needing to include it separately. -->
+    <AccessibilityToolbar />
+    <!-- RouterView swaps in the matching page component based on the URL (see router/index.js). -->
+    <RouterView />
+    <!-- Global dictionary popup — floats above every page.
+         Triggered by double-clicking any word anywhere on the site. -->
+    <GlobalDictPopup />
+  </template>
 
   <div v-else class="auth-gate">
     <div class="auth-gate__blob auth-gate__blob--blue"></div>

@@ -4,7 +4,8 @@ const path = require('path')
 
 const port = process.env.PORT || 8080
 const rootDir = __dirname
-const versionPattern = /^version[\w.-]*$/
+const appPathPattern = /^(underdevelopment|version[\w.-]*)$/
+const rootBlockedFiles = new Set(['package.json', 'package-lock.json', 'server.js'])
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -31,23 +32,6 @@ function redirect(res, location) {
   res.end()
 }
 
-function getAvailableVersions() {
-  return fs
-    .readdirSync(rootDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && versionPattern.test(entry.name))
-    .map((entry) => entry.name)
-    .sort()
-}
-
-function getDefaultVersion() {
-  const configuredVersion = process.env.DEFAULT_VERSION
-  if (configuredVersion && versionPattern.test(configuredVersion)) {
-    return configuredVersion
-  }
-
-  return getAvailableVersions()[0] || 'version1'
-}
-
 function sendFile(res, filePath) {
   const ext = path.extname(filePath).toLowerCase()
   const contentType = contentTypes[ext] || 'application/octet-stream'
@@ -60,23 +44,23 @@ function sendFile(res, filePath) {
     .pipe(res)
 }
 
-function handleVersionRequest(req, res, pathname, version) {
-  const versionRoot = path.join(rootDir, version)
+function handleAppPathRequest(res, pathname, appPath) {
+  const appRoot = path.join(rootDir, appPath)
 
-  if (!fs.existsSync(versionRoot) || !fs.statSync(versionRoot).isDirectory()) {
-    send(res, 404, 'Version not found')
+  if (!fs.existsSync(appRoot) || !fs.statSync(appRoot).isDirectory()) {
+    send(res, 404, 'App path not found')
     return
   }
 
-  if (pathname === `/${version}`) {
-    redirect(res, `/${version}/`)
+  if (pathname === `/${appPath}`) {
+    redirect(res, `/${appPath}/`)
     return
   }
 
-  const relativePath = decodeURIComponent(pathname.slice(version.length + 2)) || 'index.html'
-  const requestedPath = path.normalize(path.join(versionRoot, relativePath))
+  const relativePath = decodeURIComponent(pathname.slice(appPath.length + 2)) || 'index.html'
+  const requestedPath = path.normalize(path.join(appRoot, relativePath))
 
-  if (requestedPath !== versionRoot && !requestedPath.startsWith(`${versionRoot}${path.sep}`)) {
+  if (requestedPath !== appRoot && !requestedPath.startsWith(`${appRoot}${path.sep}`)) {
     send(res, 403, 'Forbidden')
     return
   }
@@ -91,26 +75,54 @@ function handleVersionRequest(req, res, pathname, version) {
     return
   }
 
-  sendFile(res, path.join(versionRoot, 'index.html'))
+  const indexPath = path.join(appRoot, 'index.html')
+  if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
+    sendFile(res, indexPath)
+    return
+  }
+
+  send(res, 404, 'Frontend not found')
+}
+
+function handleRootRequest(res, pathname) {
+  const relativePath = decodeURIComponent(pathname.slice(1)) || 'index.html'
+  const requestedPath = path.normalize(path.join(rootDir, relativePath))
+
+  if (requestedPath !== rootDir && !requestedPath.startsWith(`${rootDir}${path.sep}`)) {
+    send(res, 403, 'Forbidden')
+    return
+  }
+
+  if (rootBlockedFiles.has(relativePath)) {
+    send(res, 404, 'Not found')
+    return
+  }
+
+  if (fs.existsSync(requestedPath) && fs.statSync(requestedPath).isFile()) {
+    sendFile(res, requestedPath)
+    return
+  }
+
+  if (path.extname(relativePath)) {
+    send(res, 404, 'Not found')
+    return
+  }
+
+  sendFile(res, path.join(rootDir, 'index.html'))
 }
 
 const server = http.createServer((req, res) => {
   const { pathname } = new URL(req.url, `http://${req.headers.host}`)
 
-  if (pathname === '/') {
-    redirect(res, `/${getDefaultVersion()}/`)
+  const appPath = pathname.split('/').filter(Boolean)[0]
+  if (appPath && appPathPattern.test(appPath)) {
+    handleAppPathRequest(res, pathname, appPath)
     return
   }
 
-  const version = pathname.split('/').filter(Boolean)[0]
-  if (version && versionPattern.test(version)) {
-    handleVersionRequest(req, res, pathname, version)
-    return
-  }
-
-  send(res, 404, 'Not found')
+  handleRootRequest(res, pathname)
 })
 
 server.listen(port, () => {
-  console.log(`Versioned static server listening on port ${port}`)
+  console.log(`Static server listening on port ${port}`)
 })
