@@ -1,15 +1,33 @@
-# ClearRead Model Deployment Packages
+# Clearead Model Deployment
 
-This directory contains packaged deployment evidence for the ClearRead model service work.
+This directory contains deployment evidence for the Clearead AI summary model service. It documents how selected LoRA adapters are wrapped behind a stable API contract, tested, benchmarked, and prepared for operational use.
 
-## Package Layout
+## Directory Map
+
+| Path | Purpose |
+| --- | --- |
+| [3B/](3B/README.md) | Current production deployment package for the selected Llama 3.2 3B QLoRA checkpoint. |
+| [8B/](8B/README.md) | Deployment exploration and baseline package for the Llama 3.1 8B Candidate A model. |
+
+## Deployment Contract
+
+Both packages centre on the ClearRead summary service contract:
 
 ```text
-model_deployment/
-  8B/   Previous 8B deployment package and supporting evidence
-  3B/   Current 3B production deployment package and supporting evidence
+GET  /health
+GET  /ready
+POST /v1/clearread/summarize
 ```
 
-The `3B` package is the current production service package for Iteration 3. It contains the API wrapper, deployment templates, selected operational scripts, configuration records, model manifests, and formal validation reports.
+The application backend sends already chunked text blocks and receives ordered results containing:
 
-Large model artifacts are represented through manifests and hashes. Runtime secrets and local environment files are excluded from this repository.
+- input block id;
+- per-block status;
+- summary string;
+- dynamic `keyPoints` array;
+- schema-guard action;
+- item-level error details when needed.
+
+## Package Policy
+
+Deployment packages include service source code, Docker and configuration templates, operational scripts, API contracts, benchmark scripts, reports, and manifests. Runtime secrets, local environment files, private VM paths, model weights, adapter binaries, raw benchmark logs, and generated outputs are excluded from Git.

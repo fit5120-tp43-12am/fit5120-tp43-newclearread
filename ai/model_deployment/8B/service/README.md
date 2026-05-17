@@ -66,9 +66,10 @@ is `2097152` bytes (2 MiB). The character cap is based on the accepted training
 input distribution: the largest observed `role=user` text was `8756` characters,
 and `11000` gives about 1.2x headroom.
 
-Character limits are not token limits. The current deployment still needs cloud
-pressure testing to validate vLLM context length, latency, schema success, and GPU
-memory before the larger cap is treated as cloud-validated.
+Character limits and token limits are separate deployment concerns. Cloud pressure
+testing results for context length, latency, schema success, and GPU memory are
+recorded in the deployment reports before a larger cap is treated as
+deployment-validated.
 
 ## Example Request
 
@@ -90,5 +91,5 @@ curl -s http://127.0.0.1:8010/v1/clearread/summarize \
   }'
 ```
 
-Successful public results contain `summary` and exactly four `keyPoints`. Raw source
-text and raw model output are not returned in normal responses.
+Successful public results contain `summary` and exactly four `keyPoints`. Normal
+responses omit raw source text and raw model output.
