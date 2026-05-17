@@ -2,8 +2,8 @@
 import binascii
 import io
 import re
+import zipfile
 from pathlib import Path
-
 
 MAX_EXTRACTED_TEXT_CHARS = 50000
 
@@ -12,7 +12,6 @@ TEXT_EXTENSIONS = {
     ".txt",
 }
 
-#
 # Extensions that need a dedicated parser before text can be read.
 BINARY_EXTENSIONS = {
     ".pdf",
@@ -23,6 +22,7 @@ SUPPORTED_EXTENSIONS = TEXT_EXTENSIONS | BINARY_EXTENSIONS
 
 
 def _normalize_text(text: str) -> str:
+    #
     # Clean whitespace so downstream processing works with a consistent text format.
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"[ \t]+", " ", text)
@@ -64,7 +64,11 @@ def _extract_text_from_docx(file_bytes: bytes) -> str:
     except ImportError:
         raise RuntimeError("DOCX extraction requires the 'python-docx' package.")
 
-    document = Document(io.BytesIO(file_bytes))
+    try:
+        document = Document(io.BytesIO(file_bytes))
+    except zipfile.BadZipFile:
+        raise ValueError("The Word file appears to be empty or corrupted. Please try a different file.")
+
     return "\n".join(paragraph.text for paragraph in document.paragraphs)
 
 
@@ -78,9 +82,7 @@ def _truncate_text(text: str) -> tuple[str, bool]:
 def extract_text_from_upload(filename: str, content_base64: str):
     suffix = Path(filename).suffix.lower()
     if suffix not in SUPPORTED_EXTENSIONS:
-        raise ValueError(
-            "Unsupported file type. Supported formats: TXT, PDF, DOCX."
-        )
+        raise ValueError("Unsupported file type. Supported formats: TXT, PDF, DOCX.")
 
     file_bytes = _decode_base64_content(content_base64)
 

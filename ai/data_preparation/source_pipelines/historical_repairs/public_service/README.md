@@ -1,7 +1,7 @@
-# Public Service Historical Repair
+# Public Service Repair Pass
 
-This folder keeps the script used for the first public-service repair pass.
+This folder preserves the script used for the first public-service source repair pass.
 
-The repair pass replaced or trimmed problematic WikiHow-derived public-service rows, regenerated assistant labels for touched records, and rewrote the reviewed public-service sample/output/SFT files in the original working dataset.
+The repair pass replaced or trimmed problematic WikiHow-derived public-service rows, regenerated assistant labels for affected records, and rewrote the reviewed public-service sample, output, and SFT files in the working dataset.
 
-The generated datasets and ledgers are intentionally not included in this repository package. This folder is kept only as implementation evidence for the repair logic.
+Generated datasets and repair ledgers are managed outside this repository. This folder keeps the implementation evidence needed to understand the repair logic.

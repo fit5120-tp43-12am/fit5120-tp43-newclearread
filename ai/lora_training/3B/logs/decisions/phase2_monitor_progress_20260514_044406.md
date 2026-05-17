@@ -1,0 +1,8 @@
+# Phase2 Monitor Progress
+
+- Created UTC: `2026-05-13T18:44:06Z`
+- Phase: `compressed_command_running`
+- Command: `compressed_postprocess_llama32_3b_instruct_phase2_r32_a64_lr1p5e4`
+- Exit code: `None`
+- Latest log: `<external-local-raw-phase2-search-workspace-not-in-git>/logs/command_outputs/phase2_r32_a64_lr1p5e4_validate_llama32_3b_instruct_epoch4_20260514_032423.log`
+- GPU: `{'available': True, 'rows': [{'name': 'NVIDIA GeForce RTX 4070 Ti SUPER', 'memory_used_mib': '3983', 'memory_total_mib': '16376', 'utilization_gpu_percent': '26'}]}`

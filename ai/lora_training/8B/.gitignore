@@ -1,0 +1,23 @@
+# Generated datasets and local model artifacts
+data/
+models/
+outputs/
+checkpoints/
+cache/
+unsloth_compiled_cache/
+
+# Model/checkpoint binaries
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.gguf
+
+# Generated training rows and prediction files
+*.jsonl
+*predictions*.json
+*predictions*.jsonl
+
+# Local Python artifacts
+__pycache__/
+*.pyc

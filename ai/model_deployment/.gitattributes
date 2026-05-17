@@ -3,4 +3,12 @@
 *.sh text eol=lf
 *.json text eol=lf
 *.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.example text eol=lf
+*.template text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+*.ps1 text eol=crlf
+.gitattributes text eol=lf
 .gitignore text eol=lf

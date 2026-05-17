@@ -6,9 +6,12 @@ logs
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+browser-extension/dist/
+browser-extension/node_modules/
 
 # Python backend and bytecode
 backend/venv/
+backend/.cache/
 **/__pycache__/
 *.pyc
 
@@ -37,8 +40,12 @@ ai/lora_training/**/*.jsonl
 # OS
 .DS_Store
 
-# Claude Code (local only)
+# Dev tools
 .claude/
+WORKLOG.md
 
-# Local work logs (do not publish)
-frontend/WORKLOG.md
+# Local development artifacts
+*.docx
+*.Rhistory
+ai/model_deployment/3B/reports/*.html
+ai/lora_training/3B/reports/project_review/testing/*.html

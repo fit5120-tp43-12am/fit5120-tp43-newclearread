@@ -7,7 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from services import model_service
-from services.text_preprocessor import preprocess_text
+from services.text_preprocessor import enrich_segments_with_llm, preprocess_text
 from services.text_service import basic_algorithm, use_openai
 
 
@@ -35,10 +35,11 @@ def _env_int(name: str, default: int) -> int:
 def process_reading_text(text: str) -> dict:
     # This is the main service used by the Reading Support page.
     # It converts one raw article into the block-based response expected by the frontend.
-    total_start = time.perf_counter()
     preprocess_seconds = 0.0
+    section_card_seconds = 0.0
     team_model_seconds = 0.0
-    fallback_seconds = 0.0
+    fallback_block_seconds = 0.0
+    total_start = time.perf_counter()
     timing_enabled = _env_bool("CLEARREAD_READING_TIMING_LOGS", False)
 
     source_text = (text or "").strip()
@@ -46,19 +47,15 @@ def process_reading_text(text: str) -> dict:
         # Empty input is handled here so the API can return a consistent response shape.
         _log_reading_timing(
             timing_enabled,
-            total_start,
+            time.perf_counter() - total_start,
             preprocess_seconds,
+            section_card_seconds,
             team_model_seconds,
-            fallback_seconds,
+            fallback_block_seconds,
             block_count=0,
             model_block_count=0,
             fallback_block_count=0,
-            segmentation_info=_build_segmentation_info(
-                {},
-                True,
-                "empty_text",
-                0,
-            ),
+            block_word_counts=[],
         )
         return {
             "notice": "No text was provided.",
@@ -71,17 +68,25 @@ def process_reading_text(text: str) -> dict:
                 0,
             ),
             "blocks": [],
+            "processingStats": _build_processing_stats(
+                total_seconds=time.perf_counter() - total_start,
+                section_card_seconds=section_card_seconds,
+                preprocess_seconds=preprocess_seconds,
+                team_model_seconds=team_model_seconds,
+                fallback_block_seconds=fallback_block_seconds,
+                block_count=0,
+                model_block_count=0,
+                fallback_block_count=0,
+                block_word_counts=[],
+            ),
         }
 
-    # The preprocessor cleans the text and splits it into semantic reading segments.
-    preprocess_start = time.perf_counter()
     (
         segments,
         preprocessing_used_fallback,
         preprocessing_reason,
         segmentation_metadata,
-    ) = _build_segments(source_text)
-    preprocess_seconds = time.perf_counter() - preprocess_start
+    ), preprocess_seconds = _timed_call(_build_segments, source_text)
 
     used_fallback = preprocessing_used_fallback
     fallback_reasons = []
@@ -96,7 +101,10 @@ def process_reading_text(text: str) -> dict:
         prepared_blocks.append(
             {
                 "frontend_id": index,
+                "segment_id": segment.get("segment_id") or index,
                 "model_id": f"block-{index}",
+                "title": str(segment.get("viewpoint") or "").strip(),
+                "subtitle": str(segment.get("segment_summary") or "").strip(),
                 "original_text": display_text,
                 "summary_text": _limit_block_text(display_text),
             }
@@ -106,21 +114,39 @@ def process_reading_text(text: str) -> dict:
     model_blocks = (
         prepared_blocks[: model_service.get_summary_max_blocks()] if model_enabled else []
     )
-    if model_blocks:
-        team_model_start = time.perf_counter()
-        try:
-            model_response = model_service.summarize_blocks(
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        section_card_future = (
+            executor.submit(_timed_call, _enrich_section_cards, segments)
+            if segments
+            else None
+        )
+        model_future = None
+        if model_blocks:
+            model_future = executor.submit(
+                _timed_call,
+                model_service.summarize_blocks,
                 [
                     {"id": block["model_id"], "text": block["summary_text"]}
                     for block in model_blocks
-                ]
+                ],
             )
-            model_results_by_id = model_service.normalize_model_results(model_response)
-        except Exception:
-            used_fallback = True
-            fallback_reasons.append("team_model_unavailable")
-        finally:
-            team_model_seconds = time.perf_counter() - team_model_start
+
+        if section_card_future is not None:
+            try:
+                enriched_segments, section_card_seconds = section_card_future.result()
+                _apply_section_card_copy(prepared_blocks, enriched_segments)
+            except Exception:
+                used_fallback = True
+                if "section_card_enrichment_failed" not in fallback_reasons:
+                    fallback_reasons.append("section_card_enrichment_failed")
+
+        if model_future is not None:
+            try:
+                model_response, team_model_seconds = model_future.result()
+                model_results_by_id = model_service.normalize_model_results(model_response)
+            except Exception:
+                used_fallback = True
+                fallback_reasons.append("team_model_unavailable")
 
     fallback_blocks = []
     model_summaries_by_id = {}
@@ -136,9 +162,10 @@ def process_reading_text(text: str) -> dict:
         else:
             fallback_blocks.append(block)
 
-    fallback_start = time.perf_counter()
-    fallback_results_by_id = _summarise_fallback_blocks(fallback_blocks)
-    fallback_seconds = time.perf_counter() - fallback_start
+    fallback_results_by_id, fallback_block_seconds = _timed_call(
+        _summarise_fallback_blocks,
+        fallback_blocks,
+    )
 
     blocks = []
     for block in prepared_blocks:
@@ -166,30 +193,29 @@ def process_reading_text(text: str) -> dict:
         blocks.append(
             {
                 "id": block["frontend_id"],
+                "title": block["title"],
+                "subtitle": block["subtitle"],
                 "originalText": block["original_text"],
                 "summary": summary_result.get("summary") or "",
                 "keyPoints": summary_result.get("keyPoints") or [],
             }
         )
 
+    block_word_counts = [
+        _count_words(block.get("originalText") or "") for block in blocks
+    ]
+
     _log_reading_timing(
         timing_enabled,
-        total_start,
+        time.perf_counter() - total_start,
         preprocess_seconds,
+        section_card_seconds,
         team_model_seconds,
-        fallback_seconds,
+        fallback_block_seconds,
         block_count=len(blocks),
         model_block_count=len(model_blocks),
         fallback_block_count=len(fallback_blocks),
-        segmentation_info=_build_segmentation_info(
-            segmentation_metadata,
-            preprocessing_used_fallback,
-            preprocessing_reason,
-            len(blocks),
-        ),
-        block_word_counts=[
-            _count_words(block.get("originalText") or "") for block in blocks
-        ],
+        block_word_counts=block_word_counts,
     )
 
     return {
@@ -203,38 +229,162 @@ def process_reading_text(text: str) -> dict:
             len(blocks),
         ),
         "blocks": blocks,
+        "processingStats": _build_processing_stats(
+            total_seconds=time.perf_counter() - total_start,
+            section_card_seconds=section_card_seconds,
+            preprocess_seconds=preprocess_seconds,
+            team_model_seconds=team_model_seconds,
+            fallback_block_seconds=fallback_block_seconds,
+            block_count=len(blocks),
+            model_block_count=len(model_blocks),
+            fallback_block_count=len(fallback_blocks),
+            block_word_counts=block_word_counts,
+        ),
     }
+
+
+def _normalize_preprocess_result(preprocessing_result: dict) -> tuple[list[dict], bool, dict]:
+    if not isinstance(preprocessing_result, dict):
+        return [], False, {}
+
+    raw_segments = preprocessing_result.get("segments") or []
+    normalized_segments = []
+    for segment in raw_segments:
+        if not isinstance(segment, dict):
+            continue
+
+        cleaned_text = str(segment.get("cleaned_text") or segment.get("content") or "").strip()
+        if not cleaned_text:
+            continue
+
+        normalized_segments.append(
+            {
+                "segment_id": segment.get("segment_id") or len(normalized_segments) + 1,
+                "cleaned_text": cleaned_text,
+                "viewpoint": str(segment.get("viewpoint") or "").strip(),
+                "segment_summary": str(segment.get("summary") or "").strip(),
+            }
+        )
+
+    metadata = preprocessing_result.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    # text_preprocessor currently returns segments/debug but no status/metadata.
+    debug_info = preprocessing_result.get("debug")
+    if isinstance(debug_info, dict):
+        split_reasons = debug_info.get("split_reasons") or []
+        if any(reason == "semantic_or_size_boundary" for reason in split_reasons):
+            metadata.setdefault("segmentation_mode", "sentence_range")
+        else:
+            metadata.setdefault(
+                "segmentation_mode",
+                "sentence_range" if len(normalized_segments) > 1 else "single_block",
+            )
+        metadata.setdefault("processing_notes", "derived_from_preprocessor_debug")
+    else:
+        metadata.setdefault(
+            "segmentation_mode",
+            "sentence_range" if len(normalized_segments) > 1 else "single_block",
+        )
+        metadata.setdefault("processing_notes", "normalized_from_preprocess_output")
+
+    metadata.setdefault("fallback_reason", "")
+
+    # Backward compatibility:
+    # - old shape: {"status":"success","segments":[...]}
+    # - new shape: {"segments":[...]}
+    status = preprocessing_result.get("status")
+    success = (status == "success") if status is not None else bool(normalized_segments)
+    return normalized_segments, success, metadata
 
 
 def _build_segments(text: str) -> tuple[list[dict], bool, str, dict]:
     # Use semantic preprocessing first. If it fails, keep the page usable by treating
     # the whole input as a single block.
-    preprocessing_result = preprocess_text(text)
-    if preprocessing_result.get("status") == "success":
-        segments = preprocessing_result.get("segments") or []
-        metadata = preprocessing_result.get("metadata") or {}
+    try:
+        preprocessing_result = preprocess_text(text, enrich_with_llm=False)
+    except Exception as exc:
+        print(f"[preprocess] failed: {type(exc).__name__}: {exc}", flush=True)
+        return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", {}
+
+    segments, success, metadata = _normalize_preprocess_result(preprocessing_result)
+    if success and segments:
         segmentation_mode = metadata.get("segmentation_mode")
         used_segmentation_fallback = segmentation_mode in {
             "local_fallback",
             "chunked_mixed_fallback",
         }
-        valid_segments = [
-            segment
-            for segment in segments
-            if isinstance(segment, dict) and str(segment.get("cleaned_text") or "").strip()
-        ]
-        if valid_segments:
-            if used_segmentation_fallback:
-                return (
-                    valid_segments,
-                    True,
-                    metadata.get("fallback_reason") or "local_segmentation_fallback",
-                    metadata,
-                )
-            return valid_segments, False, "", metadata
+        if used_segmentation_fallback:
+            return (
+                segments,
+                True,
+                metadata.get("fallback_reason") or "local_segmentation_fallback",
+                metadata,
+            )
+        return segments, False, "", metadata
 
-    metadata = preprocessing_result.get("metadata") or {}
     return [{"segment_id": 1, "cleaned_text": text}], True, "preprocessing_failed", metadata
+
+
+def _timed_call(function, *args, **kwargs):
+    started_at = time.perf_counter()
+    result = function(*args, **kwargs)
+    return result, time.perf_counter() - started_at
+
+
+def _enrich_section_cards(segments: list[dict]) -> list[dict]:
+    if not segments:
+        return []
+
+    enrichment_segments = [
+        {
+            "segment_id": segment.get("segment_id") or index,
+            "content": str(segment.get("cleaned_text") or segment.get("content") or "").strip(),
+            "viewpoint": str(segment.get("viewpoint") or "").strip(),
+            "summary": str(segment.get("segment_summary") or segment.get("summary") or "").strip(),
+        }
+        for index, segment in enumerate(segments, start=1)
+    ]
+
+    async def run_enrichment() -> list[dict]:
+        return await enrich_segments_with_llm(
+            enrichment_segments,
+            model=os.getenv("CLEARREAD_SECTION_CARD_MODEL", "gpt-5.4-mini"),
+            concurrency=_env_int("CLEARREAD_SECTION_CARD_CONCURRENCY", 5),
+            max_retries=_env_int("CLEARREAD_SECTION_CARD_MAX_RETRIES", 1),
+        )
+
+    import asyncio
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(run_enrichment())
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(lambda: asyncio.run(run_enrichment())).result()
+
+
+def _apply_section_card_copy(blocks: list[dict], enriched_segments: list[dict]) -> None:
+    if not blocks or not enriched_segments:
+        return
+
+    enriched_by_id = {
+        segment.get("segment_id"): segment
+        for segment in enriched_segments
+        if isinstance(segment, dict)
+    }
+    for block in blocks:
+        segment = enriched_by_id.get(block.get("segment_id") or block["frontend_id"])
+        if not segment:
+            continue
+        title = str(segment.get("viewpoint") or "").strip()
+        subtitle = str(segment.get("summary") or "").strip()
+        if title:
+            block["title"] = title
+        if subtitle:
+            block["subtitle"] = subtitle
 
 
 def _summarise_block_fallback(text: str) -> dict:
@@ -246,7 +396,7 @@ def _summarise_block_fallback(text: str) -> dict:
 
     return basic_algorithm(
         text,
-        notice="AI service is unavailable right now. Showing a basic result.",
+        notice="The ClearRead processing engine is temporarily unavailable. Showing a basic result.",
         fallback_reason="temporary_ai_unavailable",
     )
 
@@ -271,7 +421,7 @@ def _summarise_fallback_blocks(blocks: list[dict]) -> dict:
             except Exception:
                 results[block["model_id"]] = basic_algorithm(
                     block["summary_text"],
-                    notice="AI service is unavailable right now. Showing a basic result.",
+                    notice="The ClearRead processing engine is temporarily unavailable. Showing a basic result.",
                     fallback_reason="temporary_ai_unavailable",
                 )
 
@@ -289,47 +439,57 @@ def _has_valid_model_summary(model_result: dict | None) -> bool:
 
 def _log_reading_timing(
     enabled: bool,
-    total_start: float,
+    total_seconds: float,
     preprocess_seconds: float,
+    section_card_seconds: float,
     team_model_seconds: float,
-    fallback_seconds: float,
+    fallback_block_seconds: float,
     block_count: int,
     model_block_count: int,
     fallback_block_count: int,
-    segmentation_info: dict | None = None,
     block_word_counts: list[int] | None = None,
 ) -> None:
     if not enabled:
         return
 
-    total_seconds = time.perf_counter() - total_start
-    segmentation_info = segmentation_info or {}
     block_word_counts = block_word_counts or []
     print(
         "[reading pipeline] "
-        f"preprocess={preprocess_seconds:.2f}s "
-        f"team_model={team_model_seconds:.2f}s "
-        f"fallback={fallback_seconds:.2f}s "
         f"total={total_seconds:.2f}s "
+        f"preprocess={preprocess_seconds:.2f}s "
+        f"section_cards={section_card_seconds:.2f}s "
+        f"team_model={team_model_seconds:.2f}s "
+        f"fallback_block_seconds={fallback_block_seconds:.2f}s "
         f"blocks={block_count} "
         f"model_blocks={model_block_count} "
-        f"fallback_blocks={fallback_block_count} "
-        f"segmentation_source={segmentation_info.get('source') or 'unknown'} "
-        f"segmentation_mode={segmentation_info.get('mode') or 'unknown'} "
-        f"segmentation_reason={segmentation_info.get('reason') or 'unknown'} "
-        f"segmentation_detail={_format_log_value(segmentation_info.get('detail'))}",
+        f"fallback_block_count={fallback_block_count} "
         f"block_words={block_word_counts}",
         flush=True,
     )
 
 
-def _format_log_value(value: object, max_length: int = 300) -> str:
-    text = re.sub(r"\s+", " ", str(value or "")).strip()
-    if not text:
-        return "none"
-    if len(text) <= max_length:
-        return text
-    return f"{text[:max_length].rstrip()}..."
+def _build_processing_stats(
+    total_seconds: float,
+    section_card_seconds: float,
+    preprocess_seconds: float,
+    team_model_seconds: float,
+    fallback_block_seconds: float,
+    block_count: int,
+    model_block_count: int,
+    fallback_block_count: int,
+    block_word_counts: list[int],
+) -> dict:
+    return {
+        "totalSeconds": round(total_seconds, 2),
+        "sectionCardSeconds": round(section_card_seconds, 2),
+        "preprocessSeconds": round(preprocess_seconds, 2),
+        "modelSeconds": round(team_model_seconds, 2),
+        "fallbackBlockSeconds": round(fallback_block_seconds, 2),
+        "blockCount": block_count,
+        "modelBlockCount": model_block_count,
+        "fallbackBlockCount": fallback_block_count,
+        "blockWordCounts": block_word_counts,
+    }
 
 
 def _count_words(text: str) -> int:
@@ -381,15 +541,15 @@ def _build_notice(used_fallback: bool, fallback_reasons: list[str]) -> str:
         return "Text was processed without semantic segmentation."
 
     if "local_segmentation_fallback" in fallback_reasons:
-        return "Text was segmented locally because AI segmentation is unavailable."
+        return "Text was segmented locally because the ClearRead processing engine is temporarily unavailable."
 
     if "ai_segmentation_failed" in fallback_reasons:
-        return "Text was segmented locally because AI segmentation is unavailable."
+        return "Text was segmented locally because the ClearRead processing engine is temporarily unavailable."
 
     if "partial_ai_segmentation_failed" in fallback_reasons:
-        return "Some text was segmented locally because AI segmentation was partially unavailable."
+        return "Some text was segmented locally because the ClearRead processing engine was partially unavailable."
 
-    return "AI service is unavailable right now. Showing a basic result."
+    return "The ClearRead processing engine is temporarily unavailable. Showing a basic result."
 
 
 def _build_segmentation_info(

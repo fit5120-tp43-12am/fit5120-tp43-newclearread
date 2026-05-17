@@ -1,0 +1,286 @@
+{
+  "benchmark_results": [
+    {
+      "benchmark_run_id": "phase2_compressed_final_benchmark_20260514",
+      "inference": {
+        "cmd": [
+          "python",
+          "scripts/run_finalist_benchmark_inference.py",
+          "--candidate-key",
+          "phi4_mini_instruct",
+          "--system-id",
+          "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+          "--benchmark-run-id",
+          "phase2_compressed_final_benchmark_20260514",
+          "--adapter-dir",
+          "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+          "--max-new-tokens",
+          "320"
+        ],
+        "exit_code": 0,
+        "exit_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/tests/compressed_final_inference_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3_20260514_092333.exitcode",
+        "finished_at_utc": "2026-05-13T23:40:19Z",
+        "log_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/command_outputs/compressed_final_inference_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3_20260514_092333.log",
+        "name": "compressed_final_inference_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+        "started_at_utc": "2026-05-13T23:23:33Z"
+      },
+      "judge_run_id": "phase2_compressed_final_benchmark_judge_20260514",
+      "postprocess": {
+        "cmd": [
+          "bash",
+          "scripts/postprocess_final_benchmark_system.sh",
+          "phase2_compressed_final_benchmark_20260514",
+          "phase2_compressed_final_benchmark_judge_20260514",
+          "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
+        ],
+        "exit_code": 0,
+        "exit_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/tests/compressed_final_postprocess_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3_20260514_094019.exitcode",
+        "finished_at_utc": "2026-05-14T00:02:59Z",
+        "log_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/command_outputs/compressed_final_postprocess_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3_20260514_094019.log",
+        "name": "compressed_final_postprocess_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+        "started_at_utc": "2026-05-13T23:40:19Z"
+      },
+      "source_row": {
+        "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+        "candidate": "phi4_mini_instruct",
+        "epoch": 3,
+        "judge_count": 50,
+        "judge_mean_capped_score": 80.28,
+        "judge_run_id": "val50_phi4_mini_instruct_phase2_r32_a64_lr1p5e4",
+        "judge_summary_path": "<external-local-raw-phase2-search-workspace-not-in-git>/outputs/judge/val50_phi4_mini_instruct_phase2_r32_a64_lr1p5e4/scoring/accessibility_first_v2/system_score_summary.json",
+        "main_message_salience": 4.3,
+        "major_risk_count": 1,
+        "metrics_path": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/phase2_r32_a64_lr1p5e4_epoch_3_record_messages/metrics.json",
+        "parse_failure_count": 5,
+        "parsed_ok_count": 140,
+        "raw_output_count": 145,
+        "run_id": "phase2_r32_a64_lr1p5e4",
+        "severe_fail_count": 0,
+        "source_safety_margin": 3.38,
+        "stage_label": "phase2_r32_a64_lr1p5e4",
+        "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
+      },
+      "system_id": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
+    },
+    {
+      "benchmark_run_id": "phase2_compressed_final_benchmark_20260514",
+      "inference": {
+        "cmd": [
+          "python",
+          "scripts/run_finalist_benchmark_inference.py",
+          "--candidate-key",
+          "phi4_mini_instruct",
+          "--system-id",
+          "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4",
+          "--benchmark-run-id",
+          "phase2_compressed_final_benchmark_20260514",
+          "--adapter-dir",
+          "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
+          "--max-new-tokens",
+          "320"
+        ],
+        "exit_code": 1,
+        "exit_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/tests/compressed_final_inference_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4_20260514_100259.exitcode",
+        "finished_at_utc": "2026-05-14T00:03:05Z",
+        "log_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/command_outputs/compressed_final_inference_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4_20260514_100259.log",
+        "name": "compressed_final_inference_compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4",
+        "started_at_utc": "2026-05-14T00:02:59Z"
+      },
+      "judge_run_id": "phase2_compressed_final_benchmark_judge_20260514",
+      "postprocess": {
+        "exit_code": 99,
+        "reason": "inference_failed",
+        "skipped": true
+      },
+      "source_row": {
+        "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
+        "candidate": "phi4_mini_instruct",
+        "epoch": 4,
+        "judge_count": 49,
+        "judge_mean_capped_score": 77.306122,
+        "judge_run_id": "val50_phi4_mini_instruct_phase2_r32_a64_lr1e4",
+        "judge_summary_path": "<external-local-raw-phase2-search-workspace-not-in-git>/outputs/judge/val50_phi4_mini_instruct_phase2_r32_a64_lr1e4/scoring/accessibility_first_v2/system_score_summary.json",
+        "main_message_salience": 4.163265,
+        "major_risk_count": 4,
+        "metrics_path": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/phase2_r32_a64_lr1e4_epoch_4_record_messages/metrics.json",
+        "parse_failure_count": 5,
+        "parsed_ok_count": 140,
+        "raw_output_count": 145,
+        "run_id": "phase2_r32_a64_lr1e4",
+        "severe_fail_count": 0,
+        "source_safety_margin": 3.285714,
+        "stage_label": "phase2_r32_a64_lr1e4",
+        "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4"
+      },
+      "system_id": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4"
+    }
+  ],
+  "created_at_utc": "2026-05-14T04:17:17Z",
+  "final_scores": {
+    "systems": {
+      "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3": {
+        "capped_official_item_score": {
+          "count": 120,
+          "max": 100.0,
+          "mean": 75.041667,
+          "median": 70.0,
+          "min": 0.0,
+          "standard_deviation": 15.339707
+        },
+        "judge_input_count": 136,
+        "judge_valid_rate_over_prepared_inputs": 0.882353,
+        "judge_validation_failure_count": 32,
+        "model_id": "microsoft/Phi-4-mini-instruct::<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+        "per_field_mean_scores": {
+          "cognitive_load_reduction_and_safe_conciseness": 3.8,
+          "main_message_salience_and_quick_understanding": 4.116667,
+          "plain_language_lexical_accessibility_and_term_handling": 3.775,
+          "scannable_structure_and_chunking": 4.816667,
+          "sentence_and_syntax_accessibility": 4.766667,
+          "source_safety_margin": 3.2
+        },
+        "ranking_status_counts": {
+          "blocked_by_safety_gate": 1,
+          "not_eligible_as_item_winner": 8,
+          "rankable": 10,
+          "rankable_with_minor_safety_caution": 47,
+          "usable_with_safety_caution_not_clean_pass": 54
+        },
+        "safety_cap_applied_count": 70,
+        "safety_cap_applied_rate": 0.583333,
+        "safety_level_counts": {
+          "clear_pass": 10,
+          "major_risk": 8,
+          "minor_risk": 47,
+          "moderate_risk": 54,
+          "severe_fail": 1
+        },
+        "safety_level_rates": {
+          "clear_pass": 0.083333,
+          "major_risk": 0.066667,
+          "minor_risk": 0.391667,
+          "moderate_risk": 0.45,
+          "severe_fail": 0.008333
+        },
+        "schema_valid_judge_output_count": 120,
+        "system_id": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3",
+        "weighted_accessibility_score_before_cap": {
+          "count": 120,
+          "max": 100.0,
+          "mean": 83.558333,
+          "median": 86.0,
+          "min": 39.0,
+          "standard_deviation": 9.630503
+        }
+      }
+    },
+    "winner": "compressed_final_phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
+  },
+  "finalists": [
+    {
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1p5e4_epoch_3",
+      "candidate": "phi4_mini_instruct",
+      "epoch": 3,
+      "judge_count": 50,
+      "judge_mean_capped_score": 80.28,
+      "judge_run_id": "val50_phi4_mini_instruct_phase2_r32_a64_lr1p5e4",
+      "judge_summary_path": "<external-local-raw-phase2-search-workspace-not-in-git>/outputs/judge/val50_phi4_mini_instruct_phase2_r32_a64_lr1p5e4/scoring/accessibility_first_v2/system_score_summary.json",
+      "main_message_salience": 4.3,
+      "major_risk_count": 1,
+      "metrics_path": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/phase2_r32_a64_lr1p5e4_epoch_3_record_messages/metrics.json",
+      "parse_failure_count": 5,
+      "parsed_ok_count": 140,
+      "raw_output_count": 145,
+      "run_id": "phase2_r32_a64_lr1p5e4",
+      "severe_fail_count": 0,
+      "source_safety_margin": 3.38,
+      "stage_label": "phase2_r32_a64_lr1p5e4",
+      "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1p5e4_epoch_3"
+    },
+    {
+      "adapter_dir": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/models/adapters/phase2_r32_a64_lr1e4_epoch_4",
+      "candidate": "phi4_mini_instruct",
+      "epoch": 4,
+      "judge_count": 49,
+      "judge_mean_capped_score": 77.306122,
+      "judge_run_id": "val50_phi4_mini_instruct_phase2_r32_a64_lr1e4",
+      "judge_summary_path": "<external-local-raw-phase2-search-workspace-not-in-git>/outputs/judge/val50_phi4_mini_instruct_phase2_r32_a64_lr1e4/scoring/accessibility_first_v2/system_score_summary.json",
+      "main_message_salience": 4.163265,
+      "major_risk_count": 4,
+      "metrics_path": "<external-local-raw-phase2-search-workspace-not-in-git>/model_workspaces/phi4_mini_instruct/outputs/validation/phase2_r32_a64_lr1e4_epoch_4_record_messages/metrics.json",
+      "parse_failure_count": 5,
+      "parsed_ok_count": 140,
+      "raw_output_count": 145,
+      "run_id": "phase2_r32_a64_lr1e4",
+      "severe_fail_count": 0,
+      "source_safety_margin": 3.285714,
+      "stage_label": "phase2_r32_a64_lr1e4",
+      "system_id": "phi4_mini_instruct_phase2_r32_a64_lr1e4_epoch_4"
+    }
+  ],
+  "old_8b_candidate_a_score": 78.055556,
+  "ranking_path": "reports/phase2/compressed_candidate_ranking.json",
+  "runtime_seconds": 30673.38,
+  "seed_sanity_record": {
+    "postprocess": {
+      "cmd": [
+        "bash",
+        "scripts/postprocess_run_candidate_top_epochs.sh",
+        "phi4_mini_instruct",
+        "phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3",
+        "phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3",
+        "val50_phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3",
+        "1 2 3 4 5"
+      ],
+      "exit_code": 0,
+      "exit_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/tests/compressed_postprocess_phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_20260514_124250.exitcode",
+      "finished_at_utc": "2026-05-14T04:17:17Z",
+      "log_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/command_outputs/compressed_postprocess_phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_20260514_124250.log",
+      "name": "compressed_postprocess_phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3",
+      "started_at_utc": "2026-05-14T02:42:50Z"
+    },
+    "run": {
+      "alpha": 64,
+      "candidate": "phi4_mini_instruct",
+      "dropout": 0.05,
+      "lr": 0.00015,
+      "r": 32,
+      "run_id": "phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3",
+      "stage_label": "phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3"
+    },
+    "started_at_utc": "2026-05-14T00:03:05Z",
+    "status": "success",
+    "training": {
+      "cmd": [
+        "python",
+        "scripts/train_sweep_qlora.py",
+        "--candidate-key",
+        "phi4_mini_instruct",
+        "--run-id",
+        "phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3",
+        "--epochs",
+        "5",
+        "--learning-rate",
+        "0.00015",
+        "--lora-r",
+        "32",
+        "--lora-alpha",
+        "64",
+        "--lora-dropout",
+        "0.05",
+        "--per-device-train-batch-size",
+        "2",
+        "--gradient-accumulation-steps",
+        "4",
+        "--seed",
+        "5141"
+      ],
+      "exit_code": 0,
+      "exit_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/tests/compressed_train_phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_20260514_100305.exitcode",
+      "finished_at_utc": "2026-05-14T02:42:50Z",
+      "log_path": "<external-local-raw-phase2-search-workspace-not-in-git>/logs/command_outputs/compressed_train_phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3_20260514_100305.log",
+      "name": "compressed_train_phi4_mini_instruct_phase2_seed5141_phase2_r32_a64_lr1p5e4_epoch3",
+      "started_at_utc": "2026-05-14T00:03:05Z"
+    }
+  }
+}
