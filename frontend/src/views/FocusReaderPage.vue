@@ -789,6 +789,41 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- ── 3-column layout: [settings | canvas | history] ── -->
+        <div class="game-layout">
+
+          <!-- LEFT: settings panel -->
+          <aside class="game-sidebar game-sidebar--left">
+            <p class="sidebar-label">Settings</p>
+            <select v-model="settings.mode" class="mode-select mode-select--sidebar" :disabled="isRunning && !isPaused">
+              <option value="mixed">Mix — Letters, Sounds &amp; Words</option>
+              <option value="letters">Tricky Letters (b, d, p, q)</option>
+              <option value="chunks">Sound Groups (sh, ch, th)</option>
+              <option value="words">Short Words &amp; Made-up Words</option>
+            </select>
+            <label class="toggle-row toggle-row--sidebar">
+              <span class="toggle-wrap">
+                <input type="checkbox" class="sr-only" v-model="settings.sound" />
+                <span class="toggle-track" :class="{ 'toggle-track--on': settings.sound }">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </span>
+              <span class="toggle-label">🔊 Sound</span>
+            </label>
+            <label class="toggle-row toggle-row--sidebar">
+              <span class="toggle-wrap">
+                <input type="checkbox" class="sr-only" v-model="settings.calm" />
+                <span class="toggle-track" :class="{ 'toggle-track--on': settings.calm }">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </span>
+              <span class="toggle-label">🐢 Slow</span>
+            </label>
+          </aside>
+
+          <!-- CENTER: cue + timer + canvas + feedback + controls -->
+          <div class="game-center">
+
         <!-- ② Cue display -->
         <div class="cue-area">
           <p class="cue-eyebrow">Find this</p>
@@ -1025,57 +1060,21 @@ onUnmounted(() => {
           </div>
         </Transition>
 
-        <!-- ⑦ Settings row -->
-        <div class="settings-row">
-          <select v-model="settings.mode" class="mode-select" :disabled="isRunning && !isPaused">
-            <option value="mixed">Mix — Letters, Sounds &amp; Words</option>
-            <option value="letters">Tricky Letters (b, d, p, q)</option>
-            <option value="chunks">Sound Groups (sh, ch, th)</option>
-            <option value="words">Short Words &amp; Made-up Words</option>
-          </select>
+          </div><!-- /game-center -->
 
-          <label class="toggle-row">
-            <span class="toggle-wrap">
-              <input type="checkbox" class="sr-only" v-model="settings.sound" />
-              <span class="toggle-track" :class="{ 'toggle-track--on': settings.sound }">
-                <span class="toggle-thumb"></span>
-              </span>
-            </span>
-            <span class="toggle-label">🔊 Sound</span>
-          </label>
+          <!-- RIGHT: history panel -->
+          <aside class="game-sidebar game-sidebar--right">
+            <p class="sidebar-label">Recent Games</p>
+            <ol class="history-list history-list--sidebar">
+              <li v-if="!ui.sessions.length" class="history-empty">No games yet</li>
+              <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
+                <span class="history-time">{{ formatDate(s.date) }}</span>
+                <span class="history-stats">{{ s.accuracy }}% · {{ s.score }} pts · Lv {{ s.level }}</span>
+              </li>
+            </ol>
+          </aside>
 
-          <label class="toggle-row">
-            <span class="toggle-wrap">
-              <input type="checkbox" class="sr-only" v-model="settings.calm" />
-              <span class="toggle-track" :class="{ 'toggle-track--on': settings.calm }">
-                <span class="toggle-thumb"></span>
-              </span>
-            </span>
-            <span class="toggle-label">🐢 Slow</span>
-          </label>
-        </div>
-
-        <!-- ⑧ History (compact, collapsible) -->
-        <details class="history-details">
-          <summary class="history-summary">
-            <span class="history-summary-label">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                <path d="M2 4.5h11M2 7.5h7M2 10.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-              Your recent games
-            </span>
-            <svg class="history-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </summary>
-          <ol class="history-list">
-            <li v-if="!ui.sessions.length" class="history-empty">No games yet</li>
-            <li v-for="(s, i) in ui.sessions" :key="i" class="history-item">
-              <span class="history-time">{{ formatDate(s.date) }}</span>
-              <span class="history-stats">{{ s.accuracy }}% · {{ s.score }} pts · Lv {{ s.level }}</span>
-            </li>
-          </ol>
-        </details>
+        </div><!-- /game-layout -->
 
         <p class="disclaimer">Practice game only — not a medical test.</p>
 
@@ -1179,10 +1178,70 @@ onUnmounted(() => {
 /* The single game card */
 .game-card {
   width: 100%;
-  max-width: 780px;
+  max-width: 1200px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* ── 3-column game layout ── */
+.game-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  gap: 16px;
+  align-items: start;
+}
+.game-center {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.game-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 18px 16px;
+  position: sticky;
+  top: 80px;
+}
+.sidebar-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin: 0 0 4px;
+}
+.mode-select--sidebar {
+  width: 100%;
+  min-width: unset;
+  flex: unset;
+  font-size: 13px;
+  padding: 8px 30px 8px 10px;
+}
+.toggle-row--sidebar {
+  gap: 8px;
+}
+.history-list--sidebar {
+  padding: 0;
+  margin: 0;
+  gap: 10px;
+}
+
+/* Collapse sidebars on small screens */
+@media (max-width: 900px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+  .game-sidebar--left  { order: 2; position: static; }
+  .game-center         { order: 1; }
+  .game-sidebar--right { order: 3; position: static; }
+  .mode-select--sidebar { font-size: 15px; }
 }
 
 /* ── ① Status strip ── */
@@ -1478,13 +1537,6 @@ onUnmounted(() => {
 .guide-fade-leave-to     { opacity: 0; transform: scale(0.97); }
 
 /* ── ⑦ Settings ── */
-.settings-row {
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(255,255,255,0.85);
-  backdrop-filter: blur(12px);
-  border-radius: 16px; padding: 16px 24px;
-}
 .mode-select {
   flex: 1; min-width: 180px;
   padding: 10px 38px 10px 14px; font-size: 15px;
@@ -1521,36 +1573,6 @@ onUnmounted(() => {
 .toggle-label { font-size: 15px; font-weight: 500; color: #374151; }
 
 /* ── ⑧ History ── */
-.history-details {
-  background: rgba(255,255,255,0.45);
-  border: 1px solid rgba(255,255,255,0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 14px; overflow: hidden;
-}
-.history-summary {
-  padding: 14px 22px;
-  font-size: 15px; font-weight: 600; color: #6b7280;
-  cursor: pointer; list-style: none; user-select: none;
-  display: flex; align-items: center; justify-content: space-between;
-  border-radius: 14px;
-  transition: color 0.2s, background 0.18s;
-}
-.history-summary:hover { color: #374151; background: rgba(255,255,255,0.5); }
-.history-summary-label {
-  display: flex; align-items: center; gap: 8px;
-}
-.history-chevron {
-  flex-shrink: 0;
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.history-details[open] .history-chevron {
-  transform: rotate(180deg);
-}
-.history-details[open] .history-summary {
-  color: #374151;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  border-radius: 14px 14px 0 0;
-}
 .history-list {
   list-style: none; padding: 0 22px 14px; margin: 0;
   display: flex; flex-direction: column; gap: 8px;
