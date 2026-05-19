@@ -121,6 +121,7 @@ onUnmounted(() => clearTimeout(hintTimer))
             Colour Theme
           </div>
 
+          
           <!--
             Dyslexia-friendly colour overlays.
             Light themes use mix-blend-mode multiply overlay on the page —
