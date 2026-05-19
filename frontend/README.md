@@ -70,14 +70,3 @@ npm run preview
 ```
 
 Deployment builds set `VITE_BASE_PATH` so the same frontend can be served at `/`, `/underdevelopment/`, `/version1/`, and `/version2/` in the Azure static-server package.
-
-## Review Sign-In
-
-The coursework review build uses a simple session sign-in gate defined in `src/App.vue`:
-
-```text
-Username: tp43_goodjob
-Password: tp43_clearead
-```
-
-This gate provides a lightweight coursework review entry point for the submitted build.
