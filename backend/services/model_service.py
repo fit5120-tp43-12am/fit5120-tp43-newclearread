@@ -14,7 +14,6 @@ try:
 except ImportError:
     requests = None
 
-
 BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(BACKEND_ENV_PATH)
 
