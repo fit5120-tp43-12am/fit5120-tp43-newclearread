@@ -11,7 +11,7 @@ This directory contains deployment evidence for the core Clearead AI summary mod
 
 ## Deployment Contract
 
-Both packages centre on the ClearRead summary service contract:
+Both packages centre on the Clearead summary service contract:
 
 ```text
 GET  /health

@@ -1,7 +1,7 @@
 # Clearead Development Workflow
 
 > Branch: `dev`
-> Last updated: 2026-05-17
+> Last updated: 2026-05-20
 
 ## Purpose
 
@@ -58,7 +58,6 @@ This document summarises the current project workflow across the Clearead websit
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
 | `/` | `GET` | Basic health response. |
-| `/api/test` | `GET` | Simple backend test response. |
 | `/api/process-text` | `POST` | Cleans, segments, and summarises reading text for the web reading page. |
 | `/api/extract-text` | `POST` | Extracts text from TXT, PDF, and DOCX uploads. |
 | `/api/plugin/summary` | `POST` | Returns a full-document summary for the Chrome extension side panel. |
@@ -117,13 +116,6 @@ OPENAI_TTS_MODEL=gpt-4o-mini-tts
 CLEARREAD_AI_SUMMARY_ENABLED=true
 CLEARREAD_AI_SUMMARY_API_URL=http://127.0.0.1:8010
 CLEARREAD_AI_SUMMARY_API_KEY=replace-with-service-key
-```
-
-## Review Sign-In
-
-```text
-Username: tp43_goodjob
-Password: tp43_clearead
 ```
 
 ## Supporting Documentation

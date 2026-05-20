@@ -1,6 +1,6 @@
 # Clearead Web Frontend
 
-The frontend is a Vue 3 and Vite application for the Clearead reading-support website. It provides the public product pages, protected coursework-review entry point, reading workspace, dictionary page, focus reader, privacy page, and browser-extension information page.
+The frontend is a Vue 3 and Vite application for the Clearead reading-support website. It provides the public product pages, reading workspace, dictionary page, focus reader, privacy page, and browser-extension information page.
 
 ## Main Routes
 
@@ -23,7 +23,7 @@ frontend/
   vite.config.js
   public/fonts/          Local OpenDyslexic font files
   src/
-    App.vue              Session sign-in gate and global UI mounting
+    App.vue              Global UI mounting
     main.js              Vue app entry point
     style.css            Global CSS variables, fonts, and base styles
     router/              Vue Router route table
@@ -69,4 +69,4 @@ npm run build
 npm run preview
 ```
 
-Deployment builds set `VITE_BASE_PATH` so the same frontend can be served at `/`, `/underdevelopment/`, `/version1/`, and `/version2/` in the Azure static-server package.
+Deployment builds set `VITE_BASE_PATH` so the same frontend can be served at `/`, `/underdevelopment/`, `/version1/`, `/version2/`, and `/version3/` in the Azure static-server package.
