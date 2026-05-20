@@ -185,7 +185,6 @@
             <section class="policy-section">
               <h2>9. Information We Do Not Collect</h2>
               <ul>
-                <li>We do not require you to create an account or log in (web app or extension).</li>
                 <li>We do not collect your name, email address, or any contact information.</li>
                 <li>We do not use cookies for tracking or advertising.</li>
                 <li>We do not sell or share your data with third parties for marketing purposes.</li>

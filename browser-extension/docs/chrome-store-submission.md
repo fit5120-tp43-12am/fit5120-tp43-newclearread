@@ -147,8 +147,6 @@ Asset guidance:
 
 ## Test Instructions For Reviewers
 
-The extension works without login or paid account setup.
-
 Suggested text:
 
 1. Open the installed extension and click the Clearead toolbar icon.
