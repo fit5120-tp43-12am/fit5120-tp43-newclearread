@@ -97,13 +97,6 @@ The frontend runs at:
 http://localhost:5173
 ```
 
-The demo sign-in used by the coursework review build is:
-
-```text
-Username: tp43_goodjob
-Password: tp43_clearead
-```
-
 ### Browser Extension
 
 Install the released extension from the Chrome Web Store:

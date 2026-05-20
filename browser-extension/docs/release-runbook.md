@@ -74,14 +74,14 @@ Expected output:
 
 ```text
 Extension validation passed.
-Created ...\browser-extension\dist\clearead-extension-0.1.0.zip
+Created ...\browser-extension\dist\clearead-extension-0.1.2.zip
 Packaged entries: manifest.json, public/, src/
 ```
 
 Upload the ZIP from:
 
 ```text
-browser-extension/dist/clearead-extension-0.1.0.zip
+browser-extension/dist/clearead-extension-0.1.2.zip
 ```
 
 ## 5. Dashboard Materials
@@ -106,6 +106,6 @@ Confirm these items before publishing a new or updated package:
 - Confirm production backend URL is final.
 - Confirm backend request logging and retention.
 - Confirm server-side AI/model provider disclosures.
-- Confirm privacy policy public URL works without login.
+- Confirm privacy policy public URL works.
 - Confirm store listing screenshots and promo image match the current extension UI.
 - Confirm all dashboard privacy fields match the privacy policy and actual extension behavior.

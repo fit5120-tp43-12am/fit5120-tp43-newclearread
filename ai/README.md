@@ -14,7 +14,7 @@ This directory contains the AI data, training, and deployment evidence used by t
 
 1. Read [data_preparation/README.md](data_preparation/README.md) to understand the final `1452` accepted-record dataset and the `2 + 4` assistant-label contract.
 2. Read [lora_training/README.md](lora_training/README.md) to see how model candidates were trained and compared.
-3. Read [model_deployment/README.md](model_deployment/README.md) to see how the selected model is served behind the ClearRead summary API contract.
+3. Read [model_deployment/README.md](model_deployment/README.md) to see how the selected model is served behind the Clearead summary API contract.
 
 ## Artifact Policy
 
